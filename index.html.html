@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام الجرد الذكي 2025</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{
+  --bg:#080b10;--surface:#0f1319;--card:#151b25;--card2:#1a2130;
+  --border:#222c3d;--border2:#2d3a50;
+  --gold:#f0c040;--gold2:#c8960a;
+  --blue:#3d8ef0;--green:#2ee89a;--red:#f05050;--purple:#9d6cf5;--orange:#f07830;
+  --text:#e8ecf5;--muted:#7888a8;--muted2:#4a5872;
+  --font:'Tajawal',sans-serif;--mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden;}
+
+/* HEADER */
+header{
+  background:linear-gradient(135deg,#0f1319,#111828);
+  border-bottom:1px solid var(--border);height:68px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;position:sticky;top:0;z-index:200;
+  box-shadow:0 2px 20px rgba(0,0,0,.5);
+}
+.logo{display:flex;align-items:center;gap:14px;}
+.logo-icon{
+  width:44px;height:44px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;box-shadow:0 4px 15px rgba(240,192,64,.3);
+  position:relative;overflow:hidden;
+}
+.logo-icon::after{
+  content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
+  background:linear-gradient(45deg,transparent 40%,rgba(255,255,255,.15) 50%,transparent 60%);
+  animation:shimmer 3s infinite;
+}
+@keyframes shimmer{0%{transform:translateX(-100%) rotate(45deg)}100%{transform:translateX(100%) rotate(45deg)}}
+.logo-name{font-size:17px;font-weight:800;}
+.logo-sub{font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:1.5px;margin-top:1px;}
+.hright{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.hbtn{
+  display:flex;align-items:center;gap:7px;padding:8px 15px;
+  border-radius:8px;border:1px solid var(--border2);
+  background:var(--card2);color:var(--text);font-family:var(--font);
+  font-size:13px;cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.hbtn:hover{border-color:var(--gold);color:var(--gold);}
+.hbtn.gold{background:var(--gold);border-color:var(--gold);color:#1a1000;font-weight:700;}
+.hbtn.gold:hover{background:#f5d060;}
+.hbtn.grn{background:rgba(46,232,154,.12);border-color:rgba(46,232,154,.3);color:var(--green);}
+.hbtn.grn:hover{background:rgba(46,232,154,.2);}
+.hbtn.org{background:rgba(240,120,48,.12);border-color:rgba(240,120,48,.3);color:var(--orange);}
+.hbtn.org:hover{background:rgba(240,120,48,.2);}
+.bchip{
+  background:var(--card);border:1px solid var(--border2);
+  border-radius:8px;padding:7px 14px;font-size:13px;
+  display:flex;align-items:center;gap:8px;
+}
+.bc-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
+.bc-lbl{color:var(--muted);font-size:11px;}
+.bc-val{font-weight:600;color:var(--gold);}
+
+/* LAYOUT */
+.layout{display:flex;min-height:calc(100vh - 68px);}
+
+/* SIDEBAR */
+.sidebar{
+  width:252px;background:var(--surface);border-left:1px solid var(--border);
+  padding:14px 0 30px;position:sticky;top:68px;
+  height:calc(100vh - 68px);overflow-y:auto;flex-shrink:0;
+  display:flex;flex-direction:column;
+}
+.sb-label{
+  font-size:9px;font-family:var(--mono);color:var(--muted2);
+  text-transform:uppercase;letter-spacing:2px;
+  padding:0 16px 6px;margin-top:16px;display:block;
+}
+.sb-item{
+  display:flex;align-items:center;gap:10px;padding:9px 16px;
+  cursor:pointer;border-right:3px solid transparent;
+  transition:all .15s;font-size:13px;color:var(--muted);
+}
+.sb-item:hover{background:rgba(255,255,255,.03);color:var(--text);}
+.sb-item.active{background:rgba(240,192,64,.07);color:var(--gold);border-right-color:var(--gold);}
+.sb-ico{font-size:14px;flex-shrink:0;}
+.sb-badge{
+  margin-right:auto;background:var(--card);border:1px solid var(--border);
+  border-radius:4px;padding:1px 7px;font-size:10.5px;font-family:var(--mono);color:var(--muted);
+}
+.sb-item.active .sb-badge{color:var(--gold);border-color:rgba(240,192,64,.3);}
+.sb-div{height:1px;background:var(--border);margin:8px 16px;}
+
+/* CATEGORY MANAGE SIDEBAR ITEMS */
+.sb-cat-item{
+  display:flex;align-items:center;gap:8px;padding:7px 16px;
+  font-size:12px;color:var(--muted);
+  border-right:3px solid transparent;
+  transition:all .12s;cursor:pointer;
+}
+.sb-cat-item:hover{background:rgba(255,255,255,.025);color:var(--text);}
+.sb-cat-item.active{background:rgba(240,192,64,.06);color:var(--gold);border-right-color:var(--gold);}
+.sb-cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.sb-cat-edit{
+  margin-right:auto;opacity:0;font-size:11px;
+  background:transparent;border:none;color:var(--muted);cursor:pointer;
+  transition:opacity .12s;padding:2px 5px;border-radius:4px;
+}
+.sb-cat-item:hover .sb-cat-edit{opacity:1;}
+.sb-cat-edit:hover{color:var(--gold);background:rgba(240,192,64,.1);}
+
+/* HISTORY */
+.hist-wrap{padding:0 10px;margin-top:auto;padding-top:8px;}
+.hist-lbl{font-size:9px;font-family:var(--mono);color:var(--muted2);text-transform:uppercase;letter-spacing:2px;padding:10px 8px 7px;display:block;}
+.hist-item{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:8px;padding:9px 11px;margin-bottom:5px;cursor:pointer;transition:all .13s;
+}
+.hist-item:hover{border-color:var(--border2);}
+.hist-item.cur{border-color:var(--gold);background:rgba(240,192,64,.05);}
+.hi-date{font-family:var(--mono);font-size:11px;color:var(--gold);}
+.hi-meta{font-size:11px;color:var(--muted);margin-top:1px;}
+.hi-acts{display:flex;gap:4px;margin-top:6px;}
+.hi-btn{
+  flex:1;padding:4px 0;border-radius:4px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);font-size:10.5px;cursor:pointer;
+  font-family:var(--font);transition:all .12s;display:flex;align-items:center;justify-content:center;gap:3px;
+}
+.hi-btn:hover{border-color:var(--blue);color:var(--blue);}
+.hi-btn.del:hover{border-color:var(--red);color:var(--red);}
+.no-hist{font-size:11.5px;color:var(--muted2);text-align:center;padding:14px 8px;font-style:italic;}
+
+/* MAIN */
+main{flex:1;padding:22px;overflow:auto;min-width:0;}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:16px 18px;position:relative;overflow:hidden;transition:transform .15s;}
+.stat:hover{transform:translateY(-2px);}
+.stat::before{content:'';position:absolute;top:-18px;left:-18px;width:80px;height:80px;border-radius:50%;opacity:.08;}
+.s1::before{background:var(--gold);}
+.s2::before{background:var(--green);}
+.s3::before{background:var(--red);}
+.s4::before{background:var(--blue);}
+.stat-ico{font-size:18px;margin-bottom:6px;}
+.stat-val{font-size:28px;font-weight:900;font-family:var(--mono);line-height:1;}
+.s1 .stat-val{color:var(--gold);}
+.s2 .stat-val{color:var(--green);}
+.s3 .stat-val{color:var(--red);}
+.s4 .stat-val{color:var(--blue);}
+.stat-lbl{font-size:11.5px;color:var(--muted);margin-top:4px;}
+.prog{height:3px;background:var(--border);border-radius:99px;margin-top:8px;overflow:hidden;}
+.prog-f{height:100%;border-radius:99px;transition:width .4s;background:linear-gradient(90deg,var(--blue),var(--green));}
+
+/* DATE BANNER */
+.dbanner{
+  background:linear-gradient(135deg,rgba(240,192,64,.07),rgba(61,142,240,.04));
+  border:1px solid rgba(240,192,64,.18);border-radius:10px;
+  padding:11px 17px;margin-bottom:16px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.db-l{display:flex;align-items:center;gap:10px;}
+.db-main{font-size:13px;font-weight:600;color:var(--gold);}
+.db-sub{font-size:11px;color:var(--muted);margin-top:1px;font-family:var(--mono);}
+.db-r{display:flex;align-items:center;gap:8px;}
+.unsaved{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);animation:pulse 1.5s infinite;display:none;}
+.unsaved.on{display:block;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:9px;margin-bottom:15px;flex-wrap:wrap;}
+.sw{flex:1;min-width:190px;position:relative;}
+.sw input{
+  width:100%;background:var(--card);border:1px solid var(--border);
+  border-radius:8px;padding:9px 14px 9px 40px;
+  color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:border .15s;
+}
+.sw input:focus{border-color:var(--gold);}
+.sw input::placeholder{color:var(--muted);}
+.sw-ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;}
+select{
+  background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:9px 13px;color:var(--text);font-family:var(--font);font-size:13px;cursor:pointer;outline:none;
+}
+select:hover{border-color:var(--border2);}
+
+/* TABLE */
+.tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow:hidden;}
+.tbl-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 18px;border-bottom:1px solid var(--border);
+  background:rgba(255,255,255,.01);
+}
+.tbl-title{font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;}
+.tbl-cnt{font-family:var(--mono);font-size:11.5px;color:var(--muted);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{
+  background:rgba(255,255,255,.015);padding:9px 13px;text-align:right;
+  color:var(--muted);font-weight:500;font-size:10.5px;font-family:var(--mono);
+  text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid rgba(34,44,61,.7);transition:background .1s;}
+tbody tr:hover{background:rgba(255,255,255,.02);}
+tbody tr:last-child{border-bottom:none;}
+tbody tr.custom-row{border-right:2px solid var(--orange);}
+td{padding:9px 13px;vertical-align:middle;}
+.td-num{font-family:var(--mono);font-size:10.5px;color:var(--muted2);}
+.td-ref{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.td-name{font-weight:500;}
+.custom-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  background:rgba(240,120,48,.1);border:1px solid rgba(240,120,48,.25);
+  border-radius:4px;padding:1px 6px;font-size:10px;color:var(--orange);margin-right:6px;
+}
+.cat-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  border-radius:5px;padding:2px 8px;font-size:11px;color:var(--muted);white-space:nowrap;
+}
+.cpill-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.uom-pill{
+  font-family:var(--mono);font-size:10.5px;
+  background:rgba(61,142,240,.1);color:var(--blue);
+  border:1px solid rgba(61,142,240,.2);border-radius:4px;padding:2px 7px;
+}
+.qty-wrap{display:flex;align-items:center;gap:5px;}
+.qbtn{
+  width:22px;height:22px;border-radius:4px;border:1px solid var(--border);
+  background:var(--card2);color:var(--muted);font-size:13px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .12s;flex-shrink:0;
+}
+.qbtn:hover{border-color:var(--gold);color:var(--gold);}
+.qin{
+  width:82px;background:rgba(255,255,255,.05);border:1px solid var(--border);
+  border-radius:6px;padding:4px 9px;color:var(--text);
+  font-family:var(--mono);font-size:12.5px;text-align:center;outline:none;transition:all .15s;
+}
+.qin:focus{border-color:var(--green);background:rgba(46,232,154,.05);}
+.qin.F{border-color:rgba(46,232,154,.4);color:var(--green);}
+.qin.Z{border-color:rgba(240,80,80,.35);color:var(--red);}
+.note-in{
+  width:110px;background:transparent;border:1px solid transparent;
+  border-radius:5px;padding:4px 8px;
+  color:var(--muted);font-family:var(--font);font-size:11.5px;
+  outline:none;transition:all .15s;
+}
+.note-in:focus{border-color:var(--border2);background:rgba(255,255,255,.04);color:var(--text);width:150px;}
+.note-in::placeholder{color:rgba(120,136,168,.3);}
+.row-del{
+  width:24px;height:24px;border-radius:5px;border:1px solid transparent;
+  background:transparent;color:var(--muted2);font-size:13px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .12s;
+}
+.row-del:hover{border-color:rgba(240,80,80,.3);color:var(--red);background:rgba(240,80,80,.08);}
+
+/* MODALS */
+.overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.78);backdrop-filter:blur(6px);
+  z-index:300;align-items:center;justify-content:center;
+}
+.overlay.open{display:flex;}
+.modal{
+  background:var(--card);border:1px solid var(--border2);
+  border-radius:16px;width:480px;max-width:95vw;
+  max-height:90vh;overflow-y:auto;padding:26px;
+  animation:mIn .2s ease;
+}
+@keyframes mIn{from{transform:scale(.95) translateY(10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.mod-title{font-size:18px;font-weight:800;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.mod-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.mod-field{margin-bottom:14px;}
+.mod-lbl{font-size:10.5px;color:var(--muted);margin-bottom:5px;display:block;font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;}
+.mod-in{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:10px 13px;
+  color:var(--text);font-family:var(--font);font-size:13.5px;outline:none;transition:border .15s;
+}
+.mod-in:focus{border-color:var(--gold);}
+.mod-in.err{border-color:var(--red);}
+.mod-hint{font-size:11px;color:var(--muted);margin-top:4px;}
+.mod-foot{display:flex;gap:9px;justify-content:flex-end;margin-top:20px;}
+
+/* CAT COLOR PICKER */
+.color-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+.c-swatch{
+  width:28px;height:28px;border-radius:6px;cursor:pointer;
+  border:2px solid transparent;transition:all .12s;
+}
+.c-swatch:hover{transform:scale(1.15);}
+.c-swatch.sel{border-color:white;box-shadow:0 0 0 2px rgba(255,255,255,.3);}
+
+/* REPORT MODAL */
+.rmod{width:680px;}
+.rmod-hdr{
+  background:linear-gradient(135deg,rgba(240,192,64,.1),rgba(61,142,240,.05));
+  border:1px solid rgba(240,192,64,.2);border-radius:11px;padding:16px;margin-bottom:16px;
+}
+.rmod-meta{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px;}
+.rm{font-size:11.5px;color:var(--muted);}
+.rm strong{color:var(--text);font-family:var(--mono);}
+.rsums{display:flex;gap:9px;margin-bottom:13px;}
+.rsum{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:9px 13px;}
+.rsum-v{font-family:var(--mono);font-size:18px;font-weight:700;}
+.rsum-l{font-size:11px;color:var(--muted);margin-top:1px;}
+.rsum.sg .rsum-v{color:var(--green);}
+.rsum.sr .rsum-v{color:var(--red);}
+.rsum.so .rsum-v{color:var(--gold);}
+.rtbl{width:100%;border-collapse:collapse;font-size:12px;}
+.rtbl th{background:rgba(255,255,255,.04);padding:7px 11px;text-align:right;font-size:10px;color:var(--muted);font-family:var(--mono);border-bottom:1px solid var(--border);}
+.rtbl td{padding:6px 11px;border-bottom:1px solid rgba(34,44,61,.6);}
+.rtd-q{font-family:var(--mono);font-weight:600;color:var(--green);}
+.rtd-z{font-family:var(--mono);font-weight:600;color:var(--red);}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--card2);border:1px solid var(--border2);border-radius:9px;
+  padding:11px 18px;font-size:13px;z-index:500;
+  display:flex;align-items:center;gap:9px;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);
+  opacity:0;pointer-events:none;transition:all .3s;white-space:nowrap;
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.suc{border-color:rgba(46,232,154,.4);color:var(--green);}
+.toast.inf{border-color:rgba(61,142,240,.4);color:var(--blue);}
+.toast.wrn{border-color:rgba(240,192,64,.4);color:var(--gold);}
+.toast.err{border-color:rgba(240,80,80,.4);color:var(--red);}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px;}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr);}.sidebar{display:none;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🗃️</div>
+    <div>
+      <div class="logo-name">نظام الجرد الذكي</div>
+      <div class="logo-sub">SMART INVENTORY v3.0</div>
+    </div>
+  </div>
+  <div class="hright">
+    <div class="bchip">
+      <div class="bc-dot"></div>
+      <div><div class="bc-lbl">الفرع</div><div class="bc-val" id="branchLbl">—</div></div>
+    </div>
+    <button class="hbtn org" onclick="openAddItem()">➕ إضافة صنف</button>
+    <button class="hbtn" onclick="openSetup()">⚙️ إعداد</button>
+    <button class="hbtn grn" onclick="saveAndExport()" id="saveBtn">💾 حفظ وتصدير</button>
+    <button class="hbtn gold" onclick="openNewDay()">📅 يوم جديد</button>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <span class="sb-label">الأقسام</span>
+  <div class="sb-item active" id="sb-all" onclick="filterCat('all',this)">
+    <span class="sb-ico">📦</span>جميع الأصناف
+    <span class="sb-badge" id="b-all">—</span>
+  </div>
+  <div id="catSidebar"></div>
+
+  <div class="sb-div"></div>
+  <span class="sb-label">إدارة الأصناف</span>
+  <div class="sb-item" onclick="openAddItem()"><span class="sb-ico">➕</span>إضافة صنف جديد</div>
+  <div class="sb-item" onclick="openAddCat()"><span class="sb-ico">🗂️</span>إضافة قسم جديد</div>
+  <div class="sb-item" onclick="openManageItems()"><span class="sb-ico">✏️</span>إدارة الأصناف</div>
+
+  <div class="sb-div"></div>
+  <span class="sb-label">إجراءات</span>
+  <div class="sb-item" onclick="saveAndExport()"><span class="sb-ico">💾</span>حفظ وتصدير PDF</div>
+  <div class="sb-item" onclick="exportCsv()"><span class="sb-ico">📊</span>تصدير CSV</div>
+  <div class="sb-item" onclick="clearQty()"><span class="sb-ico">🗑️</span>مسح الكميات</div>
+
+  <div class="hist-wrap">
+    <span class="hist-lbl">📋 التقارير المحفوظة</span>
+    <div id="histList"><div class="no-hist">لا توجد تقارير بعد</div></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main>
+  <div class="stats">
+    <div class="stat s1"><div class="stat-ico">📦</div><div class="stat-val" id="st-tot">0</div><div class="stat-lbl">إجمالي الأصناف</div></div>
+    <div class="stat s2"><div class="stat-ico">✅</div><div class="stat-val" id="st-ent">0</div><div class="stat-lbl">تم جردها</div></div>
+    <div class="stat s3"><div class="stat-ico">⚠️</div><div class="stat-val" id="st-zer">0</div><div class="stat-lbl">صفرية</div></div>
+    <div class="stat s4"><div class="stat-ico">📈</div><div class="stat-val" id="st-pct">0%</div><div class="stat-lbl">نسبة الإنجاز</div><div class="prog"><div class="prog-f" id="progF" style="width:0"></div></div></div>
+  </div>
+
+  <div class="dbanner">
+    <div class="db-l">
+      <span style="font-size:20px">📅</span>
+      <div><div class="db-main" id="dbMain">—</div><div class="db-sub" id="dbSub">—</div></div>
+    </div>
+    <div class="db-r">
+      <div class="unsaved" id="unsavedDot"></div>
+      <button class="hbtn" style="padding:6px 11px;font-size:12px" onclick="saveAndExport()">💾 حفظ</button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="sw">
+      <span class="sw-ico">🔍</span>
+      <input type="text" id="srch" placeholder="ابحث بالاسم أو رقم المرجع..." oninput="renderTbl()">
+    </div>
+    <select id="uomF" onchange="renderTbl()">
+      <option value="">كل الوحدات</option>
+      <option value="kg">kg</option><option value="Pcs">Pcs</option>
+      <option value="L">L</option><option value="g">g</option><option value="Units">Units</option><option value="ML">ML</option>
+    </select>
+    <select id="stF" onchange="renderTbl()">
+      <option value="">كل الحالات</option>
+      <option value="F">مدخل كمية</option><option value="Z">صفري</option><option value="E">لم يُجرد</option>
+    </select>
+    <button class="hbtn org" style="padding:7px 13px;font-size:12.5px" onclick="openAddItem()">➕ إضافة صنف</button>
+  </div>
+
+  <div class="tbl-wrap">
+    <div class="tbl-head">
+      <div class="tbl-title"><span id="tIco">📦</span>&nbsp;<span id="tTit">جميع الأصناف</span></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="tbl-cnt" id="tCnt"></div>
+        <button class="hbtn org" style="padding:5px 11px;font-size:11.5px" onclick="openAddItem()">➕ إضافة</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr>
+        <th style="width:32px">#</th>
+        <th>رقم المرجع</th>
+        <th>اسم الصنف</th>
+        <th>القسم</th>
+        <th>الوحدة</th>
+        <th>الكمية الفعلية</th>
+        <th>ملاحظات</th>
+        <th style="width:30px"></th>
+      </tr></thead>
+      <tbody id="tBody"></tbody>
+    </table>
+  </div>
+</main>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ADD ITEM MODAL -->
+<div class="overlay" id="addItemModal">
+<div class="modal">
+  <div class="mod-title" id="addItemTitle">➕ إضافة صنف جديد</div>
+  <div class="mod-row">
+    <div class="mod-field">
+      <label class="mod-lbl">رقم المرجع *</label>
+      <input class="mod-in" id="ai-ref" placeholder="مثال: RMF02050">
+      <div class="mod-hint" id="ai-ref-hint">سيُستخدم كمعرف فريد في Odoo</div>
+    </div>
+    <div class="mod-field">
+      <label class="mod-lbl">القسم *</label>
+      <select class="mod-in" id="ai-cat" onchange="autoRef()"></select>
+    </div>
+  </div>
+  <div class="mod-field">
+    <label class="mod-lbl">اسم الصنف بالعربي *</label>
+    <input class="mod-in" id="ai-name-ar" placeholder="مثال: زيت زيتون" oninput="autoRef()">
+  </div>
+  <div class="mod-field">
+    <label class="mod-lbl">اسم الصنف بالإنجليزي</label>
+    <input class="mod-in" id="ai-name-en" placeholder="Olive Oil">
+  </div>
+  <div class="mod-row">
+    <div class="mod-field">
+      <label class="mod-lbl">وحدة القياس *</label>
+      <select class="mod-in" id="ai-uom">
+        <option value="kg">kg - كيلوغرام</option>
+        <option value="Pcs">Pcs - قطعة</option>
+        <option value="L">L - لتر</option>
+        <option value="g">g - غرام</option>
+        <option value="Units">Units - وحدة</option>
+        <option value="ML">ML - مليلتر</option>
+      </select>
+    </div>
+    <div class="mod-field">
+      <label class="mod-lbl">الكمية الافتراضية</label>
+      <input type="number" class="mod-in" id="ai-qty" placeholder="0" min="0" step="0.001">
+    </div>
+  </div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('addItemModal')">إلغاء</button>
+    <button class="hbtn gold" onclick="saveItem()" id="addItemBtn">✓ إضافة الصنف</button>
+  </div>
+</div>
+</div>
+
+<!-- ADD CATEGORY MODAL -->
+<div class="overlay" id="addCatModal">
+<div class="modal" style="width:420px">
+  <div class="mod-title" id="addCatTitle">🗂️ إضافة قسم جديد</div>
+  <div class="mod-row">
+    <div class="mod-field">
+      <label class="mod-lbl">رمز القسم *</label>
+      <input class="mod-in" id="ac-key" placeholder="مثال: RMD" maxlength="8" style="font-family:var(--mono)" oninput="this.value=this.value.toUpperCase()">
+      <div class="mod-hint">حروف وأرقام فقط، 3-8 أحرف</div>
+    </div>
+    <div class="mod-field">
+      <label class="mod-lbl">رقم تسلسلي</label>
+      <input class="mod-in" id="ac-num" placeholder="07" maxlength="4" style="font-family:var(--mono)">
+    </div>
+  </div>
+  <div class="mod-field">
+    <label class="mod-lbl">اسم القسم بالعربي *</label>
+    <input class="mod-in" id="ac-name" placeholder="مثال: مشروبات">
+  </div>
+  <div class="mod-field">
+    <label class="mod-lbl">أيقونة القسم</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px" id="icoGrid">
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🥤">🥤</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🧴">🧴</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🧹">🧹</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="❄️">❄️</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🔧">🔧</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="📦">📦</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🍰">🍰</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🧂">🧂</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🫙">🫙</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🥛">🥛</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🫒">🫒</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🌾">🌾</span>
+    </div>
+    <input class="mod-in" id="ac-ico" placeholder="أو اكتب أيقونة مخصصة 🎯" style="margin-top:8px">
+  </div>
+  <div class="mod-field">
+    <label class="mod-lbl">لون القسم</label>
+    <div class="color-grid" id="colorGrid"></div>
+    <input type="color" class="mod-in" id="ac-color" value="#f0c040" style="height:40px;padding:4px 8px;margin-top:8px">
+  </div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('addCatModal')">إلغاء</button>
+    <button class="hbtn gold" onclick="saveCat()" id="addCatBtn">✓ إضافة القسم</button>
+  </div>
+</div>
+</div>
+
+<!-- MANAGE ITEMS MODAL -->
+<div class="overlay" id="manageModal">
+<div class="modal" style="width:700px">
+  <div class="mod-title">✏️ إدارة الأصناف</div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <div class="sw" style="flex:1;min-width:160px">
+      <span class="sw-ico">🔍</span>
+      <input type="text" id="mgSrch" placeholder="بحث..." oninput="renderManage()" style="padding:7px 13px 7px 36px">
+    </div>
+    <select class="mod-in" id="mgCat" onchange="renderManage()" style="width:auto">
+      <option value="">كل الأقسام</option>
+    </select>
+  </div>
+  <div style="max-height:420px;overflow-y:auto" id="manageList"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('manageModal')">إغلاق</button>
+    <button class="hbtn org" onclick="closeM('manageModal');openAddItem()">➕ إضافة صنف جديد</button>
+  </div>
+</div>
+</div>
+
+<!-- SETUP MODAL -->
+<div class="overlay" id="setupModal">
+<div class="modal">
+  <div class="mod-title">⚙️ إعداد الجرد</div>
+  <div class="mod-field"><label class="mod-lbl">اسم الفرع *</label><input class="mod-in" id="i-branch" placeholder="مثال: فرع الرياض"></div>
+  <div class="mod-field"><label class="mod-lbl">مدير الفرع</label><input class="mod-in" id="i-manager"></div>
+  <div class="mod-field"><label class="mod-lbl">أمين المخزن</label><input class="mod-in" id="i-store"></div>
+  <div class="mod-field"><label class="mod-lbl">مشرف الجرد</label><input class="mod-in" id="i-super"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('setupModal')">إلغاء</button>
+    <button class="hbtn gold" onclick="saveSetup()">✓ حفظ</button>
+  </div>
+</div>
+</div>
+
+<!-- NEW DAY MODAL -->
+<div class="overlay" id="newDayModal">
+<div class="modal" style="width:420px">
+  <div class="mod-title">📅 يوم جرد جديد</div>
+  <p style="color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.8">اختر كيف تريد البدء:</p>
+  <div style="display:flex;gap:10px">
+    <button class="hbtn" style="flex:1;justify-content:center;padding:12px" onclick="startDay(false)">🔄 بدء من صفر</button>
+    <button class="hbtn grn" style="flex:1;justify-content:center;padding:12px" onclick="startDay(true)">📋 إبقاء الكميات</button>
+  </div>
+  <div class="mod-foot"><button class="hbtn" onclick="closeM('newDayModal')">إلغاء</button></div>
+</div>
+</div>
+
+<!-- REPORT MODAL -->
+<div class="overlay" id="rptModal">
+<div class="modal rmod">
+  <div class="mod-title">📋 تقرير الجرد</div>
+  <div id="rptContent"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('rptModal')">إغلاق</button>
+    <button class="hbtn" id="rptCsvBtn">📊 CSV</button>
+    <button class="hbtn gold" id="rptPdfBtn">📄 PDF</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  DEFAULT CATEGORIES
+// ══════════════════════════════════════════════
+const DEFAULT_CATS = {
+  RMF:{l:'مواد غذائية',  i:'🍞',c:'#f0c040',seq:'02'},
+  RMM:{l:'مواد لحوم',   i:'🥩',c:'#f05050',seq:'01'},
+  RMP:{l:'مواد تغليف',  i:'📫',c:'#3d8ef0',seq:'05'},
+  RMS:{l:'توابل',        i:'🌿',c:'#9d6cf5',seq:'04'},
+  RMV:{l:'خضار وفواكه', i:'🥬',c:'#2ee89a',seq:'03'},
+  SMM:{l:'نصف جاهزة',  i:'🏭',c:'#f0e040',seq:'06'},
+};
+
+// ══════════════════════════════════════════════
+//  DEFAULT ITEMS
+// ══════════════════════════════════════════════
+const DEFAULT_ITEMS = [
+  {r:'RMF02019',n:'دقيق القمح',e:'Wheat Flour',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02040',n:'شرائح جبن شيدر',e:'Cheddar Slices',c:'RMF',u:'Pcs',custom:false},
+  {r:'RMF02037',n:'ماء طبخ',e:'Cooking Water',c:'RMF',u:'L',custom:false},
+  {r:'RMF02018',n:'كورن فليكس',e:'Corn Flakes',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02007',n:'تمور',e:'Dates',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02038',n:'لبنة',e:'Labneh',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02031',n:'عدس',e:'Lentils',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02002',n:'مرق ماجي',e:'Maggi Broth',c:'RMF',u:'Pcs',custom:false},
+  {r:'RMF02023',n:'دقيق الدخن',e:'Millet Flour',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02005',n:'زبدة مون',e:'Moon Butter',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02041',n:'نوتيلا',e:'Nutella',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02022',n:'دقيق القمح العماني',e:'Omani Wheat',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02020',n:'دقيق أبيض ممتاز',e:'Premium Flour',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02010',n:'رقاق المطبق',e:'Raqaq Almutbaq',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02039',n:'زيتون أسود مقطع',e:'Black Olives',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02001',n:'صلصة طماطم',e:'Tomato Sauce',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02024',n:'زبدة نباتية',e:'Veg Butter',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02021',n:'دقيق مخابز',e:'Bakeries Flour',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02026',n:'حبة سوداء',e:'Black Seed',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02012',n:'جبن شيدر',e:'Cheddar Cheese',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02017',n:'حليب مكثف',e:'Condensed Milk',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02009',n:'كريمة',e:'Cream',c:'RMF',u:'Pcs',custom:false},
+  {r:'RMF02029',n:'فول مهروس',e:'Crushed Beans',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02006',n:'بيض',e:'Egg',c:'RMF',u:'Pcs',custom:false},
+  {r:'RMF02016',n:'حليب مبخر',e:'Evaporated Milk',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02030',n:'فول',e:'Fava Beans',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02036',n:'حلاوة طحينية',e:'Halawat Tahinia',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02008',n:'عسل',e:'Honey',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02027',n:'خميرة فورية',e:'Instant Yeast',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02033',n:'شاي ليبتون',e:'Lipton Tea',c:'RMF',u:'Pcs',custom:false},
+  {r:'RMF02011',n:'جبن سائل',e:'Liquid Cheese',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02028',n:'طحينة سائلة',e:'Liquid Tahini',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02034',n:'شاي أوراق',e:'Loose Tea',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02032',n:'زجاجات زيت زيتون',e:'Olive Oil',c:'RMF',u:'Pcs',custom:false},
+  {r:'RMF02004',n:'زيت نخيل',e:'Palm Oil',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02015',n:'حليب بودرة',e:'Powdered Milk',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02014',n:'كاجو مملح',e:'Salted Cashews',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02025',n:'سمسم',e:'Sesame',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02003',n:'سكر',e:'Sugar',c:'RMF',u:'kg',custom:false},
+  {r:'RMF02035',n:'بانان سكر',e:'Sugar Fingers',c:'RMF',u:'Pcs',custom:false},
+  {r:'RMF02013',n:'جبن أبيض',e:'White Cheese',c:'RMF',u:'kg',custom:false},
+  {r:'RMM01001',n:'كبد',e:'Liver',c:'RMM',u:'kg',custom:false},
+  {r:'RMM01002',n:'لحم',e:'Meat',c:'RMM',u:'kg',custom:false},
+  {r:'RMM01003',n:'لحم مفروم',e:'Minced Meat',c:'RMM',u:'kg',custom:false},
+  {r:'RMP05009',n:'علبة بلاستيك 1000مل',e:'1000ml Box',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05006',n:'علبة ألمنيوم 1030',e:'1030 Al Box',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05001',n:'علبة ألمنيوم 1065',e:'1065 Al Box',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05010',n:'علبة ألمنيوم 1120',e:'1120 Al Box',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05014',n:'حامل 2 كوب',e:'2 Cup Holder',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05017',n:'علبة بلاستيك 250مل',e:'250ml Box',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05015',n:'حامل 4 كوب',e:'4 Cup Holder',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05018',n:'علبة بلاستيك 450مل',e:'450ml Box',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05005',n:'علبة بلاستيك 750مل',e:'750ml Box',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05004',n:'علبة ألمنيوم 1076',e:'1076 Al Box',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05020',n:'قفازات',e:'Gloves',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05002',n:'أكياس وسط',e:'Medium Bags',c:'RMP',u:'kg',custom:false},
+  {r:'RMP05008',n:'كيس ورق 200 قطعة',e:'Paper Bag 200',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05021',n:'مستهلكات خدمة',e:'Service Consumables',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05019',n:'ملاعق',e:'Spoons',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05012',n:'كوب 8 أوز',e:'Cup 8oz',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05013',n:'غطاء 8 أوز',e:'Lid 8oz',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05007',n:'أكياس تعبئة',e:'Packaging Bags',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05011',n:'علبة صوص',e:'Sauce Box',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMP05003',n:'أكياس صغيرة',e:'Small Bags',c:'RMP',u:'kg',custom:false},
+  {r:'RMP05016',n:'عيدان تحريك خشبية',e:'Wooden Stirring',c:'RMP',u:'Pcs',custom:false},
+  {r:'RMS04012',n:'مزيج شاي عدني',e:'Adani Tea Mix',c:'RMS',u:'g',custom:false},
+  {r:'RMS04014',n:'محسن خبز',e:'Bread Improver',c:'RMS',u:'g',custom:false},
+  {r:'RMS04011',n:'مزيج كرك',e:'Karak Mix',c:'RMS',u:'g',custom:false},
+  {r:'RMS04004',n:'بهارات مطبق',e:'Mutabbaq Spices',c:'RMS',u:'kg',custom:false},
+  {r:'RMS04015',n:'صلصة رانا حارة',e:'Rana Hot Sauce',c:'RMS',u:'Units',custom:false},
+  {r:'RMS04010',n:'فانيليا',e:'Vanilla',c:'RMS',u:'kg',custom:false},
+  {r:'RMS04006',n:'بيكنج باودر',e:'Baking Powder',c:'RMS',u:'kg',custom:false},
+  {r:'RMS04001',n:'فلفل أسود',e:'Black Pepper',c:'RMS',u:'kg',custom:false},
+  {r:'RMS04013',n:'نشا ذرة',e:'Corn Starch',c:'RMS',u:'g',custom:false},
+  {r:'RMS04007',n:'كمون',e:'Cumin',c:'RMS',u:'kg',custom:false},
+  {r:'RMS04002',n:'بهارات كاري',e:'Curry',c:'RMS',u:'kg',custom:false},
+  {r:'RMS04008',n:'كركم',e:'Turmeric',c:'RMS',u:'kg',custom:false},
+  {r:'RMS04003',n:'ملح',e:'Salt',c:'RMS',u:'kg',custom:false},
+  {r:'RMS04005',n:'بيكربونات الصوديوم',e:'Baking Soda',c:'RMS',u:'kg',custom:false},
+  {r:'RMS04009',n:'زعتر',e:'Zaetar',c:'RMS',u:'kg',custom:false},
+  {r:'RMV03011',n:'موز',e:'Banana',c:'RMV',u:'kg',custom:false},
+  {r:'RMV03007',n:'فليفلة',e:'Bell Pepper',c:'RMV',u:'kg',custom:false},
+  {r:'RMV03002',n:'كزبرة',e:'Coriander',c:'RMV',u:'kg',custom:false},
+  {r:'RMV03009',n:'ثوم',e:'Garlic',c:'RMV',u:'kg',custom:false},
+  {r:'RMV03008',n:'زنجبيل',e:'Ginger',c:'RMV',u:'kg',custom:false},
+  {r:'RMV03005',n:'فلفل حار',e:'Hot Pepper',c:'RMV',u:'kg',custom:false},
+  {r:'RMV03004',n:'كراث',e:'Leeks',c:'RMV',u:'kg',custom:false},
+  {r:'RMV03003',n:'ليمون',e:'Lemon',c:'RMV',u:'kg',custom:false},
+  {r:'RMV03012',n:'نعناع',e:'Mint',c:'RMV',u:'kg',custom:false},
+  {r:'RMV03006',n:'بصل',e:'Onion',c:'RMV',u:'kg',custom:false},
+  {r:'RMV03010',n:'بقدونس',e:'Parsley',c:'RMV',u:'kg',custom:false},
+  {r:'RMV03001',n:'طماطم',e:'Tomatoes',c:'RMV',u:'kg',custom:false},
+  {r:'SMM06006',n:'عجين تميس بني',e:'Brown Temis Dough',c:'SMM',u:'Pcs',custom:false},
+  {r:'SMM06009',n:'فول معلب 20 كجم',e:'Jar Beans 20kg',c:'SMM',u:'kg',custom:false},
+  {r:'SMM06008',n:'كشنة',e:'Koshna',c:'SMM',u:'kg',custom:false},
+  {r:'SMM06014',n:'قدر عدس',e:'Lentil Pot',c:'SMM',u:'kg',custom:false},
+  {r:'SMM06001',n:'عجين مطبق',e:'Mutabbaq Dough',c:'SMM',u:'Pcs',custom:false},
+  {r:'SMM06007',n:'لحم مطبق',e:'Mutbiq Meat',c:'SMM',u:'kg',custom:false},
+  {r:'SMM06005',n:'عجين بسكويت سادة',e:'Plain Biscuit Dough',c:'SMM',u:'Pcs',custom:false},
+  {r:'SMM06004',n:'عجين تميس سادة',e:'Plain Temis Dough',c:'SMM',u:'Pcs',custom:false},
+  {r:'SMM06010',n:'قيلابات 25.5 كجم',e:'Qilabat 25.5kg',c:'SMM',u:'kg',custom:false},
+  {r:'SMM06013',n:'عجين فيلو',e:'Filo Pastry',c:'SMM',u:'Pcs',custom:false},
+  {r:'SMM06002',n:'عجينة الدخن',e:'Millet Paste',c:'SMM',u:'Pcs',custom:false},
+  {r:'SMM06003',n:'عجين فطيرة',e:'Pie Dough',c:'SMM',u:'Pcs',custom:false},
+  {r:'SMM06012',n:'خلطة سلطة طماطم',e:'Tomato Salad Mix',c:'SMM',u:'kg',custom:false},
+  {r:'SMM06011',n:'جبن حلوم 24 كجم',e:'Sweet Cheese 24kg',c:'SMM',u:'kg',custom:false},
+];
+
+const PALETTE=['#f0c040','#3d8ef0','#2ee89a','#f05050','#9d6cf5','#f07830','#f0e040','#3dc8f0','#e840a0','#40c8a0','#a0b040','#c07030'];
+let selColor='#f0c040', selIcoVal='📦', editingCat=null, editingItem=null;
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let S={
+  branch:'',manager:'',storekeeper:'',supervisor:'',
+  date:today(), sid:genSid(),
+  qty:{}, notes:{},
+  reports:[],
+  cats:{...DEFAULT_CATS},
+  items:[...DEFAULT_ITEMS],
+};
+let curCat='all', unsaved=false;
+
+function today(){
+  const d=new Date();
+  return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+}
+function p2(n){return String(n).padStart(2,'0');}
+function genSid(){return 'INV-'+Date.now().toString(36).toUpperCase();}
+
+function load(){
+  try{
+    const x=JSON.parse(localStorage.getItem('inv4')||'null');
+    if(x){
+      S=x;
+      // Merge new default items that might not exist in saved state
+      DEFAULT_ITEMS.forEach(di=>{
+        if(!S.items.find(si=>si.r===di.r)) S.items.push(di);
+      });
+      // Merge default cats
+      Object.keys(DEFAULT_CATS).forEach(k=>{
+        if(!S.cats[k]) S.cats[k]={...DEFAULT_CATS[k]};
+      });
+    }
+  }catch(e){}
+}
+function save(){localStorage.setItem('inv4',JSON.stringify(S));}
+
+// ══════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════
+load();
+buildColorGrid();
+renderSidebar();
+updateHeader();
+updateBanner();
+renderTbl();
+updateStats();
+renderHist();
+populateCatSelects();
+
+function updateHeader(){document.getElementById('branchLbl').textContent=S.branch||'—';}
+function updateBanner(){
+  const d=new Date(S.date+'T00:00:00');
+  const ar=d.toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('dbMain').textContent='جلسة جرد: '+ar;
+  document.getElementById('dbSub').textContent='SESSION: '+S.sid;
+}
+
+function buildColorGrid(){
+  const g=document.getElementById('colorGrid');
+  g.innerHTML=PALETTE.map(c=>`<div class="c-swatch${c===selColor?' sel':''}" style="background:${c}" onclick="pickColor('${c}',this)"></div>`).join('');
+}
+
+function pickColor(c,el){
+  selColor=c;
+  document.querySelectorAll('.c-swatch').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('ac-color').value=c;
+}
+
+function selIco(el){
+  selIcoVal=el.title||el.textContent;
+  document.getElementById('ac-ico').value=selIcoVal;
+  document.querySelectorAll('#icoGrid span').forEach(e=>e.style.outline='none');
+  el.style.outline='2px solid var(--gold)';el.style.borderRadius='4px';
+}
+
+// ══════════════════════════════════════════════
+//  SIDEBAR RENDER
+// ══════════════════════════════════════════════
+function renderSidebar(){
+  const cont=document.getElementById('catSidebar');
+  cont.innerHTML=Object.entries(S.cats).map(([k,v])=>`
+    <div class="sb-cat-item${curCat===k?' active':''}" id="sbc-${k}" onclick="filterCat('${k}',this)">
+      <span class="sb-cat-dot" style="background:${v.c}"></span>
+      <span>${v.i||'📦'} ${v.l}</span>
+      <span class="sb-badge" id="b-${k}">${S.items.filter(i=>i.c===k).length}</span>
+      <button class="sb-cat-edit" onclick="event.stopPropagation();openEditCat('${k}')" title="تعديل">✏</button>
+    </div>`).join('');
+  document.getElementById('b-all').textContent=S.items.length;
+}
+
+function populateCatSelects(){
+  const s1=document.getElementById('ai-cat');
+  const s2=document.getElementById('mgCat');
+  const opts=Object.entries(S.cats).map(([k,v])=>`<option value="${k}">${v.i||''} ${v.l}</option>`).join('');
+  s1.innerHTML=opts;
+  s2.innerHTML='<option value="">كل الأقسام</option>'+opts;
+}
+
+// ══════════════════════════════════════════════
+//  TABLE RENDER
+// ══════════════════════════════════════════════
+function renderTbl(){
+  const srch=document.getElementById('srch').value.toLowerCase();
+  const uom=document.getElementById('uomF').value;
+  const st=document.getElementById('stF').value;
+
+  const list=S.items.filter(it=>{
+    if(curCat!=='all'&&it.c!==curCat) return false;
+    if(uom&&it.u!==uom) return false;
+    if(srch&&!it.n.toLowerCase().includes(srch)&&!it.r.toLowerCase().includes(srch)&&!(it.e||'').toLowerCase().includes(srch)) return false;
+    if(st){
+      const v=S.qty[it.r];
+      if(st==='F'&&(v==null||v===''||parseFloat(v)===0)) return false;
+      if(st==='Z'&&!(v!=null&&v!==''&&parseFloat(v)===0)) return false;
+      if(st==='E'&&!(v==null||v==='')) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('tCnt').textContent=list.length+' صنف';
+  document.getElementById('tBody').innerHTML=list.map((it,i)=>{
+    const cat=S.cats[it.c]||{l:'أخرى',c:'#888',i:'📦'};
+    const v=S.qty[it.r];
+    const qv=v!=null&&v!==''?v:'';
+    const cls=qv===''?'':(parseFloat(qv)===0?'Z':'F');
+    const nt=(S.notes||{})[it.r]||'';
+    return `<tr${it.custom?' class="custom-row"':''}>
+      <td class="td-num">${i+1}</td>
+      <td class="td-ref">${it.r}</td>
+      <td class="td-name">
+        ${it.custom?'<span class="custom-badge">✨ جديد</span>':''}
+        ${it.n}${it.e?`<span style="font-size:11px;color:var(--muted);margin-right:5px">${it.e}</span>`:''}
+      </td>
+      <td><span class="cat-pill"><span class="cpill-dot" style="background:${cat.c}"></span>${cat.l}</span></td>
+      <td><span class="uom-pill">${it.u}</span></td>
+      <td><div class="qty-wrap">
+        <button class="qbtn" onclick="adj('${it.r}',-1)">−</button>
+        <input type="number" class="qin ${cls}" min="0" step="0.001"
+          value="${qv}" id="q_${it.r}" placeholder="—"
+          oninput="chg('${it.r}',this.value)"
+          onchange="chg('${it.r}',this.value)">
+        <button class="qbtn" onclick="adj('${it.r}',1)">+</button>
+      </div></td>
+      <td><input type="text" class="note-in" value="${nt}" placeholder="ملاحظة..."
+        onchange="chgNote('${it.r}',this.value)"></td>
+      <td>
+        <button class="row-del" onclick="deleteItem('${it.r}')" title="حذف الصنف">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function chg(r,v){
+  if(v===''||v===null){delete S.qty[r];}
+  else{S.qty[r]=parseFloat(v)||0;}
+  const el=document.getElementById('q_'+r);
+  if(el){el.classList.remove('F','Z');if(v!=='')el.classList.add(parseFloat(v)===0?'Z':'F');}
+  markUnsaved();save();updateStats();
+}
+function adj(r,d){
+  const el=document.getElementById('q_'+r);if(!el)return;
+  const v=Math.max(0,(parseFloat(el.value)||0)+d);
+  el.value=v;chg(r,v);
+}
+function chgNote(r,v){if(!S.notes)S.notes={};S.notes[r]=v;save();}
+
+function updateStats(){
+  const ent=S.items.filter(it=>S.qty[it.r]!=null&&S.qty[it.r]!=='').length;
+  const zer=S.items.filter(it=>S.qty[it.r]!=null&&parseFloat(S.qty[it.r])===0).length;
+  const pct=Math.round((ent/S.items.length)*100)||0;
+  document.getElementById('st-tot').textContent=S.items.length;
+  document.getElementById('st-ent').textContent=ent;
+  document.getElementById('st-zer').textContent=zer;
+  document.getElementById('st-pct').textContent=pct+'%';
+  document.getElementById('progF').style.width=pct+'%';
+}
+
+function markUnsaved(){unsaved=true;document.getElementById('unsavedDot').classList.add('on');}
+function filterCat(cat,el){
+  curCat=cat;
+  document.querySelectorAll('.sb-item,.sb-cat-item').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  const cat_data=S.cats[cat];
+  document.getElementById('tIco').textContent=cat==='all'?'📦':(cat_data?.i||'📦');
+  document.getElementById('tTit').textContent=cat==='all'?'جميع الأصناف':(cat_data?.l||cat);
+  renderTbl();
+}
+
+// ══════════════════════════════════════════════
+//  ADD / EDIT ITEM
+// ══════════════════════════════════════════════
+function openAddItem(){
+  editingItem=null;
+  document.getElementById('addItemTitle').textContent='➕ إضافة صنف جديد';
+  document.getElementById('addItemBtn').textContent='✓ إضافة الصنف';
+  document.getElementById('ai-ref').value='';
+  document.getElementById('ai-name-ar').value='';
+  document.getElementById('ai-name-en').value='';
+  document.getElementById('ai-qty').value='';
+  document.getElementById('ai-ref').readOnly=false;
+  // Pre-select current category
+  if(curCat!=='all') document.getElementById('ai-cat').value=curCat;
+  autoRef();
+  document.getElementById('addItemModal').classList.add('open');
+}
+
+function openEditItem(ref){
+  const it=S.items.find(x=>x.r===ref);if(!it)return;
+  editingItem=ref;
+  document.getElementById('addItemTitle').textContent='✏️ تعديل: '+it.n;
+  document.getElementById('addItemBtn').textContent='✓ حفظ التعديل';
+  document.getElementById('ai-ref').value=it.r;
+  document.getElementById('ai-ref').readOnly=true;
+  document.getElementById('ai-cat').value=it.c;
+  document.getElementById('ai-name-ar').value=it.n;
+  document.getElementById('ai-name-en').value=it.e||'';
+  document.getElementById('ai-uom').value=it.u;
+  document.getElementById('ai-qty').value=S.qty[it.r]||'';
+  document.getElementById('addItemModal').classList.add('open');
+}
+
+function autoRef(){
+  if(editingItem) return;
+  const cat=document.getElementById('ai-cat').value;
+  const catData=S.cats[cat];
+  if(!cat||!catData) return;
+  // Count existing items in this category
+  const existing=S.items.filter(i=>i.c===cat);
+  const seq=(catData.seq||'00');
+  const num=String(existing.length+1).padStart(3,'0');
+  const suggested=`${cat}${seq}${num}`;
+  // Only auto-fill if empty or previously auto-filled
+  const ref=document.getElementById('ai-ref');
+  if(!ref.value||ref.dataset.auto==='1'){
+    ref.value=suggested;
+    ref.dataset.auto='1';
+  }
+}
+
+function saveItem(){
+  const ref=document.getElementById('ai-ref').value.trim().toUpperCase();
+  const cat=document.getElementById('ai-cat').value;
+  const nameAr=document.getElementById('ai-name-ar').value.trim();
+  const nameEn=document.getElementById('ai-name-en').value.trim();
+  const uom=document.getElementById('ai-uom').value;
+  const qty=document.getElementById('ai-qty').value;
+
+  // Validate
+  const refEl=document.getElementById('ai-ref');
+  const nameEl=document.getElementById('ai-name-ar');
+  refEl.classList.remove('err');nameEl.classList.remove('err');
+  if(!ref){refEl.classList.add('err');toast('⚠️ أدخل رقم المرجع','wrn');return;}
+  if(!nameAr){nameEl.classList.add('err');toast('⚠️ أدخل اسم الصنف','wrn');return;}
+  if(!editingItem&&S.items.find(i=>i.r===ref)){refEl.classList.add('err');toast('⚠️ رقم المرجع موجود مسبقاً','wrn');return;}
+
+  if(editingItem){
+    const idx=S.items.findIndex(i=>i.r===editingItem);
+    if(idx>=0){
+      S.items[idx]={...S.items[idx],n:nameAr,e:nameEn,c:cat,u:uom,custom:true};
+    }
+    toast('✅ تم تعديل الصنف: '+nameAr,'suc');
+  } else {
+    S.items.push({r:ref,n:nameAr,e:nameEn,c:cat,u:uom,custom:true});
+    if(qty) S.qty[ref]=parseFloat(qty)||0;
+    toast('✅ تم إضافة الصنف: '+nameAr,'suc');
+  }
+
+  save();
+  renderSidebar();
+  renderTbl();
+  updateStats();
+  closeM('addItemModal');
+}
+
+function deleteItem(ref){
+  const it=S.items.find(i=>i.r===ref);
+  if(!it) return;
+  if(!confirm(`حذف الصنف "${it.n}" نهائياً؟\n\nملاحظة: الأصناف الأصلية يمكن إعادتها فقط بإعادة تهيئة البيانات.`)) return;
+  S.items=S.items.filter(i=>i.r!==ref);
+  delete S.qty[ref];
+  if(S.notes) delete S.notes[ref];
+  save();renderSidebar();renderTbl();updateStats();
+  toast('🗑️ تم حذف الصنف','wrn');
+}
+
+// ══════════════════════════════════════════════
+//  ADD / EDIT CATEGORY
+// ══════════════════════════════════════════════
+function openAddCat(){
+  editingCat=null;
+  document.getElementById('addCatTitle').textContent='🗂️ إضافة قسم جديد';
+  document.getElementById('addCatBtn').textContent='✓ إضافة القسم';
+  document.getElementById('ac-key').value='';
+  document.getElementById('ac-key').readOnly=false;
+  document.getElementById('ac-num').value='';
+  document.getElementById('ac-name').value='';
+  document.getElementById('ac-ico').value='';
+  document.getElementById('ac-color').value='#f0c040';
+  selColor='#f0c040';selIcoVal='📦';
+  buildColorGrid();
+  document.getElementById('addCatModal').classList.add('open');
+}
+
+function openEditCat(key){
+  const v=S.cats[key];if(!v)return;
+  editingCat=key;
+  document.getElementById('addCatTitle').textContent='✏️ تعديل القسم: '+v.l;
+  document.getElementById('addCatBtn').textContent='✓ حفظ التعديل';
+  document.getElementById('ac-key').value=key;
+  document.getElementById('ac-key').readOnly=true;
+  document.getElementById('ac-num').value=v.seq||'';
+  document.getElementById('ac-name').value=v.l;
+  document.getElementById('ac-ico').value=v.i||'';
+  document.getElementById('ac-color').value=v.c||'#f0c040';
+  selColor=v.c||'#f0c040';selIcoVal=v.i||'📦';
+  buildColorGrid();
+  document.getElementById('addCatModal').classList.add('open');
+}
+
+function saveCat(){
+  const key=document.getElementById('ac-key').value.trim().toUpperCase();
+  const seq=document.getElementById('ac-num').value.trim();
+  const name=document.getElementById('ac-name').value.trim();
+  const ico=document.getElementById('ac-ico').value.trim()||selIcoVal||'📦';
+  const color=document.getElementById('ac-color').value||selColor;
+
+  const keyEl=document.getElementById('ac-key');
+  const nameEl=document.getElementById('ac-name');
+  keyEl.classList.remove('err');nameEl.classList.remove('err');
+
+  if(!key||key.length<2){keyEl.classList.add('err');toast('⚠️ أدخل رمز القسم (2-8 أحرف)','wrn');return;}
+  if(!name){nameEl.classList.add('err');toast('⚠️ أدخل اسم القسم','wrn');return;}
+  if(!editingCat&&S.cats[key]){keyEl.classList.add('err');toast('⚠️ رمز القسم موجود مسبقاً','wrn');return;}
+
+  if(editingCat){
+    S.cats[editingCat]={...S.cats[editingCat],l:name,i:ico,c:color,seq:seq};
+    toast('✅ تم تعديل القسم: '+name,'suc');
+  } else {
+    S.cats[key]={l:name,i:ico,c:color,seq:seq||'99'};
+    toast('✅ تم إضافة القسم: '+name,'suc');
+  }
+
+  save();renderSidebar();populateCatSelects();closeM('addCatModal');
+}
+
+// ══════════════════════════════════════════════
+//  MANAGE ITEMS MODAL
+// ══════════════════════════════════════════════
+function openManageItems(){
+  renderManage();
+  document.getElementById('manageModal').classList.add('open');
+}
+
+function renderManage(){
+  const srch=(document.getElementById('mgSrch').value||'').toLowerCase();
+  const cat=document.getElementById('mgCat').value;
+  const list=S.items.filter(it=>{
+    if(cat&&it.c!==cat) return false;
+    if(srch&&!it.n.toLowerCase().includes(srch)&&!it.r.toLowerCase().includes(srch)) return false;
+    return true;
+  });
+  const cont=document.getElementById('manageList');
+  if(!list.length){cont.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted)">لا توجد أصناف</div>';return;}
+  cont.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+    <thead><tr>
+      <th style="background:rgba(255,255,255,.04);padding:8px 10px;text-align:right;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">المرجع</th>
+      <th style="background:rgba(255,255,255,.04);padding:8px 10px;text-align:right;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">الاسم</th>
+      <th style="background:rgba(255,255,255,.04);padding:8px 10px;text-align:right;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">القسم</th>
+      <th style="background:rgba(255,255,255,.04);padding:8px 10px;text-align:right;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">الوحدة</th>
+      <th style="background:rgba(255,255,255,.04);padding:8px 10px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">إجراء</th>
+    </tr></thead>
+    <tbody>${list.map(it=>{
+      const cat=S.cats[it.c]||{l:'—',c:'#888'};
+      return `<tr style="border-bottom:1px solid rgba(34,44,61,.7)">
+        <td style="padding:7px 10px;font-family:var(--mono);font-size:10.5px;color:var(--muted)">${it.r}</td>
+        <td style="padding:7px 10px">${it.custom?'<span style="font-size:10px;color:var(--orange);margin-left:4px">✨</span>':''}${it.n}</td>
+        <td style="padding:7px 10px"><span style="font-size:11px;color:${cat.c}">${cat.l}</span></td>
+        <td style="padding:7px 10px;font-family:var(--mono);color:var(--blue);font-size:11px">${it.u}</td>
+        <td style="padding:7px 10px;text-align:center;display:flex;gap:5px;justify-content:center">
+          <button class="hi-btn" style="flex:none;padding:4px 8px" onclick="closeM('manageModal');openEditItem('${it.r}')">✏</button>
+          <button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteItem('${it.r}');renderManage()">🗑</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+// ══════════════════════════════════════════════
+//  SAVE & PDF EXPORT
+// ══════════════════════════════════════════════
+function saveAndExport(){
+  const ent=S.items.filter(it=>S.qty[it.r]!=null&&S.qty[it.r]!=='').length;
+  if(ent===0){toast('⚠️ لا توجد كميات للحفظ','wrn');return;}
+  const rpt={
+    id:S.sid,date:S.date,sid:S.sid,
+    branch:S.branch||'غير محدد',
+    manager:S.manager,storekeeper:S.storekeeper,supervisor:S.supervisor,
+    qty:{...S.qty},notes:{...(S.notes||{})},
+    savedAt:new Date().toLocaleString('ar-SA'),
+    items:[...S.items],cats:{...S.cats},
+    meta:{total:S.items.length,entered:ent,
+      zero:S.items.filter(it=>S.qty[it.r]!=null&&parseFloat(S.qty[it.r])===0).length,
+      pct:Math.round((ent/S.items.length)*100)}
+  };
+  const idx=S.reports.findIndex(r=>r.id===rpt.id);
+  if(idx>=0)S.reports[idx]=rpt; else S.reports.unshift(rpt);
+  save();
+  unsaved=false;document.getElementById('unsavedDot').classList.remove('on');
+  const btn=document.getElementById('saveBtn');
+  btn.textContent='✅ تم الحفظ';
+  setTimeout(()=>btn.textContent='💾 حفظ وتصدير',2500);
+  renderHist();
+  toast('✅ تم الحفظ — جاري تصدير PDF...','suc');
+  setTimeout(()=>exportPDF(rpt),500);
+}
+
+function exportPDF(rpt){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=doc.internal.pageSize.getWidth();
+  const H=doc.internal.pageSize.getHeight();
+
+  doc.setFillColor(8,11,16);doc.rect(0,0,W,H,'F');
+  doc.setFillColor(240,192,64);doc.rect(0,0,W,20,'F');
+  doc.setTextColor(20,15,0);doc.setFontSize(13);doc.setFont('helvetica','bold');
+  doc.text('INVENTORY REPORT - جرد المخزن',W/2,13,{align:'center'});
+  doc.setFontSize(7);doc.setFont('helvetica','normal');
+  doc.text('Smart Inventory System v3.0',W/2,18,{align:'center'});
+
+  doc.setFillColor(15,19,25);doc.rect(0,20,W,16,'F');
+  doc.setTextColor(180,190,210);doc.setFontSize(8.5);doc.setFont('helvetica','normal');
+  const dStr=new Date(rpt.date+'T00:00:00').toLocaleDateString('en-GB');
+  const col=W/4;
+  [`Branch: ${rpt.branch}`,`Date: ${dStr}`,`Session: ${rpt.sid}`,`Saved: ${rpt.savedAt}`].forEach((t,i)=>doc.text(t,14+i*col,28));
+  doc.setFontSize(7.5);
+  [`Manager: ${rpt.manager||'-'}`,`Storekeeper: ${rpt.storekeeper||'-'}`,`Supervisor: ${rpt.supervisor||'-'}`,`Completion: ${rpt.meta.pct}% (${rpt.meta.entered}/${rpt.meta.total})`].forEach((t,i)=>doc.text(t,14+i*col,34));
+
+  const kpis=[{l:'Total Items',v:rpt.meta.total,rgb:[61,142,240]},{l:'Counted',v:rpt.meta.entered,rgb:[46,232,154]},{l:'Zero Stock',v:rpt.meta.zero,rgb:[240,80,80]},{l:'Completion',v:rpt.meta.pct+'%',rgb:[240,192,64]}];
+  kpis.forEach((k,i)=>{
+    const x=14+i*66,y=38;
+    doc.setFillColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setGState(doc.GState({opacity:.12}));
+    doc.roundedRect(x,y,60,14,2,2,'F');doc.setGState(doc.GState({opacity:1}));
+    doc.setDrawColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setLineWidth(.4);doc.roundedRect(x,y,60,14,2,2,'S');
+    doc.setTextColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setFontSize(14);doc.setFont('helvetica','bold');
+    doc.text(String(k.v),x+30,y+9,{align:'center'});
+    doc.setFontSize(6.5);doc.setTextColor(160,170,190);doc.setFont('helvetica','normal');
+    doc.text(k.l,x+30,y+13,{align:'center'});
+  });
+
+  const cats=rpt.cats||S.cats;
+  const catMap={};Object.keys(cats).forEach(k=>catMap[k]=cats[k].l||k);
+  const items=rpt.items||S.items;
+  const rows=items
+    .filter(it=>rpt.qty[it.r]!=null&&rpt.qty[it.r]!=='')
+    .map((it,i)=>[
+      String(i+1),it.r,it.n+(it.e?' / '+it.e:''),
+      catMap[it.c]||it.c,it.u,
+      String(rpt.qty[it.r]),
+      it.custom?'✨ Custom':'',
+      (rpt.notes||{})[it.r]||''
+    ]);
+
+  if(rows.length){
+    doc.autoTable({
+      head:[['#','Reference','اسم الصنف / Item','Category','UOM','Qty','Type','Notes']],
+      body:rows,startY:56,theme:'grid',
+      styles:{font:'helvetica',fontSize:7.5,cellPadding:2.5,textColor:[215,220,235],lineColor:[30,42,58],lineWidth:.25,fillColor:[18,24,34]},
+      headStyles:{fillColor:[240,192,64],textColor:[18,14,0],fontStyle:'bold',fontSize:8},
+      alternateRowStyles:{fillColor:[14,19,28]},
+      columnStyles:{
+        0:{cellWidth:9,halign:'center',textColor:[80,95,120]},
+        1:{cellWidth:26,textColor:[100,120,155],fontSize:7},
+        2:{cellWidth:60},
+        3:{cellWidth:28,textColor:[150,160,185]},
+        4:{cellWidth:14,halign:'center',textColor:[61,142,240]},
+        5:{cellWidth:18,halign:'center',fontStyle:'bold'},
+        6:{cellWidth:18,halign:'center',textColor:[240,120,48],fontSize:7},
+        7:{cellWidth:55,textColor:[140,155,180],fontSize:7},
+      },
+      didParseCell:(d)=>{if(d.section==='body'&&d.column.index===5){d.cell.styles.textColor=parseFloat(d.cell.raw)===0?[240,80,80]:[46,232,154];}},
+      margin:{left:14,right:14},
+    });
+  }
+
+  for(let p=1;p<=doc.internal.getNumberOfPages();p++){
+    doc.setPage(p);
+    doc.setFillColor(10,14,20);doc.rect(0,H-9,W,9,'F');
+    doc.setDrawColor(34,44,61);doc.setLineWidth(.3);doc.line(0,H-9,W,H-9);
+    doc.setFontSize(7);doc.setTextColor(80,95,118);doc.setFont('helvetica','normal');
+    doc.text(`Smart Inventory v3.0 | ${rpt.branch} | ${dStr} | ${rpt.sid}`,14,H-3.5);
+    doc.text(`Page ${p} of ${doc.internal.getNumberOfPages()}`,W-14,H-3.5,{align:'right'});
+  }
+  doc.save(`Inventory_${(rpt.branch||'Branch').replace(/\s/g,'_')}_${rpt.date}_${rpt.sid}.pdf`);
+  toast('📄 تم تصدير PDF','inf');
+}
+
+// ══════════════════════════════════════════════
+//  HISTORY
+// ══════════════════════════════════════════════
+function renderHist(){
+  const el=document.getElementById('histList');
+  if(!S.reports||!S.reports.length){el.innerHTML='<div class="no-hist">لا توجد تقارير بعد</div>';return;}
+  el.innerHTML=S.reports.map(r=>`
+    <div class="hist-item${r.id===S.sid?' cur':''}">
+      <div class="hi-date">📅 ${r.date}</div>
+      <div class="hi-meta">🏢 ${r.branch} · ✅ ${r.meta.entered} · ${r.meta.pct}%</div>
+      <div class="hi-acts">
+        <button class="hi-btn" onclick="viewRpt('${r.id}')">👁</button>
+        <button class="hi-btn" onclick="dlRpt('${r.id}')">📄</button>
+        <button class="hi-btn del" onclick="delRpt('${r.id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function viewRpt(id){
+  const r=S.reports.find(x=>x.id===id);if(!r)return;
+  const items=r.items||S.items;
+  const ent=items.filter(it=>r.qty[it.r]!=null&&r.qty[it.r]!=='');
+  const zer=ent.filter(it=>parseFloat(r.qty[it.r])===0);
+  const d=new Date(r.date+'T00:00:00');
+  const ar=d.toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  let html=`<div class="rmod-hdr"><div style="font-size:15px;font-weight:800;color:var(--gold)">${r.branch}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:2px">${ar}</div>
+    <div class="rmod-meta">
+      <div class="rm">الجلسة: <strong>${r.sid}</strong></div><div class="rm">حُفظ: <strong>${r.savedAt}</strong></div>
+      <div class="rm">المدير: <strong>${r.manager||'-'}</strong></div><div class="rm">أمين المخزن: <strong>${r.storekeeper||'-'}</strong></div>
+    </div></div>
+    <div class="rsums">
+      <div class="rsum sg"><div class="rsum-v">${ent.length}</div><div class="rsum-l">تم جرده</div></div>
+      <div class="rsum sr"><div class="rsum-v">${zer.length}</div><div class="rsum-l">صفري</div></div>
+      <div class="rsum so"><div class="rsum-v">${r.meta.pct}%</div><div class="rsum-l">الإنجاز</div></div>
+    </div>
+    <div style="max-height:320px;overflow-y:auto">
+    <table class="rtbl"><thead><tr><th>#</th><th>المرجع</th><th>الصنف</th><th>القسم</th><th>الكمية</th><th>الوحدة</th></tr></thead><tbody>`;
+  ent.forEach((it,i)=>{
+    const q=r.qty[it.r];
+    const cats=r.cats||S.cats;
+    html+=`<tr>
+      <td style="color:var(--muted2);font-family:var(--mono);font-size:10.5px">${i+1}</td>
+      <td style="font-family:var(--mono);font-size:10.5px;color:var(--muted)">${it.r}</td>
+      <td>${it.custom?'<span style="font-size:10px;color:var(--orange)">✨</span> ':''}<span style="font-size:12.5px">${it.n}</span></td>
+      <td style="font-size:11px;color:${(cats[it.c]||{}).c||'#888'}">${(cats[it.c]||{}).l||it.c}</td>
+      <td class="${parseFloat(q)===0?'rtd-z':'rtd-q'}">${q}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--blue)">${it.u}</td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+  document.getElementById('rptContent').innerHTML=html;
+  document.getElementById('rptPdfBtn').onclick=()=>exportPDF(r);
+  document.getElementById('rptCsvBtn').onclick=()=>exportCsvRpt(r);
+  document.getElementById('rptModal').classList.add('open');
+}
+
+function dlRpt(id){const r=S.reports.find(x=>x.id===id);if(r)exportPDF(r);}
+function delRpt(id){
+  if(!confirm('حذف هذا التقرير نهائياً؟'))return;
+  S.reports=S.reports.filter(r=>r.id!==id);save();renderHist();toast('🗑️ تم حذف التقرير','wrn');
+}
+
+function exportCsvRpt(r){
+  const items=r.items||S.items;
+  let csv='\uFEFF';
+  csv+='رقم المرجع,اسم الصنف,القسم,وحدة القياس,الكمية,ملاحظات,مخصص\n';
+  items.forEach(it=>{
+    if(r.qty[it.r]==null)return;
+    const cats=r.cats||S.cats;
+    const cat=(cats[it.c]||{}).l||it.c;
+    const nt=((r.notes||{})[it.r]||'').replace(/,/g,'؛');
+    csv+=`${it.r},"${it.n}","${cat}",${it.u},"${r.qty[it.r]}","${nt}","${it.custom?'نعم':'لا'}"\n`;
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`Inventory_${r.branch}_${r.date}.csv`;a.click();
+}
+function exportCsv(){if(!S.reports||!S.reports.length){toast('لا يوجد تقرير محفوظ','wrn');return;}exportCsvRpt(S.reports[0]);}
+
+// ══════════════════════════════════════════════
+//  NEW DAY / SETUP
+// ══════════════════════════════════════════════
+function openNewDay(){document.getElementById('newDayModal').classList.add('open');}
+function startDay(keep){
+  S.date=today();S.sid=genSid();
+  if(!keep){S.qty={};S.notes={};}
+  save();updateBanner();renderTbl();updateStats();
+  unsaved=false;document.getElementById('unsavedDot').classList.remove('on');
+  closeM('newDayModal');toast('📅 تم فتح جلسة جديدة: '+S.sid,'suc');
+}
+function openSetup(){
+  document.getElementById('i-branch').value=S.branch;
+  document.getElementById('i-manager').value=S.manager;
+  document.getElementById('i-store').value=S.storekeeper;
+  document.getElementById('i-super').value=S.supervisor;
+  document.getElementById('setupModal').classList.add('open');
+}
+function saveSetup(){
+  S.branch=document.getElementById('i-branch').value.trim();
+  S.manager=document.getElementById('i-manager').value.trim();
+  S.storekeeper=document.getElementById('i-store').value.trim();
+  S.supervisor=document.getElementById('i-super').value.trim();
+  save();updateHeader();closeM('setupModal');toast('✅ تم حفظ الإعداد','suc');
+}
+function clearQty(){
+  if(!confirm('مسح كل الكميات؟'))return;
+  S.qty={};S.notes={};save();renderTbl();updateStats();markUnsaved();toast('🗑️ تم المسح','wrn');
+}
+
+// ══════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════
+function closeM(id){document.getElementById(id).classList.remove('open');}
+let _tt;
+function toast(msg,type='inf'){
+  const el=document.getElementById('toast');
+  el.className=`toast ${type} on`;el.textContent=msg;
+  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),3500);
+}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.returnValue='';}});
+</script>
+</body>
+</html>

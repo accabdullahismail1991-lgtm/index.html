@@ -7,6 +7,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
 :root{
   --bg:#080b10;--surface:#0f1319;--card:#151b25;--card2:#1a2130;
@@ -334,6 +337,10 @@ td{padding:9px 13px;vertical-align:middle;}
 .rtd-q{font-family:var(--mono);font-weight:600;color:var(--green);}
 .rtd-z{font-family:var(--mono);font-weight:600;color:var(--red);}
 
+/* AUTH SCREEN */
+.auth-wrap{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+.auth-card{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:32px;width:380px;max-width:100%;}
+
 /* TOAST */
 .toast{
   position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);
@@ -357,6 +364,31 @@ td{padding:9px 13px;vertical-align:middle;}
 </head>
 <body>
 
+<!-- AUTH SCREEN -->
+<div class="auth-wrap" id="authScreen">
+  <div class="auth-card">
+    <div class="logo" style="justify-content:center;margin-bottom:22px">
+      <div class="logo-icon">🗃️</div>
+      <div><div class="logo-name">نظام الجرد الذكي</div><div class="logo-sub">SMART INVENTORY v3.0</div></div>
+    </div>
+    <div id="authForm">
+      <div class="mod-field"><label class="mod-lbl">البريد الإلكتروني</label><input class="mod-in" id="auth-email" type="email" placeholder="name@example.com"></div>
+      <div class="mod-field"><label class="mod-lbl">كلمة المرور</label><input class="mod-in" id="auth-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div id="authError" style="color:var(--red);font-size:12px;margin-bottom:12px;display:none;line-height:1.6"></div>
+      <button class="hbtn gold" style="width:100%;justify-content:center;padding:11px;margin-bottom:8px" onclick="doLogin()">دخول</button>
+      <button class="hbtn" style="width:100%;justify-content:center;padding:11px" onclick="doSignup()">إنشاء حساب جديد</button>
+      <p style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.8;text-align:center">لو أول مرة، اعمل حساب جديد ولازم مسؤول من الإدارة يفعّله ويحدد فرعك.</p>
+    </div>
+    <div id="authPending" style="display:none;text-align:center">
+      <div style="font-size:32px;margin-bottom:10px">⏳</div>
+      <div style="font-weight:700;margin-bottom:6px">بانتظار تفعيل الحساب</div>
+      <p style="color:var(--muted);font-size:12.5px;line-height:1.8;margin-bottom:16px">تم إنشاء حسابك بنجاح، بس محتاج مسؤول من الإدارة يفعّله ويحدد الفرع بتاعك.</p>
+      <button class="hbtn" style="width:100%;justify-content:center;padding:10px" onclick="doLogout()">خروج</button>
+    </div>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none">
 <header>
   <div class="logo">
     <div class="logo-icon">🗃️</div>
@@ -373,8 +405,10 @@ td{padding:9px 13px;vertical-align:middle;}
     <select id="branchSwitch" style="max-width:150px;font-size:12.5px;padding:8px 10px" onchange="switchBranch(this.value)"></select>
     <button class="hbtn org" onclick="openAddItem()">➕ إضافة صنف</button>
     <button class="hbtn" onclick="openSetup()">⚙️ إعداد</button>
+    <button class="hbtn" id="adminUsersBtn" style="display:none" onclick="openUsersMgr()">👤 المستخدمين</button>
     <button class="hbtn grn" onclick="saveAndExport()" id="saveBtn">💾 حفظ وتصدير</button>
     <button class="hbtn gold" onclick="openNewDay()">📅 يوم جديد</button>
+    <button class="hbtn" onclick="doLogout()" title="خروج">🚪</button>
   </div>
 </header>
 
@@ -719,6 +753,18 @@ td{padding:9px 13px;vertical-align:middle;}
 </div>
 </div>
 
+<!-- USERS & PERMISSIONS MODAL (admin only) -->
+<div class="overlay" id="usersModal">
+<div class="modal" style="width:580px">
+  <div class="mod-title">👤 إدارة المستخدمين والصلاحيات</div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">حدد صلاحية كل مستخدم (إدارة/مالية تشوف كل الفروع، أو موظف فرع مقفول على فرع واحد) والفرع بتاعه.</p>
+  <div id="usersList" style="max-height:420px;overflow-y:auto"></div>
+  <div class="mod-foot"><button class="hbtn" onclick="closeM('usersModal')">إغلاق</button></div>
+</div>
+</div>
+
+</div><!-- /#appRoot -->
+
 <script>
 // ══════════════════════════════════════════════
 //  DEFAULT CATEGORIES
@@ -871,69 +917,212 @@ function p2(n){return String(n).padStart(2,'0');}
 function genSid(){return 'INV-'+Date.now().toString(36).toUpperCase();}
 function fmt(n){return (Math.round((n||0)*100)/100).toLocaleString('en-US');}
 
-function load(){
+// ══════════════════════════════════════════════
+//  FIREBASE: AUTH + REAL-TIME DATA SYNC
+//  (replaces the old localStorage-only load()/save())
+// ══════════════════════════════════════════════
+let auth, db;
+let curUser=null, curRole=null, curUserBranch=null;
+let unsubCatalog=null, unsubBranch=null, unsubUsers=null, unsubBranchesList=null;
+let catalogReady=false, branchReady=false, bootedUI=false;
+let lastSentCatalogJSON=null, lastSentBranchJSON=null;
+let _saveBranchTimer=null, _saveCatalogTimer=null;
+
+function initFirebase(){
+  const firebaseConfig={
+    apiKey:"AIzaSyB4YX8_OjjSmewv1VRRHByhTIIWGpmuv-c",
+    authDomain:"areekat-inventory.firebaseapp.com",
+    projectId:"areekat-inventory",
+    storageBucket:"areekat-inventory.firebasestorage.app",
+    messagingSenderId:"490013544402",
+    appId:"1:490013544402:web:aa5744bdadd0eaccb0f3fb",
+    measurementId:"G-9QJHJWNZ5C"
+  };
+  firebase.initializeApp(firebaseConfig);
+  auth=firebase.auth();
+  db=firebase.firestore();
+  auth.onAuthStateChanged(onAuthChange);
+}
+
+function showAuthScreen(mode){
+  document.getElementById('authScreen').style.display='flex';
+  document.getElementById('appRoot').style.display='none';
+  document.getElementById('authForm').style.display=mode==='pending'?'none':'block';
+  document.getElementById('authPending').style.display=mode==='pending'?'block':'none';
+}
+function hideAuthScreen(){
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('appRoot').style.display='block';
+}
+function authErr(msg){
+  const el=document.getElementById('authError');
+  el.textContent=msg;el.style.display=msg?'block':'none';
+}
+function arErr(e){
+  const m={
+    'auth/invalid-email':'إيميل غير صحيح',
+    'auth/user-not-found':'الحساب غير موجود',
+    'auth/wrong-password':'كلمة مرور خاطئة',
+    'auth/invalid-credential':'بيانات الدخول غير صحيحة',
+    'auth/email-already-in-use':'الإيميل مستخدم بالفعل',
+    'auth/weak-password':'كلمة المرور ضعيفة (6 أحرف على الأقل)',
+  };
+  return m[e.code]||('خطأ: '+e.message);
+}
+function doSignup(){
+  const email=document.getElementById('auth-email').value.trim();
+  const pass=document.getElementById('auth-pass').value;
+  authErr('');
+  if(!email||!pass){authErr('أدخل الإيميل وكلمة المرور');return;}
+  if(pass.length<6){authErr('كلمة المرور 6 أحرف على الأقل');return;}
+  auth.createUserWithEmailAndPassword(email,pass).catch(e=>authErr(arErr(e)));
+}
+function doLogin(){
+  const email=document.getElementById('auth-email').value.trim();
+  const pass=document.getElementById('auth-pass').value;
+  authErr('');
+  if(!email||!pass){authErr('أدخل الإيميل وكلمة المرور');return;}
+  auth.signInWithEmailAndPassword(email,pass).catch(e=>authErr(arErr(e)));
+}
+function doLogout(){
+  cleanupSubscriptions();
+  bootedUI=false;catalogReady=false;branchReady=false;
+  auth.signOut();
+}
+function cleanupSubscriptions(){
+  if(unsubCatalog)unsubCatalog();
+  if(unsubBranch)unsubBranch();
+  if(unsubUsers)unsubUsers();
+  if(unsubBranchesList)unsubBranchesList();
+  unsubCatalog=unsubBranch=unsubUsers=unsubBranchesList=null;
+}
+
+async function onAuthChange(user){
+  cleanupSubscriptions();
+  bootedUI=false;catalogReady=false;branchReady=false;
+  if(!user){curUser=null;curRole=null;showAuthScreen('login');return;}
+  curUser=user;
   try{
-    const x=JSON.parse(localStorage.getItem('inv4')||'null');
-    if(x){
-      S=x;
-      // Merge new default items that might not exist in saved state
-      DEFAULT_ITEMS.forEach(di=>{
-        if(!S.items.find(si=>si.r===di.r)) S.items.push(di);
-      });
-      // Merge default cats
-      Object.keys(DEFAULT_CATS).forEach(k=>{
-        if(!S.cats[k]) S.cats[k]={...DEFAULT_CATS[k]};
-      });
+    const uref=db.collection('users').doc(user.uid);
+    const usnap=await uref.get();
+    if(!usnap.exists){
+      await uref.set({email:user.email,role:'pending',branchId:null,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
     }
-  }catch(e){}
-  migrateBranches();
-}
-
-// Multi-branch support was added after the original single-branch design;
-// this folds any pre-existing (or freshly booted) flat state into a branch record.
-function migrateBranches(){
-  if(!S.branches) S.branches={};
-  if(!S.branchData) S.branchData={};
-  if(!S.menu) S.menu=[];
-  if(!S.curBranch || !S.branches[S.curBranch]){
-    const existingKeys=Object.keys(S.branches);
-    if(existingKeys.length){
-      S.curBranch=existingKeys[0];
-    }else{
-      const key='B'+Date.now().toString(36).toUpperCase();
-      S.branches[key]={name:S.branch||'الفرع الرئيسي',manager:S.manager||'',storekeeper:S.storekeeper||'',supervisor:S.supervisor||''};
-      S.branchData[key]={date:S.date,sid:S.sid,qty:S.qty,notes:S.notes,reports:S.reports||[],cycles:[]};
-      S.curBranch=key;
-    }
+    uref.onSnapshot(snap=>{
+      const d=snap.data();if(!d)return;
+      curRole=d.role;curUserBranch=d.branchId;
+      if(curRole==='pending'||!curRole){showAuthScreen('pending');return;}
+      startDataSync();
+    },e=>{showAuthScreen('login');authErr('تعذر الاتصال بقاعدة البيانات: '+e.message);});
+  }catch(e){
+    showAuthScreen('login');
+    authErr('تعذر الاتصال بقاعدة البيانات — تأكد إن Firestore Security Rules متظبطة: '+e.message);
   }
-  const bd=S.branchData[S.curBranch]||(S.branchData[S.curBranch]={date:today(),sid:genSid(),qty:{},notes:{},reports:[],cycles:[]});
-  if(!bd.cycles) bd.cycles=[];
-  S.date=bd.date;S.sid=bd.sid;S.qty=bd.qty||{};S.notes=bd.notes||{};S.reports=bd.reports||[];
-  const b=S.branches[S.curBranch];
-  S.branch=b.name;S.manager=b.manager||'';S.storekeeper=b.storekeeper||'';S.supervisor=b.supervisor||'';
 }
 
+function startDataSync(){
+  hideAuthScreen();
+  document.getElementById('adminUsersBtn').style.display=curRole==='admin'?'':'none';
+  document.getElementById('branchSwitch').disabled=curRole!=='admin';
+
+  if(!unsubCatalog){
+    unsubCatalog=db.collection('catalog').doc('main').onSnapshot(snap=>{
+      const d=snap.data();
+      const hasData=d&&d.items&&d.items.length;
+      S.cats=hasData&&d.cats&&Object.keys(d.cats).length?d.cats:{...DEFAULT_CATS};
+      S.items=hasData?d.items:[...DEFAULT_ITEMS];
+      S.menu=(d&&d.menu)||[];
+      catalogReady=true;
+      if(!hasData&&curRole==='admin') saveCatalog();
+      tryBootUI();
+      if(bootedUI){renderSidebar();renderTbl();updateStats();populateCatSelects();if(document.getElementById('menuModal').classList.contains('open'))renderMenuList();if(curView==='cycle')renderCycleBody();}
+    },e=>toast('⚠️ خطأ في تحميل الكتالوج: '+e.message,'err'));
+  }
+
+  if(curRole==='admin'){
+    if(!unsubBranchesList){
+      unsubBranchesList=db.collection('branches').onSnapshot(snap=>{
+        S.branches={};snap.forEach(doc=>{S.branches[doc.id]={...doc.data()};});
+        if(!S.curBranch||!S.branches[S.curBranch]){
+          const keys=Object.keys(S.branches);
+          if(keys.length) switchToBranchDoc(keys[0]);
+          else {branchReady=true;tryBootUI();}
+        }else{
+          renderBranchSwitch();
+        }
+      },e=>toast('⚠️ خطأ في تحميل الفروع: '+e.message,'err'));
+    }
+  }else if(curRole==='branch'){
+    if(curUserBranch) switchToBranchDoc(curUserBranch);
+    else {branchReady=true;tryBootUI();}
+  }
+}
+
+function tryBootUI(){
+  if(bootedUI||!catalogReady) return;
+  if(curRole==='admin'&&Object.keys(S.branches||{}).length===0){/* no branches yet, still boot so admin can create one */}
+  else if(!branchReady) return;
+  bootedUI=true;
+  buildColorGrid();renderSidebar();updateHeader();updateBanner();renderTbl();updateStats();renderHist();populateCatSelects();renderBranchSwitch();
+}
+
+function switchToBranchDoc(key){
+  if(unsubBranch) unsubBranch();
+  S.curBranch=key;
+  unsubBranch=db.collection('branches').doc(key).onSnapshot(snap=>{
+    const d=snap.data();if(!d)return;
+    const incoming=JSON.stringify({name:d.name,manager:d.manager,storekeeper:d.storekeeper,supervisor:d.supervisor,date:d.date,sid:d.sid,qty:d.qty||{},notes:d.notes||{},reports:d.reports||[],cycles:d.cycles||[]});
+    branchReady=true;
+    if(incoming===lastSentBranchJSON){tryBootUI();return;}
+    S.date=d.date||today();S.sid=d.sid||genSid();
+    S.qty=d.qty||{};S.notes=d.notes||{};S.reports=d.reports||[];
+    S.branch=d.name||'';S.manager=d.manager||'';S.storekeeper=d.storekeeper||'';S.supervisor=d.supervisor||'';
+    if(!S.branches) S.branches={};
+    S.branches[key]={name:S.branch,manager:S.manager,storekeeper:S.storekeeper,supervisor:S.supervisor};
+    if(!S.branchData) S.branchData={};
+    S.branchData[key]={cycles:d.cycles||[]};
+    tryBootUI();
+    if(bootedUI){
+      updateHeader();updateBanner();renderTbl();updateStats();renderHist();renderBranchSwitch();
+      if(curView==='cycle'){if(!curCycleId)selectLatestCycle();renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();}
+    }
+  },e=>toast('⚠️ خطأ في تحميل الفرع: '+e.message,'err'));
+}
+
+function scheduleBranchSave(){
+  if(!S.curBranch) return;
+  clearTimeout(_saveBranchTimer);
+  _saveBranchTimer=setTimeout(()=>{
+    if(!S.curBranch||!db) return;
+    const payload={
+      name:S.branch,manager:S.manager,storekeeper:S.storekeeper,supervisor:S.supervisor,
+      date:S.date,sid:S.sid,qty:S.qty,notes:S.notes,reports:S.reports,
+      cycles:(S.branchData[S.curBranch]&&S.branchData[S.curBranch].cycles)||[]
+    };
+    lastSentBranchJSON=JSON.stringify(payload);
+    db.collection('branches').doc(S.curBranch).set(payload,{merge:true})
+      .catch(e=>toast('⚠️ خطأ في الحفظ: '+e.message,'err'));
+  },500);
+}
+function saveCatalog(){
+  clearTimeout(_saveCatalogTimer);
+  _saveCatalogTimer=setTimeout(()=>{
+    if(!db) return;
+    const payload={cats:S.cats,items:S.items,menu:S.menu};
+    lastSentCatalogJSON=JSON.stringify(payload);
+    db.collection('catalog').doc('main').set(payload,{merge:true})
+      .catch(e=>toast('⚠️ خطأ في حفظ الكتالوج: '+e.message,'err'));
+  },400);
+}
 function save(){
-  if(S.curBranch){
-    const prevCycles=(S.branchData[S.curBranch]&&S.branchData[S.curBranch].cycles)||[];
-    S.branchData[S.curBranch]={date:S.date,sid:S.sid,qty:S.qty,notes:S.notes,reports:S.reports,cycles:prevCycles};
-  }
-  localStorage.setItem('inv4',JSON.stringify(S));
+  scheduleBranchSave();
+  saveCatalog();
 }
 
 // ══════════════════════════════════════════════
 //  BOOT
 // ══════════════════════════════════════════════
-load();
-buildColorGrid();
-renderSidebar();
-updateHeader();
-updateBanner();
-renderTbl();
-updateStats();
-renderHist();
-populateCatSelects();
-renderBranchSwitch();
+initFirebase();
 
 function updateHeader(){document.getElementById('branchLbl').textContent=S.branch||'—';}
 function updateBanner(){
@@ -1525,59 +1714,95 @@ function renderBranchSwitch(){
 }
 
 function switchBranch(key){
+  if(curRole!=='admin'){toast('⚠️ التبديل بين الفروع متاح للإدارة/المالية بس','wrn');return;}
   if(!S.branches[key]||key===S.curBranch) return;
-  save(); // persist current branch's live data before switching away
-  S.curBranch=key;
-  const bd=S.branchData[key]||(S.branchData[key]={date:today(),sid:genSid(),qty:{},notes:{},reports:[],cycles:[]});
-  if(!bd.cycles) bd.cycles=[];
-  S.date=bd.date;S.sid=bd.sid;S.qty=bd.qty;S.notes=bd.notes;S.reports=bd.reports;
-  const b=S.branches[key];
-  S.branch=b.name;S.manager=b.manager||'';S.storekeeper=b.storekeeper||'';S.supervisor=b.supervisor||'';
-  save();
   curCat='all';curCycleId=null;
-  updateHeader();updateBanner();renderTbl();updateStats();renderHist();renderBranchSwitch();
+  const name=S.branches[key].name;
+  switchToBranchDoc(key);
   unsaved=false;document.getElementById('unsavedDot').classList.remove('on');
-  if(curView==='cycle'){selectLatestCycle();renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();}
-  toast('🏢 تم التبديل إلى: '+b.name,'inf');
+  toast('🏢 تم التبديل إلى: '+name,'inf');
 }
 
 function openBranchMgr(){renderBranchMgrList();document.getElementById('branchMgrModal').classList.add('open');}
 function renderBranchMgrList(){
   const cont=document.getElementById('branchMgrList');
+  const isAdmin=curRole==='admin';
   cont.innerHTML=Object.entries(S.branches).map(([k,b])=>`
     <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid ${k===S.curBranch?'var(--gold)':'var(--border)'};border-radius:9px;margin-bottom:8px;${k===S.curBranch?'background:rgba(240,192,64,.06)':''}">
       <div style="flex:1">
         <div style="font-weight:700;font-size:13px">${b.name}${k===S.curBranch?' <span style="color:var(--gold);font-size:10px">(الحالي)</span>':''}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">مدير: ${b.manager||'-'}</div>
       </div>
-      ${k!==S.curBranch?`<button class="hi-btn" style="flex:none;padding:5px 10px" onclick="switchBranch('${k}');renderBranchMgrList()">تبديل</button>`:''}
+      ${isAdmin&&k!==S.curBranch?`<button class="hi-btn" style="flex:none;padding:5px 10px" onclick="switchBranch('${k}');renderBranchMgrList()">تبديل</button>`:''}
       <button class="hi-btn" style="flex:none;padding:5px 8px" onclick="closeM('branchMgrModal');openSetup()">✏</button>
-      ${Object.keys(S.branches).length>1?`<button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteBranch('${k}')">🗑</button>`:''}
+      ${isAdmin&&Object.keys(S.branches).length>1?`<button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteBranch('${k}')">🗑</button>`:''}
     </div>`).join('');
 }
 function openNewBranchForm(){
+  if(curRole!=='admin'){toast('⚠️ إضافة الفروع متاحة للإدارة/المالية بس','wrn');return;}
   const name=prompt('اسم الفرع الجديد:');
   if(!name||!name.trim())return;
-  const key='B'+Date.now().toString(36).toUpperCase();
-  S.branches[key]={name:name.trim(),manager:'',storekeeper:'',supervisor:''};
-  S.branchData[key]={date:today(),sid:genSid(),qty:{},notes:{},reports:[],cycles:[]};
-  save();renderBranchSwitch();
-  switchBranch(key);
-  renderBranchMgrList();
-  toast('✅ تم إضافة الفرع: '+name.trim(),'suc');
+  const ref=db.collection('branches').doc();
+  ref.set({name:name.trim(),manager:'',storekeeper:'',supervisor:'',date:today(),sid:genSid(),qty:{},notes:{},reports:[],cycles:[]})
+    .then(()=>{toast('✅ تم إضافة الفرع: '+name.trim(),'suc');switchToBranchDoc(ref.id);renderBranchMgrList();})
+    .catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
 }
 function deleteBranch(key){
+  if(curRole!=='admin'){toast('⚠️ حذف الفروع متاح للإدارة/المالية بس','wrn');return;}
   if(Object.keys(S.branches).length<=1){toast('⚠️ لا يمكن حذف آخر فرع','wrn');return;}
   const b=S.branches[key];if(!b)return;
   if(!confirm(`حذف فرع "${b.name}" وكل بياناته (أصناف مجرودة، تقارير، دورات) نهائياً؟`))return;
-  delete S.branches[key];delete S.branchData[key];
-  if(S.curBranch===key){
-    S.curBranch='';
-    migrateBranches();
+  const wasCurrent=S.curBranch===key;
+  db.collection('branches').doc(key).delete().then(()=>{
+    toast('🗑️ تم حذف الفرع','wrn');
+    if(wasCurrent){
+      const nk=Object.keys(S.branches).find(k=>k!==key);
+      if(nk) switchToBranchDoc(nk);
+    }
+    renderBranchMgrList();
+  }).catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
+}
+
+// ══════════════════════════════════════════════
+//  USERS & PERMISSIONS (admin only)
+// ══════════════════════════════════════════════
+let usersCache=[];
+function openUsersMgr(){
+  if(curRole!=='admin')return;
+  if(!unsubUsers){
+    unsubUsers=db.collection('users').onSnapshot(snap=>{
+      usersCache=[];snap.forEach(d=>usersCache.push({uid:d.id,...d.data()}));
+      renderUsersList();
+    },e=>toast('⚠️ خطأ: '+e.message,'err'));
   }
-  save();renderBranchSwitch();renderBranchMgrList();
-  updateHeader();updateBanner();renderTbl();updateStats();renderHist();
-  toast('🗑️ تم حذف الفرع','wrn');
+  renderUsersList();
+  document.getElementById('usersModal').classList.add('open');
+}
+function renderUsersList(){
+  const cont=document.getElementById('usersList');
+  if(!usersCache.length){cont.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">لا يوجد مستخدمين بعد</div>';return;}
+  const branchSel=(u)=>`<option value="">بدون فرع</option>`+Object.entries(S.branches||{}).map(([k,b])=>`<option value="${k}"${u.branchId===k?' selected':''}>${b.name}</option>`).join('');
+  cont.innerHTML=usersCache.map(u=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;margin-bottom:7px;flex-wrap:wrap">
+      <div style="flex:1;min-width:160px">
+        <div style="font-weight:700;font-size:12.5px">${u.email}</div>
+        ${u.role==='pending'?'<div style="color:var(--gold);font-size:10.5px;margin-top:2px">⏳ بانتظار التفعيل</div>':''}
+      </div>
+      <select class="mod-in" style="width:auto;padding:6px 9px;font-size:11.5px" onchange="setUserRole('${u.uid}',this.value)">
+        <option value="pending"${u.role==='pending'?' selected':''}>بانتظار</option>
+        <option value="branch"${u.role==='branch'?' selected':''}>موظف فرع</option>
+        <option value="admin"${u.role==='admin'?' selected':''}>إدارة/مالية</option>
+      </select>
+      <select class="mod-in" style="width:auto;padding:6px 9px;font-size:11.5px" onchange="setUserBranch('${u.uid}',this.value)" ${u.role==='admin'?'disabled':''}>
+        ${branchSel(u)}
+      </select>
+    </div>`).join('');
+}
+function setUserRole(uid,role){
+  db.collection('users').doc(uid).update({role}).then(()=>{toast('✅ تم تحديث الصلاحية','suc');}).catch(e=>toast('⚠️ '+e.message,'err'));
+}
+function setUserBranch(uid,branchId){
+  db.collection('users').doc(uid).update({branchId:branchId||null}).then(()=>{toast('✅ تم تحديث الفرع','suc');}).catch(e=>toast('⚠️ '+e.message,'err'));
 }
 
 // ══════════════════════════════════════════════

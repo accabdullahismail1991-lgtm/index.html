@@ -463,6 +463,9 @@ td{padding:9px 13px;vertical-align:middle;}
       <div class="vn-dd-item" onclick="closeDropdowns();openUomMgr()">📏 وحدات القياس</div>
       <div class="vn-dd-div"></div>
       <div class="vn-dd-item" onclick="closeDropdowns();openMenuMgr()">🍽️ الأصناف المباعة والوصفات</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();exportRecipesExcel()">📗 تصدير مكونات المنيو الحالية</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('recipeImportFileInput').click()">📥 استيراد مكونات المنيو (Excel)</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();downloadRecipeImportTemplate()">📄 قالب استيراد المكونات</div>
       <div class="vn-dd-div"></div>
       <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('importFileInput').click()">📥 استيراد أصناف (Excel)</div>
       <div class="vn-dd-item" onclick="closeDropdowns();downloadImportTemplate()">📄 قالب الاستيراد</div>
@@ -512,6 +515,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="sb-item" onclick="clearQty()"><span class="sb-ico">🗑️</span>مسح الكميات</div>
   <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFileSelected(event)">
   <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none" onchange="handleBackupFileSelected(event)">
+  <input type="file" id="recipeImportFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleRecipeImportFileSelected(event)">
 
   <div class="hist-wrap">
     <span class="hist-lbl">📋 التقارير المحفوظة</span>
@@ -801,6 +805,21 @@ td{padding:9px 13px;vertical-align:middle;}
 </div>
 </div>
 
+<!-- NEW BRANCH DEFINITION MODAL -->
+<div class="overlay" id="newBranchModal">
+<div class="modal">
+  <div class="mod-title">🏢 تعريف فرع جديد</div>
+  <div class="mod-field"><label class="mod-lbl">اسم الفرع *</label><input class="mod-in" id="nb-name" placeholder="مثال: فرع الرياض"></div>
+  <div class="mod-field"><label class="mod-lbl">مدير الفرع</label><input class="mod-in" id="nb-manager"></div>
+  <div class="mod-field"><label class="mod-lbl">أمين المخزن</label><input class="mod-in" id="nb-store"></div>
+  <div class="mod-field"><label class="mod-lbl">مشرف الجرد</label><input class="mod-in" id="nb-super"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('newBranchModal')">إلغاء</button>
+    <button class="hbtn gold" id="createBranchBtn" onclick="createNewBranch()">✓ إنشاء الفرع</button>
+  </div>
+</div>
+</div>
+
 <!-- NEW CYCLE MODAL -->
 <div class="overlay" id="newCycleModal">
 <div class="modal" style="width:420px">
@@ -830,6 +849,9 @@ td{padding:9px 13px;vertical-align:middle;}
   <div style="max-height:400px;overflow-y:auto" id="menuList"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('menuModal')">إغلاق</button>
+    <button class="hbtn" onclick="exportRecipesExcel()">📗 تصدير المكونات الحالية</button>
+    <button class="hbtn" onclick="downloadRecipeImportTemplate()">📄 قالب استيراد المكونات</button>
+    <button class="hbtn" onclick="document.getElementById('recipeImportFileInput').click()">📥 استيراد مكونات (Excel)</button>
     <button class="hbtn org" onclick="closeM('menuModal');openAddMenuItem()">➕ إضافة صنف جديد</button>
   </div>
 </div>
@@ -2137,12 +2159,31 @@ function renderBranchMgrList(){
 }
 function openNewBranchForm(){
   if(!canManageBranchesUI()){toast('⚠️ إضافة الفروع متاحة للإدارة أو لمن له صلاحية إدارة الفروع بس','wrn');return;}
-  const name=prompt('اسم الفرع الجديد:');
-  if(!name||!name.trim())return;
+  document.getElementById('nb-name').value='';
+  document.getElementById('nb-manager').value='';
+  document.getElementById('nb-store').value='';
+  document.getElementById('nb-super').value='';
+  document.getElementById('newBranchModal').classList.add('open');
+}
+function createNewBranch(){
+  if(!canManageBranchesUI()){toast('⚠️ إضافة الفروع متاحة للإدارة أو لمن له صلاحية إدارة الفروع بس','wrn');return;}
+  const name=document.getElementById('nb-name').value.trim();
+  if(!name){toast('⚠️ اسم الفرع مطلوب','wrn');return;}
+  const manager=document.getElementById('nb-manager').value.trim();
+  const storekeeper=document.getElementById('nb-store').value.trim();
+  const supervisor=document.getElementById('nb-super').value.trim();
+  const btn=document.getElementById('createBranchBtn');
+  btn.disabled=true;btn.textContent='⏳ جاري الإنشاء...';
   const ref=db.collection('branches').doc();
-  ref.set({name:name.trim(),manager:'',storekeeper:'',supervisor:'',date:today(),sid:genSid(),qty:{},notes:{},reports:[],cycles:[]})
-    .then(()=>{toast('✅ تم إضافة الفرع: '+name.trim(),'suc');switchToBranchDoc(ref.id);renderBranchMgrList();})
-    .catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
+  ref.set({name,manager,storekeeper,supervisor,date:today(),sid:genSid(),qty:{},notes:{},reports:[],cycles:[]})
+    .then(()=>{
+      toast('✅ تم إضافة الفرع: '+name,'suc');
+      closeM('newBranchModal');
+      switchToBranchDoc(ref.id);
+      renderBranchMgrList();
+    })
+    .catch(e=>toast('⚠️ خطأ: '+e.message,'err'))
+    .finally(()=>{btn.disabled=false;btn.textContent='✓ إنشاء الفرع';});
 }
 function deleteBranch(key){
   if(!canManageBranchesUI()){toast('⚠️ حذف الفروع متاح للإدارة أو لمن له صلاحية إدارة الفروع بس','wrn');return;}
@@ -3690,6 +3731,144 @@ function processImportRows(rows){
   save();
   renderSidebar();renderTbl();updateStats();populateCatSelects();populateUomSelects();
   toast(`✅ تم الاستيراد: ${added} صنف جديد، ${updated} صنف اتحدّث`+(skipped?`، ${skipped} صف اتجوّز (بيانات ناقصة)`:'')+(unknownCat?`، ${unknownCat} قسم غير معروف (اتحط في القسم الافتراضي)`:''),'suc');
+}
+
+// ══════════════════════════════════════════════
+//  MENU/SEMI-FINISHED COMPONENTS IMPORT (Excel)
+//  Each recipe owner (a menu item OR a semi-finished item) can have several
+//  component rows in the sheet — they all share the same owner name/ref, and
+//  we group them and replace the owner's whole recipe atomically, so a
+//  multi-ingredient recipe never ends up partially overwritten or duplicated.
+// ══════════════════════════════════════════════
+const RECIPE_IMPORT_HEADER_ALIASES={
+  ownerType:['نوع الوصفة','النوع','type'],
+  ownerName:['اسم الصنف صاحب الوصفة','اسم أو مرجع الصنف صاحب الوصفة','اسم الصنف','الصنف','owner','item'],
+  price:['سعر البيع','سعر البيع (للمنيو فقط)','السعر','price'],
+  compRef:['مرجع مكوّن من المخزون','مرجع المكون','مرجع المكوّن','component ref','ref'],
+  compQty:['الكمية لكل وحدة','الكمية','qty','quantity'],
+};
+function matchRecipeImportColumn(header){
+  const h=String(header||'').trim().toLowerCase();
+  for(const key in RECIPE_IMPORT_HEADER_ALIASES){
+    if(RECIPE_IMPORT_HEADER_ALIASES[key].some(a=>a.toLowerCase()===h)) return key;
+  }
+  return null;
+}
+function normalizeRecipeOwnerType(v){
+  const t=String(v||'').trim().toLowerCase();
+  if(t.includes('شبه')||t==='semi') return 'semi';
+  return 'menu';
+}
+function exportRecipesExcel(){
+  const wb=XLSX.utils.book_new();
+  const rows=[['نوع الوصفة (منيو / شبه مصنع)','اسم أو مرجع الصنف صاحب الوصفة','سعر البيع (للمنيو فقط)','مرجع مكوّن من المخزون','اسم المكوّن (اختياري للمراجعة)','الكمية لكل وحدة']];
+  S.menu.forEach(m=>{
+    if(!m.recipe||!m.recipe.length){ rows.push(['منيو',m.n,m.price,'','','']); return; }
+    m.recipe.forEach(ing=>{
+      const it=S.items.find(i=>i.r===ing.r);
+      rows.push(['منيو',m.n,m.price,ing.r,it?it.n:'',ing.q]);
+    });
+  });
+  S.items.filter(it=>it.recipe&&it.recipe.length).forEach(it=>{
+    it.recipe.forEach(ing=>{
+      const comp=S.items.find(i=>i.r===ing.r);
+      rows.push(['شبه مصنع',it.r,'',ing.r,comp?comp.n:'',ing.q]);
+    });
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:26},{wch:40},{wch:18},{wch:20},{wch:24},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws,'مكونات المنيو الحالية');
+  XLSX.writeFile(wb,`Recipes_${(S.branch||'System').replace(/\s/g,'_')}_${today()}.xlsx`);
+  toast('📗 تم تصدير المكونات الحالية — عدّل وأعد الاستيراد لو محتاج','inf');
+}
+function downloadRecipeImportTemplate(){
+  const wb=XLSX.utils.book_new();
+  const rows=[
+    ['نوع الوصفة (منيو / شبه مصنع)','اسم أو مرجع الصنف صاحب الوصفة','سعر البيع (للمنيو فقط)','مرجع مكوّن من المخزون','اسم المكوّن (اختياري للمراجعة)','الكمية لكل وحدة'],
+    ['منيو','مثال: برجر لحم كلاسيك','50','BUN-01','خبز برجر','1'],
+    ['منيو','مثال: برجر لحم كلاسيك','50','MEAT-01','لحم مفروم','0.15'],
+    ['منيو','مثال: برجر لحم كلاسيك','50','CHEESE-01','جبنة شيدر','1'],
+    ['شبه مصنع','مثال: DOUGH-01 (لازم يكون معرّف في الأصناف الأول)','','FLR-01','دقيق','0.5'],
+    ['شبه مصنع','مثال: DOUGH-01 (لازم يكون معرّف في الأصناف الأول)','','YST-01','خميرة','0.01'],
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:26},{wch:40},{wch:18},{wch:20},{wch:24},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws,'استيراد المكونات');
+  XLSX.writeFile(wb,'قالب_استيراد_مكونات_المنيو.xlsx');
+  toast('📄 تم تحميل القالب — كل مكوّن في سطر مستقل، وكرّر نفس اسم الصنف صاحب الوصفة في كل أسطره','inf');
+}
+function handleRecipeImportFileSelected(e){
+  const file=e.target.files[0];
+  e.target.value='';
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=new Uint8Array(ev.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      processRecipeImportRows(rows);
+    }catch(err){ toast('⚠️ تعذر قراءة الملف: '+err.message,'err'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function processRecipeImportRows(rows){
+  if(!rows||!rows.length){toast('⚠️ الملف فارغ','wrn');return;}
+  const header=rows[0];
+  const colMap={};
+  header.forEach((h,i)=>{const key=matchRecipeImportColumn(h);if(key)colMap[key]=i;});
+  if(colMap.ownerName==null||colMap.compRef==null||colMap.compQty==null){
+    toast('⚠️ الملف لازم يحتوي على أعمدة "اسم الصنف صاحب الوصفة" و"مرجع المكوّن" و"الكمية" على الأقل — حمّل القالب من الشريط الجانبي','err');
+    return;
+  }
+  // Group every row by its owner (type+name) first, so each owner's recipe
+  // is built from ALL its rows before we touch S.menu/S.items — this is what
+  // lets one recipe safely span many component rows without partial overwrites.
+  const groups=[];
+  const groupIndex={};
+  let unknownComponent=0,skippedRows=0,selfRefSkipped=0;
+  for(let i=1;i<rows.length;i++){
+    const row=rows[i];
+    if(!row||!row.length) continue;
+    const ownerType=colMap.ownerType!=null?normalizeRecipeOwnerType(row[colMap.ownerType]):'menu';
+    const ownerName=String(row[colMap.ownerName]||'').trim();
+    const compRef=String(row[colMap.compRef]||'').trim().toUpperCase();
+    const compQty=parseFloat(row[colMap.compQty]);
+    if(!ownerName||!compRef||isNaN(compQty)||compQty<=0){skippedRows++;continue;}
+    if(ownerType==='semi'&&compRef===ownerName.toUpperCase()){selfRefSkipped++;continue;}
+    const comp=S.items.find(it=>it.r===compRef);
+    if(!comp){unknownComponent++;continue;}
+    const key=ownerType+'::'+ownerName.toLowerCase();
+    if(!(key in groupIndex)){
+      groupIndex[key]=groups.length;
+      groups.push({type:ownerType,name:ownerName,price:(colMap.price!=null&&row[colMap.price]!=='')?(parseFloat(row[colMap.price])||null):null,compMap:{},order:[]});
+    }
+    const g=groups[groupIndex[key]];
+    if(!(compRef in g.compMap)) g.order.push(compRef);
+    g.compMap[compRef]=compQty;
+  }
+  let menuAdded=0,menuUpdated=0,semiUpdated=0,semiNotFound=0;
+  groups.forEach(g=>{
+    const comps=g.order.map(r=>({r,q:g.compMap[r]}));
+    if(!comps.length) return;
+    if(g.type==='menu'){
+      const m=S.menu.find(x=>x.n.trim().toLowerCase()===g.name.toLowerCase());
+      if(m){ m.recipe=comps; if(g.price!=null) m.price=g.price; menuUpdated++; }
+      else { S.menu.push({id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),n:g.name,price:g.price||0,recipe:comps}); menuAdded++; }
+    }else{
+      const it=S.items.find(x=>x.r.toUpperCase()===g.name.toUpperCase()||x.n.trim().toLowerCase()===g.name.toLowerCase());
+      if(!it){ semiNotFound++; return; }
+      it.recipe=comps; it.type='semi'; semiUpdated++;
+    }
+  });
+  save();renderMenuList();renderTbl();
+  const parts=[`${menuAdded} صنف منيو جديد`,`${menuUpdated} وصفة منيو محدّثة`,`${semiUpdated} وصفة شبه مصنّع محدّثة`];
+  if(semiNotFound) parts.push(`⚠️ ${semiNotFound} صنف شبه مصنّع غير معرّف بالأصناف`);
+  if(unknownComponent) parts.push(`⚠️ ${unknownComponent} مكوّن غير موجود بالمخزون`);
+  if(selfRefSkipped) parts.push(`⚠️ ${selfRefSkipped} سطر متجاهل (الصنف مكوّن لنفسه)`);
+  if(skippedRows) parts.push(`${skippedRows} سطر متجاهل (بيانات ناقصة)`);
+  toast('✅ تم الاستيراد: '+parts.join('، '),'suc');
 }
 
 function exportBackupJSON(){

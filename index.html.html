@@ -205,6 +205,33 @@ main{flex:1;padding:22px;overflow:auto;min-width:0;}
 .db-main{font-size:13px;font-weight:600;color:var(--gold);}
 .db-sub{font-size:11px;color:var(--muted);margin-top:1px;font-family:var(--mono);}
 .db-r{display:flex;align-items:center;gap:8px;}
+
+/* PROFESSIONAL FINANCIAL REPORT HEADER / SIGNATURES / EXCEPTIONS */
+.rpt-pro-header{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+  padding:14px 18px;margin-bottom:16px;background:var(--card2);
+  border:1px solid var(--border);border-radius:10px;
+}
+.rpt-pro-co{display:flex;align-items:center;gap:10px;}
+.rpt-pro-co-name{font-weight:800;font-size:14.5px;color:var(--text);}
+.rpt-pro-co-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.rpt-pro-meta{text-align:left;font-size:11.5px;color:var(--muted);line-height:1.9;}
+.rpt-pro-meta b{color:var(--text);font-weight:700;}
+.rpt-pro-title{font-weight:800;font-size:14px;color:var(--gold);margin-bottom:3px;}
+.rpt-pro-exception{
+  border:1px solid rgba(208,69,63,.25);background:rgba(208,69,63,.05);
+  border-radius:10px;padding:12px 16px;margin-bottom:16px;
+}
+.rpt-pro-exception-title{font-weight:700;font-size:12.5px;color:var(--red);margin-bottom:8px;}
+.rpt-pro-exception-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.rpt-pro-exception-tbl td{padding:3px 0;border-bottom:1px dashed var(--border);}
+.rpt-pro-exception-tbl tr:last-child td{border-bottom:none;}
+.rpt-pro-cat-row td{background:var(--card2);font-weight:700;font-size:11.5px;color:var(--gold);padding:6px 13px;}
+.rpt-pro-sub-row td{background:rgba(255,255,255,.01);font-weight:700;font-size:11.5px;border-top:1px solid var(--border);}
+.rpt-pro-sign{display:flex;gap:24px;margin-top:32px;padding-top:8px;flex-wrap:wrap;}
+.rpt-pro-sign-cell{flex:1;min-width:160px;}
+.rpt-pro-sign-line{border-bottom:1px solid var(--muted2);height:34px;}
+.rpt-pro-sign-lbl{font-size:10.5px;color:var(--muted);margin-top:5px;text-align:center;}
 .unsaved{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);animation:pulse 1.5s infinite;display:none;}
 .unsaved.on{display:block;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
@@ -1647,6 +1674,69 @@ function today(){
 function p2(n){return String(n).padStart(2,'0');}
 function genSid(){return 'INV-'+Date.now().toString(36).toUpperCase();}
 function fmt(n){return (Math.round((n||0)*100)/100).toLocaleString('en-US');}
+
+// ══════════════════════════════════════════════
+//  PROFESSIONAL FINANCIAL REPORT HELPERS
+//  معايير محاسبية عالمية معتمدة في تقارير تكلفة المطاعم:
+//  - نسبة تكلفة الطعام المستهدفة (Food Cost %) القياسية عالميًا 28-35%، اعتمدنا 30% كافتراضي متوسط
+//  - الحد المقبول للانحراف بين الفعلي والنظري (Controllable Variance) عادة 2-3%
+//  - الأرقام السالبة (الانحراف/الخسارة) بتتكتب بين قوسين باللون الأحمر (تقليد محاسبي قياسي) بدل الإشارة السالبة
+// ══════════════════════════════════════════════
+const FOOD_COST_TARGET_PCT=30;
+const VARIANCE_TARGET_PCT=3;
+function acctFmt(n){
+  const v=n||0;
+  const s=fmt(Math.abs(v));
+  return v<-0.004?`<span style="color:var(--red)">(${s})</span>`:s;
+}
+function targetBadge(pct,target){
+  target=target==null?FOOD_COST_TARGET_PCT:target;
+  const ok=pct<=target;
+  return `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:5px;font-size:11px;font-weight:700;white-space:nowrap;background:${ok?'rgba(31,157,104,.12)':'rgba(208,69,63,.12)'};color:${ok?'var(--green)':'var(--red)'}">${ok?'✅':'⚠️'} ${pct.toFixed(1)}% (الهدف ≤ ${target}%)</span>`;
+}
+function varianceBadge(pct){
+  const abs=Math.abs(pct);
+  const ok=abs<=VARIANCE_TARGET_PCT;
+  return `<span style="font-weight:700;font-size:11.5px;color:${ok?'var(--green)':'var(--red)'}">${ok?'✅ ضمن الحد المسموح ('+VARIANCE_TARGET_PCT+'%)':'⚠️ يتجاوز الحد المسموح ('+VARIANCE_TARGET_PCT+'%)'}</span>`;
+}
+function reportHeaderBlock(opts){
+  opts=opts||{};
+  const now=new Date().toLocaleDateString('ar-SA');
+  return `<div class="rpt-pro-header">
+    <div class="rpt-pro-co">
+      ${companyInfo.logo?`<img src="${companyInfo.logo}" style="height:38px;max-width:120px;object-fit:contain">`:''}
+      <div><div class="rpt-pro-co-name">${companyInfo.name||'نظام الجرد الذكي'}</div>${companyInfo.address?`<div class="rpt-pro-co-sub">${companyInfo.address}</div>`:''}</div>
+    </div>
+    <div class="rpt-pro-meta">
+      <div class="rpt-pro-title">${opts.title||''}</div>
+      ${opts.branchName?`<div>الفرع: <b>${opts.branchName}</b></div>`:''}
+      ${opts.periodLabel?`<div>الفترة: <b>${opts.periodLabel}</b></div>`:''}
+      <div>تاريخ الإصدار: <b>${now}</b></div>
+    </div>
+  </div>`;
+}
+function reportSignatureBlock(labels){
+  labels=labels||['أُعِدّ بواسطة (أمين المخزن)','رُوجع بواسطة (مدير الفرع)','اعتُمد بواسطة (الإدارة/المالية)'];
+  return `<div class="rpt-pro-sign">${labels.map(l=>`<div class="rpt-pro-sign-cell"><div class="rpt-pro-sign-line"></div><div class="rpt-pro-sign-lbl">${l}</div></div>`).join('')}</div>`;
+}
+function topVarianceHtml(rows,n){
+  const top=[...rows].filter(r=>Math.abs(r.varVal||0)>0.001).sort((a,b)=>Math.abs(b.varVal)-Math.abs(a.varVal)).slice(0,n||5);
+  if(!top.length) return '';
+  return `<div class="rpt-pro-exception">
+    <div class="rpt-pro-exception-title">🔎 أعلى ${top.length} أصناف بأكبر انحراف قيمة (Exception Report)</div>
+    <table class="rpt-pro-exception-tbl"><tbody>${top.map(r=>`<tr><td>${r.n}</td><td style="font-family:var(--mono);text-align:left">${acctFmt(r.varVal)}</td></tr>`).join('')}</tbody></table>
+  </div>`;
+}
+function groupRowsByCategory(rows,refField){
+  const groups={};const order=[];
+  rows.forEach(row=>{
+    const it=S.items.find(x=>x.r===row[refField]);
+    const ck=it?it.c:'__other__';
+    if(!groups[ck]){groups[ck]=[];order.push(ck);}
+    groups[ck].push(row);
+  });
+  return order.map(ck=>({key:ck,label:(S.cats[ck]||{}).l||'أخرى',rows:groups[ck]}));
+}
 
 // ══════════════════════════════════════════════
 //  FIREBASE: AUTH + REAL-TIME DATA SYNC
@@ -3172,27 +3262,38 @@ function renderAllBranchesReport(){
     return;
   }
   const tot=allBranchesTotals;
+  const periodLabel=(document.getElementById('abrDateFrom').value||document.getElementById('abrDateTo').value)
+    ?`${document.getElementById('abrDateFrom').value||'...'} ← ${document.getElementById('abrDateTo').value||'...'}`:'كل الفترات';
   const consolidated=tot?`<div style="font-weight:700;font-size:13px;margin-bottom:8px">🌐 الإجمالي الموحّد للفلتر الحالي (كأن الفروع المطابقة تقرير واحد)</div>
-    <div class="dash-kpis" style="margin-bottom:18px">
+    <div class="dash-kpis" style="margin-bottom:12px">
       ${dashKpi('عدد الفروع اللي ليها بيانات',tot.branchesWithData,'#3d8ef0')}
       ${dashKpi('إجمالي المبيعات',fmt(tot.totalSales),'#3d8ef0')}
       ${dashKpi('إجمالي تكلفة الاستهلاك الفعلي',fmt(tot.totalActual),'#f05050')}
       ${dashKpi('نسبة التكلفة الفعلية الموحّدة',tot.actualPct.toFixed(1)+'%','#f0c040')}
       ${dashKpi('نسبة التكلفة النظرية الموحّدة',tot.theoPct.toFixed(1)+'%','#2ee89a')}
-      ${dashKpi('إجمالي قيمة الانحراف',fmt(tot.varVal),tot.varVal>0?'#f05050':'#2ee89a')}
-    </div>`:'';
+      ${dashKpi('إجمالي قيمة الانحراف',acctFmt(tot.varVal),tot.varVal>0?'#f05050':'#2ee89a')}
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">${targetBadge(tot.actualPct)}${varianceBadge(tot.totalSales>0?(tot.varVal/tot.totalSales*100):0)}</div>`:'';
+  const exceptionHtml=topVarianceHtml(allBranchesItemRows,5);
+  const itemGroups=groupRowsByCategory(allBranchesItemRows,'r');
   const itemTable=allBranchesItemRows.length?`
     <div style="font-weight:700;font-size:13px;margin:18px 0 8px">📦 إجمالي استهلاك الأصناف عبر الفروع المطابقة للفلتر</div>
-    <div class="tbl-wrap" style="max-height:320px;overflow-y:auto"><table>
+    <div class="tbl-wrap" style="max-height:360px;overflow-y:auto"><table>
       <thead><tr><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الاستهلاك الفعلي')}</th><th>${t('الاستهلاك النظري')}</th><th>${t('قيمة الانحراف')}</th></tr></thead>
-      <tbody>${allBranchesItemRows.map(r=>`<tr>
-        <td class="td-name">${r.n}</td><td><span class="uom-pill">${r.u}</span></td>
-        <td style="font-family:var(--mono)">${fmt(r.actual)}</td>
-        <td style="font-family:var(--mono)">${fmt(r.theo)}</td>
-        <td style="font-family:var(--mono);font-weight:700;color:${r.varVal>0?'var(--red)':'var(--green)'}">${fmt(r.varVal)}</td>
-      </tr>`).join('')}</tbody>
+      <tbody>${itemGroups.map(g=>{
+        const catRow=`<tr class="rpt-pro-cat-row"><td colspan="5">📁 ${g.label}</td></tr>`;
+        const itemRows=g.rows.map(r=>`<tr>
+          <td class="td-name">${r.n}</td><td><span class="uom-pill">${r.u}</span></td>
+          <td style="font-family:var(--mono)">${fmt(r.actual)}</td>
+          <td style="font-family:var(--mono)">${fmt(r.theo)}</td>
+          <td style="font-family:var(--mono);font-weight:700;text-align:left">${acctFmt(r.varVal)}</td>
+        </tr>`).join('');
+        return catRow+itemRows;
+      }).join('')}</tbody>
     </table></div>`:'';
-  document.getElementById('allBranchesBody').innerHTML=`${consolidated}
+  document.getElementById('allBranchesBody').innerHTML=`${reportHeaderBlock({title:'🌐 تقرير موحّد لكل الفروع (Consolidated Cost of Sales Report)',periodLabel})}
+  ${consolidated}
+  ${exceptionHtml}
     <div style="font-weight:700;font-size:13px;margin-bottom:8px">🏢 تفصيل حسب الفرع</div>
     <div class="tbl-wrap"><table>
     <thead><tr><th>${t('الفرع')}</th><th>${t('المدير')}</th><th>${t('عدد الدورات المطابقة')}</th><th>${t('الفترة المشمولة')}</th><th>${t('إجمالي المبيعات')}</th><th>${t('تكلفة فعلية %')}</th><th>${t('تكلفة نظرية %')}</th><th>${t('قيمة الانحراف')}</th></tr></thead>
@@ -3201,12 +3302,13 @@ function renderAllBranchesReport(){
       <td style="font-family:var(--mono);text-align:center">${r.cyclesClosed}</td>
       <td style="font-family:var(--mono);font-size:11px">${r.periodStart?r.periodStart+' ← '+r.periodEnd:'-'}</td>
       <td style="font-family:var(--mono)">${r.salesAmount!=null?fmt(r.salesAmount):'-'}</td>
-      <td style="font-family:var(--mono);color:var(--gold)">${r.actualCostPct!=null?r.actualCostPct.toFixed(1)+'%':'-'}</td>
+      <td style="font-family:var(--mono)">${r.actualCostPct!=null?targetBadge(r.actualCostPct):'-'}</td>
       <td style="font-family:var(--mono);color:var(--green)">${r.theoCostPct!=null?r.theoCostPct.toFixed(1)+'%':'-'}</td>
-      <td style="font-family:var(--mono);font-weight:700;color:${r.varVal>0?'var(--red)':'var(--green)'}">${r.varVal!=null?fmt(r.varVal):'-'}</td>
+      <td style="font-family:var(--mono);font-weight:700;text-align:left">${r.varVal!=null?acctFmt(r.varVal):'-'}</td>
     </tr>`).join('')}</tbody>
   </table></div>
-  ${itemTable}`;
+  ${itemTable}
+  ${reportSignatureBlock(['أُعِدّ بواسطة','رُوجع بواسطة (الإدارة المالية)','اعتُمد بواسطة (الإدارة العليا)'])}`;
 }
 function exportAllBranchesExcel(){
   if(!allBranchesRows.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
@@ -4191,9 +4293,12 @@ function computeClosingStockReport(c){
     }else if(dailyVal!=null){finalVal=dailyVal;source='daily';}
     else if(cycleVal!=null){finalVal=cycleVal;source='cycle';}
     const mismatch=dailyVal!=null&&cycleVal!=null&&Math.abs(dailyVal-cycleVal)>=0.001;
-    return {r:it.r,n:it.n,u:it.u,dailyVal,dailyTime,cycleVal,cycleTime,finalVal,source,mismatch};
+    const unitCost=effectiveItemCost(it);
+    const finalValue=finalVal!=null?finalVal*unitCost:null;
+    return {r:it.r,n:it.n,u:it.u,dailyVal,dailyTime,cycleVal,cycleTime,finalVal,source,mismatch,unitCost,finalValue};
   }).filter(row=>row.dailyVal!=null||row.cycleVal!=null);
-  return {rows,dailyReport,cycleEnd:c.end,mismatchCount:rows.filter(r=>r.mismatch).length};
+  const totalValue=rows.reduce((s,r)=>s+(r.finalValue||0),0);
+  return {rows,dailyReport,cycleEnd:c.end,mismatchCount:rows.filter(r=>r.mismatch).length,totalValue};
 }
 function openClosingStockReport(cid){
   if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
@@ -4208,32 +4313,48 @@ function renderClosingStockReport(){
   if(!c){el.innerHTML='';return;}
   const rep=computeClosingStockReport(c);
   const srcLabel=s=>s==='daily'?'📋 الجرد اليومي':(s==='cycle'?'🔄 حركة الدورة':'-');
+  const kpi=(l,v,color)=>`<div class="stat" style="border-color:${color}55"><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>`;
   const banner=`<div class="dbanner" style="margin-bottom:14px">
     <div class="db-l"><div><div class="db-main">دورة ${c.start} ← ${c.end}</div>
       <div class="db-sub">${rep.dailyReport?`فيه جرد يومي محفوظ بتاريخ ${c.end} (${rep.dailyReport.sid}) بيتقارن برصيد الدورة`:'مفيش جرد يومي محفوظ بتاريخ نهاية الدورة — الاعتماد على رصيد الدورة نفسه فقط'}</div></div></div>
     <div class="db-r">${rep.mismatchCount?`<span style="color:var(--orange);font-weight:700;font-size:12px">⚠️ ${rep.mismatchCount} صنف فيه فرق بين المصدرين</span>`:`<span style="color:var(--green);font-weight:700;font-size:12px">✅ لا يوجد تعارض بين المصدرين</span>`}</div>
   </div>`;
-  const rows=rep.rows.map(r=>`<tr${r.mismatch?' style="background:rgba(240,120,48,.06)"':''}>
-    <td class="td-ref">${r.r}</td><td class="td-name">${r.n}</td><td><span class="uom-pill">${r.u}</span></td>
-    <td style="font-family:var(--mono);text-align:center">${r.dailyVal!=null?fmt(r.dailyVal):'-'}</td>
-    <td style="font-family:var(--mono);text-align:center">${r.cycleVal!=null?fmt(r.cycleVal):'-'}</td>
-    <td style="font-family:var(--mono);text-align:center;font-weight:700">${r.finalVal!=null?fmt(r.finalVal):'-'}</td>
-    <td style="font-size:11px;color:${r.mismatch?'var(--orange)':'var(--muted)'}">${srcLabel(r.source)}${r.mismatch?' ⚠️':''}</td>
-  </tr>`).join('');
-  el.innerHTML=`${banner}
+  const groups=groupRowsByCategory(rep.rows,'r');
+  const rows=groups.map(g=>{
+    const catRow=`<tr class="rpt-pro-cat-row"><td colspan="8">📁 ${g.label}</td></tr>`;
+    const itemRows=g.rows.map(r=>`<tr${r.mismatch?' style="background:rgba(240,120,48,.06)"':''}>
+      <td class="td-ref">${r.r}</td><td class="td-name">${r.n}</td><td><span class="uom-pill">${r.u}</span></td>
+      <td style="font-family:var(--mono);text-align:center">${r.dailyVal!=null?fmt(r.dailyVal):'-'}</td>
+      <td style="font-family:var(--mono);text-align:center">${r.cycleVal!=null?fmt(r.cycleVal):'-'}</td>
+      <td style="font-family:var(--mono);text-align:center;font-weight:700">${r.finalVal!=null?fmt(r.finalVal):'-'}</td>
+      <td style="font-family:var(--mono);text-align:center">${r.finalValue!=null?fmt(r.finalValue):'-'}</td>
+      <td style="font-size:11px;color:${r.mismatch?'var(--orange)':'var(--muted)'}">${srcLabel(r.source)}${r.mismatch?' ⚠️':''}</td>
+    </tr>`).join('');
+    const subValue=g.rows.reduce((s,x)=>s+(x.finalValue||0),0);
+    const subRow=`<tr class="rpt-pro-sub-row"><td colspan="6">إجمالي قيمة ${g.label}</td><td style="font-family:var(--mono);text-align:center">${fmt(subValue)}</td><td></td></tr>`;
+    return catRow+itemRows+subRow;
+  }).join('');
+  el.innerHTML=`${reportHeaderBlock({title:'📦 تقرير المخزون الختامي (Closing Inventory Report)',branchName:S.branch,periodLabel:`${c.start} ← ${c.end}`})}
+  <div class="stats" style="margin-bottom:16px">
+    ${kpi('عدد الأصناف المجرودة',rep.rows.length,'#3d8ef0')}
+    ${kpi('إجمالي قيمة المخزون الختامي',fmt(rep.totalValue),'#f0c040')}
+    ${kpi('أصناف فيها تعارض مصادر',rep.mismatchCount,rep.mismatchCount?'#f05050':'#2ee89a')}
+  </div>
+  ${banner}
   <div class="tbl-wrap"><table>
-    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('من الجرد اليومي')}</th><th>${t('من حركة الدورة')}</th><th>${t('الرصيد الختامي المعتمد')}</th><th>${t('المصدر المعتمد')}</th></tr></thead>
-    <tbody>${rows||emptyCycleRow(7)}</tbody>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('من الجرد اليومي')}</th><th>${t('من حركة الدورة')}</th><th>${t('الرصيد الختامي المعتمد')}</th><th>${t('القيمة المالية')}</th><th>${t('المصدر المعتمد')}</th></tr></thead>
+    <tbody>${rows||emptyCycleRow(8)}</tbody>
   </table></div>
-  <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.8">لو الصنف اتجرد في الاثنين (الجرد اليومي وحركة الدورة)، النظام بيعتمد الرقم اللي اتسجّل الأول زمنياً كرصيد ختامي نهائي، والصفوف اللي فيها فرق بين المصدرين متعلّمة بالبرتقالي.</p>`;
+  <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.8">لو الصنف اتجرد في الاثنين (الجرد اليومي وحركة الدورة)، النظام بيعتمد الرقم اللي اتسجّل الأول زمنياً كرصيد ختامي نهائي، والصفوف اللي فيها فرق بين المصدرين متعلّمة بالبرتقالي. القيمة المالية = الرصيد الختامي المعتمد × تكلفة الوحدة.</p>
+  ${reportSignatureBlock()}`;
 }
 function exportClosingStockExcel(){
   const c=curClosingStockCycleId?getCycle(curClosingStockCycleId):null;if(!c)return;
   const rep=computeClosingStockReport(c);
   const srcLabel=s=>s==='daily'?'الجرد اليومي':(s==='cycle'?'حركة الدورة':'-');
   const wb=XLSX.utils.book_new();
-  const out=[['المرجع','الصنف','الوحدة','من الجرد اليومي','من حركة الدورة','الرصيد الختامي المعتمد','المصدر المعتمد']];
-  rep.rows.forEach(r=>out.push([r.r,r.n,r.u,r.dailyVal!=null?r.dailyVal:'-',r.cycleVal!=null?r.cycleVal:'-',r.finalVal!=null?r.finalVal:'-',srcLabel(r.source)]));
+  const out=[['المرجع','الصنف','الوحدة','من الجرد اليومي','من حركة الدورة','الرصيد الختامي المعتمد','القيمة المالية','المصدر المعتمد']];
+  rep.rows.forEach(r=>out.push([r.r,r.n,r.u,r.dailyVal!=null?r.dailyVal:'-',r.cycleVal!=null?r.cycleVal:'-',r.finalVal!=null?r.finalVal:'-',r.finalValue!=null?+r.finalValue.toFixed(2):'-',srcLabel(r.source)]));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'المخزون الختامي');
   XLSX.writeFile(wb,`مخزون_ختامي_${c.start}_${c.end}.xlsx`);
 }
@@ -4309,27 +4430,45 @@ function renderResultsTab(c,el){
   }
   const r=c.result;
   const kpi=(l,v,color)=>`<div class="stat" style="border-color:${color}55"><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>`;
+  const groups=groupRowsByCategory(r.rows,'r');
+  const bodyRows=groups.map(g=>{
+    const catRow=`<tr class="rpt-pro-cat-row"><td colspan="12">📁 ${g.label}</td></tr>`;
+    const itemRows=g.rows.map(row=>`<tr>
+      <td class="td-name">${row.n}</td>
+      <td>${fmt(row.op)}</td><td>${fmt(row.pur)}</td><td>${fmt(row.trIn)}</td><td>${fmt(row.was)}</td><td>${fmt(row.wd)}</td><td>${fmt(row.trOut)}</td><td>${fmt(row.cl)}</td>
+      <td style="font-weight:700">${fmt(row.actual)}</td><td>${fmt(row.theo)}</td>
+      <td style="text-align:left">${Math.abs(row.varQty)<0.001?fmt(row.varQty):acctFmt(row.varQty)}</td>
+      <td style="text-align:left;font-weight:700">${Math.abs(row.varVal)<0.01?fmt(row.varVal):acctFmt(row.varVal)}</td>
+    </tr>`).join('');
+    const subOp=g.rows.reduce((s,x)=>s+x.op,0),subPur=g.rows.reduce((s,x)=>s+x.pur,0),subTrIn=g.rows.reduce((s,x)=>s+x.trIn,0),
+      subWas=g.rows.reduce((s,x)=>s+x.was,0),subWd=g.rows.reduce((s,x)=>s+x.wd,0),subTrOut=g.rows.reduce((s,x)=>s+x.trOut,0),
+      subCl=g.rows.reduce((s,x)=>s+x.cl,0),subActual=g.rows.reduce((s,x)=>s+x.actual,0),subTheo=g.rows.reduce((s,x)=>s+x.theo,0),
+      subVarVal=g.rows.reduce((s,x)=>s+x.varVal,0);
+    const subRow=`<tr class="rpt-pro-sub-row">
+      <td>إجمالي ${g.label}</td><td>${fmt(subOp)}</td><td>${fmt(subPur)}</td><td>${fmt(subTrIn)}</td><td>${fmt(subWas)}</td><td>${fmt(subWd)}</td><td>${fmt(subTrOut)}</td><td>${fmt(subCl)}</td>
+      <td>${fmt(subActual)}</td><td>${fmt(subTheo)}</td><td></td><td style="text-align:left">${acctFmt(subVarVal)}</td>
+    </tr>`;
+    return catRow+itemRows+subRow;
+  }).join('');
   el.innerHTML=`
+  ${reportHeaderBlock({title:'📊 تقرير نتائج التسوية (Cost of Sales Report)',branchName:S.branch,periodLabel:`${c.start} ← ${c.end}`})}
   <div class="stats" style="margin-bottom:16px">
     ${kpi('إجمالي المبيعات',fmt(r.totalSalesAmount),'#3d8ef0')}
     ${kpi('تكلفة الاستهلاك الفعلي',fmt(r.totalActualCost),'#f05050')}
     ${kpi('نسبة التكلفة الفعلية',r.actualCostPct.toFixed(1)+'%','#f0c040')}
     ${kpi('نسبة التكلفة النظرية',r.theoCostPct.toFixed(1)+'%','#2ee89a')}
   </div>
-  <div class="dbanner" style="margin-bottom:14px">
-    <div class="db-l"><div><div class="db-main">إجمالي قيمة الانحراف: ${fmt(r.totalVarVal)}</div>
-    <div class="db-sub">الفرق بين تكلفة الاستهلاك الفعلي والنظري (موجب = استهلاك زيادة عن المتوقع من الوصفات)</div></div></div>
+  <div class="dbanner" style="margin-bottom:14px;flex-wrap:wrap;gap:10px">
+    <div class="db-l"><div><div class="db-main">إجمالي قيمة الانحراف: ${acctFmt(r.totalVarVal)}</div>
+    <div class="db-sub">الفرق بين تكلفة الاستهلاك الفعلي والنظري (بين قوسين = استهلاك أقل من المتوقع، بدون قوسين = زيادة عن المتوقع)</div></div></div>
+    <div class="db-r" style="gap:10px">${targetBadge(r.actualCostPct)}${varianceBadge(r.totalSalesAmount>0?(r.totalVarVal/r.totalSalesAmount*100):0)}</div>
   </div>
+  ${topVarianceHtml(r.rows,5)}
   <div class="tbl-wrap"><table>
     <thead><tr><th>${t('الصنف')}</th><th>${t('افتتاحي')}</th><th>${t('مشتريات')}</th><th>${t('تحويل وارد')}</th><th>${t('هالك')}</th><th>${t('سحب داخلي')}</th><th>${t('تحويل صادر')}</th><th>${t('ختامي')}</th><th>${t('استهلاك فعلي')}</th><th>${t('استهلاك نظري')}</th><th>${t('انحراف كمية')}</th><th>${t('انحراف قيمة')}</th></tr></thead>
-    <tbody>${r.rows.map(row=>`<tr>
-      <td class="td-name">${row.n}</td>
-      <td>${fmt(row.op)}</td><td>${fmt(row.pur)}</td><td>${fmt(row.trIn)}</td><td>${fmt(row.was)}</td><td>${fmt(row.wd)}</td><td>${fmt(row.trOut)}</td><td>${fmt(row.cl)}</td>
-      <td style="font-weight:700">${fmt(row.actual)}</td><td>${fmt(row.theo)}</td>
-      <td style="color:${Math.abs(row.varQty)<0.001?'var(--muted)':(row.varQty>0?'var(--red)':'var(--green)')}">${fmt(row.varQty)}</td>
-      <td style="color:${Math.abs(row.varVal)<0.01?'var(--muted)':(row.varVal>0?'var(--red)':'var(--green)')};font-weight:700">${fmt(row.varVal)}</td>
-    </tr>`).join('')}</tbody>
-  </table></div>`;
+    <tbody>${bodyRows}</tbody>
+  </table></div>
+  ${reportSignatureBlock()}`;
 }
 
 function exportCycleCSV(cid){

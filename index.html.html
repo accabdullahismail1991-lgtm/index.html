@@ -13,11 +13,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
 :root{
-  --bg:#080b10;--surface:#0f1319;--card:#151b25;--card2:#1a2130;
-  --border:#222c3d;--border2:#2d3a50;
-  --gold:#f0c040;--gold2:#c8960a;
-  --blue:#3d8ef0;--green:#2ee89a;--red:#f05050;--purple:#9d6cf5;--orange:#f07830;
-  --text:#e8ecf5;--muted:#7888a8;--muted2:#4a5872;
+  --bg:#12161d;--surface:#171c25;--card:#1c2230;--card2:#222939;
+  --border:#2a3242;--border2:#374156;
+  --gold:#e0b04c;--gold2:#b8873a;
+  --blue:#5b93d9;--green:#4dd6a0;--red:#e06868;--purple:#a888e0;--orange:#e0935a;
+  --text:#dfe4ee;--muted:#8a97b0;--muted2:#5a6780;
   --font:'Tajawal',sans-serif;--mono:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -538,6 +538,7 @@ td{padding:9px 13px;vertical-align:middle;}
     <div class="vn-dd-menu">
       <div class="vn-dd-item" onclick="closeDropdowns();openDashboard()" data-i18n="📊 لوحة تحكم تفاعلية">📊 لوحة تحكم تفاعلية</div>
       <div class="vn-dd-item" onclick="closeDropdowns();openRequirementPlanner()" data-i18n="📈 تخطيط الاحتياج">📈 تخطيط الاحتياج</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();openQuickMovement()">➕ تسجيل حركة (تحويل/سحب/استلام)</div>
       <div class="vn-dd-item" onclick="closeDropdowns();openTransfersLog()" data-i18n="🔀 سجل التحويلات">🔀 سجل التحويلات</div>
       <div class="vn-dd-item" id="ddAllBranchReports" style="display:none" onclick="closeDropdowns();openAllBranchesReport()" data-i18n="🌐 تقرير كل الفروع">🌐 تقرير كل الفروع</div>
       <div class="vn-dd-div"></div>
@@ -577,6 +578,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFileSelected(event)">
   <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none" onchange="handleBackupFileSelected(event)">
   <input type="file" id="recipeImportFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleRecipeImportFileSelected(event)">
+  <input type="file" id="foodicsImportFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFoodicsImportFileSelected(event)">
 
   <div class="hist-wrap">
     <span class="hist-lbl">📋 التقارير المحفوظة</span>
@@ -1013,6 +1015,36 @@ td{padding:9px 13px;vertical-align:middle;}
 </div>
 </div>
 
+<!-- QUICK MOVEMENT ENTRY MODAL (تحويل/سحب/استلام مستقل، مرتبط بالدورة حسب تاريخ الحركة) -->
+<div class="overlay" id="quickMovementModal">
+<div class="modal" style="width:520px">
+  <div class="mod-title">🔀 تسجيل حركة (تحويل/سحب/استلام)</div>
+  <div class="mod-field">
+    <label class="mod-lbl">نوع الحركة *</label>
+    <select class="mod-in" id="qm-type" onchange="updateQuickMovementFields()">
+      <option value="transferOut">تحويل صادر لفرع تاني</option>
+      <option value="transferIn">تحويل وارد من فرع تاني</option>
+      <option value="withdraw">سحب/صرف داخلي</option>
+      <option value="purchase">مشتريات/استلام بضاعة</option>
+    </select>
+  </div>
+  <div class="mod-row">
+    <div class="mod-field"><label class="mod-lbl">تاريخ الحركة *</label><input type="date" class="mod-in" id="qm-date" onchange="updateQuickMovementCycleInfo()"></div>
+    <div class="mod-field"><label class="mod-lbl">الصنف *</label><select class="mod-in" id="qm-item"></select></div>
+  </div>
+  <div class="mod-row">
+    <div class="mod-field"><label class="mod-lbl">الكمية *</label><input type="number" inputmode="decimal" class="mod-in" id="qm-qty" min="0" step="0.001"></div>
+    <div class="mod-field" id="qm-cost-wrap" style="display:none"><label class="mod-lbl">التكلفة الإجمالية</label><input type="number" inputmode="decimal" class="mod-in" id="qm-cost" min="0" step="0.01"></div>
+  </div>
+  <div class="mod-field"><label class="mod-lbl" id="qm-note-lbl">سبب السحب / اسم الفرع الآخر</label><input class="mod-in" id="qm-note"></div>
+  <div id="qm-cycle-info" style="font-size:11.5px;color:var(--muted);margin-bottom:10px"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('quickMovementModal')">إلغاء</button>
+    <button class="hbtn gold" onclick="saveQuickMovement()">✓ تسجيل الحركة</button>
+  </div>
+</div>
+</div>
+
 <!-- TRANSFERS LOG MODAL -->
 <div class="overlay" id="transfersLogModal">
 <div class="modal" style="width:820px">
@@ -1031,7 +1063,24 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="overlay" id="allBranchesModal">
 <div class="modal" style="width:900px">
   <div class="mod-title" data-i18n="🌐 تقرير كل الفروع">🌐 تقرير كل الفروع</div>
-  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">كل الفروع مجمّعة في تقرير واحد: إجمالي موحّد + تفصيل حسب الفرع + إجمالي استهلاك الأصناف عبر كل الفروع — من آخر دورة تسوية مغلقة لكل فرع. متاح للإدارة أو لمن له صلاحية إدارة الفروع.</p>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">كل الفروع مجمّعة في تقرير واحد: إجمالي موحّد + تفصيل حسب الفرع + إجمالي استهلاك الأصناف عبر كل الفروع، لكل الدورات المغلقة اللي تقع في الفلتر المختار. متاح للإدارة أو لمن له صلاحية عرض تقارير كل الفروع.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
+    <div class="mod-field" style="margin-bottom:0">
+      <label class="mod-lbl">الفرع</label>
+      <select class="mod-in" id="abrBranchFilter" style="width:auto" onchange="loadAllBranchesData()">
+        <option value="all">كل الفروع</option>
+      </select>
+    </div>
+    <div class="mod-field" style="margin-bottom:0">
+      <label class="mod-lbl">من تاريخ</label>
+      <input type="date" class="mod-in" id="abrDateFrom" onchange="loadAllBranchesData()">
+    </div>
+    <div class="mod-field" style="margin-bottom:0">
+      <label class="mod-lbl">إلى تاريخ</label>
+      <input type="date" class="mod-in" id="abrDateTo" onchange="loadAllBranchesData()">
+    </div>
+    <button class="hbtn" onclick="resetAllBranchesFilters()">🔄 كل الفترات</button>
+  </div>
   <div id="allBranchesBody" style="max-height:560px;overflow-y:auto"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('allBranchesModal')" data-i18n="إغلاق">إغلاق</button>
@@ -1409,6 +1458,18 @@ let auth, db;
 let curUser=null, curRole=null, curUserBranch=null, curPerms={};
 function canManageBranchesUI(){return curRole==='admin'||!!curPerms.manageBranches;}
 function canManageUsersUI(){return curRole==='admin'||!!curPerms.manageUsers;}
+function canManageItemsUI(){return curRole==='admin'||!!curPerms.manageItems;}
+function canManageMenuUI(){return curRole==='admin'||!!curPerms.manageMenu;}
+function canViewAllReportsUI(){return curRole==='admin'||!!curPerms.manageBranches||!!curPerms.viewAllReports;}
+function canManageCompanyUI(){return curRole==='admin'||!!curPerms.manageCompany;}
+const PERMISSION_DEFS=[
+  {key:'manageBranches',label:'إدارة الفروع'},
+  {key:'manageUsers',label:'إدارة المستخدمين'},
+  {key:'manageItems',label:'إدارة الأصناف'},
+  {key:'manageMenu',label:'إدارة المنيو'},
+  {key:'viewAllReports',label:'تقارير كل الفروع'},
+  {key:'manageCompany',label:'بيانات الشركة'},
+];
 let unsubCatalog=null, unsubBranch=null, unsubUsers=null, unsubBranchesList=null;
 let catalogReady=false, branchReady=false, bootedUI=false;
 let lastSentCatalogJSON=null, lastSentBranchJSON=null;
@@ -1453,11 +1514,13 @@ function hideAuthScreen(){
   document.getElementById('appRoot').style.display='block';
 }
 let branchGateResolved=false;
+let pendingOpenAllBranchesAfterBoot=false;
 function showBranchGate(keys){
   document.getElementById('authScreen').style.display='none';
   document.getElementById('appRoot').style.display='none';
   document.getElementById('branchGateScreen').style.display='flex';
-  document.getElementById('branchGateSelect').innerHTML=keys.map(k=>{
+  const allOpt=canViewAllReportsUI()?`<option value="__all__">🌐 كل الفروع (تقرير موحّد)</option>`:'';
+  document.getElementById('branchGateSelect').innerHTML=allOpt+keys.map(k=>{
     const b=S.branches[k]||{};
     return `<option value="${k}">${b.name||k}${b.manager?' — مدير: '+b.manager:''}</option>`;
   }).join('');
@@ -1465,6 +1528,13 @@ function showBranchGate(keys){
 function confirmBranchGateSelection(){
   const key=document.getElementById('branchGateSelect').value;
   if(!key)return;
+  if(key==='__all__'){
+    branchGateResolved=true;
+    hideAuthScreen();
+    pendingOpenAllBranchesAfterBoot=true;
+    switchToBranchDoc(Object.keys(S.branches)[0]);
+    return;
+  }
   selectBranchFromGate(key);
 }
 function selectBranchFromGate(key){
@@ -1504,7 +1574,7 @@ function doLogin(){
 }
 function doLogout(){
   cleanupSubscriptions();
-  bootedUI=false;catalogReady=false;branchReady=false;branchGateResolved=false;
+  bootedUI=false;catalogReady=false;branchReady=false;branchGateResolved=false;pendingOpenAllBranchesAfterBoot=false;
   auth.signOut();
 }
 function cleanupSubscriptions(){
@@ -1543,8 +1613,8 @@ let unsubCompany=null;
 function startDataSync(){
   hideAuthScreen();
   document.getElementById('ddUsersItem').style.display=canManageUsersUI()?'':'none';
-  document.getElementById('ddCompanyItem').style.display=curRole==='admin'?'':'none';
-  document.getElementById('ddAllBranchReports').style.display=canManageBranchesUI()?'':'none';
+  document.getElementById('ddCompanyItem').style.display=canManageCompanyUI()?'':'none';
+  document.getElementById('ddAllBranchReports').style.display=canViewAllReportsUI()?'':'none';
   document.getElementById('branchSwitch').disabled=!canManageBranchesUI();
 
   if(!unsubCompany){
@@ -1600,6 +1670,11 @@ function tryBootUI(){
   bootedUI=true;
   buildColorGrid();renderSidebar();updateHeader();updateBanner();renderTbl();updateStats();renderHist();populateCatSelects();populateUomSelects();renderBranchSwitch();
 }
+function consumePendingOpenAllBranches(){
+  if(!pendingOpenAllBranchesAfterBoot) return;
+  pendingOpenAllBranchesAfterBoot=false;
+  if(canViewAllReportsUI()) openAllBranchesReport();
+}
 
 function switchToBranchDoc(key){
   if(unsubBranch) unsubBranch();
@@ -1608,7 +1683,7 @@ function switchToBranchDoc(key){
     const d=snap.data();if(!d)return;
     const incoming=JSON.stringify({name:d.name,manager:d.manager,storekeeper:d.storekeeper,supervisor:d.supervisor,date:d.date,sid:d.sid,qty:d.qty||{},notes:d.notes||{},reports:d.reports||[],cycles:d.cycles||[]});
     branchReady=true;
-    if(incoming===lastSentBranchJSON){tryBootUI();return;}
+    if(incoming===lastSentBranchJSON){tryBootUI();if(bootedUI)consumePendingOpenAllBranches();return;}
     S.date=d.date||today();S.sid=d.sid||genSid();
     S.qty=d.qty||{};S.notes=d.notes||{};S.reports=d.reports||[];
     S.branch=d.name||'';S.manager=d.manager||'';S.storekeeper=d.storekeeper||'';S.supervisor=d.supervisor||'';
@@ -1620,6 +1695,7 @@ function switchToBranchDoc(key){
     if(bootedUI){
       updateHeader();updateBanner();renderTbl();updateStats();renderHist();renderBranchSwitch();
       if(curView==='cycle'){if(!curCycleId)selectLatestCycle();renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();}
+      consumePendingOpenAllBranches();
     }
   },e=>toast('⚠️ خطأ في تحميل الفرع: '+e.message,'err'));
 }
@@ -1734,6 +1810,7 @@ function renderUomList(){
   }).join('');
 }
 function addUom(){
+  if(!canManageItemsUI()){toast('⚠️ إدارة الأصناف ووحدات القياس متاحة للإدارة أو لمن له صلاحية إدارة الأصناف بس','wrn');return;}
   const input=document.getElementById('uom-new');
   const val=input.value.trim();
   if(!val){toast('⚠️ أدخل اسم الوحدة','wrn');return;}
@@ -1745,6 +1822,7 @@ function addUom(){
   toast('✅ تم إضافة الوحدة: '+val,'suc');
 }
 function deleteUom(u){
+  if(!canManageItemsUI()){toast('⚠️ إدارة الأصناف ووحدات القياس متاحة للإدارة أو لمن له صلاحية إدارة الأصناف بس','wrn');return;}
   if(S.items.some(it=>it.u===u)){toast('⚠️ الوحدة دي مستخدمة في أصناف — غيّر وحدتها الأول','wrn');return;}
   if(!confirm(`حذف وحدة "${u}"؟`))return;
   S.uoms=(S.uoms||[]).filter(x=>x!==u);
@@ -1850,6 +1928,7 @@ function filterCat(cat,el){
 //  ADD / EDIT ITEM
 // ══════════════════════════════════════════════
 function openAddItem(){
+  if(!canManageItemsUI()){toast('⚠️ إدارة الأصناف متاحة للإدارة أو لمن له صلاحية إدارة الأصناف بس','wrn');return;}
   editingItem=null;
   document.getElementById('addItemTitle').textContent='➕ إضافة صنف جديد';
   document.getElementById('addItemBtn').textContent='✓ إضافة الصنف';
@@ -1869,6 +1948,7 @@ function openAddItem(){
 }
 
 function openEditItem(ref){
+  if(!canManageItemsUI()){toast('⚠️ إدارة الأصناف متاحة للإدارة أو لمن له صلاحية إدارة الأصناف بس','wrn');return;}
   const it=S.items.find(x=>x.r===ref);if(!it)return;
   editingItem=ref;
   document.getElementById('addItemTitle').textContent='✏️ تعديل: '+it.n;
@@ -1963,6 +2043,7 @@ function saveItem(){
 }
 
 function deleteItem(ref){
+  if(!canManageItemsUI()){toast('⚠️ إدارة الأصناف متاحة للإدارة أو لمن له صلاحية إدارة الأصناف بس','wrn');return;}
   const it=S.items.find(i=>i.r===ref);
   if(!it) return;
   if(!confirm(`حذف الصنف "${it.n}" نهائياً؟\n\nملاحظة: الأصناف الأصلية يمكن إعادتها فقط بإعادة تهيئة البيانات.`)) return;
@@ -1977,6 +2058,7 @@ function deleteItem(ref){
 //  ADD / EDIT CATEGORY
 // ══════════════════════════════════════════════
 function openAddCat(){
+  if(!canManageItemsUI()){toast('⚠️ إدارة الأقسام متاحة للإدارة أو لمن له صلاحية إدارة الأصناف بس','wrn');return;}
   editingCat=null;
   document.getElementById('addCatTitle').textContent='🗂️ إضافة قسم جديد';
   document.getElementById('addCatBtn').textContent='✓ إضافة القسم';
@@ -1992,6 +2074,7 @@ function openAddCat(){
 }
 
 function openEditCat(key){
+  if(!canManageItemsUI()){toast('⚠️ إدارة الأقسام متاحة للإدارة أو لمن له صلاحية إدارة الأصناف بس','wrn');return;}
   const v=S.cats[key];if(!v)return;
   editingCat=key;
   document.getElementById('addCatTitle').textContent='✏️ تعديل القسم: '+v.l;
@@ -2420,35 +2503,31 @@ function renderUsersList(){
   const cont=document.getElementById('usersList');
   if(!usersCache.length){cont.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">لا يوجد مستخدمين بعد</div>';return;}
   const branchSel=(u)=>`<option value="">بدون فرع</option>`+Object.entries(S.branches||{}).map(([k,b])=>`<option value="${k}"${u.branchId===k?' selected':''}>${b.name}</option>`).join('');
-  cont.innerHTML=usersCache.map(u=>{
-    const p=u.permissions||{};
-    return `
-    <div style="padding:10px 11px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:${u.role==='admin'?'0':'9px'}">
-        <div style="flex:1;min-width:160px">
-          <div style="font-weight:700;font-size:12.5px">${u.email}</div>
-          ${u.role==='pending'?'<div style="color:var(--gold);font-size:10.5px;margin-top:2px">⏳ بانتظار التفعيل</div>':''}
-        </div>
-        <select class="mod-in" style="width:auto;padding:6px 9px;font-size:11.5px" onchange="setUserRole('${u.uid}',this.value)">
+  cont.innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>المستخدم</th><th>الدور</th><th>الفرع</th>
+      ${PERMISSION_DEFS.map(p=>`<th style="text-align:center">${p.label}</th>`).join('')}
+    </tr></thead>
+    <tbody>${usersCache.map(u=>{
+      const p=u.permissions||{};
+      const isAdmin=u.role==='admin';
+      return `<tr>
+        <td class="td-name">${u.email}${u.role==='pending'?'<div style="color:var(--gold);font-size:10px;margin-top:2px">⏳ بانتظار التفعيل</div>':''}</td>
+        <td><select class="mod-in" style="width:auto;padding:6px 9px;font-size:11.5px" onchange="setUserRole('${u.uid}',this.value)">
           <option value="pending"${u.role==='pending'?' selected':''}>بانتظار</option>
           <option value="branch"${u.role==='branch'?' selected':''}>موظف فرع</option>
-          <option value="admin"${u.role==='admin'?' selected':''}>إدارة/مالية</option>
-        </select>
-        <select class="mod-in" style="width:auto;padding:6px 9px;font-size:11.5px" onchange="setUserBranch('${u.uid}',this.value)" ${u.role==='admin'?'disabled':''}>
+          <option value="admin"${isAdmin?' selected':''}>إدارة/مالية</option>
+        </select></td>
+        <td><select class="mod-in" style="width:auto;padding:6px 9px;font-size:11.5px" onchange="setUserBranch('${u.uid}',this.value)" ${isAdmin?'disabled':''}>
           ${branchSel(u)}
-        </select>
-      </div>
-      ${u.role==='admin'?'':`
-      <div style="display:flex;gap:16px;flex-wrap:wrap;padding-top:9px;border-top:1px solid var(--border)">
-        <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);cursor:pointer">
-          <input type="checkbox" ${p.manageBranches?'checked':''} onchange="setUserPerm('${u.uid}','manageBranches',this.checked)"> إدارة الفروع (إضافة/حذف/تبديل)
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);cursor:pointer">
-          <input type="checkbox" ${p.manageUsers?'checked':''} onchange="setUserPerm('${u.uid}','manageUsers',this.checked)"> إدارة المستخدمين والصلاحيات
-        </label>
-      </div>`}
-    </div>`;
-  }).join('');
+        </select></td>
+        ${PERMISSION_DEFS.map(pd=>`<td style="text-align:center">
+          <input type="checkbox" ${isAdmin||p[pd.key]?'checked':''} ${isAdmin?'disabled':''} onchange="setUserPerm('${u.uid}','${pd.key}',this.checked)">
+        </td>`).join('')}
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>
+  <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.8">حساب "إدارة/مالية" (admin) عنده كل الصلاحيات تلقائيًا. الصلاحيات دي بتتحكم في الظهور والاستخدام جوه النظام فقط.</p>`;
 }
 function setUserRole(uid,role){
   db.collection('users').doc(uid).update({role}).then(()=>{toast('✅ تم تحديث الصلاحية','suc');}).catch(e=>toast('⚠️ '+e.message,'err'));
@@ -2530,7 +2609,7 @@ function updateCompanyBranding(){
   }
 }
 function openCompanyMgr(){
-  if(curRole!=='admin')return;
+  if(!canManageCompanyUI()){toast('⚠️ إدارة بيانات الشركة متاحة للإدارة أو لمن له صلاحية إدارة بيانات الشركة بس','wrn');return;}
   document.getElementById('co-name').value=companyInfo.name||'';
   document.getElementById('co-phone').value=companyInfo.phone||'';
   document.getElementById('co-address').value=companyInfo.address||'';
@@ -2677,49 +2756,79 @@ function exportTransfersLogExcel(){
 let allBranchesRows=[];
 let allBranchesItemRows=[];
 let allBranchesTotals=null;
+let allBranchesRawDocs=null;
 function openAllBranchesReport(){
-  if(!canManageBranchesUI()){toast('⚠️ تقرير كل الفروع متاح للإدارة أو لمن له صلاحية إدارة الفروع بس','wrn');return;}
+  if(!canViewAllReportsUI()){toast('⚠️ تقرير كل الفروع متاح للإدارة أو لمن له صلاحية عرض تقارير كل الفروع بس','wrn');return;}
   document.getElementById('allBranchesModal').classList.add('open');
   document.getElementById('allBranchesBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري التحميل...</div>';
   db.collection('branches').get().then(snap=>{
-    allBranchesRows=[];
-    const itemAgg={};
-    let totalSales=0,totalActual=0,totalTheo=0,branchesWithData=0;
-    snap.forEach(doc=>{
-      const d=doc.data()||{};
-      const cycles=(d.cycles||[]).filter(c=>c.closed&&c.result).sort((a,b)=>a.start.localeCompare(b.start));
-      const last=cycles.length?cycles[cycles.length-1]:null;
-      allBranchesRows.push({
-        key:doc.id,name:d.name||doc.id,manager:d.manager||'-',
-        cyclesClosed:cycles.length,
-        periodStart:last?last.start:'',periodEnd:last?last.end:'',
-        salesAmount:last?last.result.totalSalesAmount:null,
-        actualCostPct:last?last.result.actualCostPct:null,
-        theoCostPct:last?last.result.theoCostPct:null,
-        varVal:last?last.result.totalVarVal:null,
-      });
-      if(last){
-        branchesWithData++;
-        totalSales+=last.result.totalSalesAmount||0;
-        totalActual+=last.result.totalActualCost||0;
-        totalTheo+=last.result.totalTheoCost||0;
-        (last.result.rows||[]).forEach(row=>{
-          const a=itemAgg[row.r]||(itemAgg[row.r]={r:row.r,n:row.n,u:row.u,actual:0,theo:0,varVal:0});
-          a.actual+=row.actual||0;a.theo+=row.theo||0;a.varVal+=row.varVal||0;
-        });
-      }
-    });
-    allBranchesItemRows=Object.values(itemAgg).sort((a,b)=>Math.abs(b.varVal)-Math.abs(a.varVal));
-    allBranchesTotals=branchesWithData?{
-      branchesWithData,totalSales,totalActual,totalTheo,
-      actualPct:totalSales>0?(totalActual/totalSales*100):0,
-      theoPct:totalSales>0?(totalTheo/totalSales*100):0,
-      varVal:totalActual-totalTheo,
-    }:null;
-    renderAllBranchesReport();
+    allBranchesRawDocs=[];
+    snap.forEach(doc=>allBranchesRawDocs.push({key:doc.id,data:doc.data()||{}}));
+    populateAllBranchesFilterSelect();
+    computeAndRenderAllBranches();
   }).catch(e=>{
     document.getElementById('allBranchesBody').innerHTML=`<div style="padding:20px;text-align:center;color:var(--red)">خطأ: ${e.message}</div>`;
   });
+}
+function populateAllBranchesFilterSelect(){
+  const sel=document.getElementById('abrBranchFilter');
+  const cur=sel.value||'all';
+  sel.innerHTML='<option value="all">كل الفروع</option>'+allBranchesRawDocs.map(d=>`<option value="${d.key}">${d.data.name||d.key}</option>`).join('');
+  sel.value=[...sel.options].some(o=>o.value===cur)?cur:'all';
+}
+function resetAllBranchesFilters(){
+  document.getElementById('abrDateFrom').value='';
+  document.getElementById('abrDateTo').value='';
+  document.getElementById('abrBranchFilter').value='all';
+  computeAndRenderAllBranches();
+}
+function loadAllBranchesData(){computeAndRenderAllBranches();}
+function computeAndRenderAllBranches(){
+  if(!allBranchesRawDocs) return;
+  const branchFilter=document.getElementById('abrBranchFilter').value||'all';
+  const dateFrom=document.getElementById('abrDateFrom').value||null;
+  const dateTo=document.getElementById('abrDateTo').value||null;
+  allBranchesRows=[];
+  const itemAgg={};
+  let totalSales=0,totalActual=0,totalTheo=0,branchesWithData=0;
+  allBranchesRawDocs.forEach(({key,data:d})=>{
+    if(branchFilter!=='all'&&key!==branchFilter) return;
+    let cycles=(d.cycles||[]).filter(c=>c.closed&&c.result);
+    if(dateFrom) cycles=cycles.filter(c=>c.end>=dateFrom);
+    if(dateTo) cycles=cycles.filter(c=>c.start<=dateTo);
+    cycles.sort((a,b)=>a.start.localeCompare(b.start));
+    if(!cycles.length){
+      allBranchesRows.push({key,name:d.name||key,manager:d.manager||'-',cyclesClosed:0,periodStart:'',periodEnd:'',salesAmount:null,actualCostPct:null,theoCostPct:null,varVal:null});
+      return;
+    }
+    let sSales=0,sActual=0,sTheo=0;
+    cycles.forEach(c=>{
+      sSales+=c.result.totalSalesAmount||0;sActual+=c.result.totalActualCost||0;sTheo+=c.result.totalTheoCost||0;
+      (c.result.rows||[]).forEach(row=>{
+        const a=itemAgg[row.r]||(itemAgg[row.r]={r:row.r,n:row.n,u:row.u,actual:0,theo:0,varVal:0});
+        a.actual+=row.actual||0;a.theo+=row.theo||0;a.varVal+=row.varVal||0;
+      });
+    });
+    branchesWithData++;
+    totalSales+=sSales;totalActual+=sActual;totalTheo+=sTheo;
+    allBranchesRows.push({
+      key,name:d.name||key,manager:d.manager||'-',
+      cyclesClosed:cycles.length,
+      periodStart:cycles[0].start,periodEnd:cycles[cycles.length-1].end,
+      salesAmount:sSales,
+      actualCostPct:sSales>0?(sActual/sSales*100):0,
+      theoCostPct:sSales>0?(sTheo/sSales*100):0,
+      varVal:sActual-sTheo,
+    });
+  });
+  allBranchesItemRows=Object.values(itemAgg).sort((a,b)=>Math.abs(b.varVal)-Math.abs(a.varVal));
+  allBranchesTotals=branchesWithData?{
+    branchesWithData,totalSales,totalActual,totalTheo,
+    actualPct:totalSales>0?(totalActual/totalSales*100):0,
+    theoPct:totalSales>0?(totalTheo/totalSales*100):0,
+    varVal:totalActual-totalTheo,
+  }:null;
+  renderAllBranchesReport();
 }
 function renderAllBranchesReport(){
   if(!allBranchesRows.length){
@@ -2727,7 +2836,7 @@ function renderAllBranchesReport(){
     return;
   }
   const t=allBranchesTotals;
-  const consolidated=t?`<div style="font-weight:700;font-size:13px;margin-bottom:8px">🌐 الإجمالي الموحّد لكل الفروع كأنها تقرير واحد (آخر دورة مغلقة لكل فرع)</div>
+  const consolidated=t?`<div style="font-weight:700;font-size:13px;margin-bottom:8px">🌐 الإجمالي الموحّد للفلتر الحالي (كأن الفروع المطابقة تقرير واحد)</div>
     <div class="dash-kpis" style="margin-bottom:18px">
       ${dashKpi('عدد الفروع اللي ليها بيانات',t.branchesWithData,'#3d8ef0')}
       ${dashKpi('إجمالي المبيعات',fmt(t.totalSales),'#3d8ef0')}
@@ -2737,7 +2846,7 @@ function renderAllBranchesReport(){
       ${dashKpi('إجمالي قيمة الانحراف',fmt(t.varVal),t.varVal>0?'#f05050':'#2ee89a')}
     </div>`:'';
   const itemTable=allBranchesItemRows.length?`
-    <div style="font-weight:700;font-size:13px;margin:18px 0 8px">📦 إجمالي استهلاك الأصناف عبر كل الفروع مجتمعة</div>
+    <div style="font-weight:700;font-size:13px;margin:18px 0 8px">📦 إجمالي استهلاك الأصناف عبر الفروع المطابقة للفلتر</div>
     <div class="tbl-wrap" style="max-height:320px;overflow-y:auto"><table>
       <thead><tr><th>الصنف</th><th>الوحدة</th><th>الاستهلاك الفعلي</th><th>الاستهلاك النظري</th><th>قيمة الانحراف</th></tr></thead>
       <tbody>${allBranchesItemRows.map(r=>`<tr>
@@ -2750,7 +2859,7 @@ function renderAllBranchesReport(){
   document.getElementById('allBranchesBody').innerHTML=`${consolidated}
     <div style="font-weight:700;font-size:13px;margin-bottom:8px">🏢 تفصيل حسب الفرع</div>
     <div class="tbl-wrap"><table>
-    <thead><tr><th>الفرع</th><th>المدير</th><th>عدد الدورات المغلقة</th><th>آخر دورة</th><th>مبيعات آخر دورة</th><th>تكلفة فعلية %</th><th>تكلفة نظرية %</th><th>قيمة الانحراف</th></tr></thead>
+    <thead><tr><th>الفرع</th><th>المدير</th><th>عدد الدورات المطابقة</th><th>الفترة المشمولة</th><th>إجمالي المبيعات</th><th>تكلفة فعلية %</th><th>تكلفة نظرية %</th><th>قيمة الانحراف</th></tr></thead>
     <tbody>${allBranchesRows.map(r=>`<tr>
       <td class="td-name">${r.name}</td><td>${r.manager}</td>
       <td style="font-family:var(--mono);text-align:center">${r.cyclesClosed}</td>
@@ -2766,7 +2875,7 @@ function renderAllBranchesReport(){
 function exportAllBranchesExcel(){
   if(!allBranchesRows.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
   const wb=XLSX.utils.book_new();
-  const out=[['الفرع','المدير','عدد الدورات المغلقة','آخر دورة من','آخر دورة إلى','مبيعات آخر دورة','تكلفة فعلية %','تكلفة نظرية %','قيمة الانحراف']];
+  const out=[['الفرع','المدير','عدد الدورات المطابقة','الفترة من','الفترة إلى','إجمالي المبيعات','تكلفة فعلية %','تكلفة نظرية %','قيمة الانحراف']];
   allBranchesRows.forEach(r=>out.push([r.name,r.manager,r.cyclesClosed,r.periodStart||'-',r.periodEnd||'-',
     r.salesAmount!=null?+r.salesAmount.toFixed(2):'-',r.actualCostPct!=null?+r.actualCostPct.toFixed(2):'-',
     r.theoCostPct!=null?+r.theoCostPct.toFixed(2):'-',r.varVal!=null?+r.varVal.toFixed(2):'-']));
@@ -2884,9 +2993,9 @@ function renderDashboard(){
       <div class="dash-card-title">⚠️ أكثر الأصناف انحرافًا (تراكمي عبر الدورات المعروضة)</div>
       ${svgBarChart(topVar)}
     </div>
-    ${canManageBranchesUI()?`<div class="dash-card"><div class="dash-card-title">🌐 مقارنة نسبة التكلفة الفعلية بين الفروع (آخر دورة مغلقة لكل فرع)</div><div id="dashBranchCompare" style="color:var(--muted);font-size:12px">جاري التحميل...</div></div>`:''}
+    ${canViewAllReportsUI()?`<div class="dash-card"><div class="dash-card-title">🌐 مقارنة نسبة التكلفة الفعلية بين الفروع (آخر دورة مغلقة لكل فرع)</div><div id="dashBranchCompare" style="color:var(--muted);font-size:12px">جاري التحميل...</div></div>`:''}
   `;
-  if(canManageBranchesUI()) loadDashboardBranchCompare();
+  if(canViewAllReportsUI()) loadDashboardBranchCompare();
 }
 function dashKpi(lbl,val,color){
   return `<div class="dash-kpi"><div class="dash-kpi-lbl">${lbl}</div><div class="dash-kpi-val" style="color:${color}">${val}</div></div>`;
@@ -3093,6 +3202,7 @@ function addRecipeRow(){
   renderRecipeRows();
 }
 function openAddMenuItem(){
+  if(!canManageMenuUI()){toast('⚠️ إدارة المنيو متاحة للإدارة أو لمن له صلاحية إدارة المنيو بس','wrn');return;}
   editingMenuId=null;curRecipeRows=[];
   document.getElementById('miTitle').textContent='➕ إضافة صنف مباع جديد';
   document.getElementById('miSaveBtn').textContent='✓ حفظ الصنف';
@@ -3103,6 +3213,7 @@ function openAddMenuItem(){
   document.getElementById('menuItemModal').classList.add('open');
 }
 function openEditMenuItem(id){
+  if(!canManageMenuUI()){toast('⚠️ إدارة المنيو متاحة للإدارة أو لمن له صلاحية إدارة المنيو بس','wrn');return;}
   const m=S.menu.find(x=>x.id===id);if(!m)return;
   editingMenuId=id;curRecipeRows=(m.recipe||[]).map(r=>({...r}));
   document.getElementById('miTitle').textContent='✏️ تعديل: '+m.n;
@@ -3130,6 +3241,7 @@ function saveMenuItem(){
   save();renderMenuList();closeM('menuItemModal');
 }
 function deleteMenuItem(id){
+  if(!canManageMenuUI()){toast('⚠️ إدارة المنيو متاحة للإدارة أو لمن له صلاحية إدارة المنيو بس','wrn');return;}
   if(!confirm('حذف هذا الصنف من المنيو؟'))return;
   S.menu=S.menu.filter(x=>x.id!==id);save();renderMenuList();toast('🗑️ تم الحذف','wrn');
 }
@@ -3144,6 +3256,7 @@ function BCycles(){
 }
 function getCycle(id){return BCycles().find(c=>c.id===id);}
 function sortedCycles(){return [...BCycles()].sort((a,b)=>a.start.localeCompare(b.start));}
+function findCycleForDate(dateStr){return sortedCycles().find(c=>dateStr>=c.start&&dateStr<=c.end);}
 function latestClosedBefore(cycle){
   const arr=sortedCycles().filter(c=>c.closed&&c.id!==cycle.id&&c.start<cycle.start);
   return arr.length?arr[arr.length-1]:null;
@@ -3289,6 +3402,10 @@ function renderSalesTab(c,el){
     return;
   }
   el.innerHTML=`${cycleToolbar('إضافة صنف للمنيو',"openAddMenuItem()")}
+  <div style="display:flex;gap:8px;margin:-4px 0 12px;flex-wrap:wrap">
+    <button class="hbtn" onclick="downloadFoodicsImportTemplate()">📄 قالب فوديكس</button>
+    <button class="hbtn gold" onclick="document.getElementById('foodicsImportFileInput').click()">📥 سحب مبيعات فوديكس (Excel)</button>
+  </div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>الصنف</th><th>السعر</th><th>الكمية المباعة</th><th>الإجمالي (نظري)</th><th>المكونات</th></tr></thead>
     <tbody id="ctRows"></tbody>
@@ -3480,6 +3597,73 @@ function setCycleTransferIn(cid,r,field,v){
   t[field]=field==='reason'?v:(v===''?0:(parseFloat(v)||0));
   if(!t.qty&&!t.reason) delete c.transfersIn[r];
   save();
+}
+
+// ══════════════════════════════════════════════
+//  QUICK MOVEMENT ENTRY (تحويل/سحب/استلام مستقل عن تابات الدورة —
+//  بيتسجل تلقائياً في الدورة اللي تاريخها يغطي تاريخ الحركة، وبيتراكم
+//  فوق أي كمية سابقة لنفس الصنف بدل ما يستبدلها بالكامل)
+// ══════════════════════════════════════════════
+function openQuickMovement(){
+  document.getElementById('qm-type').value='transferOut';
+  document.getElementById('qm-date').value=today();
+  document.getElementById('qm-qty').value='';
+  document.getElementById('qm-cost').value='';
+  document.getElementById('qm-note').value='';
+  const itemSel=document.getElementById('qm-item');
+  itemSel.innerHTML=[...S.items].sort((a,b)=>a.n.localeCompare(b.n,'ar')).map(it=>`<option value="${it.r}">${it.n} (${it.u})</option>`).join('');
+  updateQuickMovementFields();
+  document.getElementById('quickMovementModal').classList.add('open');
+}
+function updateQuickMovementFields(){
+  const type=document.getElementById('qm-type').value;
+  document.getElementById('qm-cost-wrap').style.display=type==='purchase'?'':'none';
+  const labels={transferOut:'اسم الفرع المستلم',transferIn:'اسم الفرع المرسل',withdraw:'سبب السحب/الجهة',purchase:'ملاحظة (اختياري)'};
+  document.getElementById('qm-note-lbl').textContent=labels[type];
+  updateQuickMovementCycleInfo();
+}
+function updateQuickMovementCycleInfo(){
+  const date=document.getElementById('qm-date').value;
+  const el=document.getElementById('qm-cycle-info');
+  if(!date){el.textContent='';return;}
+  const c=findCycleForDate(date);
+  if(!c) el.innerHTML='⚠️ لا توجد دورة تسوية تغطي هذا التاريخ — افتح دورة تشمله الأول';
+  else if(c.closed) el.innerHTML=`⚠️ الدورة (${c.start} ← ${c.end}) مغلقة — أعد فتحها الأول لو محتاج تسجّل فيها`;
+  else el.innerHTML=`✅ هتتسجل في دورة: ${c.start} ← ${c.end}`;
+}
+function saveQuickMovement(){
+  const date=document.getElementById('qm-date').value;
+  const ref=document.getElementById('qm-item').value;
+  const qty=parseFloat(document.getElementById('qm-qty').value);
+  const type=document.getElementById('qm-type').value;
+  const note=document.getElementById('qm-note').value.trim();
+  const cost=parseFloat(document.getElementById('qm-cost').value)||0;
+  if(!date){toast('⚠️ اختر تاريخ الحركة','wrn');return;}
+  if(!ref){toast('⚠️ اختر الصنف','wrn');return;}
+  if(!qty||qty<=0){toast('⚠️ أدخل كمية صحيحة','wrn');return;}
+  const c=findCycleForDate(date);
+  if(!c){toast('⚠️ لا توجد دورة تسوية تغطي هذا التاريخ — افتح دورة تشمله الأول','err');return;}
+  if(c.closed){toast('⚠️ الدورة مقفولة — أعد فتحها الأول','err');return;}
+  if(type==='transferOut'){
+    if(!c.transfersOut) c.transfersOut={};
+    const t=c.transfersOut[ref]||{qty:0,reason:''};
+    c.transfersOut[ref]={qty:(t.qty||0)+qty,reason:note||t.reason||''};
+  }else if(type==='transferIn'){
+    if(!c.transfersIn) c.transfersIn={};
+    const t=c.transfersIn[ref]||{qty:0,reason:''};
+    c.transfersIn[ref]={qty:(t.qty||0)+qty,reason:note||t.reason||''};
+  }else if(type==='withdraw'){
+    if(!c.withdrawals) c.withdrawals={};
+    const t=c.withdrawals[ref]||{qty:0,reason:''};
+    c.withdrawals[ref]={qty:(t.qty||0)+qty,reason:note||t.reason||''};
+  }else if(type==='purchase'){
+    const p=c.purchases[ref]||{qty:0,cost:0};
+    c.purchases[ref]={qty:(p.qty||0)+qty,cost:(p.cost||0)+cost};
+  }
+  save();
+  closeM('quickMovementModal');
+  toast(`✅ تم تسجيل الحركة في دورة ${c.start} ← ${c.end}`,'suc');
+  if(curCycleId===c.id){renderCycleTabs();renderCycleBody();}
 }
 
 function renderStockTab(c,el){
@@ -4167,6 +4351,111 @@ function processRecipeImportRows(rows){
   if(selfRefSkipped) parts.push(`⚠️ ${selfRefSkipped} سطر متجاهل (الصنف مكوّن لنفسه)`);
   if(skippedRows) parts.push(`${skippedRows} سطر متجاهل (بيانات ناقصة)`);
   toast('✅ تم الاستيراد: '+parts.join('، '),'suc');
+}
+
+// ══════════════════════════════════════════════
+//  FOODICS SALES IMPORT (سحب الكميات المباعة من شيت إكسل مُصدَّر من فوديكس)
+//  Column names are flexible (English/Arabic aliases) since the exact
+//  export layout varies by Foodics report type — adjust FOODICS_IMPORT_ALIASES
+//  if a real export uses different headers than expected here.
+// ══════════════════════════════════════════════
+const FOODICS_IMPORT_ALIASES={
+  name:['Product Name','Product','Item','Item Name','اسم المنتج','اسم الصنف','الصنف'],
+  qty:['Quantity','Qty','Quantity Sold','Sold Qty','الكمية','الكمية المباعة'],
+  date:['Date','Order Date','Business Date','التاريخ'],
+};
+function matchFoodicsColumn(header){
+  const h=String(header||'').trim().toLowerCase();
+  for(const key in FOODICS_IMPORT_ALIASES){
+    if(FOODICS_IMPORT_ALIASES[key].some(a=>a.toLowerCase()===h)) return key;
+  }
+  return null;
+}
+function normalizeFoodicsDate(v){
+  if(v instanceof Date) return v.toISOString().slice(0,10);
+  const s=String(v||'').trim();
+  if(!s) return null;
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  const d=new Date(s);
+  return isNaN(d.getTime())?null:d.toISOString().slice(0,10);
+}
+function downloadFoodicsImportTemplate(){
+  const wb=XLSX.utils.book_new();
+  const rows=[
+    ['Product Name','Quantity','Date'],
+    ['مثال: برجر لحم كلاسيك','25','2026-07-30'],
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:30},{wch:14},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws,'Foodics Sales');
+  XLSX.writeFile(wb,'قالب_استيراد_مبيعات_فوديكس.xlsx');
+  toast('📄 تم تحميل القالب — عمود التاريخ اختياري (لو الشيت كله ليوم واحد)، ولو مش موجود هيتحسب على الدورة المفتوحة حاليًا','inf');
+}
+function handleFoodicsImportFileSelected(e){
+  const file=e.target.files[0];
+  e.target.value='';
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=new Uint8Array(ev.target.result);
+      const wb=XLSX.read(data,{type:'array',cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      processFoodicsImportRows(rows);
+    }catch(err){ toast('⚠️ تعذر قراءة الملف: '+err.message,'err'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function processFoodicsImportRows(rows){
+  if(!rows||!rows.length){toast('⚠️ الملف فارغ','wrn');return;}
+  const header=rows[0];
+  const colMap={};
+  header.forEach((h,i)=>{const key=matchFoodicsColumn(h);if(key)colMap[key]=i;});
+  if(colMap.name==null||colMap.qty==null){
+    toast('⚠️ الملف لازم يحتوي على عمودي اسم الصنف والكمية على الأقل — حمّل قالب فوديكس من تبويب المبيعات','err');
+    return;
+  }
+  const qtyByName={};
+  const datesSeen=new Set();
+  for(let i=1;i<rows.length;i++){
+    const row=rows[i];
+    if(!row||!row.length) continue;
+    const name=String(row[colMap.name]||'').trim();
+    const qty=parseFloat(row[colMap.qty]);
+    if(!name||isNaN(qty)) continue;
+    const key=name.toLowerCase();
+    qtyByName[key]={n:name,qty:(qtyByName[key]?qtyByName[key].qty:0)+qty};
+    if(colMap.date!=null&&row[colMap.date]!==''){
+      const d=normalizeFoodicsDate(row[colMap.date]);
+      if(d) datesSeen.add(d);
+    }
+  }
+  let targetCycle=null;
+  if(datesSeen.size===1){
+    targetCycle=findCycleForDate([...datesSeen][0]);
+    if(!targetCycle){toast('⚠️ لا توجد دورة تسوية تغطي تاريخ '+[...datesSeen][0]+' — افتح دورة تشمل هذا التاريخ الأول','err');return;}
+  }else if(datesSeen.size>1){
+    toast('⚠️ الملف فيه أكثر من تاريخ في نفس الوقت — قسّم الملف لكل يوم على حدة عشان يتسجل في الدورة الصحيحة','err');
+    return;
+  }else{
+    targetCycle=curCycleId?getCycle(curCycleId):null;
+    if(!targetCycle){toast('⚠️ الملف من غير عمود تاريخ — افتح الدورة المطلوبة الأول ثم أعد المحاولة','err');return;}
+  }
+  if(targetCycle.closed){toast('⚠️ الدورة المطابقة لهذا التاريخ مقفولة — أعد فتحها الأول','err');return;}
+
+  let matched=0;const unmatched=[];
+  Object.values(qtyByName).forEach(({n,qty})=>{
+    const m=S.menu.find(x=>x.n.trim().toLowerCase()===n.toLowerCase());
+    if(!m){unmatched.push(n);return;}
+    targetCycle.sales[m.id]=qty;
+    matched++;
+  });
+  save();
+  if(curCycleId===targetCycle.id){renderCycleTabs();renderCycleBody();}
+  let msg=`✅ تم سحب مبيعات ${matched} صنف للدورة ${targetCycle.start} ← ${targetCycle.end}`;
+  if(unmatched.length) msg+=`، ⚠️ ${unmatched.length} صنف مش متطابق مع أسماء المنيو (${unmatched.slice(0,3).join('، ')}${unmatched.length>3?' ...':''})`;
+  toast(msg,unmatched.length?'wrn':'suc');
 }
 
 function exportBackupJSON(){

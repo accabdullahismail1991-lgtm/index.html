@@ -580,6 +580,8 @@ td{padding:9px 13px;vertical-align:middle;}
       <div class="vn-dd-item" id="ddPlannerItem" onclick="closeDropdowns();openRequirementPlanner()" data-i18n="📈 تخطيط الاحتياج">📈 تخطيط الاحتياج</div>
       <div class="vn-dd-item" onclick="closeDropdowns();openQuickMovement()">➕ تسجيل حركة (تحويل/سحب/استلام)</div>
       <div class="vn-dd-item" id="ddTransfersLogItem" onclick="closeDropdowns();openTransfersLog()" data-i18n="🔀 سجل التحويلات">🔀 سجل التحويلات</div>
+      <div class="vn-dd-item" id="ddWasteReportItem" onclick="closeDropdowns();openWasteReport()" data-i18n="🗑️ تقرير أكثر الأصناف هالكًا">🗑️ تقرير أكثر الأصناف هالكًا</div>
+      <div class="vn-dd-item" id="ddMaintenanceItem" onclick="closeDropdowns();openMaintenanceLog()" data-i18n="🔧 سجل الأعطال والصيانة">🔧 سجل الأعطال والصيانة</div>
       <div class="vn-dd-item" id="ddAllBranchReports" style="display:none" onclick="closeDropdowns();openAllBranchesReport()" data-i18n="🌐 تقرير كل الفروع">🌐 تقرير كل الفروع</div>
       <div class="vn-dd-div"></div>
       <div class="vn-dd-item" onclick="closeDropdowns();exportFullDataExcel()" data-i18n="📗 تفريغ كل البيانات (Excel)">📗 تفريغ كل البيانات (Excel)</div>
@@ -887,6 +889,7 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="modal rmod">
   <div class="mod-title" data-i18n="📋 تقرير الجرد">📋 تقرير الجرد</div>
   <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('rptModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" id="rptCsvBtnTop">📊 CSV</button>
     <button class="hbtn" id="rptXlsBtnTop">📗 Excel</button>
@@ -993,6 +996,7 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="modal" style="width:620px">
   <div class="mod-title" data-i18n="📋 مكونات الصنف">📋 مكونات الصنف</div>
   <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('menuRecipeViewModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
   </div>
   <div id="menuRecipeViewBody"></div>
@@ -1008,12 +1012,17 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="modal" style="width:820px">
   <div class="mod-title" data-i18n="📈 تخطيط الاحتياج (احتياج المنيو من الطلبات)">📈 تخطيط الاحتياج (احتياج المنيو من الطلبات)</div>
   <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('planModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="resetPlanOverrides()">🔄 إعادة من المتوسط التاريخي</button>
     <button class="hbtn gold" onclick="exportPlanExcel()">📗 تصدير Excel</button>
   </div>
-  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">النظام بيحسب متوسط استهلاك يومي لكل صنف من بيانات الدورات المغلقة السابقة لهذا الفرع، وبيقترح احتياج الفترة القادمة تلقائياً — وتقدر تعدّل الكميات المتوقعة لأي صنف يدوياً.</p>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">النظام بيحسب متوسط استهلاك يومي لكل صنف من بيانات الدورات المغلقة السابقة، وبيقترح احتياج الفترة القادمة تلقائياً — وتقدر تعدّل الكميات المتوقعة لأي صنف يدوياً.</p>
   <div class="mod-row" style="align-items:end">
+    <div class="mod-field" id="planBranchFilterWrap" style="display:none">
+      <label class="mod-lbl">الفرع</label>
+      <select class="mod-in" id="plan-branch-filter" onchange="setPlanBranchFilter(this.value)"></select>
+    </div>
     <div class="mod-field"><label class="mod-lbl" data-i18n="عدد الأيام المطلوب التخطيط لها">عدد الأيام المطلوب التخطيط لها</label><input type="number" inputmode="decimal" class="mod-in" id="plan-days" value="14" min="1" step="1" onchange="setPlanDays(this.value)"></div>
     <div class="mod-field"><label class="mod-lbl" data-i18n="بيانات تاريخية متاحة">بيانات تاريخية متاحة</label><div id="plan-hist-info" style="font-size:12px;color:var(--muted);padding-top:10px"></div></div>
   </div>
@@ -1061,6 +1070,7 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="modal" style="width:820px">
   <div class="mod-title" id="ledgerTitle">📜 حركة الصنف</div>
   <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('itemLedgerModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportLedgerExcel()">📗 Excel</button>
   </div>
@@ -1108,6 +1118,7 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="modal" style="width:820px">
   <div class="mod-title" data-i18n="🔀 سجل التحويلات بين الفروع">🔀 سجل التحويلات بين الفروع</div>
   <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('transfersLogModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportTransfersLogExcel()">📗 Excel</button>
   </div>
@@ -1126,6 +1137,7 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="modal" style="width:820px">
   <div class="mod-title">📊 تقرير مبيعات المنيو حسب التاريخ</div>
   <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('menuSalesModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportMenuSalesExcel()">📗 Excel</button>
   </div>
@@ -1149,6 +1161,7 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="modal" style="width:900px">
   <div class="mod-title" data-i18n="🌐 تقرير كل الفروع">🌐 تقرير كل الفروع</div>
   <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('allBranchesModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportAllBranchesExcel()">📗 Excel</button>
   </div>
@@ -1199,6 +1212,7 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="modal" style="width:920px">
   <div class="mod-title" data-i18n="📦 تقرير المخزون الختامي">📦 تقرير المخزون الختامي</div>
   <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('closingStockModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportClosingStockExcel()">📗 Excel</button>
   </div>
@@ -1212,11 +1226,82 @@ td{padding:9px 13px;vertical-align:middle;}
 </div>
 </div>
 
+<!-- TOP WASTE ITEMS REPORT MODAL (تقرير أكثر الأصناف هالكًا) -->
+<div class="overlay" id="wasteReportModal">
+<div class="modal" style="width:820px">
+  <div class="mod-title" data-i18n="🗑️ تقرير أكثر الأصناف هالكًا">🗑️ تقرير أكثر الأصناف هالكًا</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('wasteReportModal')" data-i18n="إغلاق">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportWasteReportExcel()">📗 Excel</button>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">إجمالي كميات وقيمة الهالك لكل صنف، مرتّبة تنازلياً من الأكبر قيمة، عبر كل دورات الفرع المختار — أو مجمّعة لكل الفروع.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
+    <div class="mod-field" id="wasteBranchFilterWrap" style="display:none;margin-bottom:0">
+      <label class="mod-lbl">الفرع</label>
+      <select class="mod-in" id="wr-branch-filter" style="width:auto" onchange="setWasteReportBranchFilter(this.value)"></select>
+    </div>
+    <div class="mod-field" style="margin-bottom:0">
+      <label class="mod-lbl">من تاريخ</label>
+      <input type="date" class="mod-in" id="wr-date-from" onchange="renderWasteReport()">
+    </div>
+    <div class="mod-field" style="margin-bottom:0">
+      <label class="mod-lbl">إلى تاريخ</label>
+      <input type="date" class="mod-in" id="wr-date-to" onchange="renderWasteReport()">
+    </div>
+    <button class="hbtn" onclick="document.getElementById('wr-date-from').value='';document.getElementById('wr-date-to').value='';renderWasteReport()">🔄 كل الفترات</button>
+  </div>
+  <div id="wasteReportBody"></div>
+</div>
+</div>
+
+<!-- MAINTENANCE & MALFUNCTIONS LOG MODAL (سجل الأعطال والصيانة اليومي) -->
+<div class="overlay" id="maintenanceModal">
+<div class="modal" style="width:900px">
+  <div class="mod-title" data-i18n="🔧 سجل الأعطال والصيانة">🔧 سجل الأعطال والصيانة</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('maintenanceModal')" data-i18n="إغلاق">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportMaintenanceExcel()">📗 Excel</button>
+  </div>
+  <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px">
+    <div class="mod-row">
+      <div class="mod-field"><label class="mod-lbl">التاريخ</label><input type="date" class="mod-in" id="mnt-date"></div>
+      <div class="mod-field"><label class="mod-lbl">المعدة/الموقع *</label><input type="text" class="mod-in" id="mnt-equipment" placeholder="مثال: فريزر رقم 2"></div>
+    </div>
+    <div class="mod-field"><label class="mod-lbl">وصف العطل *</label><input type="text" class="mod-in" id="mnt-desc" placeholder="اشرح المشكلة..."></div>
+    <div class="mod-row">
+      <div class="mod-field"><label class="mod-lbl">المُبلّغ</label><input type="text" class="mod-in" id="mnt-reporter" placeholder="اسم الموظف..."></div>
+      <div class="mod-field"><label class="mod-lbl">تكلفة الإصلاح المتوقعة (اختياري)</label><input type="number" inputmode="decimal" class="mod-in" id="mnt-cost" min="0" step="0.01"></div>
+    </div>
+    <button class="hbtn gold" style="width:100%;justify-content:center;padding:10px" onclick="addMaintenanceEntry()">➕ تسجيل عطل جديد</button>
+  </div>
+  <div id="maintenanceList"></div>
+</div>
+</div>
+
+<!-- POS IMPORT RECONCILIATION MODAL (مصادقة أصناف المنيو المسحوبة من نقطة البيع مع المسجّل في النظام) -->
+<div class="overlay" id="importReconcileModal">
+<div class="modal" style="width:860px">
+  <div class="mod-title" data-i18n="🔍 تأكيد مطابقة أصناف الاستيراد مع المنيو">🔍 تأكيد مطابقة أصناف الاستيراد مع المنيو</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('importReconcileModal')" data-i18n="إغلاق">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.8">نتيجة مطابقة أسماء الأصناف المسحوبة من نقطة البيع مع الأصناف المسجّلة في المنيو عندك. الأصناف المتطابقة اتطبّقت تلقائياً على الدورة. اختر الصنف الصحيح للأصناف غير المتطابقة عشان تتطبّق وتتحفظ كاسم بديل تلقائي للمرات الجاية.</p>
+  <div id="importReconcileBody"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('importReconcileModal')" data-i18n="إغلاق">إغلاق</button>
+  </div>
+</div>
+</div>
+
 <!-- INTERACTIVE DASHBOARD MODAL -->
 <div class="overlay" id="dashboardModal">
 <div class="modal" style="width:960px">
   <div class="mod-title" data-i18n="📊 لوحة التحكم التفاعلية">📊 لوحة التحكم التفاعلية</div>
   <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('dashboardModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">رسوم بيانية مبنية على آخر الدورات المغلقة لهذا الفرع.</p>
@@ -1504,6 +1589,9 @@ function reRenderDynamicContentForLang(){
     ['menuSalesModal',renderMenuSalesReport],
     ['posMatchModal',renderPosMatchList],
     ['closingStockModal',renderClosingStockReport],
+    ['wasteReportModal',renderWasteReport],
+    ['maintenanceModal',renderMaintenanceList],
+    ['importReconcileModal',renderImportReconcile],
   ];
   openRenders.forEach(([id,fn])=>{
     const el=document.getElementById(id);
@@ -1658,6 +1746,7 @@ let S={
   date:today(), sid:genSid(),
   qty:{}, notes:{},
   reports:[],
+  maintenance:[],
   cats:{...DEFAULT_CATS},
   items:[...DEFAULT_ITEMS],
   branches:{}, curBranch:'', branchData:{},
@@ -1724,11 +1813,11 @@ function reportSignatureBlock(labels){
   labels=labels||['أُعِدّ بواسطة (أمين المخزن)','رُوجع بواسطة (مدير الفرع)','اعتُمد بواسطة (الإدارة/المالية)'];
   return `<div class="rpt-pro-sign">${labels.map(l=>`<div class="rpt-pro-sign-cell"><div class="rpt-pro-sign-line"></div><div class="rpt-pro-sign-lbl">${l}</div></div>`).join('')}</div>`;
 }
-function topVarianceHtml(rows,n){
+function topVarianceHtml(rows,n,title){
   const top=[...rows].filter(r=>Math.abs(r.varVal||0)>0.001).sort((a,b)=>Math.abs(b.varVal)-Math.abs(a.varVal)).slice(0,n||5);
   if(!top.length) return '';
   return `<div class="rpt-pro-exception">
-    <div class="rpt-pro-exception-title">🔎 أعلى ${top.length} أصناف بأكبر انحراف قيمة (Exception Report)</div>
+    <div class="rpt-pro-exception-title">🔎 ${title||`أعلى ${top.length} أصناف بأكبر انحراف قيمة (Exception Report)`}</div>
     <table class="rpt-pro-exception-tbl"><tbody>${top.map(r=>`<tr><td>${r.n}</td><td style="font-family:var(--mono);text-align:left">${acctFmt(r.varVal)}</td></tr>`).join('')}</tbody></table>
   </div>`;
 }
@@ -1916,6 +2005,8 @@ function startDataSync(){
   document.getElementById('ddMenuSalesItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('ddPlannerItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('ddTransfersLogItem').style.display=canViewReportsUI()?'':'none';
+  document.getElementById('ddWasteReportItem').style.display=canViewReportsUI()?'':'none';
+  document.getElementById('ddMaintenanceItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('branchSwitch').disabled=!canManageBranchesUI();
 
   if(!unsubCompany){
@@ -1982,11 +2073,11 @@ function switchToBranchDoc(key){
   S.curBranch=key;
   unsubBranch=db.collection('branches').doc(key).onSnapshot(snap=>{
     const d=snap.data();if(!d)return;
-    const incoming=JSON.stringify({name:d.name,manager:d.manager,storekeeper:d.storekeeper,supervisor:d.supervisor,date:d.date,sid:d.sid,qty:d.qty||{},notes:d.notes||{},reports:d.reports||[],cycles:d.cycles||[]});
+    const incoming=JSON.stringify({name:d.name,manager:d.manager,storekeeper:d.storekeeper,supervisor:d.supervisor,date:d.date,sid:d.sid,qty:d.qty||{},notes:d.notes||{},reports:d.reports||[],cycles:d.cycles||[],maintenance:d.maintenance||[]});
     branchReady=true;
     if(incoming===lastSentBranchJSON){tryBootUI();if(bootedUI)consumePendingOpenAllBranches();return;}
     S.date=d.date||today();S.sid=d.sid||genSid();
-    S.qty=d.qty||{};S.notes=d.notes||{};S.reports=d.reports||[];
+    S.qty=d.qty||{};S.notes=d.notes||{};S.reports=d.reports||[];S.maintenance=d.maintenance||[];
     S.branch=d.name||'';S.manager=d.manager||'';S.storekeeper=d.storekeeper||'';S.supervisor=d.supervisor||'';
     if(!S.branches) S.branches={};
     S.branches[key]={name:S.branch,manager:S.manager,storekeeper:S.storekeeper,supervisor:S.supervisor};
@@ -2008,7 +2099,7 @@ function scheduleBranchSave(){
     if(!S.curBranch||!db) return;
     const payload={
       name:S.branch,manager:S.manager,storekeeper:S.storekeeper,supervisor:S.supervisor,
-      date:S.date,sid:S.sid,qty:S.qty,notes:S.notes,reports:S.reports,
+      date:S.date,sid:S.sid,qty:S.qty,notes:S.notes,reports:S.reports,maintenance:S.maintenance||[],
       cycles:(S.branchData[S.curBranch]&&S.branchData[S.curBranch].cycles)||[]
     };
     lastSentBranchJSON=JSON.stringify(payload);
@@ -2811,7 +2902,7 @@ function createNewBranch(){
   const btn=document.getElementById('createBranchBtn');
   btn.disabled=true;btn.textContent='⏳ جاري الإنشاء...';
   const ref=db.collection('branches').doc();
-  ref.set({name,manager,storekeeper,supervisor,date:today(),sid:genSid(),qty:{},notes:{},reports:[],cycles:[]})
+  ref.set({name,manager,storekeeper,supervisor,date:today(),sid:genSid(),qty:{},notes:{},reports:[],maintenance:[],cycles:[]})
     .then(()=>{
       toast('✅ تم إضافة الفرع: '+name,'suc');
       closeM('newBranchModal');
@@ -3179,6 +3270,174 @@ function exportTransfersLogExcel(){
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'سجل التحويلات');
   XLSX.writeFile(wb,`TransfersLog_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
   toast('📗 تم تصدير سجل التحويلات','inf');
+}
+
+// ══════════════════════════════════════════════
+//  TOP WASTE ITEMS REPORT (أكثر الأصناف هالكًا — لفرع واحد أو لكل الفروع)
+// ══════════════════════════════════════════════
+let wasteReportBranchFilter='__current__';
+function openWasteReport(){
+  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  wasteReportBranchFilter='__current__';
+  document.getElementById('wr-date-from').value='';
+  document.getElementById('wr-date-to').value='';
+  populateWasteBranchFilter();
+  renderWasteReport();
+  document.getElementById('wasteReportModal').classList.add('open');
+}
+function populateWasteBranchFilter(){
+  const wrap=document.getElementById('wasteBranchFilterWrap');
+  if(!canViewAllReportsUI()||Object.keys(S.branches||{}).length<2){wrap.style.display='none';return;}
+  wrap.style.display='';
+  document.getElementById('wr-branch-filter').innerHTML=branchFilterOptionsHtml(wasteReportBranchFilter);
+}
+function setWasteReportBranchFilter(v){
+  wasteReportBranchFilter=v;
+  if(v==='__current__'||crossBranchRawDocs){renderWasteReport();return;}
+  document.getElementById('wasteReportBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري تحميل بيانات الفروع...</div>';
+  loadCrossBranchDocs().then(renderWasteReport).catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
+}
+function computeWasteReport(){
+  const src=crossBranchDataSource(wasteReportBranchFilter);
+  const dateFrom=document.getElementById('wr-date-from').value||null;
+  const dateTo=document.getElementById('wr-date-to').value||null;
+  const agg={};
+  src.cyclesArrays.forEach(arr=>{
+    (arr||[]).forEach(c=>{
+      if(dateFrom&&c.end<dateFrom) return;
+      if(dateTo&&c.start>dateTo) return;
+      Object.entries(c.waste||{}).forEach(([r,w])=>{
+        if(!w||!w.qty) return;
+        const it=S.items.find(x=>x.r===r);
+        const a=agg[r]||(agg[r]={r,n:it?it.n:r,u:it?it.u:'',c:it?it.c:'__other__',qty:0,value:0,occurrences:0});
+        a.qty+=w.qty;
+        a.value+=w.qty*(it?effectiveItemCost(it):0);
+        a.occurrences++;
+      });
+    });
+  });
+  const rows=Object.values(agg).sort((a,b)=>b.value-a.value);
+  const totalValue=rows.reduce((s,r)=>s+r.value,0);
+  const totalQty=rows.reduce((s,r)=>s+r.qty,0);
+  return {rows,totalValue,totalQty,label:src.label};
+}
+function renderWasteReport(){
+  const rep=computeWasteReport();
+  const kpi=(l,v,color)=>`<div class="stat" style="border-color:${color}55"><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>`;
+  if(!rep.rows.length){
+    document.getElementById('wasteReportBody').innerHTML=`${reportHeaderBlock({title:'🗑️ تقرير أكثر الأصناف هالكًا',branchName:rep.label,periodLabel:document.getElementById('wr-date-from').value||document.getElementById('wr-date-to').value?`${document.getElementById('wr-date-from').value||'...'} ← ${document.getElementById('wr-date-to').value||'...'}`:'كل الفترات'})}
+    <div style="padding:24px;text-align:center;color:var(--muted)">لا يوجد هالك مسجّل في النطاق المختار.</div>`;
+    return;
+  }
+  const exceptionTop=[...rep.rows].slice(0,5).map(r=>({n:r.n,varVal:r.value}));
+  const groups=groupRowsByCategory(rep.rows,'r');
+  const rows=groups.map(g=>{
+    const catRow=`<tr class="rpt-pro-cat-row"><td colspan="5">📁 ${g.label}</td></tr>`;
+    const itemRows=g.rows.map(r=>`<tr>
+      <td class="td-ref">${r.r}</td><td class="td-name">${r.n}</td><td><span class="uom-pill">${r.u}</span></td>
+      <td style="font-family:var(--mono);text-align:center">${fmt(r.qty)}</td>
+      <td style="font-family:var(--mono);text-align:center;font-weight:700;color:var(--red)">${fmt(r.value)}</td>
+    </tr>`).join('');
+    return catRow+itemRows;
+  }).join('');
+  document.getElementById('wasteReportBody').innerHTML=`${reportHeaderBlock({title:'🗑️ تقرير أكثر الأصناف هالكًا',branchName:rep.label,periodLabel:(document.getElementById('wr-date-from').value||document.getElementById('wr-date-to').value)?`${document.getElementById('wr-date-from').value||'...'} ← ${document.getElementById('wr-date-to').value||'...'}`:'كل الفترات'})}
+  <div class="stats" style="margin-bottom:16px">
+    ${kpi('عدد الأصناف المتأثرة',rep.rows.length,'#3d8ef0')}
+    ${kpi('إجمالي قيمة الهالك',fmt(rep.totalValue),'#f05050')}
+    ${kpi('أعلى صنف هالكًا',rep.rows[0].n,'#f0c040')}
+  </div>
+  ${topVarianceHtml(exceptionTop,5,`أعلى ${Math.min(5,exceptionTop.length)} أصناف بأكبر قيمة هالك (Exception Report)`)}
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('إجمالي الكمية الهالكة')}</th><th>${t('إجمالي القيمة')}</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>
+  ${reportSignatureBlock(['أُعِدّ بواسطة','رُوجع بواسطة (مدير الفرع)','اعتُمد بواسطة (الإدارة/المالية)'])}`;
+}
+function exportWasteReportExcel(){
+  const rep=computeWasteReport();
+  if(!rep.rows.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
+  const wb=XLSX.utils.book_new();
+  const out=[['المرجع','الصنف','الوحدة','إجمالي الكمية الهالكة','إجمالي القيمة']];
+  rep.rows.forEach(r=>out.push([r.r,r.n,r.u,+r.qty.toFixed(3),+r.value.toFixed(2)]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'أكثر الأصناف هالكًا');
+  XLSX.writeFile(wb,`WasteReport_${(rep.label||'Branch').replace(/\s/g,'_')}.xlsx`);
+  toast('📗 تم تصدير تقرير الهالك','inf');
+}
+
+// ══════════════════════════════════════════════
+//  MAINTENANCE & MALFUNCTIONS LOG (سجل الأعطال والصيانة اليومي للفرع)
+// ══════════════════════════════════════════════
+const MAINT_STATUS_LABELS={pending:'⏳ بانتظار',inprogress:'🔧 جاري الإصلاح',resolved:'✅ تم الحل'};
+function openMaintenanceLog(){
+  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  document.getElementById('mnt-date').value=today();
+  document.getElementById('mnt-equipment').value='';
+  document.getElementById('mnt-desc').value='';
+  document.getElementById('mnt-reporter').value=S.manager||'';
+  document.getElementById('mnt-cost').value='';
+  renderMaintenanceList();
+  document.getElementById('maintenanceModal').classList.add('open');
+}
+function addMaintenanceEntry(){
+  const date=document.getElementById('mnt-date').value||today();
+  const equipment=document.getElementById('mnt-equipment').value.trim();
+  const desc=document.getElementById('mnt-desc').value.trim();
+  const reporter=document.getElementById('mnt-reporter').value.trim();
+  const cost=parseFloat(document.getElementById('mnt-cost').value)||0;
+  if(!equipment||!desc){toast('⚠️ أدخل المعدة/الموقع ووصف العطل','wrn');return;}
+  if(!S.maintenance) S.maintenance=[];
+  S.maintenance.unshift({id:'MNT'+Date.now().toString(36).toUpperCase(),date,equipment,desc,reporter,cost,status:'pending',createdAt:new Date().toISOString()});
+  save();
+  document.getElementById('mnt-equipment').value='';
+  document.getElementById('mnt-desc').value='';
+  document.getElementById('mnt-cost').value='';
+  renderMaintenanceList();
+  toast('✅ تم تسجيل العطل','suc');
+}
+function setMaintenanceStatus(id,status){
+  const e=(S.maintenance||[]).find(x=>x.id===id);if(!e)return;
+  e.status=status;
+  if(status==='resolved') e.resolvedAt=new Date().toISOString(); else delete e.resolvedAt;
+  save();renderMaintenanceList();
+}
+function deleteMaintenanceEntry(id){
+  if(!confirm('حذف هذا السجل نهائياً؟'))return;
+  S.maintenance=(S.maintenance||[]).filter(x=>x.id!==id);
+  save();renderMaintenanceList();
+}
+function renderMaintenanceList(){
+  const list=[...(S.maintenance||[])].sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||'').localeCompare(a.createdAt||''));
+  const cont=document.getElementById('maintenanceList');
+  if(!list.length){cont.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted)">لا توجد أعطال مسجّلة بعد.</div>';return;}
+  const openCount=list.filter(x=>x.status!=='resolved').length;
+  cont.innerHTML=`<div class="dbanner" style="margin-bottom:14px">
+    <div class="db-l"><div><div class="db-main">${list.length} سجل — ${openCount} لسه مفتوح</div>
+    <div class="db-sub">إجمالي تكلفة الإصلاحات: ${fmt(list.reduce((s,x)=>s+(x.cost||0),0))}</div></div></div>
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>${t('التاريخ')}</th><th>${t('المعدة/الموقع')}</th><th>${t('وصف العطل')}</th><th>${t('المُبلّغ')}</th><th>${t('التكلفة')}</th><th>${t('الحالة')}</th><th></th></tr></thead>
+    <tbody>${list.map(e=>`<tr>
+      <td style="font-family:var(--mono);font-size:11px">${e.date}</td>
+      <td class="td-name">${e.equipment}</td>
+      <td style="font-size:12px;max-width:240px">${e.desc}</td>
+      <td style="font-size:11px;color:var(--muted)">${e.reporter||'-'}</td>
+      <td style="font-family:var(--mono)">${e.cost?fmt(e.cost):'-'}</td>
+      <td><select class="mod-in" style="width:auto;padding:5px 8px;font-size:11px" onchange="setMaintenanceStatus('${e.id}',this.value)">
+        ${Object.entries(MAINT_STATUS_LABELS).map(([k,l])=>`<option value="${k}" ${e.status===k?'selected':''}>${l}</option>`).join('')}
+      </select></td>
+      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteMaintenanceEntry('${e.id}')" title="حذف السجل">🗑</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+function exportMaintenanceExcel(){
+  const list=S.maintenance||[];
+  if(!list.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
+  const wb=XLSX.utils.book_new();
+  const out=[['التاريخ','المعدة/الموقع','وصف العطل','المُبلّغ','التكلفة','الحالة']];
+  list.forEach(e=>out.push([e.date,e.equipment,e.desc,e.reporter||'-',e.cost||0,MAINT_STATUS_LABELS[e.status]||e.status]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'الأعطال والصيانة');
+  XLSX.writeFile(wb,`Maintenance_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
+  toast('📗 تم تصدير سجل الصيانة','inf');
 }
 
 // ══════════════════════════════════════════════
@@ -3792,7 +4051,7 @@ function createCycle(){
   if(!start||!end){toast('⚠️ حدد تاريخ البداية والنهاية','wrn');return;}
   if(end<start){toast('⚠️ تاريخ النهاية قبل البداية','wrn');return;}
   const c={id:'CYC'+Date.now().toString(36).toUpperCase(),start,end,closed:false,
-    sales:{},salesAmount:null,purchases:{},waste:{},withdrawals:{},transfersOut:{},transfersIn:{},openingOverride:{},closing:{},closingSetAt:{},result:null};
+    sales:{},salesAmount:null,deliverySalesAmount:null,purchases:{},waste:{},withdrawals:{},transfersOut:{},transfersIn:{},openingOverride:{},closing:{},closingSetAt:{},result:null};
   BCycles().push(c);
   curCycleId=c.id;curCycleTab='sales';
   save();closeM('newCycleModal');renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();
@@ -3924,7 +4183,16 @@ function renderSalesBanner(c){
   el.innerHTML=`<div class="db-l"><div><div class="db-main" id="ctSalesComputed">الإجمالي المحسوب من الكميات: ${fmt(sumComputed)}</div>
       <div class="db-sub">أدخل هنا إجمالي المبيعات الفعلي (من نظام الكاشير/الفواتير) لو مختلف عن المحسوب</div>
       <div id="ctSalesDiff"></div></div></div>
-    <div class="db-r"><input type="number" inputmode="decimal" class="mod-in" style="width:170px" placeholder="إجمالي المبيعات الفعلي" value="${c.salesAmount!=null?c.salesAmount:''}" ${dis} oninput="setCycleSalesAmount('${c.id}',this.value)"></div>`;
+    <div class="db-r" style="gap:14px">
+      <div>
+        <input type="number" inputmode="decimal" class="mod-in" style="width:170px" placeholder="إجمالي المبيعات الفعلي" value="${c.salesAmount!=null?c.salesAmount:''}" ${dis} oninput="setCycleSalesAmount('${c.id}',this.value)">
+        <div style="font-size:9.5px;color:var(--muted);text-align:center;margin-top:3px">💰 الإجمالي الفعلي</div>
+      </div>
+      <div>
+        <input type="number" inputmode="decimal" class="mod-in" style="width:170px" placeholder="مبيعات تطبيقات التوصيل" value="${c.deliverySalesAmount!=null?c.deliverySalesAmount:''}" ${dis} oninput="setCycleDeliverySalesAmount('${c.id}',this.value)">
+        <div style="font-size:9.5px;color:var(--muted);text-align:center;margin-top:3px">🛵 مبيعات تطبيقات التوصيل</div>
+      </div>
+    </div>`;
   updateSalesDiff(c);
 }
 function updateSalesDiff(c){
@@ -3951,6 +4219,11 @@ function setCycleSalesAmount(cid,v){
   c.salesAmount=v===''?null:(parseFloat(v)||0);
   save();
   updateSalesDiff(c);
+}
+function setCycleDeliverySalesAmount(cid,v){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  c.deliverySalesAmount=v===''?null:(parseFloat(v)||0);
+  save();
 }
 
 function renderPurchasesTab(c,el){
@@ -4652,6 +4925,33 @@ function exportCyclePDF(cid){
 }
 
 // ══════════════════════════════════════════════
+//  SHARED CROSS-BRANCH DATA SOURCE (يُستخدم في فلتر الفرع لأي تقرير: الفرع الحالي / فرع محدد / كل الفروع)
+// ══════════════════════════════════════════════
+let crossBranchRawDocs=null;
+function loadCrossBranchDocs(){
+  if(crossBranchRawDocs) return Promise.resolve(crossBranchRawDocs);
+  return db.collection('branches').get().then(snap=>{
+    crossBranchRawDocs={};
+    snap.forEach(doc=>crossBranchRawDocs[doc.id]=doc.data()||{});
+    return crossBranchRawDocs;
+  });
+}
+function branchFilterOptionsHtml(selected){
+  const others=Object.keys(S.branches||{}).filter(k=>k!==S.curBranch).map(k=>`<option value="${k}">${S.branches[k].name||k}</option>`).join('');
+  const opts=`<option value="__current__">الفرع الحالي (${S.branch||''})</option><option value="__all__">🌐 كل الفروع (مجمّع)</option>${others}`;
+  const div=document.createElement('div');div.innerHTML=`<select>${opts}</select>`;
+  const sel=div.firstChild;sel.value=selected||'__current__';
+  return sel.innerHTML;
+}
+function crossBranchDataSource(filterValue){
+  if(filterValue==='__current__') return {cyclesArrays:[BCycles()],qtyMaps:[S.qty],label:S.branch||''};
+  if(!crossBranchRawDocs) return {cyclesArrays:[],qtyMaps:[],label:''};
+  if(filterValue==='__all__') return {cyclesArrays:Object.values(crossBranchRawDocs).map(d=>d.cycles||[]),qtyMaps:Object.values(crossBranchRawDocs).map(d=>d.qty||{}),label:'كل الفروع (مجمّع)'};
+  const d=crossBranchRawDocs[filterValue]||{};
+  return {cyclesArrays:[d.cycles||[]],qtyMaps:[d.qty||{}],label:(S.branches[filterValue]||{}).name||filterValue};
+}
+
+// ══════════════════════════════════════════════
 //  REQUIREMENT PLANNING (احتياج المنيو من الطلبات)
 // ══════════════════════════════════════════════
 function daysBetween(a,b){
@@ -4660,31 +4960,53 @@ function daysBetween(a,b){
 }
 
 // Average daily sales per menu item, and average daily theoretical usage per
-// ingredient, computed across every closed cycle of the current branch.
+// ingredient, computed across every closed cycle of the selected branch scope
+// (current branch, a specific other branch, or all branches aggregated).
+function planCurrentQty(ref){
+  return crossBranchDataSource(planBranchFilter).qtyMaps.reduce((s,m)=>s+(parseFloat(m[ref])||0),0);
+}
 function computeHistoricalAverages(){
-  const closed=sortedCycles().filter(c=>c.closed);
-  let totalDays=0;
+  const src=crossBranchDataSource(planBranchFilter);
+  let totalDays=0,cycleCount=0;
   const menuTotals={},ingTotals={};
-  closed.forEach(c=>{
-    const days=Math.max(1,daysBetween(c.start,c.end)+1);
-    totalDays+=days;
-    Object.entries(c.sales||{}).forEach(([mid,qty])=>{menuTotals[mid]=(menuTotals[mid]||0)+(qty||0);});
-    if(c.result&&c.result.rows) c.result.rows.forEach(row=>{ingTotals[row.r]=(ingTotals[row.r]||0)+(row.theo||0);});
+  src.cyclesArrays.forEach(arr=>{
+    const closed=(arr||[]).filter(c=>c.closed);
+    cycleCount+=closed.length;
+    closed.forEach(c=>{
+      const days=Math.max(1,daysBetween(c.start,c.end)+1);
+      totalDays+=days;
+      Object.entries(c.sales||{}).forEach(([mid,qty])=>{menuTotals[mid]=(menuTotals[mid]||0)+(qty||0);});
+      if(c.result&&c.result.rows) c.result.rows.forEach(row=>{ingTotals[row.r]=(ingTotals[row.r]||0)+(row.theo||0);});
+    });
   });
   const menuAvg={},ingredientAvg={};
   if(totalDays>0){
     Object.keys(menuTotals).forEach(mid=>menuAvg[mid]=menuTotals[mid]/totalDays);
     Object.keys(ingTotals).forEach(r=>ingredientAvg[r]=ingTotals[r]/totalDays);
   }
-  return {menuAvg,ingredientAvg,totalDays,cycleCount:closed.length};
+  return {menuAvg,ingredientAvg,totalDays,cycleCount,label:src.label};
 }
 
-let planDays=14,planMenuQty={};
+let planDays=14,planMenuQty={},planBranchFilter='__current__';
 function openRequirementPlanner(){
   if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
   if(!S.curBranch){toast('⚠️ اختار/أنشئ فرع أولاً','wrn');return;}
+  planBranchFilter='__current__';
+  populatePlanBranchFilter();
   renderRequirementPlanner();
   document.getElementById('planModal').classList.add('open');
+}
+function populatePlanBranchFilter(){
+  const wrap=document.getElementById('planBranchFilterWrap');
+  if(!canViewAllReportsUI()||Object.keys(S.branches||{}).length<2){wrap.style.display='none';return;}
+  wrap.style.display='';
+  document.getElementById('plan-branch-filter').innerHTML=branchFilterOptionsHtml(planBranchFilter);
+}
+function setPlanBranchFilter(v){
+  planBranchFilter=v;
+  if(v==='__current__'||crossBranchRawDocs){renderRequirementPlanner();return;}
+  document.getElementById('plan-hist-info').textContent='جاري تحميل بيانات الفروع...';
+  loadCrossBranchDocs().then(renderRequirementPlanner).catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
 }
 function setPlanDays(v){
   planDays=Math.max(1,parseInt(v)||14);
@@ -4717,8 +5039,8 @@ function renderRequirementPlanner(){
   document.getElementById('plan-days').value=planDays;
   const hist=computeHistoricalAverages();
   document.getElementById('plan-hist-info').textContent=hist.cycleCount
-    ?`${hist.cycleCount} دورة مغلقة (${hist.totalDays} يوم) — المتوسطات محسوبة منها`
-    :'لا توجد دورات مغلقة بعد لهذا الفرع — القيم صفر، أدخل الكميات المتوقعة يدوياً تحت';
+    ?`${hist.cycleCount} دورة مغلقة (${hist.totalDays} يوم)${hist.label?' — '+hist.label:''} — المتوسطات محسوبة منها`
+    :`لا توجد دورات مغلقة بعد${hist.label?' لـ'+hist.label:' لهذا الفرع'} — القيم صفر، أدخل الكميات المتوقعة يدوياً تحت`;
 
   if(!S.menu.length){
     document.getElementById('planMenuSection').innerHTML=`<div class="tbl-wrap"><div style="padding:20px;text-align:center;color:var(--muted)">لا توجد أصناف مباعة معرّفة. أضفها من "🍽️ الأصناف المباعة والوصفات" أولاً.</div></div>`;
@@ -4744,7 +5066,7 @@ function renderRequirementPlanner(){
   const req=planIngredientRequirement(hist);
   const ingRows=Object.keys(req).filter(r=>req[r]>0).map(r=>{
     const it=S.items.find(i=>i.r===r);if(!it) return '';
-    const need=req[r],current=S.qty[r]||0,toOrder=Math.max(0,need-current);
+    const need=req[r],current=planCurrentQty(r),toOrder=Math.max(0,need-current);
     return `<tr>
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
       <td style="font-family:var(--mono)">${fmt(need)}</td>
@@ -4773,7 +5095,7 @@ function exportPlanExcel(){
   const ingRows=[['المرجع','الخامة','الوحدة','الاحتياج المتوقع','الرصيد الحالي','المطلوب طلبه']];
   Object.keys(req).forEach(r=>{
     const it=S.items.find(i=>i.r===r);if(!it) return;
-    const need=req[r],current=S.qty[r]||0,toOrder=Math.max(0,need-current);
+    const need=req[r],current=planCurrentQty(r),toOrder=Math.max(0,need-current);
     ingRows.push([it.r,it.n,it.u,+need.toFixed(3),current,+toOrder.toFixed(3)]);
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ingRows),'احتياج الخامات');
@@ -5200,18 +5522,93 @@ function processFoodicsImportRows(rows){
   }
   if(targetCycle.closed){toast('⚠️ الدورة المطابقة لهذا التاريخ مقفولة — أعد فتحها الأول','err');return;}
 
-  let matched=0;const unmatched=[];
+  const matchedList=[];const unmatchedList=[];
   Object.values(qtyByName).forEach(({n,qty})=>{
     const m=findMenuItemByExternalName(n);
-    if(!m){unmatched.push(n);return;}
+    if(!m){unmatchedList.push({name:n,qty});return;}
     targetCycle.sales[m.id]=qty;
-    matched++;
+    matchedList.push({name:n,qty,menuId:m.id,menuName:m.n});
   });
   save();
   if(curCycleId===targetCycle.id){renderCycleTabs();renderCycleBody();}
-  let msg=`✅ تم سحب مبيعات ${matched} صنف للدورة ${targetCycle.start} ← ${targetCycle.end}`;
-  if(unmatched.length) msg+=`، ⚠️ ${unmatched.length} صنف مش متطابق مع أسماء المنيو (${unmatched.slice(0,3).join('، ')}${unmatched.length>3?' ...':''})`;
-  toast(msg,unmatched.length?'wrn':'suc');
+  lastImportReconcile={targetCycleId:targetCycle.id,matched:matchedList,unmatched:unmatchedList};
+  openImportReconcileModal();
+}
+
+// ══════════════════════════════════════════════
+//  IMPORT RECONCILIATION SCREEN (مصادقة أصناف المنيو المسحوبة من نقطة البيع مع المسجّل في النظام)
+// ══════════════════════════════════════════════
+let lastImportReconcile=null;
+function openImportReconcileModal(){
+  renderImportReconcile();
+  document.getElementById('importReconcileModal').classList.add('open');
+}
+function renderImportReconcile(){
+  const el=document.getElementById('importReconcileBody');
+  const rec=lastImportReconcile;
+  if(!rec){el.innerHTML='';return;}
+  const c=getCycle(rec.targetCycleId);
+  const matchedHtml=rec.matched.length?`
+    <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--green)">✅ تم مطابقتها وتطبيقها على الدورة (${rec.matched.length})</div>
+    <div class="tbl-wrap" style="margin-bottom:18px"><table>
+      <thead><tr><th>${t('الاسم في نقطة البيع')}</th><th>${t('الصنف في النظام')}</th><th>${t('الكمية')}</th></tr></thead>
+      <tbody>${rec.matched.map(m=>`<tr>
+        <td style="font-size:12px">${m.name}</td>
+        <td class="td-name">${m.menuName}</td>
+        <td style="font-family:var(--mono);text-align:center">${fmt(m.qty)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`:'';
+  const unmatchedHtml=rec.unmatched.length?`
+    <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--red)">⚠️ يحتاج مطابقة يدوية (${rec.unmatched.length}) — الدورة: ${c?c.start+' ← '+c.end:'-'}</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>${t('الاسم في نقطة البيع')}</th><th>${t('الكمية')}</th><th>${t('اختر الصنف المطابق من المنيو')}</th></tr></thead>
+      <tbody>${rec.unmatched.map((u,i)=>`<tr>
+        <td style="font-size:12px">${u.name}</td>
+        <td style="font-family:var(--mono);text-align:center">${fmt(u.qty)}</td>
+        <td>${unmatchedMenuIsearchHtml(i)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+    <p style="font-size:11px;color:var(--muted);margin-top:8px">اختيار الصنف بيطبّق الكمية على الدورة فورًا، وبيسجّل اسم نقطة البيع كاسم بديل تلقائي للصنف عشان الاستيرادات الجاية تتطابق لوحدها.</p>`:
+    `<div style="text-align:center;padding:16px;color:var(--green)">✅ كل الأصناف اتطابقت من غير أي مشاكل.</div>`;
+  el.innerHTML=`${matchedHtml}${unmatchedHtml}`;
+}
+function unmatchedMenuIsearchHtml(idx){
+  const id='unmIsearch-'+idx;
+  return `<div class="isearch" id="${id}" data-idx="${idx}">
+    <input type="text" class="mod-in isearch-input" placeholder="🔍 اختر الصنف..." oninput="unmatchedIsearchFilter('${id}')" onfocus="unmatchedIsearchFilter('${id}')" onblur="setTimeout(()=>isearchClose('${id}'),180)">
+    <input type="hidden" class="isearch-value">
+    <div class="isearch-menu"></div>
+  </div>`;
+}
+function unmatchedIsearchFilter(id){
+  const root=document.getElementById(id);if(!root)return;
+  const term=root.querySelector('.isearch-input').value.trim().toLowerCase();
+  let list=S.menu;
+  if(term) list=list.filter(m=>m.n.toLowerCase().includes(term));
+  const menu=root.querySelector('.isearch-menu');
+  const shown=list.slice(0,60);
+  menu.innerHTML=shown.length?shown.map(m=>`<div class="isearch-opt" onmousedown="unmatchedIsearchPick('${id}','${m.id}')">${m.n}</div>`).join(''):'<div class="isearch-empty">لا توجد نتائج</div>';
+  menu.classList.add('open');
+}
+function unmatchedIsearchPick(id,menuId){
+  const root=document.getElementById(id);if(!root)return;
+  const idx=parseInt(root.getAttribute('data-idx'),10);
+  resolveUnmatchedImportItem(idx,menuId);
+}
+function resolveUnmatchedImportItem(idx,menuId){
+  const rec=lastImportReconcile;if(!rec)return;
+  const u=rec.unmatched[idx];if(!u)return;
+  const m=S.menu.find(x=>x.id===menuId);if(!m)return;
+  const c=getCycle(rec.targetCycleId);if(!c){toast('⚠️ الدورة غير موجودة','err');return;}
+  if(!m.posNames) m.posNames={};
+  m.posNames.foodics=u.name;
+  c.sales[m.id]=(c.sales[m.id]||0)+u.qty;
+  rec.matched.push({name:u.name,qty:u.qty,menuId:m.id,menuName:m.n});
+  rec.unmatched.splice(idx,1);
+  save();saveCatalog();
+  if(curCycleId===c.id){renderCycleTabs();renderCycleBody();}
+  renderImportReconcile();
+  toast(`✅ تم ربط "${u.name}" بـ "${m.n}" وتطبيق الكمية`,'suc');
 }
 
 function exportBackupJSON(){

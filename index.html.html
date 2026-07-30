@@ -938,9 +938,46 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="overlay" id="usersModal">
 <div class="modal" style="width:580px">
   <div class="mod-title">👤 إدارة المستخدمين والصلاحيات</div>
-  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">حدد صلاحية كل مستخدم (إدارة/مالية تشوف كل الفروع، أو موظف فرع مقفول على فرع واحد) والفرع بتاعه.</p>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">حدد صلاحية كل مستخدم (إدارة/مالية تشوف كل الفروع، أو موظف فرع مقفول على فرع واحد) والفرع بتاعه، أو أنشئ حساب جديد مباشرة من غير ما تستنى الموظف يسجل بنفسه.</p>
+  <button class="hbtn org" style="width:100%;justify-content:center;padding:9px;margin-bottom:14px" onclick="openCreateUserForm()">➕ إنشاء حساب مباشرة</button>
   <div id="usersList" style="max-height:420px;overflow-y:auto"></div>
   <div class="mod-foot"><button class="hbtn" onclick="closeM('usersModal')">إغلاق</button></div>
+</div>
+</div>
+
+<!-- CREATE USER DIRECTLY MODAL (admin/delegate only) -->
+<div class="overlay" id="createUserModal">
+<div class="modal" style="width:420px">
+  <div class="mod-title">➕ إنشاء حساب مستخدم مباشرة</div>
+  <div class="mod-field">
+    <label class="mod-lbl">البريد الإلكتروني *</label>
+    <input class="mod-in" id="cu-email" type="email" placeholder="name@example.com">
+  </div>
+  <div class="mod-field">
+    <label class="mod-lbl">كلمة المرور *</label>
+    <div style="display:flex;gap:8px">
+      <input class="mod-in" id="cu-pass" placeholder="6 أحرف على الأقل" style="flex:1">
+      <button class="hbtn" type="button" style="flex:none;padding:0 12px" onclick="generateUserPassword()">🎲 توليد</button>
+    </div>
+  </div>
+  <div class="mod-row">
+    <div class="mod-field">
+      <label class="mod-lbl">الصلاحية</label>
+      <select class="mod-in" id="cu-role">
+        <option value="branch">موظف فرع</option>
+        <option value="admin">إدارة/مالية</option>
+      </select>
+    </div>
+    <div class="mod-field">
+      <label class="mod-lbl">الفرع</label>
+      <select class="mod-in" id="cu-branch"><option value="">بدون فرع</option></select>
+    </div>
+  </div>
+  <div id="createUserResult" style="display:none;background:rgba(46,232,154,.08);border:1px solid rgba(46,232,154,.3);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12.5px;line-height:1.9"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('createUserModal')">إغلاق</button>
+    <button class="hbtn gold" id="createUserBtn" onclick="createUserDirectly()">✓ إنشاء الحساب</button>
+  </div>
 </div>
 </div>
 
@@ -1123,20 +1160,30 @@ let catalogReady=false, branchReady=false, bootedUI=false;
 let lastSentCatalogJSON=null, lastSentBranchJSON=null;
 let _saveBranchTimer=null, _saveCatalogTimer=null;
 
+const firebaseConfig={
+  apiKey:"AIzaSyB4YX8_OjjSmewv1VRRHByhTIIWGpmuv-c",
+  authDomain:"areekat-inventory.firebaseapp.com",
+  projectId:"areekat-inventory",
+  storageBucket:"areekat-inventory.firebasestorage.app",
+  messagingSenderId:"490013544402",
+  appId:"1:490013544402:web:aa5744bdadd0eaccb0f3fb",
+  measurementId:"G-9QJHJWNZ5C"
+};
 function initFirebase(){
-  const firebaseConfig={
-    apiKey:"AIzaSyB4YX8_OjjSmewv1VRRHByhTIIWGpmuv-c",
-    authDomain:"areekat-inventory.firebaseapp.com",
-    projectId:"areekat-inventory",
-    storageBucket:"areekat-inventory.firebasestorage.app",
-    messagingSenderId:"490013544402",
-    appId:"1:490013544402:web:aa5744bdadd0eaccb0f3fb",
-    measurementId:"G-9QJHJWNZ5C"
-  };
   firebase.initializeApp(firebaseConfig);
   auth=firebase.auth();
   db=firebase.firestore();
   auth.onAuthStateChanged(onAuthChange);
+}
+// A second, independently-named Firebase app instance so an admin creating
+// another user's account doesn't get signed out of their own session
+// (createUserWithEmailAndPassword signs in as the new user on whatever
+// auth instance it's called against).
+function getSecondaryAuth(){
+  let secApp;
+  try{ secApp=firebase.app('secondary'); }
+  catch(e){ secApp=firebase.initializeApp(firebaseConfig,'secondary'); }
+  return secApp.auth();
 }
 
 function showAuthScreen(mode){
@@ -2129,6 +2176,55 @@ function setUserPerm(uid,perm,value){
   const u=usersCache.find(x=>x.uid===uid);
   const permissions={...(u&&u.permissions||{}),[perm]:value};
   db.collection('users').doc(uid).update({permissions}).then(()=>{toast('✅ تم تحديث الصلاحيات','suc');}).catch(e=>toast('⚠️ '+e.message,'err'));
+}
+
+// ══════════════════════════════════════════════
+//  CREATE USER DIRECTLY (بدون تسجيل ذاتي من الموظف)
+// ══════════════════════════════════════════════
+function openCreateUserForm(){
+  if(!canManageUsersUI())return;
+  document.getElementById('cu-email').value='';
+  document.getElementById('cu-pass').value='';
+  document.getElementById('cu-role').value='branch';
+  const branchSel=document.getElementById('cu-branch');
+  branchSel.innerHTML='<option value="">بدون فرع</option>'+Object.entries(S.branches||{}).map(([k,b])=>`<option value="${k}">${b.name}</option>`).join('');
+  document.getElementById('createUserResult').style.display='none';
+  document.getElementById('createUserBtn').disabled=false;
+  document.getElementById('createUserModal').classList.add('open');
+}
+function generateUserPassword(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let pass='';
+  for(let i=0;i<10;i++) pass+=chars[Math.floor(Math.random()*chars.length)];
+  document.getElementById('cu-pass').value=pass;
+}
+function createUserDirectly(){
+  if(!canManageUsersUI())return;
+  const email=document.getElementById('cu-email').value.trim();
+  const pass=document.getElementById('cu-pass').value;
+  const role=document.getElementById('cu-role').value;
+  const branchId=document.getElementById('cu-branch').value||null;
+  if(!email){toast('⚠️ أدخل البريد الإلكتروني','wrn');return;}
+  if(!pass||pass.length<6){toast('⚠️ كلمة المرور 6 أحرف على الأقل','wrn');return;}
+  const btn=document.getElementById('createUserBtn');
+  btn.disabled=true;btn.textContent='...جاري الإنشاء';
+  const secAuth=getSecondaryAuth();
+  secAuth.createUserWithEmailAndPassword(email,pass).then(cred=>{
+    const uid=cred.user.uid;
+    return secAuth.signOut().then(()=>
+      db.collection('users').doc(uid).set({email,role,branchId,permissions:{},createdAt:firebase.firestore.FieldValue.serverTimestamp()})
+    );
+  }).then(()=>{
+    const resEl=document.getElementById('createUserResult');
+    resEl.style.display='block';
+    resEl.innerHTML=`✅ تم إنشاء الحساب بنجاح.<br>ابعت البيانات دي للموظف (مش هتظهر تاني):<br>
+      <strong>الإيميل:</strong> ${email}<br><strong>كلمة المرور:</strong> ${pass}`;
+    toast('✅ تم إنشاء الحساب','suc');
+  }).catch(e=>{
+    toast('⚠️ '+arErr(e),'err');
+  }).finally(()=>{
+    btn.disabled=false;btn.textContent='✓ إنشاء الحساب';
+  });
 }
 
 // ══════════════════════════════════════════════

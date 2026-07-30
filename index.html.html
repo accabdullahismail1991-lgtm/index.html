@@ -436,6 +436,10 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="sb-item" onclick="openAddItem()"><span class="sb-ico">➕</span>إضافة صنف جديد</div>
   <div class="sb-item" onclick="openAddCat()"><span class="sb-ico">🗂️</span>إضافة قسم جديد</div>
   <div class="sb-item" onclick="openManageItems()"><span class="sb-ico">✏️</span>إدارة الأصناف</div>
+  <div class="sb-item" onclick="openUomMgr()"><span class="sb-ico">📏</span>وحدات القياس</div>
+  <div class="sb-item" onclick="document.getElementById('importFileInput').click()"><span class="sb-ico">📥</span>استيراد أصناف (Excel)</div>
+  <div class="sb-item" onclick="downloadImportTemplate()"><span class="sb-ico">📄</span>قالب الاستيراد</div>
+  <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFileSelected(event)">
 
   <div class="sb-div"></div>
   <span class="sb-label">إجراءات</span>
@@ -478,10 +482,10 @@ td{padding:9px 13px;vertical-align:middle;}
       <span class="sw-ico">🔍</span>
       <input type="text" id="srch" placeholder="ابحث بالاسم أو رقم المرجع..." oninput="renderTbl()">
     </div>
-    <select id="uomF" onchange="renderTbl()">
-      <option value="">كل الوحدات</option>
-      <option value="kg">kg</option><option value="Pcs">Pcs</option>
-      <option value="L">L</option><option value="g">g</option><option value="Units">Units</option><option value="ML">ML</option>
+    <select id="uomF" onchange="renderTbl()"><option value="">كل الوحدات</option></select>
+    <select id="typeF" onchange="renderTbl()">
+      <option value="">كل الأنواع</option>
+      <option value="raw">خامة</option><option value="semi">نصف مصنّع</option><option value="finished">منتج نهائي/جاهز</option>
     </select>
     <select id="stF" onchange="renderTbl()">
       <option value="">كل الحالات</option>
@@ -560,25 +564,29 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="mod-row">
     <div class="mod-field">
       <label class="mod-lbl">وحدة القياس *</label>
-      <select class="mod-in" id="ai-uom">
-        <option value="kg">kg - كيلوغرام</option>
-        <option value="Pcs">Pcs - قطعة</option>
-        <option value="L">L - لتر</option>
-        <option value="g">g - غرام</option>
-        <option value="Units">Units - وحدة</option>
-        <option value="ML">ML - مليلتر</option>
+      <select class="mod-in" id="ai-uom"></select>
+      <div class="mod-hint">مش لاقي الوحدة؟ <a href="#" onclick="closeM('addItemModal');openUomMgr();return false" style="color:var(--gold)">أضفها من هنا</a></div>
+    </div>
+    <div class="mod-field">
+      <label class="mod-lbl">نوع الصنف</label>
+      <select class="mod-in" id="ai-type">
+        <option value="raw">خامة</option>
+        <option value="semi">نصف مصنّع</option>
+        <option value="finished">منتج نهائي/جاهز</option>
       </select>
     </div>
+  </div>
+  <div class="mod-row">
     <div class="mod-field">
       <label class="mod-lbl">الكمية الافتراضية</label>
       <input type="number" class="mod-in" id="ai-qty" placeholder="0" min="0" step="0.001">
     </div>
+    <div class="mod-field">
+      <label class="mod-lbl">تكلفة الوحدة (اختياري)</label>
+      <input type="number" class="mod-in" id="ai-cost" placeholder="0.00" min="0" step="0.01">
+    </div>
   </div>
-  <div class="mod-field">
-    <label class="mod-lbl">تكلفة الوحدة (اختياري)</label>
-    <input type="number" class="mod-in" id="ai-cost" placeholder="0.00" min="0" step="0.01">
-    <div class="mod-hint">تُستخدم لحساب قيمة الانحراف ونسبة التكلفة — لو الصنف نصف مصنّع وله مكوّنات تحتها، هيتحسب سعره تلقائياً من مكوناته بدل الرقم ده</div>
-  </div>
+  <div class="mod-hint" style="margin:-10px 0 14px">تكلفة الوحدة تُستخدم لحساب قيمة الانحراف ونسبة التكلفة — لو الصنف نصف مصنّع وله مكوّنات تحتها، هيتحسب سعره تلقائياً من مكوناته بدل الرقم ده</div>
   <div class="mod-field">
     <label class="mod-lbl">مكوّنات الصنف (اختياري — لو الصنف نصف مصنّع/خلطة)</label>
     <div id="aiRecipeRows" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
@@ -587,6 +595,23 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('addItemModal')">إلغاء</button>
     <button class="hbtn gold" onclick="saveItem()" id="addItemBtn">✓ إضافة الصنف</button>
+  </div>
+</div>
+</div>
+
+<!-- UNITS OF MEASURE MODAL -->
+<div class="overlay" id="uomModal">
+<div class="modal" style="width:420px">
+  <div class="mod-title">📏 وحدات القياس</div>
+  <div class="mod-row">
+    <div class="mod-field" style="flex:1;margin-bottom:0">
+      <input class="mod-in" id="uom-new" placeholder="اسم وحدة جديدة (مثال: كرتونة)">
+    </div>
+  </div>
+  <button class="hbtn gold" style="width:100%;justify-content:center;padding:9px;margin-bottom:16px" onclick="addUom()">➕ إضافة وحدة</button>
+  <div id="uomList" style="max-height:320px;overflow-y:auto"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('uomModal')">إغلاق</button>
   </div>
 </div>
 </div>
@@ -798,6 +823,11 @@ td{padding:9px 13px;vertical-align:middle;}
 
 <script>
 // ══════════════════════════════════════════════
+//  DEFAULT UNITS OF MEASURE
+// ══════════════════════════════════════════════
+const DEFAULT_UOMS=['kg','g','L','ML','Pcs','Units'];
+
+// ══════════════════════════════════════════════
 //  DEFAULT CATEGORIES
 // ══════════════════════════════════════════════
 const DEFAULT_CATS = {
@@ -942,6 +972,7 @@ let S={
   items:[...DEFAULT_ITEMS],
   branches:{}, curBranch:'', branchData:{},
   menu:[],
+  uoms:[...DEFAULT_UOMS],
 };
 let curCat='all', unsaved=false;
 let curView='daily', curCycleId=null, curCycleTab='sales';
@@ -959,7 +990,9 @@ function fmt(n){return (Math.round((n||0)*100)/100).toLocaleString('en-US');}
 //  (replaces the old localStorage-only load()/save())
 // ══════════════════════════════════════════════
 let auth, db;
-let curUser=null, curRole=null, curUserBranch=null;
+let curUser=null, curRole=null, curUserBranch=null, curPerms={};
+function canManageBranchesUI(){return curRole==='admin'||!!curPerms.manageBranches;}
+function canManageUsersUI(){return curRole==='admin'||!!curPerms.manageUsers;}
 let unsubCatalog=null, unsubBranch=null, unsubUsers=null, unsubBranchesList=null;
 let catalogReady=false, branchReady=false, bootedUI=false;
 let lastSentCatalogJSON=null, lastSentBranchJSON=null;
@@ -1043,11 +1076,11 @@ async function onAuthChange(user){
     const uref=db.collection('users').doc(user.uid);
     const usnap=await uref.get();
     if(!usnap.exists){
-      await uref.set({email:user.email,role:'pending',branchId:null,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+      await uref.set({email:user.email,role:'pending',branchId:null,permissions:{},createdAt:firebase.firestore.FieldValue.serverTimestamp()});
     }
     uref.onSnapshot(snap=>{
       const d=snap.data();if(!d)return;
-      curRole=d.role;curUserBranch=d.branchId;
+      curRole=d.role;curUserBranch=d.branchId;curPerms=d.permissions||{};
       if(curRole==='pending'||!curRole){showAuthScreen('pending');return;}
       startDataSync();
     },e=>{showAuthScreen('login');authErr('تعذر الاتصال بقاعدة البيانات: '+e.message);});
@@ -1059,8 +1092,8 @@ async function onAuthChange(user){
 
 function startDataSync(){
   hideAuthScreen();
-  document.getElementById('adminUsersBtn').style.display=curRole==='admin'?'':'none';
-  document.getElementById('branchSwitch').disabled=curRole!=='admin';
+  document.getElementById('adminUsersBtn').style.display=canManageUsersUI()?'':'none';
+  document.getElementById('branchSwitch').disabled=!canManageBranchesUI();
 
   if(!unsubCatalog){
     unsubCatalog=db.collection('catalog').doc('main').onSnapshot(snap=>{
@@ -1069,14 +1102,15 @@ function startDataSync(){
       S.cats=hasData&&d.cats&&Object.keys(d.cats).length?d.cats:{...DEFAULT_CATS};
       S.items=hasData?d.items:[...DEFAULT_ITEMS];
       S.menu=(d&&d.menu)||[];
+      S.uoms=(d&&d.uoms&&d.uoms.length)?d.uoms:[...DEFAULT_UOMS];
       catalogReady=true;
       if(!hasData&&curRole==='admin') saveCatalog();
       tryBootUI();
-      if(bootedUI){renderSidebar();renderTbl();updateStats();populateCatSelects();if(document.getElementById('menuModal').classList.contains('open'))renderMenuList();if(curView==='cycle')renderCycleBody();}
+      if(bootedUI){renderSidebar();renderTbl();updateStats();populateCatSelects();populateUomSelects();if(document.getElementById('menuModal').classList.contains('open'))renderMenuList();if(curView==='cycle')renderCycleBody();}
     },e=>toast('⚠️ خطأ في تحميل الكتالوج: '+e.message,'err'));
   }
 
-  if(curRole==='admin'){
+  if(canManageBranchesUI()){
     if(!unsubBranchesList){
       unsubBranchesList=db.collection('branches').onSnapshot(snap=>{
         S.branches={};snap.forEach(doc=>{S.branches[doc.id]={...doc.data()};});
@@ -1097,10 +1131,10 @@ function startDataSync(){
 
 function tryBootUI(){
   if(bootedUI||!catalogReady) return;
-  if(curRole==='admin'&&Object.keys(S.branches||{}).length===0){/* no branches yet, still boot so admin can create one */}
+  if(canManageBranchesUI()&&Object.keys(S.branches||{}).length===0){/* no branches yet, still boot so they can create one */}
   else if(!branchReady) return;
   bootedUI=true;
-  buildColorGrid();renderSidebar();updateHeader();updateBanner();renderTbl();updateStats();renderHist();populateCatSelects();renderBranchSwitch();
+  buildColorGrid();renderSidebar();updateHeader();updateBanner();renderTbl();updateStats();renderHist();populateCatSelects();populateUomSelects();renderBranchSwitch();
 }
 
 function switchToBranchDoc(key){
@@ -1145,7 +1179,7 @@ function saveCatalog(){
   clearTimeout(_saveCatalogTimer);
   _saveCatalogTimer=setTimeout(()=>{
     if(!db) return;
-    const payload={cats:S.cats,items:S.items,menu:S.menu};
+    const payload={cats:S.cats,items:S.items,menu:S.menu,uoms:S.uoms};
     lastSentCatalogJSON=JSON.stringify(payload);
     db.collection('catalog').doc('main').set(payload,{merge:true})
       .catch(e=>toast('⚠️ خطأ في حفظ الكتالوج: '+e.message,'err'));
@@ -1211,17 +1245,63 @@ function populateCatSelects(){
   s2.innerHTML='<option value="">كل الأقسام</option>'+opts;
 }
 
+function populateUomSelects(){
+  const uoms=(S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS);
+  const opts=uoms.map(u=>`<option value="${u}">${u}</option>`).join('');
+  const aiUom=document.getElementById('ai-uom');
+  const curAi=aiUom.value;
+  aiUom.innerHTML=opts;
+  if(uoms.includes(curAi)) aiUom.value=curAi;
+  const uomF=document.getElementById('uomF');
+  const curF=uomF.value;
+  uomF.innerHTML='<option value="">كل الوحدات</option>'+opts;
+  uomF.value=curF;
+}
+
+function openUomMgr(){renderUomList();document.getElementById('uomModal').classList.add('open');}
+function renderUomList(){
+  const uoms=(S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS);
+  document.getElementById('uomList').innerHTML=uoms.map(u=>{
+    const used=S.items.some(it=>it.u===u);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid var(--border);border-radius:8px;margin-bottom:7px">
+      <div style="flex:1;font-weight:600;font-size:13px">${u}${used?` <span style="font-size:10px;color:var(--muted)">(مستخدمة)</span>`:''}</div>
+      <button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteUom('${u}')">🗑</button>
+    </div>`;
+  }).join('');
+}
+function addUom(){
+  const input=document.getElementById('uom-new');
+  const val=input.value.trim();
+  if(!val){toast('⚠️ أدخل اسم الوحدة','wrn');return;}
+  if(!S.uoms) S.uoms=[...DEFAULT_UOMS];
+  if(S.uoms.includes(val)){toast('⚠️ الوحدة موجودة بالفعل','wrn');return;}
+  S.uoms.push(val);
+  input.value='';
+  save();renderUomList();populateUomSelects();
+  toast('✅ تم إضافة الوحدة: '+val,'suc');
+}
+function deleteUom(u){
+  if(S.items.some(it=>it.u===u)){toast('⚠️ الوحدة دي مستخدمة في أصناف — غيّر وحدتها الأول','wrn');return;}
+  if(!confirm(`حذف وحدة "${u}"؟`))return;
+  S.uoms=(S.uoms||[]).filter(x=>x!==u);
+  save();renderUomList();populateUomSelects();
+  toast('🗑️ تم حذف الوحدة','wrn');
+}
+
 // ══════════════════════════════════════════════
 //  TABLE RENDER
 // ══════════════════════════════════════════════
+const ITEM_TYPE_LABELS={raw:'خامة',semi:'نصف مصنّع',finished:'منتج نهائي'};
 function renderTbl(){
   const srch=document.getElementById('srch').value.toLowerCase();
   const uom=document.getElementById('uomF').value;
+  const typ=document.getElementById('typeF').value;
   const st=document.getElementById('stF').value;
 
   const list=S.items.filter(it=>{
     if(curCat!=='all'&&it.c!==curCat) return false;
     if(uom&&it.u!==uom) return false;
+    if(typ&&(it.type||'raw')!==typ) return false;
     if(srch&&!it.n.toLowerCase().includes(srch)&&!it.r.toLowerCase().includes(srch)&&!(it.e||'').toLowerCase().includes(srch)) return false;
     if(st){
       const v=S.qty[it.r];
@@ -1244,6 +1324,7 @@ function renderTbl(){
       <td class="td-ref">${it.r}</td>
       <td class="td-name">
         ${it.custom?'<span class="custom-badge">✨ جديد</span>':''}
+        ${it.type&&it.type!=='raw'?`<span class="custom-badge" style="color:var(--purple);border-color:rgba(157,108,245,.3);background:rgba(157,108,245,.1)">${ITEM_TYPE_LABELS[it.type]}</span>`:''}
         ${it.n}${it.e?`<span style="font-size:11px;color:var(--muted);margin-right:5px">${it.e}</span>`:''}
       </td>
       <td><span class="cat-pill"><span class="cpill-dot" style="background:${cat.c}"></span>${cat.l}</span></td>
@@ -1313,6 +1394,7 @@ function openAddItem(){
   document.getElementById('ai-name-en').value='';
   document.getElementById('ai-qty').value='';
   document.getElementById('ai-cost').value='';
+  document.getElementById('ai-type').value='raw';
   document.getElementById('ai-ref').readOnly=false;
   curItemRecipeRows=[];
   renderItemRecipeRows();
@@ -1335,6 +1417,7 @@ function openEditItem(ref){
   document.getElementById('ai-uom').value=it.u;
   document.getElementById('ai-qty').value=S.qty[it.r]||'';
   document.getElementById('ai-cost').value=it.cost||'';
+  document.getElementById('ai-type').value=it.type||'raw';
   curItemRecipeRows=(it.recipe||[]).map(r=>({...r}));
   renderItemRecipeRows();
   document.getElementById('addItemModal').classList.add('open');
@@ -1384,6 +1467,7 @@ function saveItem(){
   const uom=document.getElementById('ai-uom').value;
   const qty=document.getElementById('ai-qty').value;
   const cost=parseFloat(document.getElementById('ai-cost').value)||0;
+  const type=document.getElementById('ai-type').value||'raw';
 
   // Validate
   const refEl=document.getElementById('ai-ref');
@@ -1398,11 +1482,11 @@ function saveItem(){
   if(editingItem){
     const idx=S.items.findIndex(i=>i.r===editingItem);
     if(idx>=0){
-      S.items[idx]={...S.items[idx],n:nameAr,e:nameEn,c:cat,u:uom,cost,recipe,custom:true};
+      S.items[idx]={...S.items[idx],n:nameAr,e:nameEn,c:cat,u:uom,cost,type,recipe,custom:true};
     }
     toast('✅ تم تعديل الصنف: '+nameAr,'suc');
   } else {
-    S.items.push({r:ref,n:nameAr,e:nameEn,c:cat,u:uom,cost,recipe,custom:true});
+    S.items.push({r:ref,n:nameAr,e:nameEn,c:cat,u:uom,cost,type,recipe,custom:true});
     if(qty) S.qty[ref]=parseFloat(qty)||0;
     toast('✅ تم إضافة الصنف: '+nameAr,'suc');
   }
@@ -1776,7 +1860,7 @@ function renderBranchSwitch(){
 }
 
 function switchBranch(key){
-  if(curRole!=='admin'){toast('⚠️ التبديل بين الفروع متاح للإدارة/المالية بس','wrn');return;}
+  if(!canManageBranchesUI()){toast('⚠️ التبديل بين الفروع متاح للإدارة أو لمن له صلاحية إدارة الفروع بس','wrn');return;}
   if(!S.branches[key]||key===S.curBranch) return;
   curCat='all';curCycleId=null;
   const name=S.branches[key].name;
@@ -1788,20 +1872,20 @@ function switchBranch(key){
 function openBranchMgr(){renderBranchMgrList();document.getElementById('branchMgrModal').classList.add('open');}
 function renderBranchMgrList(){
   const cont=document.getElementById('branchMgrList');
-  const isAdmin=curRole==='admin';
+  const canManage=canManageBranchesUI();
   cont.innerHTML=Object.entries(S.branches).map(([k,b])=>`
     <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid ${k===S.curBranch?'var(--gold)':'var(--border)'};border-radius:9px;margin-bottom:8px;${k===S.curBranch?'background:rgba(240,192,64,.06)':''}">
       <div style="flex:1">
         <div style="font-weight:700;font-size:13px">${b.name}${k===S.curBranch?' <span style="color:var(--gold);font-size:10px">(الحالي)</span>':''}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">مدير: ${b.manager||'-'}</div>
       </div>
-      ${isAdmin&&k!==S.curBranch?`<button class="hi-btn" style="flex:none;padding:5px 10px" onclick="switchBranch('${k}');renderBranchMgrList()">تبديل</button>`:''}
+      ${canManage&&k!==S.curBranch?`<button class="hi-btn" style="flex:none;padding:5px 10px" onclick="switchBranch('${k}');renderBranchMgrList()">تبديل</button>`:''}
       <button class="hi-btn" style="flex:none;padding:5px 8px" onclick="closeM('branchMgrModal');openSetup()">✏</button>
-      ${isAdmin&&Object.keys(S.branches).length>1?`<button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteBranch('${k}')">🗑</button>`:''}
+      ${canManage&&Object.keys(S.branches).length>1?`<button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteBranch('${k}')">🗑</button>`:''}
     </div>`).join('');
 }
 function openNewBranchForm(){
-  if(curRole!=='admin'){toast('⚠️ إضافة الفروع متاحة للإدارة/المالية بس','wrn');return;}
+  if(!canManageBranchesUI()){toast('⚠️ إضافة الفروع متاحة للإدارة أو لمن له صلاحية إدارة الفروع بس','wrn');return;}
   const name=prompt('اسم الفرع الجديد:');
   if(!name||!name.trim())return;
   const ref=db.collection('branches').doc();
@@ -1810,7 +1894,7 @@ function openNewBranchForm(){
     .catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
 }
 function deleteBranch(key){
-  if(curRole!=='admin'){toast('⚠️ حذف الفروع متاح للإدارة/المالية بس','wrn');return;}
+  if(!canManageBranchesUI()){toast('⚠️ حذف الفروع متاح للإدارة أو لمن له صلاحية إدارة الفروع بس','wrn');return;}
   if(Object.keys(S.branches).length<=1){toast('⚠️ لا يمكن حذف آخر فرع','wrn');return;}
   const b=S.branches[key];if(!b)return;
   if(!confirm(`حذف فرع "${b.name}" وكل بياناته (أصناف مجرودة، تقارير، دورات) نهائياً؟`))return;
@@ -1826,11 +1910,11 @@ function deleteBranch(key){
 }
 
 // ══════════════════════════════════════════════
-//  USERS & PERMISSIONS (admin only)
+//  USERS & PERMISSIONS MATRIX
 // ══════════════════════════════════════════════
 let usersCache=[];
 function openUsersMgr(){
-  if(curRole!=='admin')return;
+  if(!canManageUsersUI())return;
   if(!unsubUsers){
     unsubUsers=db.collection('users').onSnapshot(snap=>{
       usersCache=[];snap.forEach(d=>usersCache.push({uid:d.id,...d.data()}));
@@ -1844,27 +1928,46 @@ function renderUsersList(){
   const cont=document.getElementById('usersList');
   if(!usersCache.length){cont.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">لا يوجد مستخدمين بعد</div>';return;}
   const branchSel=(u)=>`<option value="">بدون فرع</option>`+Object.entries(S.branches||{}).map(([k,b])=>`<option value="${k}"${u.branchId===k?' selected':''}>${b.name}</option>`).join('');
-  cont.innerHTML=usersCache.map(u=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;margin-bottom:7px;flex-wrap:wrap">
-      <div style="flex:1;min-width:160px">
-        <div style="font-weight:700;font-size:12.5px">${u.email}</div>
-        ${u.role==='pending'?'<div style="color:var(--gold);font-size:10.5px;margin-top:2px">⏳ بانتظار التفعيل</div>':''}
+  cont.innerHTML=usersCache.map(u=>{
+    const p=u.permissions||{};
+    return `
+    <div style="padding:10px 11px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:${u.role==='admin'?'0':'9px'}">
+        <div style="flex:1;min-width:160px">
+          <div style="font-weight:700;font-size:12.5px">${u.email}</div>
+          ${u.role==='pending'?'<div style="color:var(--gold);font-size:10.5px;margin-top:2px">⏳ بانتظار التفعيل</div>':''}
+        </div>
+        <select class="mod-in" style="width:auto;padding:6px 9px;font-size:11.5px" onchange="setUserRole('${u.uid}',this.value)">
+          <option value="pending"${u.role==='pending'?' selected':''}>بانتظار</option>
+          <option value="branch"${u.role==='branch'?' selected':''}>موظف فرع</option>
+          <option value="admin"${u.role==='admin'?' selected':''}>إدارة/مالية</option>
+        </select>
+        <select class="mod-in" style="width:auto;padding:6px 9px;font-size:11.5px" onchange="setUserBranch('${u.uid}',this.value)" ${u.role==='admin'?'disabled':''}>
+          ${branchSel(u)}
+        </select>
       </div>
-      <select class="mod-in" style="width:auto;padding:6px 9px;font-size:11.5px" onchange="setUserRole('${u.uid}',this.value)">
-        <option value="pending"${u.role==='pending'?' selected':''}>بانتظار</option>
-        <option value="branch"${u.role==='branch'?' selected':''}>موظف فرع</option>
-        <option value="admin"${u.role==='admin'?' selected':''}>إدارة/مالية</option>
-      </select>
-      <select class="mod-in" style="width:auto;padding:6px 9px;font-size:11.5px" onchange="setUserBranch('${u.uid}',this.value)" ${u.role==='admin'?'disabled':''}>
-        ${branchSel(u)}
-      </select>
-    </div>`).join('');
+      ${u.role==='admin'?'':`
+      <div style="display:flex;gap:16px;flex-wrap:wrap;padding-top:9px;border-top:1px solid var(--border)">
+        <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);cursor:pointer">
+          <input type="checkbox" ${p.manageBranches?'checked':''} onchange="setUserPerm('${u.uid}','manageBranches',this.checked)"> إدارة الفروع (إضافة/حذف/تبديل)
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);cursor:pointer">
+          <input type="checkbox" ${p.manageUsers?'checked':''} onchange="setUserPerm('${u.uid}','manageUsers',this.checked)"> إدارة المستخدمين والصلاحيات
+        </label>
+      </div>`}
+    </div>`;
+  }).join('');
 }
 function setUserRole(uid,role){
   db.collection('users').doc(uid).update({role}).then(()=>{toast('✅ تم تحديث الصلاحية','suc');}).catch(e=>toast('⚠️ '+e.message,'err'));
 }
 function setUserBranch(uid,branchId){
   db.collection('users').doc(uid).update({branchId:branchId||null}).then(()=>{toast('✅ تم تحديث الفرع','suc');}).catch(e=>toast('⚠️ '+e.message,'err'));
+}
+function setUserPerm(uid,perm,value){
+  const u=usersCache.find(x=>x.uid===uid);
+  const permissions={...(u&&u.permissions||{}),[perm]:value};
+  db.collection('users').doc(uid).update({permissions}).then(()=>{toast('✅ تم تحديث الصلاحيات','suc');}).catch(e=>toast('⚠️ '+e.message,'err'));
 }
 
 // ══════════════════════════════════════════════
@@ -2678,6 +2781,113 @@ function exportFullDataExcel(){
 
   XLSX.writeFile(wb,`FullData_${(S.branch||'System').replace(/\s/g,'_')}_${today()}.xlsx`);
   toast('📗 تم تصدير كل البيانات Excel','inf');
+}
+
+// ══════════════════════════════════════════════
+//  EXCEL IMPORT (bulk add/update items)
+// ══════════════════════════════════════════════
+const IMPORT_HEADER_ALIASES={
+  ref:['رقم المرجع','المرجع','ref','reference','مرجع'],
+  name:['الاسم','اسم الصنف','name','الأسم'],
+  nameEn:['بالإنجليزي','الاسم بالإنجليزي','بالانجليزي','english','name en'],
+  cat:['القسم','قسم','category'],
+  uom:['الوحدة','وحدة القياس','uom','unit'],
+  cost:['التكلفة/وحدة','التكلفة','تكلفة الوحدة','cost','unit cost'],
+  type:['النوع','نوع الصنف','type'],
+  qty:['الكمية','الكمية الحالية','qty','quantity'],
+};
+function matchImportColumn(header){
+  const h=String(header||'').trim().toLowerCase();
+  for(const key in IMPORT_HEADER_ALIASES){
+    if(IMPORT_HEADER_ALIASES[key].some(a=>a.toLowerCase()===h)) return key;
+  }
+  return null;
+}
+function normalizeImportType(v){
+  const t=String(v||'').trim().toLowerCase();
+  if(t.includes('نصف')||t==='semi') return 'semi';
+  if(t.includes('نهائي')||t.includes('جاهز')||t==='finished') return 'finished';
+  return 'raw';
+}
+function findCatKeyByLabel(label){
+  const l=String(label||'').trim().toLowerCase();
+  if(!l) return null;
+  const byKey=Object.keys(S.cats).find(k=>k.toLowerCase()===l);
+  if(byKey) return byKey;
+  const byLabel=Object.entries(S.cats).find(([k,v])=>(v.l||'').toLowerCase()===l);
+  return byLabel?byLabel[0]:null;
+}
+
+function downloadImportTemplate(){
+  const wb=XLSX.utils.book_new();
+  const rows=[
+    ['رقم المرجع','الاسم','بالإنجليزي','القسم','الوحدة','التكلفة/وحدة','النوع','الكمية'],
+    ['RMF02099','مثال: زيت ذرة','Corn Oil','مواد غذائية','kg','12.5','خامة','0'],
+  ];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'استيراد الأصناف');
+  XLSX.writeFile(wb,'قالب_استيراد_الأصناف.xlsx');
+  toast('📄 تم تحميل القالب','inf');
+}
+
+function handleImportFileSelected(e){
+  const file=e.target.files[0];
+  e.target.value='';
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=new Uint8Array(ev.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      processImportRows(rows);
+    }catch(err){ toast('⚠️ تعذر قراءة الملف: '+err.message,'err'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function processImportRows(rows){
+  if(!rows||!rows.length){toast('⚠️ الملف فارغ','wrn');return;}
+  const header=rows[0];
+  const colMap={};
+  header.forEach((h,i)=>{const key=matchImportColumn(h);if(key)colMap[key]=i;});
+  if(colMap.ref==null||colMap.name==null){
+    toast('⚠️ الملف لازم يحتوي على عمودي "المرجع" و"الاسم" على الأقل — حمّل القالب من الشريط الجانبي','err');
+    return;
+  }
+  let added=0,updated=0,skipped=0,unknownCat=0;
+  const newUoms=[];
+  const defaultCat=Object.keys(S.cats)[0];
+  for(let i=1;i<rows.length;i++){
+    const row=rows[i];
+    if(!row||!row.length) continue;
+    const ref=String(row[colMap.ref]||'').trim().toUpperCase();
+    const name=String(colMap.name!=null?row[colMap.name]:'').trim();
+    if(!ref||!name){skipped++;continue;}
+    const nameEn=colMap.nameEn!=null?String(row[colMap.nameEn]||'').trim():'';
+    const catRaw=colMap.cat!=null?String(row[colMap.cat]||'').trim():'';
+    let catKey=findCatKeyByLabel(catRaw);
+    if(!catKey){catKey=defaultCat;if(catRaw)unknownCat++;}
+    const uom=colMap.uom!=null?String(row[colMap.uom]||'').trim():'';
+    if(uom&&!(S.uoms||DEFAULT_UOMS).includes(uom)&&!newUoms.includes(uom)) newUoms.push(uom);
+    const cost=colMap.cost!=null?(parseFloat(row[colMap.cost])||0):0;
+    const type=colMap.type!=null?normalizeImportType(row[colMap.type]):'raw';
+    const qty=colMap.qty!=null&&row[colMap.qty]!==''?(parseFloat(row[colMap.qty])||0):null;
+
+    const existingIdx=S.items.findIndex(it=>it.r===ref);
+    if(existingIdx>=0){
+      S.items[existingIdx]={...S.items[existingIdx],n:name,e:nameEn,c:catKey,u:uom||S.items[existingIdx].u,cost,type,custom:true};
+      updated++;
+    }else{
+      S.items.push({r:ref,n:name,e:nameEn,c:catKey,u:uom||(S.uoms||DEFAULT_UOMS)[0],cost,type,recipe:[],custom:true});
+      added++;
+    }
+    if(qty!=null) S.qty[ref]=qty;
+  }
+  if(newUoms.length) S.uoms=[...(S.uoms||DEFAULT_UOMS),...newUoms];
+  save();
+  renderSidebar();renderTbl();updateStats();populateCatSelects();populateUomSelects();
+  toast(`✅ تم الاستيراد: ${added} صنف جديد، ${updated} صنف اتحدّث`+(skipped?`، ${skipped} صف اتجوّز (بيانات ناقصة)`:'')+(unknownCat?`، ${unknownCat} قسم غير معروف (اتحط في القسم الافتراضي)`:''),'suc');
 }
 
 function exportBackupJSON(){

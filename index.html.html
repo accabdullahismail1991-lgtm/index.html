@@ -309,6 +309,15 @@ td{padding:9px 13px;vertical-align:middle;}
 }
 @keyframes mIn{from{transform:scale(.95) translateY(10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
 .mod-title{font-size:18px;font-weight:800;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.dash-card{background:var(--card2);border:1px solid var(--border);border-radius:13px;padding:16px 18px;margin-bottom:16px;}
+.dash-card-title{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text);}
+.dash-legend{margin-bottom:8px;font-size:11.5px;color:var(--muted);}
+.dash-legend span{display:inline-flex;align-items:center;gap:5px;margin-inline-end:16px;}
+.dash-legend i{width:10px;height:10px;border-radius:2px;display:inline-block;}
+.dash-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;}
+.dash-kpi{background:var(--card2);border:1px solid var(--border);border-radius:11px;padding:12px 14px;}
+.dash-kpi-lbl{font-size:10.5px;color:var(--muted);margin-bottom:6px;}
+.dash-kpi-val{font-size:18px;font-weight:800;font-family:var(--mono);}
 .mod-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
 .mod-field{margin-bottom:14px;}
 .mod-lbl{font-size:10.5px;color:var(--muted);margin-bottom:5px;display:block;font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;}
@@ -463,6 +472,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="vn-dd" id="dd-reports">
     <button class="vn-btn" onclick="toggleDropdown('dd-reports')">📊 التقارير ▾</button>
     <div class="vn-dd-menu">
+      <div class="vn-dd-item" onclick="closeDropdowns();openDashboard()">📊 لوحة تحكم تفاعلية</div>
       <div class="vn-dd-item" onclick="closeDropdowns();openRequirementPlanner()">📈 تخطيط الاحتياج</div>
       <div class="vn-dd-item" onclick="closeDropdowns();openTransfersLog()">🔀 سجل التحويلات</div>
       <div class="vn-dd-item" id="ddAllBranchReports" style="display:none" onclick="closeDropdowns();openAllBranchesReport()">🌐 تقرير كل الفروع</div>
@@ -930,6 +940,19 @@ td{padding:9px 13px;vertical-align:middle;}
     <button class="hbtn" onclick="closeM('allBranchesModal')">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportAllBranchesExcel()">📗 Excel</button>
+  </div>
+</div>
+</div>
+
+<!-- INTERACTIVE DASHBOARD MODAL -->
+<div class="overlay" id="dashboardModal">
+<div class="modal" style="width:960px">
+  <div class="mod-title">📊 لوحة التحكم التفاعلية</div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">رسوم بيانية مبنية على آخر الدورات المغلقة لهذا الفرع.</p>
+  <div id="dashboardBody" style="max-height:600px;overflow-y:auto"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('dashboardModal')">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()">🖨️ طباعة</button>
   </div>
 </div>
 </div>
@@ -2444,6 +2467,123 @@ function exportAllBranchesExcel(){
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'تقرير كل الفروع');
   XLSX.writeFile(wb,`AllBranchesReport_${today()}.xlsx`);
   toast('📗 تم التصدير','inf');
+}
+
+// ══════════════════════════════════════════════
+//  INTERACTIVE DASHBOARD (lightweight inline SVG charts, no external libs)
+// ══════════════════════════════════════════════
+function svgLineChart(seriesList,labels,opts){
+  opts=opts||{};
+  const w=opts.w||880,h=opts.h||200,pad=34;
+  const n=labels.length;
+  const allVals=seriesList.reduce((a,s)=>a.concat(s.values),[]);
+  const maxV=Math.max(1,...allVals)*1.15;
+  const minV=Math.min(0,...allVals);
+  const range=(maxV-minV)||1;
+  const xStep=n>1?(w-pad*2)/(n-1):0;
+  const xPos=i=>pad+i*xStep;
+  const yPos=v=>h-pad-((v-minV)/range)*(h-pad*2);
+  let grid='';
+  for(let g=0;g<=4;g++){
+    const y=pad+g*(h-pad*2)/4;
+    grid+=`<line x1="${pad}" y1="${y.toFixed(1)}" x2="${w-pad}" y2="${y.toFixed(1)}" stroke="#2d3a50" stroke-width="1"/>`;
+  }
+  const paths=seriesList.map(s=>{
+    const d=s.values.map((v,i)=>`${i===0?'M':'L'}${xPos(i).toFixed(1)},${yPos(v).toFixed(1)}`).join(' ');
+    const dots=s.values.map((v,i)=>`<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(v).toFixed(1)}" r="3" fill="${s.color}"/>`).join('');
+    return `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.5"/>${dots}`;
+  }).join('');
+  const xLabels=labels.map((l,i)=>{
+    if(n>10 && i%Math.ceil(n/10)!==0 && i!==n-1) return '';
+    return `<text x="${xPos(i).toFixed(1)}" y="${h-10}" font-size="9" fill="#7888a8" text-anchor="middle">${l}</text>`;
+  }).join('');
+  const legend=seriesList.map(s=>`<span><i style="background:${s.color}"></i>${s.name}</span>`).join('');
+  return `<div class="dash-legend">${legend}</div><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">${grid}${paths}${xLabels}</svg>`;
+}
+function svgBarChart(items,opts){
+  opts=opts||{};
+  const w=opts.w||880,barH=22,gap=11,pad=8,leftW=opts.leftW||160;
+  if(!items.length) return '<div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">لا توجد بيانات كافية.</div>';
+  const maxV=Math.max(1,...items.map(it=>Math.abs(it.value)));
+  const h=items.length*(barH+gap)+pad*2;
+  const bars=items.map((it,i)=>{
+    const y=pad+i*(barH+gap);
+    const bw=Math.max(2,Math.abs(it.value)/maxV*(w-leftW-70));
+    const label=(it.label.length>22?it.label.slice(0,21)+'…':it.label);
+    return `<text x="${leftW-8}" y="${(y+barH*0.68).toFixed(1)}" font-size="11" fill="#e8ecf5" text-anchor="end">${label}</text>
+      <rect x="${leftW}" y="${y}" width="${bw.toFixed(1)}" height="${barH}" rx="4" fill="${it.color||'#f0c040'}"/>
+      <text x="${(leftW+bw+8).toFixed(1)}" y="${(y+barH*0.68).toFixed(1)}" font-size="11" fill="#7888a8">${it.valueLabel!=null?it.valueLabel:it.value.toFixed(1)}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">${bars}</svg>`;
+}
+function openDashboard(){
+  document.getElementById('dashboardModal').classList.add('open');
+  renderDashboard();
+}
+function renderDashboard(){
+  const body=document.getElementById('dashboardBody');
+  const cycles=sortedCycles().filter(c=>c.closed&&c.result).slice(-12);
+  if(!cycles.length){
+    body.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">لا توجد دورات مغلقة بعد لعرض الرسوم البيانية.</div>';
+    return;
+  }
+  const labels=cycles.map(c=>c.end.slice(5));
+  const actualPct=cycles.map(c=>c.result.actualCostPct);
+  const theoPct=cycles.map(c=>c.result.theoCostPct);
+  const wasteVals=cycles.map(c=>c.result.totalWasteCost);
+  const salesVals=cycles.map(c=>c.result.totalSalesAmount);
+  const last=cycles[cycles.length-1];
+
+  const itemVar={};
+  cycles.forEach(c=>c.result.rows.forEach(r=>{
+    if(!itemVar[r.r]) itemVar[r.r]={n:r.n,val:0};
+    itemVar[r.r].val+=r.varVal;
+  }));
+  const topVar=Object.values(itemVar).sort((a,b)=>Math.abs(b.val)-Math.abs(a.val)).slice(0,8)
+    .map(v=>({label:v.n,value:v.val,valueLabel:fmt(v.val),color:v.val>0?'#f05050':'#2ee89a'}));
+
+  body.innerHTML=`
+    <div class="dash-kpis">
+      ${dashKpi('تكلفة فعلية % (آخر دورة)',last.result.actualCostPct.toFixed(1)+'%','#f0c040')}
+      ${dashKpi('تكلفة نظرية % (آخر دورة)',last.result.theoCostPct.toFixed(1)+'%','#2ee89a')}
+      ${dashKpi('قيمة الانحراف (آخر دورة)',fmt(last.result.totalVarVal),last.result.totalVarVal>0?'#f05050':'#2ee89a')}
+      ${dashKpi('مبيعات آخر دورة',fmt(last.result.totalSalesAmount),'#3d8ef0')}
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-title">📈 نسبة التكلفة: فعلية مقابل نظرية (آخر ${cycles.length} دورة)</div>
+      ${svgLineChart([{name:'فعلية %',color:'#f05050',values:actualPct},{name:'نظرية %',color:'#2ee89a',values:theoPct}],labels)}
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-title">💰 المبيعات مقابل قيمة الهالك</div>
+      ${svgLineChart([{name:'المبيعات',color:'#3d8ef0',values:salesVals},{name:'قيمة الهالك',color:'#f07830',values:wasteVals}],labels)}
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-title">⚠️ أكثر الأصناف انحرافًا (تراكمي عبر الدورات المعروضة)</div>
+      ${svgBarChart(topVar)}
+    </div>
+    ${canManageBranchesUI()?`<div class="dash-card"><div class="dash-card-title">🌐 مقارنة نسبة التكلفة الفعلية بين الفروع (آخر دورة مغلقة لكل فرع)</div><div id="dashBranchCompare" style="color:var(--muted);font-size:12px">جاري التحميل...</div></div>`:''}
+  `;
+  if(canManageBranchesUI()) loadDashboardBranchCompare();
+}
+function dashKpi(lbl,val,color){
+  return `<div class="dash-kpi"><div class="dash-kpi-lbl">${lbl}</div><div class="dash-kpi-val" style="color:${color}">${val}</div></div>`;
+}
+function loadDashboardBranchCompare(){
+  db.collection('branches').get().then(snap=>{
+    const items=[];
+    snap.forEach(doc=>{
+      const d=doc.data()||{};
+      const cyc=(d.cycles||[]).filter(c=>c.closed&&c.result).sort((a,b)=>a.start.localeCompare(b.start));
+      const lastC=cyc.length?cyc[cyc.length-1]:null;
+      if(lastC) items.push({label:d.name||doc.id,value:lastC.result.actualCostPct,valueLabel:lastC.result.actualCostPct.toFixed(1)+'%',color:'#f0c040'});
+    });
+    const el=document.getElementById('dashBranchCompare');
+    if(!el) return;
+    el.innerHTML=svgBarChart(items);
+  }).catch(e=>{
+    const el=document.getElementById('dashBranchCompare');
+    if(el) el.innerHTML=`<div style="color:var(--red)">خطأ: ${e.message}</div>`;
+  });
 }
 
 // ══════════════════════════════════════════════

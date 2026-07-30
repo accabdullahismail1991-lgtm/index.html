@@ -468,8 +468,9 @@ td{padding:9px 13px;vertical-align:middle;}
       <div><div class="logo-name" data-i18n="اختر الفرع">اختر الفرع</div><div class="logo-sub" data-i18n="حسب صلاحياتك">حسب صلاحياتك</div></div>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.8;text-align:center" data-i18n="عندك صلاحية الوصول لأكتر من فرع — اختار الفرع اللي عايز تشتغل عليه دلوقتي (تقدر تبدّل لاحقاً من شريحة الفرع فوق).">عندك صلاحية الوصول لأكتر من فرع — اختار الفرع اللي عايز تشتغل عليه دلوقتي (تقدر تبدّل لاحقاً من شريحة الفرع فوق).</p>
-    <div id="branchGateList" style="display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto"></div>
-    <button class="hbtn" style="width:100%;justify-content:center;padding:10px;margin-top:16px" onclick="doLogout()" data-i18n="خروج">خروج</button>
+    <select id="branchGateSelect" class="mod-in" style="width:100%;margin-bottom:12px"></select>
+    <button class="hbtn gold" style="width:100%;justify-content:center;padding:10px" onclick="confirmBranchGateSelection()" data-i18n="✓ دخول">✓ دخول</button>
+    <button class="hbtn" style="width:100%;justify-content:center;padding:10px;margin-top:8px" onclick="doLogout()" data-i18n="خروج">خروج</button>
   </div>
 </div>
 
@@ -1157,6 +1158,7 @@ const I18N_EN={
   "✓ بدء الدورة": "✓ Start Cycle",
   "✓ حفظ": "✓ Save",
   "✓ حفظ الصنف": "✓ Save Item",
+  "✓ دخول": "✓ Enter",
   "➕ إضافة صنف": "➕ Add Item",
   "➕ إضافة صنف جديد": "➕ Add New Item",
   "➕ إنشاء حساب مستخدم مباشرة": "➕ Create User Account Directly",
@@ -1443,12 +1445,15 @@ function showBranchGate(keys){
   document.getElementById('authScreen').style.display='none';
   document.getElementById('appRoot').style.display='none';
   document.getElementById('branchGateScreen').style.display='flex';
-  document.getElementById('branchGateList').innerHTML=keys.map(k=>{
+  document.getElementById('branchGateSelect').innerHTML=keys.map(k=>{
     const b=S.branches[k]||{};
-    return `<button class="hbtn" style="justify-content:space-between;padding:12px 16px" onclick="selectBranchFromGate('${k}')">
-      <span style="font-weight:700">${b.name||k}</span><span style="color:var(--muted);font-size:11px">${b.manager?'مدير: '+b.manager:''}</span>
-    </button>`;
+    return `<option value="${k}">${b.name||k}${b.manager?' — مدير: '+b.manager:''}</option>`;
   }).join('');
+}
+function confirmBranchGateSelection(){
+  const key=document.getElementById('branchGateSelect').value;
+  if(!key)return;
+  selectBranchFromGate(key);
 }
 function selectBranchFromGate(key){
   branchGateResolved=true;

@@ -294,19 +294,29 @@ td{padding:9px 13px;vertical-align:middle;}
 }
 .row-del:hover{border-color:rgba(240,80,80,.3);color:var(--red);background:rgba(240,80,80,.08);}
 
-/* MODALS */
+/* MODALS — full-page screens rather than small popups, so reports and
+   entry forms open with real room instead of a cramped centered box. */
 .overlay{
   display:none;position:fixed;inset:0;
-  background:rgba(0,0,0,.78);backdrop-filter:blur(6px);
-  z-index:300;align-items:center;justify-content:center;
+  background:var(--bg);
+  z-index:300;
 }
 .overlay.open{display:flex;}
 .modal{
-  background:var(--card);border:1px solid var(--border2);
-  border-radius:16px;width:480px;max-width:95vw;
-  max-height:90vh;overflow-y:auto;padding:26px;
+  background:var(--card);border:none;
+  border-radius:0;width:100% !important;max-width:100% !important;
+  height:100vh;max-height:100vh;overflow-y:auto;
+  padding:64px clamp(16px,6vw,70px) 40px;
   animation:mIn .2s ease;
 }
+.globalModalCloseBtn{
+  position:fixed;top:14px;left:14px;z-index:310;display:none;
+  align-items:center;gap:6px;padding:9px 16px;border-radius:8px;
+  border:1px solid var(--border2);background:var(--card2);color:var(--text);
+  font-family:var(--font);font-size:13px;cursor:pointer;transition:all .15s;
+}
+.globalModalCloseBtn:hover{border-color:var(--gold);color:var(--gold);}
+.globalModalCloseBtn.show{display:flex;}
 @keyframes mIn{from{transform:scale(.95) translateY(10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
 .mod-title{font-size:18px;font-weight:800;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
 .dash-card{background:var(--card2);border:1px solid var(--border);border-radius:13px;padding:16px 18px;margin-bottom:16px;}
@@ -424,7 +434,7 @@ td{padding:9px 13px;vertical-align:middle;}
   .note-in:focus{width:110px;}
 
   .mod-row{grid-template-columns:1fr;gap:0;}
-  .modal{padding:18px;width:96vw;}
+  .modal{padding:60px 16px 30px;}
 }
 @media(max-width:480px){
   .stats{grid-template-columns:1fr 1fr;}
@@ -476,6 +486,7 @@ td{padding:9px 13px;vertical-align:middle;}
 
 <div id="appRoot" style="display:none">
 <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleMobileSidebar()"></div>
+<button class="globalModalCloseBtn" id="globalModalCloseBtn" onclick="closeCurrentOverlay()">✕ <span data-i18n="رجوع">رجوع</span></button>
 <header>
   <div class="logo">
     <img id="companyLogoImg" style="display:none;width:44px;height:44px;border-radius:12px;object-fit:contain;background:#fff;padding:3px">
@@ -1159,6 +1170,7 @@ const I18N_EN={
   "✓ حفظ": "✓ Save",
   "✓ حفظ الصنف": "✓ Save Item",
   "✓ دخول": "✓ Enter",
+  "رجوع": "Back",
   "➕ إضافة صنف": "➕ Add Item",
   "➕ إضافة صنف جديد": "➕ Add New Item",
   "➕ إنشاء حساب مستخدم مباشرة": "➕ Create User Account Directly",
@@ -2929,6 +2941,20 @@ document.addEventListener('click',e=>{
     setTimeout(closeMobileSidebar,150);
   }
 });
+
+// ══════════════════════════════════════════════
+//  FULL-PAGE MODAL SCREENS (close/back button)
+// ══════════════════════════════════════════════
+function closeCurrentOverlay(){
+  const overlay=[...document.querySelectorAll('.overlay.open')].pop();
+  if(overlay) overlay.classList.remove('open');
+}
+function updateGlobalModalCloseBtn(){
+  const btn=document.getElementById('globalModalCloseBtn');
+  if(!btn) return;
+  btn.classList.toggle('show',!!document.querySelector('.overlay.open'));
+}
+new MutationObserver(updateGlobalModalCloseBtn).observe(document.documentElement,{attributes:true,attributeFilter:['class'],subtree:true});
 
 // ══════════════════════════════════════════════
 //  PRINT

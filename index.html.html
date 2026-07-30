@@ -392,9 +392,10 @@ td{padding:9px 13px;vertical-align:middle;}
 <div id="appRoot" style="display:none">
 <header>
   <div class="logo">
-    <div class="logo-icon">🗃️</div>
+    <img id="companyLogoImg" style="display:none;width:44px;height:44px;border-radius:12px;object-fit:contain;background:#fff;padding:3px">
+    <div class="logo-icon" id="defaultLogoIcon">🗃️</div>
     <div>
-      <div class="logo-name">نظام الجرد الذكي</div>
+      <div class="logo-name" id="companyNameOrDefault">نظام الجرد الذكي</div>
       <div class="logo-sub">SMART INVENTORY v3.0 · <span id="buildStamp"></span></div>
     </div>
   </div>
@@ -407,6 +408,7 @@ td{padding:9px 13px;vertical-align:middle;}
     <button class="hbtn org" onclick="openAddItem()">➕ إضافة صنف</button>
     <button class="hbtn" onclick="openSetup()">⚙️ إعداد</button>
     <button class="hbtn" id="adminUsersBtn" style="display:none" onclick="openUsersMgr()">👤 المستخدمين</button>
+    <button class="hbtn" id="companyBtn" style="display:none" onclick="openCompanyMgr()">🏢 الشركة</button>
     <button class="hbtn grn" onclick="saveAndExport()" id="saveBtn">💾 حفظ وتصدير</button>
     <button class="hbtn gold" onclick="openNewDay()">📅 يوم جديد</button>
     <button class="hbtn" onclick="doLogout()" title="خروج">🚪</button>
@@ -527,6 +529,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="sb-div"></div>
   <div class="sb-item" onclick="openNewCycle()"><span class="sb-ico">➕</span>بدء دورة جديدة</div>
   <div class="sb-item" onclick="openMenuMgr()"><span class="sb-ico">🍽️</span>الأصناف والوصفات</div>
+  <div class="sb-item" onclick="openTransfersLog()"><span class="sb-ico">🔀</span>سجل التحويلات</div>
 </div>
 <main>
   <div id="cycleHeader"></div>
@@ -809,6 +812,61 @@ td{padding:9px 13px;vertical-align:middle;}
 </div>
 </div>
 
+<!-- COMPANY SETTINGS MODAL (admin only) -->
+<div class="overlay" id="companyModal">
+<div class="modal" style="width:460px">
+  <div class="mod-title">🏢 بيانات الشركة</div>
+  <div class="mod-field">
+    <label class="mod-lbl">اسم الشركة</label>
+    <input class="mod-in" id="co-name" placeholder="مثال: مطاعم أريكات">
+  </div>
+  <div class="mod-row">
+    <div class="mod-field"><label class="mod-lbl">الهاتف</label><input class="mod-in" id="co-phone" placeholder="05xxxxxxxx"></div>
+    <div class="mod-field"><label class="mod-lbl">العنوان</label><input class="mod-in" id="co-address" placeholder="المدينة، الحي"></div>
+  </div>
+  <div class="mod-field">
+    <label class="mod-lbl">شعار الشركة (اختياري)</label>
+    <input type="file" class="mod-in" id="co-logo-file" accept="image/*" onchange="handleLogoFileSelected(event)">
+    <div style="margin-top:8px;display:flex;align-items:center;gap:10px">
+      <img id="co-logo-preview" style="max-height:56px;max-width:140px;display:none;border-radius:6px;background:#fff;padding:4px">
+      <button class="hbtn" type="button" style="padding:5px 10px;font-size:11.5px" onclick="clearCompanyLogo()">🗑 حذف الشعار</button>
+    </div>
+    <div class="mod-hint">صورة صغيرة (أقل من 400KB) — بتظهر في الهيدر وفي رأس تقارير PDF</div>
+  </div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('companyModal')">إلغاء</button>
+    <button class="hbtn gold" onclick="saveCompanyInfo()">✓ حفظ</button>
+  </div>
+</div>
+</div>
+
+<!-- ITEM MOVEMENT LEDGER MODAL -->
+<div class="overlay" id="itemLedgerModal">
+<div class="modal" style="width:820px">
+  <div class="mod-title" id="ledgerTitle">📜 حركة الصنف</div>
+  <div id="ledgerBody"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('itemLedgerModal')">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportLedgerExcel()">📗 Excel</button>
+  </div>
+</div>
+</div>
+
+<!-- TRANSFERS LOG MODAL -->
+<div class="overlay" id="transfersLogModal">
+<div class="modal" style="width:820px">
+  <div class="mod-title">🔀 سجل التحويلات بين الفروع</div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">كل حركات التحويل الصادرة والواردة المسجّلة في دورات هذا الفرع (المفتوحة والمغلقة).</p>
+  <div id="transfersLogBody" style="max-height:480px;overflow-y:auto"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('transfersLogModal')">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportTransfersLogExcel()">📗 Excel</button>
+  </div>
+</div>
+</div>
+
 <!-- USERS & PERMISSIONS MODAL (admin only) -->
 <div class="overlay" id="usersModal">
 <div class="modal" style="width:580px">
@@ -1064,7 +1122,8 @@ function cleanupSubscriptions(){
   if(unsubBranch)unsubBranch();
   if(unsubUsers)unsubUsers();
   if(unsubBranchesList)unsubBranchesList();
-  unsubCatalog=unsubBranch=unsubUsers=unsubBranchesList=null;
+  if(unsubCompany)unsubCompany();
+  unsubCatalog=unsubBranch=unsubUsers=unsubBranchesList=unsubCompany=null;
 }
 
 async function onAuthChange(user){
@@ -1090,10 +1149,19 @@ async function onAuthChange(user){
   }
 }
 
+let unsubCompany=null;
 function startDataSync(){
   hideAuthScreen();
   document.getElementById('adminUsersBtn').style.display=canManageUsersUI()?'':'none';
+  document.getElementById('companyBtn').style.display=curRole==='admin'?'':'none';
   document.getElementById('branchSwitch').disabled=!canManageBranchesUI();
+
+  if(!unsubCompany){
+    unsubCompany=db.collection('settings').doc('company').onSnapshot(snap=>{
+      companyInfo=snap.data()||{};
+      updateCompanyBranding();
+    },e=>{});
+  }
 
   if(!unsubCatalog){
     unsubCatalog=db.collection('catalog').doc('main').onSnapshot(snap=>{
@@ -1605,6 +1673,7 @@ function renderManage(){
         <td style="padding:7px 10px;font-family:var(--mono);color:var(--blue);font-size:11px">${it.u}</td>
         <td style="padding:7px 10px;font-family:var(--mono);font-size:11px">${fmt(effectiveItemCost(it))}${it.recipe&&it.recipe.length?' <span style="color:var(--purple);font-size:9.5px">(محسوبة)</span>':''}</td>
         <td style="padding:7px 10px;text-align:center;display:flex;gap:5px;justify-content:center">
+          <button class="hi-btn" style="flex:none;padding:4px 8px" onclick="openItemLedger('${it.r}')" title="حركة الصنف">📜</button>
           <button class="hi-btn" style="flex:none;padding:4px 8px" onclick="closeM('manageModal');openEditItem('${it.r}')">✏</button>
           <button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteItem('${it.r}');renderManage()">🗑</button>
         </td>
@@ -1653,7 +1722,7 @@ function exportPDF(rpt){
   doc.setTextColor(20,15,0);doc.setFontSize(13);doc.setFont('helvetica','bold');
   doc.text('INVENTORY REPORT - جرد المخزن',W/2,13,{align:'center'});
   doc.setFontSize(7);doc.setFont('helvetica','normal');
-  doc.text('Smart Inventory System v3.0',W/2,18,{align:'center'});
+  doc.text((companyInfo.name?companyInfo.name+' — ':'')+'Smart Inventory System v3.0',W/2,18,{align:'center'});
 
   doc.setFillColor(15,19,25);doc.rect(0,20,W,16,'F');
   doc.setTextColor(180,190,210);doc.setFontSize(8.5);doc.setFont('helvetica','normal');
@@ -1968,6 +2037,191 @@ function setUserPerm(uid,perm,value){
   const u=usersCache.find(x=>x.uid===uid);
   const permissions={...(u&&u.permissions||{}),[perm]:value};
   db.collection('users').doc(uid).update({permissions}).then(()=>{toast('✅ تم تحديث الصلاحيات','suc');}).catch(e=>toast('⚠️ '+e.message,'err'));
+}
+
+// ══════════════════════════════════════════════
+//  COMPANY BRANDING (name/logo/contact)
+// ══════════════════════════════════════════════
+let companyInfo={};
+let pendingLogoDataUrl=undefined;
+function updateCompanyBranding(){
+  const nameEl=document.getElementById('companyNameOrDefault');
+  const logoImg=document.getElementById('companyLogoImg');
+  const defIcon=document.getElementById('defaultLogoIcon');
+  if(nameEl) nameEl.textContent=companyInfo.name||'نظام الجرد الذكي';
+  if(companyInfo.logo){
+    if(logoImg){logoImg.src=companyInfo.logo;logoImg.style.display='';}
+    if(defIcon) defIcon.style.display='none';
+  }else{
+    if(logoImg) logoImg.style.display='none';
+    if(defIcon) defIcon.style.display='';
+  }
+}
+function openCompanyMgr(){
+  if(curRole!=='admin')return;
+  document.getElementById('co-name').value=companyInfo.name||'';
+  document.getElementById('co-phone').value=companyInfo.phone||'';
+  document.getElementById('co-address').value=companyInfo.address||'';
+  pendingLogoDataUrl=undefined;
+  const prev=document.getElementById('co-logo-preview');
+  if(companyInfo.logo){prev.src=companyInfo.logo;prev.style.display='';}else{prev.style.display='none';}
+  document.getElementById('co-logo-file').value='';
+  document.getElementById('companyModal').classList.add('open');
+}
+function handleLogoFileSelected(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  if(file.size>400*1024){toast('⚠️ الصورة كبيرة (أكبر من 400KB) — اختار صورة أصغر','wrn');e.target.value='';return;}
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    pendingLogoDataUrl=ev.target.result;
+    const prev=document.getElementById('co-logo-preview');
+    prev.src=pendingLogoDataUrl;prev.style.display='';
+  };
+  reader.readAsDataURL(file);
+}
+function clearCompanyLogo(){
+  pendingLogoDataUrl=null;
+  document.getElementById('co-logo-preview').style.display='none';
+  document.getElementById('co-logo-file').value='';
+}
+function saveCompanyInfo(){
+  const payload={
+    name:document.getElementById('co-name').value.trim(),
+    phone:document.getElementById('co-phone').value.trim(),
+    address:document.getElementById('co-address').value.trim(),
+  };
+  if(pendingLogoDataUrl!==undefined) payload.logo=pendingLogoDataUrl||'';
+  else payload.logo=companyInfo.logo||'';
+  db.collection('settings').doc('company').set(payload)
+    .then(()=>{toast('✅ تم حفظ بيانات الشركة','suc');closeM('companyModal');})
+    .catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
+}
+
+// ══════════════════════════════════════════════
+//  ITEM MOVEMENT LEDGER (حركة الصنف)
+// ══════════════════════════════════════════════
+let curLedgerRef=null;
+function openItemLedger(ref){
+  curLedgerRef=ref;
+  renderItemLedger();
+  document.getElementById('itemLedgerModal').classList.add('open');
+}
+function itemLedgerRows(){
+  const it=S.items.find(i=>i.r===curLedgerRef);
+  if(!it) return {it:null,rows:[]};
+  const rows=[];
+  sortedCycles().filter(c=>c.closed&&c.result).forEach(c=>{
+    const row=c.result.rows.find(r=>r.r===curLedgerRef);
+    if(row) rows.push({start:c.start,end:c.end,...row});
+  });
+  return {it,rows};
+}
+function renderItemLedger(){
+  const {it,rows}=itemLedgerRows();
+  if(!it){document.getElementById('ledgerBody').innerHTML='';return;}
+  document.getElementById('ledgerTitle').textContent=`📜 حركة الصنف: ${it.n} (${it.r})`;
+  if(!rows.length){
+    document.getElementById('ledgerBody').innerHTML=`<div class="tbl-wrap"><div style="padding:24px;text-align:center;color:var(--muted)">لا توجد حركة مسجّلة لهذا الصنف في أي دورة مغلقة بعد.</div></div>`;
+    return;
+  }
+  document.getElementById('ledgerBody').innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>الدورة</th><th>افتتاحي</th><th>مشتريات</th><th>تحويل وارد</th><th>هالك</th><th>سحب داخلي</th><th>تحويل صادر</th><th>ختامي</th><th>استهلاك فعلي</th><th>استهلاك نظري</th><th>انحراف قيمة</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td class="td-name" style="font-family:var(--mono);font-size:11px">${r.start} ← ${r.end}</td>
+      <td>${fmt(r.op)}</td><td>${fmt(r.pur)}</td><td>${fmt(r.trIn)}</td><td>${fmt(r.was)}</td><td>${fmt(r.wd)}</td><td>${fmt(r.trOut)}</td><td>${fmt(r.cl)}</td>
+      <td style="font-weight:700">${fmt(r.actual)}</td><td>${fmt(r.theo)}</td>
+      <td style="color:${Math.abs(r.varVal)<0.01?'var(--muted)':(r.varVal>0?'var(--red)':'var(--green)')};font-weight:700">${fmt(r.varVal)}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+function exportLedgerExcel(){
+  const {it,rows}=itemLedgerRows();
+  if(!it||!rows.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
+  const wb=XLSX.utils.book_new();
+  const out=[['الدورة من','الدورة إلى','افتتاحي','مشتريات','تحويل وارد','هالك','سحب داخلي','تحويل صادر','ختامي','استهلاك فعلي','استهلاك نظري','انحراف قيمة']];
+  rows.forEach(r=>out.push([r.start,r.end,r.op,r.pur,r.trIn,r.was,r.wd,r.trOut,r.cl,r.actual,r.theo,+r.varVal.toFixed(2)]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'حركة الصنف');
+  XLSX.writeFile(wb,`ItemLedger_${it.r}_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
+  toast('📗 تم تصدير حركة الصنف','inf');
+}
+
+// ══════════════════════════════════════════════
+//  TRANSFERS LOG (سجل التحويلات)
+// ══════════════════════════════════════════════
+function transfersLogRows(){
+  const rows=[];
+  sortedCycles().forEach(c=>{
+    Object.entries(c.transfersOut||{}).forEach(([ref,t])=>{
+      if(!t.qty&&!t.reason) return;
+      const it=S.items.find(i=>i.r===ref);
+      rows.push({start:c.start,end:c.end,dir:'out',ref,name:it?it.n:ref,uom:it?it.u:'',qty:t.qty||0,other:t.reason||'-',closed:c.closed});
+    });
+    Object.entries(c.transfersIn||{}).forEach(([ref,t])=>{
+      if(!t.qty&&!t.reason) return;
+      const it=S.items.find(i=>i.r===ref);
+      rows.push({start:c.start,end:c.end,dir:'in',ref,name:it?it.n:ref,uom:it?it.u:'',qty:t.qty||0,other:t.reason||'-',closed:c.closed});
+    });
+  });
+  return rows;
+}
+function openTransfersLog(){
+  renderTransfersLog();
+  document.getElementById('transfersLogModal').classList.add('open');
+}
+function renderTransfersLog(){
+  const rows=transfersLogRows();
+  if(!rows.length){
+    document.getElementById('transfersLogBody').innerHTML=`<div class="tbl-wrap"><div style="padding:24px;text-align:center;color:var(--muted)">لا توجد تحويلات مسجّلة بعد لهذا الفرع.</div></div>`;
+    return;
+  }
+  document.getElementById('transfersLogBody').innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>الدورة</th><th>الاتجاه</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th>الفرع الآخر</th><th>الحالة</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td style="font-family:var(--mono);font-size:11px">${r.start} ← ${r.end}</td>
+      <td style="color:${r.dir==='out'?'var(--red)':'var(--green)'};font-weight:700">${r.dir==='out'?'🔀 صادر':'🔁 وارد'}</td>
+      <td class="td-name">${r.name}</td>
+      <td><span class="uom-pill">${r.uom}</span></td>
+      <td style="font-family:var(--mono)">${fmt(r.qty)}</td>
+      <td>${r.other}</td>
+      <td style="font-size:11px;color:var(--muted)">${r.closed?'🔒 مغلقة':'🟢 مفتوحة'}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+function exportTransfersLogExcel(){
+  const rows=transfersLogRows();
+  if(!rows.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
+  const wb=XLSX.utils.book_new();
+  const out=[['الدورة من','الدورة إلى','الاتجاه','المرجع','الصنف','الوحدة','الكمية','الفرع الآخر','الحالة']];
+  rows.forEach(r=>out.push([r.start,r.end,r.dir==='out'?'صادر':'وارد',r.ref,r.name,r.uom,r.qty,r.other,r.closed?'مغلقة':'مفتوحة']));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'سجل التحويلات');
+  XLSX.writeFile(wb,`TransfersLog_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
+  toast('📗 تم تصدير سجل التحويلات','inf');
+}
+
+// ══════════════════════════════════════════════
+//  PRINT
+// ══════════════════════════════════════════════
+function printCurrentReport(){
+  const overlay=[...document.querySelectorAll('.overlay.open')].pop();
+  if(!overlay){window.print();return;}
+  const content=overlay.querySelector('.modal').innerHTML;
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+    <title>${(companyInfo.name||'نظام الجرد الذكي')}</title>
+    <style>
+      body{font-family:Tajawal,Arial,sans-serif;padding:24px;color:#111;}
+      table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;}
+      th,td{border:1px solid #ccc;padding:6px 9px;text-align:right;}
+      th{background:#f0f0f0;}
+      .mod-foot,button,input,select{display:none !important;}
+      .mod-title{font-size:18px;font-weight:800;margin-bottom:12px;}
+    </style></head><body>
+    ${companyInfo.name?`<div style="font-weight:800;font-size:15px;margin-bottom:4px">${companyInfo.name}</div>`:''}
+    ${content}
+    </body></html>`);
+  w.document.close();
+  setTimeout(()=>{w.print();},400);
 }
 
 // ══════════════════════════════════════════════
@@ -2518,7 +2772,7 @@ function exportCyclePDF(cid){
   doc.setTextColor(20,15,0);doc.setFontSize(13);doc.setFont('helvetica','bold');
   doc.text('CYCLE RECONCILIATION REPORT - تقرير دورة التسوية',W/2,13,{align:'center'});
   doc.setFontSize(7);doc.setFont('helvetica','normal');
-  doc.text('Smart Inventory System v3.0',W/2,18,{align:'center'});
+  doc.text((companyInfo.name?companyInfo.name+' — ':'')+'Smart Inventory System v3.0',W/2,18,{align:'center'});
 
   doc.setFillColor(15,19,25);doc.rect(0,20,W,16,'F');
   doc.setTextColor(180,190,210);doc.setFontSize(8.5);doc.setFont('helvetica','normal');

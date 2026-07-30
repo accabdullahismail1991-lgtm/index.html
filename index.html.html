@@ -1167,6 +1167,24 @@ td{padding:9px 13px;vertical-align:middle;}
 </div>
 </div>
 
+<!-- CLOSING STOCK REPORT MODAL (تقرير المخزون الختامي المستقل لنهاية الدورة) -->
+<div class="overlay" id="closingStockModal">
+<div class="modal" style="width:920px">
+  <div class="mod-title" data-i18n="📦 تقرير المخزون الختامي">📦 تقرير المخزون الختامي</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportClosingStockExcel()">📗 Excel</button>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">الرصيد الختامي لكل صنف في نهاية الدورة، مربوط بمصدرين: الجرد اليومي المحفوظ بتاريخ نهاية الدورة، وحركة الرصيد الختامي داخل الدورة نفسها. أيهما اتسجّل أولاً هو المعتمد.</p>
+  <div id="closingStockBody"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('closingStockModal')" data-i18n="إغلاق">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportClosingStockExcel()">📗 Excel</button>
+  </div>
+</div>
+</div>
+
 <!-- INTERACTIVE DASHBOARD MODAL -->
 <div class="overlay" id="dashboardModal">
 <div class="modal" style="width:960px">
@@ -1237,6 +1255,11 @@ td{padding:9px 13px;vertical-align:middle;}
 <script>
 const I18N_EN={
   "🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية": "🔗 Match Item Names With External Systems",
+  "📦 تقرير المخزون الختامي": "📦 Closing Stock Report",
+  "من الجرد اليومي": "From Daily Count",
+  "من حركة الدورة": "From Cycle Entry",
+  "الرصيد الختامي المعتمد": "Adopted Closing Balance",
+  "المصدر المعتمد": "Adopted Source",
   "أمين المخزن": "Storekeeper",
   "أيقونة القسم": "Category Icon",
   "إجراءات سريعة": "Quick Actions",
@@ -1453,6 +1476,7 @@ function reRenderDynamicContentForLang(){
     ['planModal',renderRequirementPlanner],
     ['menuSalesModal',renderMenuSalesReport],
     ['posMatchModal',renderPosMatchList],
+    ['closingStockModal',renderClosingStockReport],
   ];
   openRenders.forEach(([id,fn])=>{
     const el=document.getElementById(id);
@@ -1614,7 +1638,7 @@ let S={
   uoms:[...DEFAULT_UOMS],
 };
 let curCat='all', unsaved=false;
-let curView='daily', curCycleId=null, curCycleTab='sales';
+let curView='daily', curCycleId=null, curCycleTab='sales', curClosingStockCycleId=null;
 
 function today(){
   const d=new Date();
@@ -2406,7 +2430,7 @@ function saveAndExport(){
     branch:S.branch||'غير محدد',
     manager:S.manager,storekeeper:S.storekeeper,supervisor:S.supervisor,
     qty:{...S.qty},notes:{...(S.notes||{})},
-    savedAt:new Date().toLocaleString('ar-SA'),
+    savedAt:new Date().toLocaleString('ar-SA'),savedAtISO:new Date().toISOString(),
     items:[...S.items],cats:{...S.cats},
     meta:{total:S.items.length,entered:ent,
       zero:S.items.filter(it=>S.qty[it.r]!=null&&parseFloat(S.qty[it.r])===0).length,
@@ -3661,7 +3685,7 @@ function createCycle(){
   if(!start||!end){toast('⚠️ حدد تاريخ البداية والنهاية','wrn');return;}
   if(end<start){toast('⚠️ تاريخ النهاية قبل البداية','wrn');return;}
   const c={id:'CYC'+Date.now().toString(36).toUpperCase(),start,end,closed:false,
-    sales:{},salesAmount:null,purchases:{},waste:{},withdrawals:{},transfersOut:{},transfersIn:{},openingOverride:{},closing:{},result:null};
+    sales:{},salesAmount:null,purchases:{},waste:{},withdrawals:{},transfersOut:{},transfersIn:{},openingOverride:{},closing:{},closingSetAt:{},result:null};
   BCycles().push(c);
   curCycleId=c.id;curCycleTab='sales';
   save();closeM('newCycleModal');renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();
@@ -3694,6 +3718,7 @@ function renderCycleHeader(){
       ${!c.closed
         ?`<button class="hbtn gold" style="padding:6px 12px;font-size:12px" onclick="closeCycle()" data-i18n="🔒 إغلاق الدورة وحساب النتائج">🔒 إغلاق الدورة وحساب النتائج</button>`
         :`<button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="reopenCycle()" data-i18n="🔓 إعادة فتح">🔓 إعادة فتح</button>`}
+      <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="openClosingStockReport('${c.id}')" title="تقرير المخزون الختامي المستقل لنهاية الدورة">📦 المخزون الختامي</button>
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="exportCyclePDF('${c.id}')">📄 PDF</button>
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="exportCycleCSV('${c.id}')">📊 CSV</button>
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="exportCycleExcel('${c.id}')">📗 Excel</button>
@@ -4125,16 +4150,92 @@ function setCycleOpeningOverride(cid,r,v){
 }
 function setCycleClosing(cid,r,v){
   const c=getCycle(cid);if(!c||c.closed)return;
-  if(v==='') delete c.closing[r]; else c.closing[r]=parseFloat(v)||0;
+  if(!c.closingSetAt) c.closingSetAt={};
+  if(v===''){delete c.closing[r];delete c.closingSetAt[r];}
+  else{c.closing[r]=parseFloat(v)||0;c.closingSetAt[r]=new Date().toISOString();}
   save();
 }
 function pullLiveCount(cid){
   const c=getCycle(cid);if(!c||c.closed)return;
+  if(!c.closingSetAt) c.closingSetAt={};
+  const now=new Date().toISOString();
   S.items.forEach(it=>{
-    if(S.qty[it.r]!=null&&S.qty[it.r]!=='') c.closing[it.r]=parseFloat(S.qty[it.r])||0;
+    if(S.qty[it.r]!=null&&S.qty[it.r]!==''){c.closing[it.r]=parseFloat(S.qty[it.r])||0;c.closingSetAt[it.r]=now;}
   });
   save();renderCycleBody();
   toast('✅ تم سحب الكميات الحالية كرصيد ختامي','suc');
+}
+
+// ══════════════════════════════════════════════
+//  CLOSING STOCK REPORT (تقرير المخزون الختامي المستقل)
+//  بيربط رصيد ختامي الدورة بحركتين مختلفتين ممكن حصل منهم أي واحدة:
+//   1) حركة الجرد اليومي (S.reports) المحفوظة بنفس تاريخ نهاية الدورة
+//   2) حركة الدورة نفسها (c.closing) المُدخلة يدوياً أو مسحوبة بزرار "سحب الكميات"
+//  واللي اتسجّل منهم الأول (بالتاريخ/الوقت الفعلي للحفظ) هو اللي بيتاعتمد كرقم نهائي.
+// ══════════════════════════════════════════════
+function computeClosingStockReport(c){
+  const dailyReports=S.reports.filter(r=>r.date===c.end).sort((a,b)=>(a.savedAtISO||'').localeCompare(b.savedAtISO||''));
+  const dailyReport=dailyReports.length?dailyReports[0]:null;
+  const closingSetAt=c.closingSetAt||{};
+  const rows=S.items.map(it=>{
+    const dailyVal=dailyReport&&dailyReport.qty[it.r]!=null&&dailyReport.qty[it.r]!==''?parseFloat(dailyReport.qty[it.r]):null;
+    const dailyTime=dailyReport?dailyReport.savedAtISO:null;
+    const cycleVal=c.closing[it.r]!=null?c.closing[it.r]:null;
+    const cycleTime=closingSetAt[it.r]||null;
+    let finalVal=null,source=null;
+    if(dailyVal!=null&&cycleVal!=null){
+      if(dailyTime&&cycleTime){
+        if(dailyTime<=cycleTime){finalVal=dailyVal;source='daily';}
+        else{finalVal=cycleVal;source='cycle';}
+      }else{finalVal=cycleVal;source='cycle';}
+    }else if(dailyVal!=null){finalVal=dailyVal;source='daily';}
+    else if(cycleVal!=null){finalVal=cycleVal;source='cycle';}
+    const mismatch=dailyVal!=null&&cycleVal!=null&&Math.abs(dailyVal-cycleVal)>=0.001;
+    return {r:it.r,n:it.n,u:it.u,dailyVal,dailyTime,cycleVal,cycleTime,finalVal,source,mismatch};
+  }).filter(row=>row.dailyVal!=null||row.cycleVal!=null);
+  return {rows,dailyReport,cycleEnd:c.end,mismatchCount:rows.filter(r=>r.mismatch).length};
+}
+function openClosingStockReport(cid){
+  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  const c=getCycle(cid);if(!c)return;
+  curClosingStockCycleId=cid;
+  renderClosingStockReport();
+  document.getElementById('closingStockModal').classList.add('open');
+}
+function renderClosingStockReport(){
+  const c=curClosingStockCycleId?getCycle(curClosingStockCycleId):null;
+  const el=document.getElementById('closingStockBody');
+  if(!c){el.innerHTML='';return;}
+  const rep=computeClosingStockReport(c);
+  const srcLabel=s=>s==='daily'?'📋 الجرد اليومي':(s==='cycle'?'🔄 حركة الدورة':'-');
+  const banner=`<div class="dbanner" style="margin-bottom:14px">
+    <div class="db-l"><div><div class="db-main">دورة ${c.start} ← ${c.end}</div>
+      <div class="db-sub">${rep.dailyReport?`فيه جرد يومي محفوظ بتاريخ ${c.end} (${rep.dailyReport.sid}) بيتقارن برصيد الدورة`:'مفيش جرد يومي محفوظ بتاريخ نهاية الدورة — الاعتماد على رصيد الدورة نفسه فقط'}</div></div></div>
+    <div class="db-r">${rep.mismatchCount?`<span style="color:var(--orange);font-weight:700;font-size:12px">⚠️ ${rep.mismatchCount} صنف فيه فرق بين المصدرين</span>`:`<span style="color:var(--green);font-weight:700;font-size:12px">✅ لا يوجد تعارض بين المصدرين</span>`}</div>
+  </div>`;
+  const rows=rep.rows.map(r=>`<tr${r.mismatch?' style="background:rgba(240,120,48,.06)"':''}>
+    <td class="td-ref">${r.r}</td><td class="td-name">${r.n}</td><td><span class="uom-pill">${r.u}</span></td>
+    <td style="font-family:var(--mono);text-align:center">${r.dailyVal!=null?fmt(r.dailyVal):'-'}</td>
+    <td style="font-family:var(--mono);text-align:center">${r.cycleVal!=null?fmt(r.cycleVal):'-'}</td>
+    <td style="font-family:var(--mono);text-align:center;font-weight:700">${r.finalVal!=null?fmt(r.finalVal):'-'}</td>
+    <td style="font-size:11px;color:${r.mismatch?'var(--orange)':'var(--muted)'}">${srcLabel(r.source)}${r.mismatch?' ⚠️':''}</td>
+  </tr>`).join('');
+  el.innerHTML=`${banner}
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('من الجرد اليومي')}</th><th>${t('من حركة الدورة')}</th><th>${t('الرصيد الختامي المعتمد')}</th><th>${t('المصدر المعتمد')}</th></tr></thead>
+    <tbody>${rows||emptyCycleRow(7)}</tbody>
+  </table></div>
+  <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.8">لو الصنف اتجرد في الاثنين (الجرد اليومي وحركة الدورة)، النظام بيعتمد الرقم اللي اتسجّل الأول زمنياً كرصيد ختامي نهائي، والصفوف اللي فيها فرق بين المصدرين متعلّمة بالبرتقالي.</p>`;
+}
+function exportClosingStockExcel(){
+  const c=curClosingStockCycleId?getCycle(curClosingStockCycleId):null;if(!c)return;
+  const rep=computeClosingStockReport(c);
+  const srcLabel=s=>s==='daily'?'الجرد اليومي':(s==='cycle'?'حركة الدورة':'-');
+  const wb=XLSX.utils.book_new();
+  const out=[['المرجع','الصنف','الوحدة','من الجرد اليومي','من حركة الدورة','الرصيد الختامي المعتمد','المصدر المعتمد']];
+  rep.rows.forEach(r=>out.push([r.r,r.n,r.u,r.dailyVal!=null?r.dailyVal:'-',r.cycleVal!=null?r.cycleVal:'-',r.finalVal!=null?r.finalVal:'-',srcLabel(r.source)]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'المخزون الختامي');
+  XLSX.writeFile(wb,`مخزون_ختامي_${c.start}_${c.end}.xlsx`);
 }
 
 function computeCycleResults(c){

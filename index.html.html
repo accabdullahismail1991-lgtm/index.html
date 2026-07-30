@@ -85,6 +85,21 @@ header{
 .vn-btn:hover{color:var(--text);border-color:var(--border2);}
 .vn-btn.active{background:rgba(240,192,64,.1);border-color:var(--gold);color:var(--gold);font-weight:700;}
 
+/* NAV DROPDOWNS */
+.vn-dd{position:relative;}
+.vn-dd-menu{
+  display:none;position:absolute;top:calc(100% + 6px);right:0;min-width:220px;
+  background:var(--card);border:1px solid var(--border2);border-radius:10px;
+  padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.5);z-index:250;
+}
+.vn-dd.open .vn-dd-menu{display:block;}
+.vn-dd-item{
+  display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;
+  font-size:13px;color:var(--text);cursor:pointer;transition:background .12s;white-space:nowrap;
+}
+.vn-dd-item:hover{background:rgba(255,255,255,.05);}
+.vn-dd-div{height:1px;background:var(--border);margin:5px 4px;}
+
 /* LAYOUT */
 .layout{display:flex;min-height:calc(100vh - 122px);}
 
@@ -406,9 +421,6 @@ td{padding:9px 13px;vertical-align:middle;}
     </div>
     <select id="branchSwitch" style="max-width:150px;font-size:12.5px;padding:8px 10px" onchange="switchBranch(this.value)"></select>
     <button class="hbtn org" onclick="openAddItem()">➕ إضافة صنف</button>
-    <button class="hbtn" onclick="openSetup()">⚙️ إعداد</button>
-    <button class="hbtn" id="adminUsersBtn" style="display:none" onclick="openUsersMgr()">👤 المستخدمين</button>
-    <button class="hbtn" id="companyBtn" style="display:none" onclick="openCompanyMgr()">🏢 الشركة</button>
     <button class="hbtn grn" onclick="saveAndExport()" id="saveBtn">💾 حفظ وتصدير</button>
     <button class="hbtn gold" onclick="openNewDay()">📅 يوم جديد</button>
     <button class="hbtn" onclick="doLogout()" title="خروج">🚪</button>
@@ -417,9 +429,45 @@ td{padding:9px 13px;vertical-align:middle;}
 
 <div class="viewnav">
   <button class="vn-btn active" id="vnDaily" onclick="showView('daily')">📋 الجرد اليومي</button>
-  <button class="vn-btn" id="vnCycle" onclick="showView('cycle')">🔄 دورة التسوية (كل أسبوعين)</button>
-  <button class="vn-btn" onclick="openMenuMgr()">🍽️ الأصناف المباعة والوصفات</button>
-  <button class="vn-btn" onclick="openRequirementPlanner()">📈 تخطيط الاحتياج</button>
+  <button class="vn-btn" id="vnCycle" onclick="showView('cycle')">🔄 دورة التسوية</button>
+
+  <div class="vn-dd" id="dd-items">
+    <button class="vn-btn" onclick="toggleDropdown('dd-items')">📦 الأصناف ▾</button>
+    <div class="vn-dd-menu">
+      <div class="vn-dd-item" onclick="closeDropdowns();openAddItem()">➕ إضافة صنف جديد</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();openAddCat()">🗂️ إضافة قسم جديد</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();openManageItems()">✏️ إدارة الأصناف</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();openUomMgr()">📏 وحدات القياس</div>
+      <div class="vn-dd-div"></div>
+      <div class="vn-dd-item" onclick="closeDropdowns();openMenuMgr()">🍽️ الأصناف المباعة والوصفات</div>
+      <div class="vn-dd-div"></div>
+      <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('importFileInput').click()">📥 استيراد أصناف (Excel)</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();downloadImportTemplate()">📄 قالب الاستيراد</div>
+    </div>
+  </div>
+
+  <div class="vn-dd" id="dd-reports">
+    <button class="vn-btn" onclick="toggleDropdown('dd-reports')">📊 التقارير ▾</button>
+    <div class="vn-dd-menu">
+      <div class="vn-dd-item" onclick="closeDropdowns();openRequirementPlanner()">📈 تخطيط الاحتياج</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();openTransfersLog()">🔀 سجل التحويلات</div>
+      <div class="vn-dd-item" id="ddAllBranchReports" style="display:none" onclick="closeDropdowns();openAllBranchesReport()">🌐 تقرير كل الفروع</div>
+      <div class="vn-dd-div"></div>
+      <div class="vn-dd-item" onclick="closeDropdowns();exportFullDataExcel()">📗 تفريغ كل البيانات (Excel)</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();exportBackupJSON()">💽 حفظ نسخة احتياطية (JSON)</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('backupFileInput').click()">📤 استعادة من نسخة احتياطية</div>
+    </div>
+  </div>
+
+  <div class="vn-dd" id="dd-admin">
+    <button class="vn-btn" onclick="toggleDropdown('dd-admin')">⚙️ الإدارة ▾</button>
+    <div class="vn-dd-menu">
+      <div class="vn-dd-item" onclick="closeDropdowns();openSetup()">⚙️ إعداد الفرع</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();openBranchMgr()">🏢 إدارة الفروع</div>
+      <div class="vn-dd-item" id="ddUsersItem" style="display:none" onclick="closeDropdowns();openUsersMgr()">👤 المستخدمين والصلاحيات</div>
+      <div class="vn-dd-item" id="ddCompanyItem" style="display:none" onclick="closeDropdowns();openCompanyMgr()">🏢 بيانات الشركة</div>
+    </div>
+  </div>
 </div>
 
 <div class="layout" id="dailyView">
@@ -434,24 +482,12 @@ td{padding:9px 13px;vertical-align:middle;}
   <div id="catSidebar"></div>
 
   <div class="sb-div"></div>
-  <span class="sb-label">إدارة الأصناف</span>
-  <div class="sb-item" onclick="openAddItem()"><span class="sb-ico">➕</span>إضافة صنف جديد</div>
-  <div class="sb-item" onclick="openAddCat()"><span class="sb-ico">🗂️</span>إضافة قسم جديد</div>
-  <div class="sb-item" onclick="openManageItems()"><span class="sb-ico">✏️</span>إدارة الأصناف</div>
-  <div class="sb-item" onclick="openUomMgr()"><span class="sb-ico">📏</span>وحدات القياس</div>
-  <div class="sb-item" onclick="document.getElementById('importFileInput').click()"><span class="sb-ico">📥</span>استيراد أصناف (Excel)</div>
-  <div class="sb-item" onclick="downloadImportTemplate()"><span class="sb-ico">📄</span>قالب الاستيراد</div>
-  <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFileSelected(event)">
-
-  <div class="sb-div"></div>
-  <span class="sb-label">إجراءات</span>
+  <span class="sb-label">إجراءات سريعة</span>
   <div class="sb-item" onclick="saveAndExport()"><span class="sb-ico">💾</span>حفظ وتصدير PDF</div>
   <div class="sb-item" onclick="exportCsv()"><span class="sb-ico">📊</span>تصدير CSV</div>
-  <div class="sb-item" onclick="exportFullDataExcel()"><span class="sb-ico">📗</span>تفريغ كل البيانات (Excel)</div>
-  <div class="sb-item" onclick="exportBackupJSON()"><span class="sb-ico">💽</span>حفظ نسخة احتياطية (JSON)</div>
-  <div class="sb-item" onclick="document.getElementById('backupFileInput').click()"><span class="sb-ico">📤</span>استعادة من نسخة احتياطية</div>
-  <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none" onchange="handleBackupFileSelected(event)">
   <div class="sb-item" onclick="clearQty()"><span class="sb-ico">🗑️</span>مسح الكميات</div>
+  <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFileSelected(event)">
+  <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none" onchange="handleBackupFileSelected(event)">
 
   <div class="hist-wrap">
     <span class="hist-lbl">📋 التقارير المحفوظة</span>
@@ -524,12 +560,10 @@ td{padding:9px 13px;vertical-align:middle;}
 <!-- CYCLE (RECONCILIATION) VIEW -->
 <div class="layout" id="cycleView" style="display:none">
 <div class="sidebar">
-  <span class="sb-label">الدورات (كل أسبوعين)</span>
+  <span class="sb-label">دورات التسوية</span>
   <div id="cycleList"></div>
   <div class="sb-div"></div>
   <div class="sb-item" onclick="openNewCycle()"><span class="sb-ico">➕</span>بدء دورة جديدة</div>
-  <div class="sb-item" onclick="openMenuMgr()"><span class="sb-ico">🍽️</span>الأصناف والوصفات</div>
-  <div class="sb-item" onclick="openTransfersLog()"><span class="sb-ico">🔀</span>سجل التحويلات</div>
 </div>
 <main>
   <div id="cycleHeader"></div>
@@ -751,6 +785,11 @@ td{padding:9px 13px;vertical-align:middle;}
     <div class="mod-field"><label class="mod-lbl">تاريخ البداية *</label><input type="date" class="mod-in" id="nc-start"></div>
     <div class="mod-field"><label class="mod-lbl">تاريخ النهاية *</label><input type="date" class="mod-in" id="nc-end"></div>
   </div>
+  <div style="display:flex;gap:6px;margin:-6px 0 14px">
+    <button class="hbtn" type="button" style="flex:1;justify-content:center;padding:6px;font-size:11.5px" onclick="setCyclePreset(0)">يومية</button>
+    <button class="hbtn" type="button" style="flex:1;justify-content:center;padding:6px;font-size:11.5px" onclick="setCyclePreset(6)">أسبوعية</button>
+    <button class="hbtn" type="button" style="flex:1;justify-content:center;padding:6px;font-size:11.5px" onclick="setCyclePreset(13)">كل أسبوعين</button>
+  </div>
   <p style="font-size:11.5px;color:var(--muted);line-height:1.8">الرصيد الافتتاحي هياخد تلقائياً من الرصيد الختامي لآخر دورة مغلقة لنفس الفرع (أو تقدر تدخله يدوياً لو دي أول دورة).</p>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('newCycleModal')">إلغاء</button>
@@ -863,6 +902,20 @@ td{padding:9px 13px;vertical-align:middle;}
     <button class="hbtn" onclick="closeM('transfersLogModal')">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportTransfersLogExcel()">📗 Excel</button>
+  </div>
+</div>
+</div>
+
+<!-- ALL BRANCHES REPORT MODAL -->
+<div class="overlay" id="allBranchesModal">
+<div class="modal" style="width:900px">
+  <div class="mod-title">🌐 تقرير كل الفروع</div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">ملخص آخر دورة تسوية مغلقة لكل فرع — متاح للإدارة أو لمن له صلاحية إدارة الفروع.</p>
+  <div id="allBranchesBody" style="max-height:480px;overflow-y:auto"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('allBranchesModal')">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportAllBranchesExcel()">📗 Excel</button>
   </div>
 </div>
 </div>
@@ -1152,8 +1205,9 @@ async function onAuthChange(user){
 let unsubCompany=null;
 function startDataSync(){
   hideAuthScreen();
-  document.getElementById('adminUsersBtn').style.display=canManageUsersUI()?'':'none';
-  document.getElementById('companyBtn').style.display=curRole==='admin'?'':'none';
+  document.getElementById('ddUsersItem').style.display=canManageUsersUI()?'':'none';
+  document.getElementById('ddCompanyItem').style.display=curRole==='admin'?'':'none';
+  document.getElementById('ddAllBranchReports').style.display=canManageBranchesUI()?'':'none';
   document.getElementById('branchSwitch').disabled=!canManageBranchesUI();
 
   if(!unsubCompany){
@@ -2200,6 +2254,81 @@ function exportTransfersLogExcel(){
 }
 
 // ══════════════════════════════════════════════
+//  ALL-BRANCHES REPORT (admin أو صلاحية إدارة الفروع)
+// ══════════════════════════════════════════════
+let allBranchesRows=[];
+function openAllBranchesReport(){
+  if(!canManageBranchesUI()){toast('⚠️ تقرير كل الفروع متاح للإدارة أو لمن له صلاحية إدارة الفروع بس','wrn');return;}
+  document.getElementById('allBranchesModal').classList.add('open');
+  document.getElementById('allBranchesBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري التحميل...</div>';
+  db.collection('branches').get().then(snap=>{
+    allBranchesRows=[];
+    snap.forEach(doc=>{
+      const d=doc.data()||{};
+      const cycles=(d.cycles||[]).filter(c=>c.closed&&c.result).sort((a,b)=>a.start.localeCompare(b.start));
+      const last=cycles.length?cycles[cycles.length-1]:null;
+      allBranchesRows.push({
+        key:doc.id,name:d.name||doc.id,manager:d.manager||'-',
+        cyclesClosed:cycles.length,
+        periodStart:last?last.start:'',periodEnd:last?last.end:'',
+        salesAmount:last?last.result.totalSalesAmount:null,
+        actualCostPct:last?last.result.actualCostPct:null,
+        theoCostPct:last?last.result.theoCostPct:null,
+        varVal:last?last.result.totalVarVal:null,
+      });
+    });
+    renderAllBranchesReport();
+  }).catch(e=>{
+    document.getElementById('allBranchesBody').innerHTML=`<div style="padding:20px;text-align:center;color:var(--red)">خطأ: ${e.message}</div>`;
+  });
+}
+function renderAllBranchesReport(){
+  if(!allBranchesRows.length){
+    document.getElementById('allBranchesBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">لا توجد فروع بعد.</div>';
+    return;
+  }
+  document.getElementById('allBranchesBody').innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>الفرع</th><th>المدير</th><th>عدد الدورات المغلقة</th><th>آخر دورة</th><th>مبيعات آخر دورة</th><th>تكلفة فعلية %</th><th>تكلفة نظرية %</th><th>قيمة الانحراف</th></tr></thead>
+    <tbody>${allBranchesRows.map(r=>`<tr>
+      <td class="td-name">${r.name}</td><td>${r.manager}</td>
+      <td style="font-family:var(--mono);text-align:center">${r.cyclesClosed}</td>
+      <td style="font-family:var(--mono);font-size:11px">${r.periodStart?r.periodStart+' ← '+r.periodEnd:'-'}</td>
+      <td style="font-family:var(--mono)">${r.salesAmount!=null?fmt(r.salesAmount):'-'}</td>
+      <td style="font-family:var(--mono);color:var(--gold)">${r.actualCostPct!=null?r.actualCostPct.toFixed(1)+'%':'-'}</td>
+      <td style="font-family:var(--mono);color:var(--green)">${r.theoCostPct!=null?r.theoCostPct.toFixed(1)+'%':'-'}</td>
+      <td style="font-family:var(--mono);font-weight:700;color:${r.varVal>0?'var(--red)':'var(--green)'}">${r.varVal!=null?fmt(r.varVal):'-'}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+function exportAllBranchesExcel(){
+  if(!allBranchesRows.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
+  const wb=XLSX.utils.book_new();
+  const out=[['الفرع','المدير','عدد الدورات المغلقة','آخر دورة من','آخر دورة إلى','مبيعات آخر دورة','تكلفة فعلية %','تكلفة نظرية %','قيمة الانحراف']];
+  allBranchesRows.forEach(r=>out.push([r.name,r.manager,r.cyclesClosed,r.periodStart||'-',r.periodEnd||'-',
+    r.salesAmount!=null?+r.salesAmount.toFixed(2):'-',r.actualCostPct!=null?+r.actualCostPct.toFixed(2):'-',
+    r.theoCostPct!=null?+r.theoCostPct.toFixed(2):'-',r.varVal!=null?+r.varVal.toFixed(2):'-']));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'تقرير كل الفروع');
+  XLSX.writeFile(wb,`AllBranchesReport_${today()}.xlsx`);
+  toast('📗 تم التصدير','inf');
+}
+
+// ══════════════════════════════════════════════
+//  DROPDOWN NAV MENUS
+// ══════════════════════════════════════════════
+function toggleDropdown(id){
+  const el=document.getElementById(id);
+  const wasOpen=el.classList.contains('open');
+  document.querySelectorAll('.vn-dd.open').forEach(d=>d.classList.remove('open'));
+  if(!wasOpen) el.classList.add('open');
+}
+function closeDropdowns(){
+  document.querySelectorAll('.vn-dd.open').forEach(d=>d.classList.remove('open'));
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.vn-dd')) closeDropdowns();
+});
+
+// ══════════════════════════════════════════════
 //  PRINT
 // ══════════════════════════════════════════════
 function printCurrentReport(){
@@ -2329,7 +2458,7 @@ function deleteMenuItem(id){
 }
 
 // ══════════════════════════════════════════════
-//  RECONCILIATION CYCLES (دورة الجرد كل أسبوعين)
+//  RECONCILIATION CYCLES (دورة تسوية بأي فترة: يومية، أسبوعية، أو غيرها)
 // ══════════════════════════════════════════════
 function BCycles(){
   const bd=S.branchData[S.curBranch]||(S.branchData[S.curBranch]={date:S.date,sid:S.sid,qty:S.qty,notes:S.notes,reports:S.reports,cycles:[]});
@@ -2371,10 +2500,16 @@ function openNewCycle(){
     const d=new Date(last.end+'T00:00:00');d.setDate(d.getDate()+1);
     start=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
   }
-  const sd=new Date(start+'T00:00:00');const ed=new Date(sd);ed.setDate(ed.getDate()+13);
+  const sd=new Date(start+'T00:00:00');const ed=new Date(sd);
   document.getElementById('nc-start').value=start;
   document.getElementById('nc-end').value=`${ed.getFullYear()}-${p2(ed.getMonth()+1)}-${p2(ed.getDate())}`;
   document.getElementById('newCycleModal').classList.add('open');
+}
+function setCyclePreset(extraDays){
+  const start=document.getElementById('nc-start').value;
+  if(!start) return;
+  const ed=new Date(start+'T00:00:00');ed.setDate(ed.getDate()+extraDays);
+  document.getElementById('nc-end').value=`${ed.getFullYear()}-${p2(ed.getMonth()+1)}-${p2(ed.getDate())}`;
 }
 function createCycle(){
   const start=document.getElementById('nc-start').value;
@@ -2403,7 +2538,7 @@ function renderCycleHeader(){
   const c=curCycleId?getCycle(curCycleId):null;
   if(!c){
     el.innerHTML=`<div class="dbanner"><div class="db-l"><span style="font-size:20px">🔄</span>
-      <div><div class="db-main">لا توجد دورة نشطة</div><div class="db-sub">ابدأ دورة جرد جديدة (كل أسبوعين) من القائمة الجانبية</div></div>
+      <div><div class="db-main">لا توجد دورة نشطة</div><div class="db-sub">ابدأ دورة تسوية جديدة (يومية أو أي فترة) من القائمة الجانبية</div></div>
     </div></div>`;
     return;
   }

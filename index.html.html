@@ -319,6 +319,8 @@ td{padding:9px 13px;vertical-align:middle;}
 .globalModalCloseBtn.show{display:flex;}
 @keyframes mIn{from{transform:scale(.95) translateY(10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
 .mod-title{font-size:18px;font-weight:800;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.mod-top-actions{display:flex;gap:8px;flex-wrap:wrap;margin:-12px 0 18px;}
+.mod-top-actions .hbtn{padding:7px 13px;font-size:12px;}
 .dash-card{background:var(--card2);border:1px solid var(--border);border-radius:13px;padding:16px 18px;margin-bottom:16px;}
 .dash-card-title{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text);}
 .dash-legend{margin-bottom:8px;font-size:11.5px;color:var(--muted);}
@@ -542,11 +544,11 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="vn-dd" id="dd-reports">
     <button class="vn-btn" onclick="toggleDropdown('dd-reports')" data-i18n="📊 التقارير ▾">📊 التقارير ▾</button>
     <div class="vn-dd-menu">
-      <div class="vn-dd-item" onclick="closeDropdowns();openDashboard()" data-i18n="📊 لوحة تحكم تفاعلية">📊 لوحة تحكم تفاعلية</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();openMenuSalesReport()">📊 مبيعات المنيو حسب التاريخ</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();openRequirementPlanner()" data-i18n="📈 تخطيط الاحتياج">📈 تخطيط الاحتياج</div>
+      <div class="vn-dd-item" id="ddDashboardItem" onclick="closeDropdowns();openDashboard()" data-i18n="📊 لوحة تحكم تفاعلية">📊 لوحة تحكم تفاعلية</div>
+      <div class="vn-dd-item" id="ddMenuSalesItem" onclick="closeDropdowns();openMenuSalesReport()">📊 مبيعات المنيو حسب التاريخ</div>
+      <div class="vn-dd-item" id="ddPlannerItem" onclick="closeDropdowns();openRequirementPlanner()" data-i18n="📈 تخطيط الاحتياج">📈 تخطيط الاحتياج</div>
       <div class="vn-dd-item" onclick="closeDropdowns();openQuickMovement()">➕ تسجيل حركة (تحويل/سحب/استلام)</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();openTransfersLog()" data-i18n="🔀 سجل التحويلات">🔀 سجل التحويلات</div>
+      <div class="vn-dd-item" id="ddTransfersLogItem" onclick="closeDropdowns();openTransfersLog()" data-i18n="🔀 سجل التحويلات">🔀 سجل التحويلات</div>
       <div class="vn-dd-item" id="ddAllBranchReports" style="display:none" onclick="closeDropdowns();openAllBranchesReport()" data-i18n="🌐 تقرير كل الفروع">🌐 تقرير كل الفروع</div>
       <div class="vn-dd-div"></div>
       <div class="vn-dd-item" onclick="closeDropdowns();exportFullDataExcel()" data-i18n="📗 تفريغ كل البيانات (Excel)">📗 تفريغ كل البيانات (Excel)</div>
@@ -853,6 +855,12 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="overlay" id="rptModal">
 <div class="modal rmod">
   <div class="mod-title" data-i18n="📋 تقرير الجرد">📋 تقرير الجرد</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" id="rptCsvBtnTop">📊 CSV</button>
+    <button class="hbtn" id="rptXlsBtnTop">📗 Excel</button>
+    <button class="hbtn gold" id="rptPdfBtnTop">📄 PDF</button>
+  </div>
   <div id="rptContent"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('rptModal')" data-i18n="إغلاق">إغلاق</button>
@@ -953,6 +961,9 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="overlay" id="menuRecipeViewModal">
 <div class="modal" style="width:620px">
   <div class="mod-title" data-i18n="📋 مكونات الصنف">📋 مكونات الصنف</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+  </div>
   <div id="menuRecipeViewBody"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('menuRecipeViewModal')" data-i18n="إغلاق">إغلاق</button>
@@ -965,6 +976,11 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="overlay" id="planModal">
 <div class="modal" style="width:820px">
   <div class="mod-title" data-i18n="📈 تخطيط الاحتياج (احتياج المنيو من الطلبات)">📈 تخطيط الاحتياج (احتياج المنيو من الطلبات)</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="resetPlanOverrides()">🔄 إعادة من المتوسط التاريخي</button>
+    <button class="hbtn gold" onclick="exportPlanExcel()">📗 تصدير Excel</button>
+  </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">النظام بيحسب متوسط استهلاك يومي لكل صنف من بيانات الدورات المغلقة السابقة لهذا الفرع، وبيقترح احتياج الفترة القادمة تلقائياً — وتقدر تعدّل الكميات المتوقعة لأي صنف يدوياً.</p>
   <div class="mod-row" style="align-items:end">
     <div class="mod-field"><label class="mod-lbl" data-i18n="عدد الأيام المطلوب التخطيط لها">عدد الأيام المطلوب التخطيط لها</label><input type="number" inputmode="decimal" class="mod-in" id="plan-days" value="14" min="1" step="1" onchange="setPlanDays(this.value)"></div>
@@ -1013,6 +1029,10 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="overlay" id="itemLedgerModal">
 <div class="modal" style="width:820px">
   <div class="mod-title" id="ledgerTitle">📜 حركة الصنف</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportLedgerExcel()">📗 Excel</button>
+  </div>
   <div id="ledgerBody"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('itemLedgerModal')" data-i18n="إغلاق">إغلاق</button>
@@ -1043,7 +1063,7 @@ td{padding:9px 13px;vertical-align:middle;}
     <div class="mod-field"><label class="mod-lbl">الكمية *</label><input type="number" inputmode="decimal" class="mod-in" id="qm-qty" min="0" step="0.001"></div>
     <div class="mod-field" id="qm-cost-wrap" style="display:none"><label class="mod-lbl">التكلفة الإجمالية</label><input type="number" inputmode="decimal" class="mod-in" id="qm-cost" min="0" step="0.01"></div>
   </div>
-  <div class="mod-field"><label class="mod-lbl" id="qm-note-lbl">سبب السحب / اسم الفرع الآخر</label><input class="mod-in" id="qm-note"></div>
+  <div class="mod-field"><label class="mod-lbl" id="qm-note-lbl">سبب السحب / اسم الفرع الآخر</label><div id="qm-note-wrap"><input class="mod-in" id="qm-note"></div></div>
   <div id="qm-cycle-info" style="font-size:11.5px;color:var(--muted);margin-bottom:10px"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('quickMovementModal')">إلغاء</button>
@@ -1056,6 +1076,10 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="overlay" id="transfersLogModal">
 <div class="modal" style="width:820px">
   <div class="mod-title" data-i18n="🔀 سجل التحويلات بين الفروع">🔀 سجل التحويلات بين الفروع</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportTransfersLogExcel()">📗 Excel</button>
+  </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">كل حركات التحويل الصادرة والواردة المسجّلة في دورات هذا الفرع (المفتوحة والمغلقة).</p>
   <div id="transfersLogBody" style="max-height:480px;overflow-y:auto"></div>
   <div class="mod-foot">
@@ -1070,6 +1094,10 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="overlay" id="menuSalesModal">
 <div class="modal" style="width:820px">
   <div class="mod-title">📊 تقرير مبيعات المنيو حسب التاريخ</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportMenuSalesExcel()">📗 Excel</button>
+  </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">مبيعات كل صنف من المنيو مأخوذة من الدورات المغلقة، مع إمكانية التصفية بفترة تاريخ محدّدة.</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
     <div class="mod-field" style="margin-bottom:0"><label class="mod-lbl">من تاريخ</label><input type="date" class="mod-in" id="menuSalesDateFrom" onchange="renderMenuSalesReport()"></div>
@@ -1089,6 +1117,10 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="overlay" id="allBranchesModal">
 <div class="modal" style="width:900px">
   <div class="mod-title" data-i18n="🌐 تقرير كل الفروع">🌐 تقرير كل الفروع</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportAllBranchesExcel()">📗 Excel</button>
+  </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">كل الفروع مجمّعة في تقرير واحد: إجمالي موحّد + تفصيل حسب الفرع + إجمالي استهلاك الأصناف عبر كل الفروع، لكل الدورات المغلقة اللي تقع في الفلتر المختار. متاح للإدارة أو لمن له صلاحية عرض تقارير كل الفروع.</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
     <div class="mod-field" style="margin-bottom:0">
@@ -1120,6 +1152,9 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="overlay" id="dashboardModal">
 <div class="modal" style="width:960px">
   <div class="mod-title" data-i18n="📊 لوحة التحكم التفاعلية">📊 لوحة التحكم التفاعلية</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+  </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">رسوم بيانية مبنية على آخر الدورات المغلقة لهذا الفرع.</p>
   <div id="dashboardBody" style="max-height:600px;overflow-y:auto"></div>
   <div class="mod-foot">
@@ -1357,6 +1392,8 @@ const I18N_EN={
   "إدارة المنيو": "Manage Menu",
   "تقارير كل الفروع": "All Branches Reports",
   "بيانات الشركة": "Company Info",
+  "عرض مكونات الأصناف": "View Item Components",
+  "عرض تقارير الفرع": "View Branch Reports",
 };
 
 let curLang=localStorage.getItem('appLang')||'ar';
@@ -1578,6 +1615,8 @@ function canManageItemsUI(){return curRole==='admin'||!!curPerms.manageItems;}
 function canManageMenuUI(){return curRole==='admin'||!!curPerms.manageMenu;}
 function canViewAllReportsUI(){return curRole==='admin'||!!curPerms.manageBranches||!!curPerms.viewAllReports;}
 function canManageCompanyUI(){return curRole==='admin'||!!curPerms.manageCompany;}
+function canViewRecipesUI(){return curRole==='admin'||curPerms.viewRecipes!==false;}
+function canViewReportsUI(){return curRole==='admin'||curPerms.viewReports!==false;}
 const PERMISSION_DEFS=[
   {key:'manageBranches',label:'إدارة الفروع'},
   {key:'manageUsers',label:'إدارة المستخدمين'},
@@ -1585,6 +1624,8 @@ const PERMISSION_DEFS=[
   {key:'manageMenu',label:'إدارة المنيو'},
   {key:'viewAllReports',label:'تقارير كل الفروع'},
   {key:'manageCompany',label:'بيانات الشركة'},
+  {key:'viewRecipes',label:'عرض مكونات الأصناف',defaultOn:true},
+  {key:'viewReports',label:'عرض تقارير الفرع',defaultOn:true},
 ];
 let unsubCatalog=null, unsubBranch=null, unsubUsers=null, unsubBranchesList=null;
 let catalogReady=false, branchReady=false, bootedUI=false;
@@ -1731,6 +1772,10 @@ function startDataSync(){
   document.getElementById('ddUsersItem').style.display=canManageUsersUI()?'':'none';
   document.getElementById('ddCompanyItem').style.display=canManageCompanyUI()?'':'none';
   document.getElementById('ddAllBranchReports').style.display=canViewAllReportsUI()?'':'none';
+  document.getElementById('ddDashboardItem').style.display=canViewReportsUI()?'':'none';
+  document.getElementById('ddMenuSalesItem').style.display=canViewReportsUI()?'':'none';
+  document.getElementById('ddPlannerItem').style.display=canViewReportsUI()?'':'none';
+  document.getElementById('ddTransfersLogItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('branchSwitch').disabled=!canManageBranchesUI();
 
   if(!unsubCompany){
@@ -2320,7 +2365,7 @@ function renderManage(){
         <td style="padding:7px 10px;font-family:var(--mono);color:var(--blue);font-size:11px">${it.u}</td>
         <td style="padding:7px 10px;font-family:var(--mono);font-size:11px">${fmt(effectiveItemCost(it))}${it.recipe&&it.recipe.length?' <span style="color:var(--purple);font-size:9.5px">(محسوبة)</span>':''}</td>
         <td style="padding:7px 10px;text-align:center;display:flex;gap:5px;justify-content:center">
-          <button class="hi-btn" style="flex:none;padding:4px 8px" onclick="openItemLedger('${it.r}')" title="حركة الصنف">📜</button>
+          ${canViewReportsUI()?`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="openItemLedger('${it.r}')" title="حركة الصنف">📜</button>`:''}
           <button class="hi-btn" style="flex:none;padding:4px 8px" onclick="closeM('manageModal');openEditItem('${it.r}')">✏</button>
           <button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteItem('${it.r}');renderManage()">🗑</button>
         </td>
@@ -2498,9 +2543,9 @@ function viewRpt(id){
   });
   html+=`</tbody></table></div>`;
   document.getElementById('rptContent').innerHTML=html;
-  document.getElementById('rptPdfBtn').onclick=()=>exportPDF(r);
-  document.getElementById('rptCsvBtn').onclick=()=>exportCsvRpt(r);
-  document.getElementById('rptXlsBtn').onclick=()=>exportReportExcel(r);
+  document.getElementById('rptPdfBtn').onclick=document.getElementById('rptPdfBtnTop').onclick=()=>exportPDF(r);
+  document.getElementById('rptCsvBtn').onclick=document.getElementById('rptCsvBtnTop').onclick=()=>exportCsvRpt(r);
+  document.getElementById('rptXlsBtn').onclick=document.getElementById('rptXlsBtnTop').onclick=()=>exportReportExcel(r);
   document.getElementById('rptModal').classList.add('open');
 }
 
@@ -2689,9 +2734,12 @@ function renderUsersList(){
         <td><select class="mod-in" style="width:auto;padding:6px 9px;font-size:11.5px" onchange="setUserBranch('${u.uid}',this.value)" ${isAdmin?'disabled':''}>
           ${branchSel(u)}
         </select></td>
-        ${PERMISSION_DEFS.map(pd=>`<td style="text-align:center">
-          <input type="checkbox" ${isAdmin||p[pd.key]?'checked':''} ${isAdmin?'disabled':''} onchange="setUserPerm('${u.uid}','${pd.key}',this.checked)">
-        </td>`).join('')}
+        ${PERMISSION_DEFS.map(pd=>{
+          const val=pd.defaultOn?(p[pd.key]!==false):!!p[pd.key];
+          return `<td style="text-align:center">
+          <input type="checkbox" ${isAdmin||val?'checked':''} ${isAdmin?'disabled':''} onchange="setUserPerm('${u.uid}','${pd.key}',this.checked)">
+        </td>`;
+        }).join('')}
       </tr>`;
     }).join('')}</tbody>
   </table></div>
@@ -2822,6 +2870,7 @@ function saveCompanyInfo(){
 // ══════════════════════════════════════════════
 let curLedgerRef=null;
 function openItemLedger(ref){
+  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
   curLedgerRef=ref;
   renderItemLedger();
   document.getElementById('itemLedgerModal').classList.add('open');
@@ -2885,6 +2934,7 @@ function transfersLogRows(){
   return rows;
 }
 function openMenuSalesReport(){
+  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
   document.getElementById('menuSalesDateFrom').value='';
   document.getElementById('menuSalesDateTo').value='';
   document.getElementById('menuSalesModal').classList.add('open');
@@ -2957,6 +3007,7 @@ function exportMenuSalesExcel(){
   toast('📗 تم التصدير','inf');
 }
 function openTransfersLog(){
+  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
   renderTransfersLog();
   document.getElementById('transfersLogModal').classList.add('open');
 }
@@ -3189,6 +3240,7 @@ function svgBarChart(items,opts){
   return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">${bars}</svg>`;
 }
 function openDashboard(){
+  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
   document.getElementById('dashboardModal').classList.add('open');
   renderDashboard();
 }
@@ -3379,6 +3431,7 @@ function flattenComponentTree(nodes,out){
 }
 let curRecipeViewMenuId=null;
 function openMenuRecipeView(mid){
+  if(!canViewRecipesUI()){toast('⚠️ عرض مكونات الأصناف غير متاح لحسابك — راجع الإدارة','wrn');return;}
   curRecipeViewMenuId=mid;
   renderMenuRecipeView();
   document.getElementById('menuRecipeViewModal').classList.add('open');
@@ -3670,7 +3723,7 @@ function renderSalesRows(c){
       <td style="font-family:var(--mono);color:var(--blue)">${fmt(m.price)}</td>
       <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="1" value="${qty||''}" placeholder="0" ${dis} oninput="setCycleSale('${c.id}','${m.id}',this.value)"></td>
       <td style="font-family:var(--mono)">${fmt(sub)}</td>
-      <td><button class="hbtn" style="padding:4px 10px;font-size:11px" onclick="openMenuRecipeView('${m.id}')">📋 عرض المكونات</button></td>
+      <td>${canViewRecipesUI()?`<button class="hbtn" style="padding:4px 10px;font-size:11px" onclick="openMenuRecipeView('${m.id}')">📋 عرض المكونات</button>`:''}</td>
     </tr>`;
   }).join('');
   document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(5);
@@ -3783,65 +3836,117 @@ function setCycleWithdraw(cid,r,field,v){
   save();
 }
 
+function branchSelectOptions(selectedName){
+  const cur=S.curBranch;
+  const names=Object.keys(S.branches).filter(k=>k!==cur).map(k=>S.branches[k].name||k);
+  let html='<option value="">-- اختر الفرع --</option>';
+  names.forEach(n=>{
+    const esc=String(n).replace(/"/g,'&quot;');
+    html+=`<option value="${esc}" ${n===selectedName?'selected':''}>${n}</option>`;
+  });
+  if(selectedName&&!names.includes(selectedName)){
+    const esc=String(selectedName).replace(/"/g,'&quot;');
+    html+=`<option value="${esc}" selected>${selectedName}</option>`;
+  }
+  return html;
+}
 function renderTransferOutTab(c,el){
   if(!c.transfersOut) c.transfersOut={};
-  el.innerHTML=`${cycleToolbar('إضافة صنف جديد',"openAddItem()")}
+  el.innerHTML=`<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    <div style="flex:1;min-width:240px;max-width:380px">${isearchHtml('ctoAddIsearch','',{placeholder:'🔍 ابحث عن صنف لإضافته للتحويل...',onSelect:'addTransferOutItem'})}</div>
+  </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المحوّلة صادر')}</th><th>${t('الفرع المستلم')}</th></tr></thead>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المحوّلة صادر')}</th><th>${t('الفرع المستلم')}</th><th></th></tr></thead>
     <tbody id="ctRows"></tbody></table></div>
-    <p style="font-size:11px;color:var(--muted);margin-top:8px">كمية خرجت من هذا الفرع لفرع تاني — بتتخصم من الاستهلاك الفعلي زي الهالك. الفرع المستقبِل يسجّلها بنفسه في تبويب "تحويل وارد" عنده.</p>`;
+    <p style="font-size:11px;color:var(--muted);margin-top:8px">كمية خرجت من هذا الفرع لفرع تاني — بتتخصم من الاستهلاك الفعلي زي الهالك. الفرع المستقبِل يسجّلها بنفسه في تبويب "تحويل وارد" عنده. اختر الصنف من البحث بالأعلى لإضافته للتحويل.</p>`;
+  renderTransferOutRows(c);
+}
+function addTransferOutItem(ref){
+  if(!ref) return;
+  const c=getCycle(curCycleId);if(!c||c.closed)return;
+  if(!c.transfersOut) c.transfersOut={};
+  if(!c.transfersOut[ref]) c.transfersOut[ref]={qty:0,reason:''};
+  save();
+  renderTransferOutRows(c);
+  const root=document.getElementById('ctoAddIsearch');
+  if(root){root.querySelector('.isearch-input').value='';root.querySelector('.isearch-value').value='';}
+}
+function removeTransferOutItem(cid,r){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  if(c.transfersOut) delete c.transfersOut[r];
+  save();
   renderTransferOutRows(c);
 }
 function renderTransferOutRows(c){
   const dis=c.closed?'disabled':'';
-  const list=cycleFilterList(S.items,it=>it.n,it=>it.r);
-  const rows=list.map(it=>{
-    const t=c.transfersOut[it.r]||{};
+  const refs=Object.keys(c.transfersOut||{});
+  const rows=refs.map(r=>{
+    const it=S.items.find(x=>x.r===r);if(!it)return'';
+    const tr=c.transfersOut[r];
     return `<tr>
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
-      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${t.qty||''}" placeholder="0" ${dis} oninput="setCycleTransferOut('${c.id}','${it.r}','qty',this.value)"></td>
-      <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${t.reason||''}" placeholder="اسم الفرع المستلم..." ${dis} oninput="setCycleTransferOut('${c.id}','${it.r}','reason',this.value)"></td>
+      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${tr.qty||''}" placeholder="0" ${dis} oninput="setCycleTransferOut('${c.id}','${r}','qty',this.value)"></td>
+      <td><select class="mod-in" style="width:170px" ${dis} onchange="setCycleTransferOut('${c.id}','${r}','reason',this.value)">${branchSelectOptions(tr.reason)}</select></td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeTransferOutItem('${c.id}','${r}')" title="إزالة">🗑️</button>`}</td>
     </tr>`;
   }).join('');
-  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(5);
+  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(6);
 }
 function setCycleTransferOut(cid,r,field,v){
   const c=getCycle(cid);if(!c||c.closed)return;
   if(!c.transfersOut) c.transfersOut={};
   const t=c.transfersOut[r]||(c.transfersOut[r]={qty:0,reason:''});
   t[field]=field==='reason'?v:(v===''?0:(parseFloat(v)||0));
-  if(!t.qty&&!t.reason) delete c.transfersOut[r];
   save();
 }
 
 function renderTransferInTab(c,el){
   if(!c.transfersIn) c.transfersIn={};
-  el.innerHTML=`${cycleToolbar('إضافة صنف جديد',"openAddItem()")}
+  el.innerHTML=`<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    <div style="flex:1;min-width:240px;max-width:380px">${isearchHtml('ctiAddIsearch','',{placeholder:'🔍 ابحث عن صنف لإضافته للتحويل...',onSelect:'addTransferInItem'})}</div>
+  </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المحوّلة وارد')}</th><th>${t('الفرع المرسل')}</th></tr></thead>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المحوّلة وارد')}</th><th>${t('الفرع المرسل')}</th><th></th></tr></thead>
     <tbody id="ctRows"></tbody></table></div>
-    <p style="font-size:11px;color:var(--muted);margin-top:8px">كمية وصلت لهذا الفرع من فرع تاني — بتتضاف للرصيد المتاح زي المشتريات بالظبط.</p>`;
+    <p style="font-size:11px;color:var(--muted);margin-top:8px">كمية وصلت لهذا الفرع من فرع تاني — بتتضاف للرصيد المتاح زي المشتريات بالظبط. اختر الصنف من البحث بالأعلى لإضافته للتحويل.</p>`;
+  renderTransferInRows(c);
+}
+function addTransferInItem(ref){
+  if(!ref) return;
+  const c=getCycle(curCycleId);if(!c||c.closed)return;
+  if(!c.transfersIn) c.transfersIn={};
+  if(!c.transfersIn[ref]) c.transfersIn[ref]={qty:0,reason:''};
+  save();
+  renderTransferInRows(c);
+  const root=document.getElementById('ctiAddIsearch');
+  if(root){root.querySelector('.isearch-input').value='';root.querySelector('.isearch-value').value='';}
+}
+function removeTransferInItem(cid,r){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  if(c.transfersIn) delete c.transfersIn[r];
+  save();
   renderTransferInRows(c);
 }
 function renderTransferInRows(c){
   const dis=c.closed?'disabled':'';
-  const list=cycleFilterList(S.items,it=>it.n,it=>it.r);
-  const rows=list.map(it=>{
-    const t=c.transfersIn[it.r]||{};
+  const refs=Object.keys(c.transfersIn||{});
+  const rows=refs.map(r=>{
+    const it=S.items.find(x=>x.r===r);if(!it)return'';
+    const tr=c.transfersIn[r];
     return `<tr>
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
-      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${t.qty||''}" placeholder="0" ${dis} oninput="setCycleTransferIn('${c.id}','${it.r}','qty',this.value)"></td>
-      <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${t.reason||''}" placeholder="اسم الفرع المرسل..." ${dis} oninput="setCycleTransferIn('${c.id}','${it.r}','reason',this.value)"></td>
+      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${tr.qty||''}" placeholder="0" ${dis} oninput="setCycleTransferIn('${c.id}','${r}','qty',this.value)"></td>
+      <td><select class="mod-in" style="width:170px" ${dis} onchange="setCycleTransferIn('${c.id}','${r}','reason',this.value)">${branchSelectOptions(tr.reason)}</select></td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeTransferInItem('${c.id}','${r}')" title="إزالة">🗑️</button>`}</td>
     </tr>`;
   }).join('');
-  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(5);
+  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(6);
 }
 function setCycleTransferIn(cid,r,field,v){
   const c=getCycle(cid);if(!c||c.closed)return;
   if(!c.transfersIn) c.transfersIn={};
   const t=c.transfersIn[r]||(c.transfersIn[r]={qty:0,reason:''});
   t[field]=field==='reason'?v:(v===''?0:(parseFloat(v)||0));
-  if(!t.qty&&!t.reason) delete c.transfersIn[r];
   save();
 }
 
@@ -3855,7 +3960,6 @@ function openQuickMovement(){
   document.getElementById('qm-date').value=today();
   document.getElementById('qm-qty').value='';
   document.getElementById('qm-cost').value='';
-  document.getElementById('qm-note').value='';
   document.getElementById('qm-item-wrap').innerHTML=isearchHtml('qm-item-isearch','',{placeholder:'🔍 ابحث عن صنف بالاسم أو المرجع...'});
   updateQuickMovementFields();
   document.getElementById('quickMovementModal').classList.add('open');
@@ -3865,6 +3969,12 @@ function updateQuickMovementFields(){
   document.getElementById('qm-cost-wrap').style.display=type==='purchase'?'':'none';
   const labels={transferOut:'اسم الفرع المستلم',transferIn:'اسم الفرع المرسل',withdraw:'سبب السحب/الجهة',purchase:'ملاحظة (اختياري)'};
   document.getElementById('qm-note-lbl').textContent=labels[type];
+  const wrap=document.getElementById('qm-note-wrap');
+  if(type==='transferOut'||type==='transferIn'){
+    wrap.innerHTML=`<select class="mod-in" id="qm-note">${branchSelectOptions('')}</select>`;
+  }else{
+    wrap.innerHTML=`<input class="mod-in" id="qm-note">`;
+  }
   updateQuickMovementCycleInfo();
 }
 function updateQuickMovementCycleInfo(){
@@ -4171,6 +4281,7 @@ function computeHistoricalAverages(){
 
 let planDays=14,planMenuQty={};
 function openRequirementPlanner(){
+  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
   if(!S.curBranch){toast('⚠️ اختار/أنشئ فرع أولاً','wrn');return;}
   renderRequirementPlanner();
   document.getElementById('planModal').classList.add('open');

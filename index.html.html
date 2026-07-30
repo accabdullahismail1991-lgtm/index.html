@@ -417,6 +417,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <button class="vn-btn active" id="vnDaily" onclick="showView('daily')">📋 الجرد اليومي</button>
   <button class="vn-btn" id="vnCycle" onclick="showView('cycle')">🔄 دورة التسوية (كل أسبوعين)</button>
   <button class="vn-btn" onclick="openMenuMgr()">🍽️ الأصناف المباعة والوصفات</button>
+  <button class="vn-btn" onclick="openRequirementPlanner()">📈 تخطيط الاحتياج</button>
 </div>
 
 <div class="layout" id="dailyView">
@@ -758,6 +759,25 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('menuItemModal')">إلغاء</button>
     <button class="hbtn gold" onclick="saveMenuItem()" id="miSaveBtn">✓ حفظ الصنف</button>
+  </div>
+</div>
+</div>
+
+<!-- REQUIREMENT PLANNING MODAL -->
+<div class="overlay" id="planModal">
+<div class="modal" style="width:820px">
+  <div class="mod-title">📈 تخطيط الاحتياج (احتياج المنيو من الطلبات)</div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">النظام بيحسب متوسط استهلاك يومي لكل صنف من بيانات الدورات المغلقة السابقة لهذا الفرع، وبيقترح احتياج الفترة القادمة تلقائياً — وتقدر تعدّل الكميات المتوقعة لأي صنف يدوياً.</p>
+  <div class="mod-row" style="align-items:end">
+    <div class="mod-field"><label class="mod-lbl">عدد الأيام المطلوب التخطيط لها</label><input type="number" class="mod-in" id="plan-days" value="14" min="1" step="1" onchange="setPlanDays(this.value)"></div>
+    <div class="mod-field"><label class="mod-lbl">بيانات تاريخية متاحة</label><div id="plan-hist-info" style="font-size:12px;color:var(--muted);padding-top:10px"></div></div>
+  </div>
+  <div id="planMenuSection"></div>
+  <div id="planIngredientSection" style="margin-top:16px"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('planModal')">إغلاق</button>
+    <button class="hbtn" onclick="resetPlanOverrides()">🔄 إعادة من المتوسط التاريخي</button>
+    <button class="hbtn gold" onclick="exportPlanExcel()">📗 تصدير Excel</button>
   </div>
 </div>
 </div>
@@ -1997,7 +2017,7 @@ function createCycle(){
   if(!start||!end){toast('⚠️ حدد تاريخ البداية والنهاية','wrn');return;}
   if(end<start){toast('⚠️ تاريخ النهاية قبل البداية','wrn');return;}
   const c={id:'CYC'+Date.now().toString(36).toUpperCase(),start,end,closed:false,
-    sales:{},salesAmount:null,purchases:{},waste:{},withdrawals:{},openingOverride:{},closing:{},result:null};
+    sales:{},salesAmount:null,purchases:{},waste:{},withdrawals:{},transfersOut:{},transfersIn:{},openingOverride:{},closing:{},result:null};
   BCycles().push(c);
   curCycleId=c.id;curCycleTab='sales';
   save();closeM('newCycleModal');renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();
@@ -2041,7 +2061,7 @@ function renderCycleHeader(){
 function renderCycleTabs(){
   const el=document.getElementById('cycleTabs');
   if(!curCycleId){el.innerHTML='';return;}
-  const tabs=[['sales','💰 المبيعات'],['purchases','📦 المشتريات/الطلبيات'],['waste','🗑️ الهالك'],['withdraw','📤 سحب/صرف داخلي'],['stock','🧮 الرصيد الافتتاحي/الختامي'],['results','📊 نتائج التسوية']];
+  const tabs=[['sales','💰 المبيعات'],['purchases','📦 المشتريات/الطلبيات'],['waste','🗑️ الهالك'],['withdraw','📤 سحب/صرف داخلي'],['transferOut','🔀 تحويل صادر'],['transferIn','🔁 تحويل وارد'],['stock','🧮 الرصيد الافتتاحي/الختامي'],['results','📊 نتائج التسوية']];
   el.innerHTML=tabs.map(([k,l])=>`<button class="hbtn${curCycleTab===k?' gold':''}" style="padding:7px 13px;font-size:12.5px" onclick="curCycleTab='${k}';renderCycleTabs();renderCycleBody()">${l}</button>`).join('');
 }
 
@@ -2053,6 +2073,8 @@ function renderCycleBody(){
   if(curCycleTab==='purchases') return renderPurchasesTab(c,el);
   if(curCycleTab==='waste') return renderWasteTab(c,el);
   if(curCycleTab==='withdraw') return renderWithdrawTab(c,el);
+  if(curCycleTab==='transferOut') return renderTransferOutTab(c,el);
+  if(curCycleTab==='transferIn') return renderTransferInTab(c,el);
   if(curCycleTab==='stock') return renderStockTab(c,el);
   if(curCycleTab==='results') return renderResultsTab(c,el);
 }
@@ -2165,6 +2187,56 @@ function setCycleWithdraw(cid,r,field,v){
   save();
 }
 
+function renderTransferOutTab(c,el){
+  const dis=c.closed?'disabled':'';
+  if(!c.transfersOut) c.transfersOut={};
+  const rows=S.items.map(it=>{
+    const t=c.transfersOut[it.r]||{};
+    return `<tr>
+      <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
+      <td><input type="number" class="qin" style="width:100px" min="0" step="0.001" value="${t.qty||''}" placeholder="0" ${dis} oninput="setCycleTransferOut('${c.id}','${it.r}','qty',this.value)"></td>
+      <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${t.reason||''}" placeholder="اسم الفرع المستلم..." ${dis} oninput="setCycleTransferOut('${c.id}','${it.r}','reason',this.value)"></td>
+    </tr>`;
+  }).join('');
+  el.innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>المرجع</th><th>الصنف</th><th>الوحدة</th><th>الكمية المحوّلة صادر</th><th>الفرع المستلم</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <p style="font-size:11px;color:var(--muted);margin-top:8px">كمية خرجت من هذا الفرع لفرع تاني — بتتخصم من الاستهلاك الفعلي زي الهالك. الفرع المستقبِل يسجّلها بنفسه في تبويب "تحويل وارد" عنده.</p>`;
+}
+function setCycleTransferOut(cid,r,field,v){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  if(!c.transfersOut) c.transfersOut={};
+  const t=c.transfersOut[r]||(c.transfersOut[r]={qty:0,reason:''});
+  t[field]=field==='reason'?v:(v===''?0:(parseFloat(v)||0));
+  if(!t.qty&&!t.reason) delete c.transfersOut[r];
+  save();
+}
+
+function renderTransferInTab(c,el){
+  const dis=c.closed?'disabled':'';
+  if(!c.transfersIn) c.transfersIn={};
+  const rows=S.items.map(it=>{
+    const t=c.transfersIn[it.r]||{};
+    return `<tr>
+      <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
+      <td><input type="number" class="qin" style="width:100px" min="0" step="0.001" value="${t.qty||''}" placeholder="0" ${dis} oninput="setCycleTransferIn('${c.id}','${it.r}','qty',this.value)"></td>
+      <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${t.reason||''}" placeholder="اسم الفرع المرسل..." ${dis} oninput="setCycleTransferIn('${c.id}','${it.r}','reason',this.value)"></td>
+    </tr>`;
+  }).join('');
+  el.innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>المرجع</th><th>الصنف</th><th>الوحدة</th><th>الكمية المحوّلة وارد</th><th>الفرع المرسل</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <p style="font-size:11px;color:var(--muted);margin-top:8px">كمية وصلت لهذا الفرع من فرع تاني — بتتضاف للرصيد المتاح زي المشتريات بالظبط.</p>`;
+}
+function setCycleTransferIn(cid,r,field,v){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  if(!c.transfersIn) c.transfersIn={};
+  const t=c.transfersIn[r]||(c.transfersIn[r]={qty:0,reason:''});
+  t[field]=field==='reason'?v:(v===''?0:(parseFloat(v)||0));
+  if(!t.qty&&!t.reason) delete c.transfersIn[r];
+  save();
+}
+
 function renderStockTab(c,el){
   const opening=cycleOpening(c);
   const hasPrev=!!latestClosedBefore(c);
@@ -2222,14 +2294,16 @@ function computeCycleResults(c){
     const purCost=(c.purchases[it.r]||{}).cost||0;
     const was=(c.waste[it.r]||{}).qty||0;
     const wd=((c.withdrawals||{})[it.r]||{}).qty||0;
+    const trOut=((c.transfersOut||{})[it.r]||{}).qty||0;
+    const trIn=((c.transfersIn||{})[it.r]||{}).qty||0;
     const cl=c.closing[it.r]||0;
     const theo=theoretical[it.r]||0;
-    if(!op&&!pur&&!was&&!wd&&!cl&&!theo) return;
-    const actual=op+pur-was-wd-cl;
+    if(!op&&!pur&&!was&&!wd&&!trOut&&!trIn&&!cl&&!theo) return;
+    const actual=op+pur+trIn-was-wd-trOut-cl;
     const unitCost=pur>0?(purCost/pur):effectiveItemCost(it);
     const varQty=actual-theo;
     const varVal=varQty*unitCost;
-    rows.push({r:it.r,n:it.n,u:it.u,op,pur,was,wd,cl,actual,theo,unitCost,varQty,varVal});
+    rows.push({r:it.r,n:it.n,u:it.u,op,pur,was,wd,trOut,trIn,cl,actual,theo,unitCost,varQty,varVal});
   });
   rows.sort((a,b)=>Math.abs(b.varVal)-Math.abs(a.varVal));
   const totalSalesComputed=S.menu.reduce((s,m)=>s+(c.sales[m.id]||0)*m.price,0);
@@ -2238,8 +2312,10 @@ function computeCycleResults(c){
   const totalTheoCost=rows.reduce((s,r)=>s+r.theo*r.unitCost,0);
   const totalWasteCost=rows.reduce((s,r)=>s+r.was*r.unitCost,0);
   const totalWithdrawCost=rows.reduce((s,r)=>s+r.wd*r.unitCost,0);
+  const totalTransferOutCost=rows.reduce((s,r)=>s+r.trOut*r.unitCost,0);
+  const totalTransferInCost=rows.reduce((s,r)=>s+r.trIn*r.unitCost,0);
   return {
-    rows,totalSalesAmount,totalSalesComputed,totalActualCost,totalTheoCost,totalWasteCost,totalWithdrawCost,
+    rows,totalSalesAmount,totalSalesComputed,totalActualCost,totalTheoCost,totalWasteCost,totalWithdrawCost,totalTransferOutCost,totalTransferInCost,
     totalVarVal:totalActualCost-totalTheoCost,
     actualCostPct:totalSalesAmount>0?(totalActualCost/totalSalesAmount*100):0,
     theoCostPct:totalSalesAmount>0?(totalTheoCost/totalSalesAmount*100):0,
@@ -2284,10 +2360,10 @@ function renderResultsTab(c,el){
     <div class="db-sub">الفرق بين تكلفة الاستهلاك الفعلي والنظري (موجب = استهلاك زيادة عن المتوقع من الوصفات)</div></div></div>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>الصنف</th><th>افتتاحي</th><th>مشتريات</th><th>هالك</th><th>سحب داخلي</th><th>ختامي</th><th>استهلاك فعلي</th><th>استهلاك نظري</th><th>انحراف كمية</th><th>انحراف قيمة</th></tr></thead>
+    <thead><tr><th>الصنف</th><th>افتتاحي</th><th>مشتريات</th><th>تحويل وارد</th><th>هالك</th><th>سحب داخلي</th><th>تحويل صادر</th><th>ختامي</th><th>استهلاك فعلي</th><th>استهلاك نظري</th><th>انحراف كمية</th><th>انحراف قيمة</th></tr></thead>
     <tbody>${r.rows.map(row=>`<tr>
       <td class="td-name">${row.n}</td>
-      <td>${fmt(row.op)}</td><td>${fmt(row.pur)}</td><td>${fmt(row.was)}</td><td>${fmt(row.wd)}</td><td>${fmt(row.cl)}</td>
+      <td>${fmt(row.op)}</td><td>${fmt(row.pur)}</td><td>${fmt(row.trIn)}</td><td>${fmt(row.was)}</td><td>${fmt(row.wd)}</td><td>${fmt(row.trOut)}</td><td>${fmt(row.cl)}</td>
       <td style="font-weight:700">${fmt(row.actual)}</td><td>${fmt(row.theo)}</td>
       <td style="color:${Math.abs(row.varQty)<0.001?'var(--muted)':(row.varQty>0?'var(--red)':'var(--green)')}">${fmt(row.varQty)}</td>
       <td style="color:${Math.abs(row.varVal)<0.01?'var(--muted)':(row.varVal>0?'var(--red)':'var(--green)')};font-weight:700">${fmt(row.varVal)}</td>
@@ -2304,9 +2380,9 @@ function exportCycleCSV(cid){
     csv+=`تكلفة الاستهلاك الفعلي,${c.result.totalActualCost}\n`;
     csv+=`نسبة التكلفة الفعلية,${c.result.actualCostPct.toFixed(2)}%\n`;
     csv+=`نسبة التكلفة النظرية,${c.result.theoCostPct.toFixed(2)}%\n\n`;
-    csv+='الصنف,افتتاحي,مشتريات,هالك,سحب داخلي,ختامي,استهلاك فعلي,استهلاك نظري,انحراف كمية,انحراف قيمة\n';
+    csv+='الصنف,افتتاحي,مشتريات,تحويل وارد,هالك,سحب داخلي,تحويل صادر,ختامي,استهلاك فعلي,استهلاك نظري,انحراف كمية,انحراف قيمة\n';
     c.result.rows.forEach(row=>{
-      csv+=`"${row.n}",${row.op},${row.pur},${row.was},${row.wd},${row.cl},${row.actual},${row.theo},${row.varQty.toFixed(3)},${row.varVal.toFixed(2)}\n`;
+      csv+=`"${row.n}",${row.op},${row.pur},${row.trIn},${row.was},${row.wd},${row.trOut},${row.cl},${row.actual},${row.theo},${row.varQty.toFixed(3)},${row.varVal.toFixed(2)}\n`;
     });
   }else{
     csv+=`دورة (مفتوحة - غير مغلقة بعد),${c.start},${c.end},${S.branch}\n`;
@@ -2357,13 +2433,13 @@ function exportCyclePDF(cid){
 
   const rows=r.rows.map((row,i)=>[
     String(i+1),row.n,row.u,
-    fmt(row.op),fmt(row.pur),fmt(row.was),fmt(row.wd),fmt(row.cl),
+    fmt(row.op),fmt(row.pur),fmt(row.trIn),fmt(row.was),fmt(row.wd),fmt(row.trOut),fmt(row.cl),
     fmt(row.actual),fmt(row.theo),fmt(row.varQty),fmt(row.varVal),
   ]);
 
   if(rows.length){
     doc.autoTable({
-      head:[['#','Item','UOM','Opening','Purchases','Waste','Withdraw','Closing','Actual Usage','Theoretical','Var Qty','Var Value']],
+      head:[['#','Item','UOM','Opening','Purchases','Transfer In','Waste','Withdraw','Transfer Out','Closing','Actual Usage','Theoretical','Var Qty','Var Value']],
       body:rows,startY:56,theme:'grid',
       styles:{font:'helvetica',fontSize:7.5,cellPadding:2.5,textColor:[215,220,235],lineColor:[30,42,58],lineWidth:.25,fillColor:[18,24,34]},
       headStyles:{fillColor:[240,192,64],textColor:[18,14,0],fontStyle:'bold',fontSize:7.5},
@@ -2382,6 +2458,135 @@ function exportCyclePDF(cid){
   }
   doc.save(`Cycle_${(S.branch||'Branch').replace(/\s/g,'_')}_${c.start}_${c.end}.pdf`);
   toast('📄 تم تصدير PDF','inf');
+}
+
+// ══════════════════════════════════════════════
+//  REQUIREMENT PLANNING (احتياج المنيو من الطلبات)
+// ══════════════════════════════════════════════
+function daysBetween(a,b){
+  const d1=new Date(a+'T00:00:00'),d2=new Date(b+'T00:00:00');
+  return Math.round((d2-d1)/86400000);
+}
+
+// Average daily sales per menu item, and average daily theoretical usage per
+// ingredient, computed across every closed cycle of the current branch.
+function computeHistoricalAverages(){
+  const closed=sortedCycles().filter(c=>c.closed);
+  let totalDays=0;
+  const menuTotals={},ingTotals={};
+  closed.forEach(c=>{
+    const days=Math.max(1,daysBetween(c.start,c.end)+1);
+    totalDays+=days;
+    Object.entries(c.sales||{}).forEach(([mid,qty])=>{menuTotals[mid]=(menuTotals[mid]||0)+(qty||0);});
+    if(c.result&&c.result.rows) c.result.rows.forEach(row=>{ingTotals[row.r]=(ingTotals[row.r]||0)+(row.theo||0);});
+  });
+  const menuAvg={},ingredientAvg={};
+  if(totalDays>0){
+    Object.keys(menuTotals).forEach(mid=>menuAvg[mid]=menuTotals[mid]/totalDays);
+    Object.keys(ingTotals).forEach(r=>ingredientAvg[r]=ingTotals[r]/totalDays);
+  }
+  return {menuAvg,ingredientAvg,totalDays,cycleCount:closed.length};
+}
+
+let planDays=14,planMenuQty={};
+function openRequirementPlanner(){
+  if(!S.curBranch){toast('⚠️ اختار/أنشئ فرع أولاً','wrn');return;}
+  renderRequirementPlanner();
+  document.getElementById('planModal').classList.add('open');
+}
+function setPlanDays(v){
+  planDays=Math.max(1,parseInt(v)||14);
+  renderRequirementPlanner();
+}
+function resetPlanOverrides(){
+  planMenuQty={};
+  renderRequirementPlanner();
+  toast('🔄 تم الرجوع للمتوسط التاريخي','inf');
+}
+function setPlanMenuQty(mid,v){
+  if(v==='') delete planMenuQty[mid]; else planMenuQty[mid]=parseFloat(v)||0;
+  renderRequirementPlanner();
+}
+function plannedMenuQty(m,hist){
+  const suggested=Math.round((hist.menuAvg[m.id]||0)*planDays);
+  return planMenuQty[m.id]!=null?planMenuQty[m.id]:suggested;
+}
+function planIngredientRequirement(hist){
+  const req={};
+  S.menu.forEach(m=>{
+    const qty=plannedMenuQty(m,hist);
+    if(!qty) return;
+    (m.recipe||[]).forEach(ing=>{req[ing.r]=(req[ing.r]||0)+qty*ing.q;});
+  });
+  return req;
+}
+
+function renderRequirementPlanner(){
+  document.getElementById('plan-days').value=planDays;
+  const hist=computeHistoricalAverages();
+  document.getElementById('plan-hist-info').textContent=hist.cycleCount
+    ?`${hist.cycleCount} دورة مغلقة (${hist.totalDays} يوم) — المتوسطات محسوبة منها`
+    :'لا توجد دورات مغلقة بعد لهذا الفرع — القيم صفر، أدخل الكميات المتوقعة يدوياً تحت';
+
+  if(!S.menu.length){
+    document.getElementById('planMenuSection').innerHTML=`<div class="tbl-wrap"><div style="padding:20px;text-align:center;color:var(--muted)">لا توجد أصناف مباعة معرّفة. أضفها من "🍽️ الأصناف المباعة والوصفات" أولاً.</div></div>`;
+    document.getElementById('planIngredientSection').innerHTML='';
+    return;
+  }
+
+  const menuRows=S.menu.map(m=>{
+    const avgDaily=hist.menuAvg[m.id]||0;
+    const val=plannedMenuQty(m,hist);
+    return `<tr>
+      <td class="td-name">${m.n}</td>
+      <td style="font-family:var(--mono);color:var(--muted)">${fmt(avgDaily)}/يوم</td>
+      <td><input type="number" class="qin" style="width:100px" min="0" step="1" value="${val}" oninput="setPlanMenuQty('${m.id}',this.value)"></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('planMenuSection').innerHTML=`
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>الصنف المباع</th><th>متوسط يومي (تاريخي)</th><th>الكمية المتوقعة للفترة (قابلة للتعديل)</th></tr></thead>
+      <tbody>${menuRows}</tbody>
+    </table></div>`;
+
+  const req=planIngredientRequirement(hist);
+  const ingRows=Object.keys(req).filter(r=>req[r]>0).map(r=>{
+    const it=S.items.find(i=>i.r===r);if(!it) return '';
+    const need=req[r],current=S.qty[r]||0,toOrder=Math.max(0,need-current);
+    return `<tr>
+      <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
+      <td style="font-family:var(--mono)">${fmt(need)}</td>
+      <td style="font-family:var(--mono);color:var(--blue)">${fmt(current)}</td>
+      <td style="font-family:var(--mono);font-weight:700;color:${toOrder>0?'var(--red)':'var(--green)'}">${fmt(toOrder)}</td>
+    </tr>`;
+  }).filter(Boolean).join('');
+  document.getElementById('planIngredientSection').innerHTML=`
+    <div class="tbl-wrap">
+      <div class="tbl-head"><div class="tbl-title">📦 احتياج الخامات المتوقع للفترة (${planDays} يوم)</div></div>
+      <table>
+        <thead><tr><th>المرجع</th><th>الخامة</th><th>الوحدة</th><th>الاحتياج المتوقع</th><th>الرصيد الحالي</th><th>المطلوب طلبه</th></tr></thead>
+        <tbody>${ingRows||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px">لا يوجد احتياج بعد — أضف كميات متوقعة للأصناف المباعة فوق</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+
+function exportPlanExcel(){
+  const hist=computeHistoricalAverages();
+  const wb=XLSX.utils.book_new();
+  const menuRows=[['الصنف','متوسط يومي تاريخي','الكمية المتوقعة للفترة']];
+  S.menu.forEach(m=>menuRows.push([m.n,+((hist.menuAvg[m.id]||0).toFixed(2)),plannedMenuQty(m,hist)]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(menuRows),'المبيعات المتوقعة');
+
+  const req=planIngredientRequirement(hist);
+  const ingRows=[['المرجع','الخامة','الوحدة','الاحتياج المتوقع','الرصيد الحالي','المطلوب طلبه']];
+  Object.keys(req).forEach(r=>{
+    const it=S.items.find(i=>i.r===r);if(!it) return;
+    const need=req[r],current=S.qty[r]||0,toOrder=Math.max(0,need-current);
+    ingRows.push([it.r,it.n,it.u,+need.toFixed(3),current,+toOrder.toFixed(3)]);
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ingRows),'احتياج الخامات');
+  XLSX.writeFile(wb,`RequirementPlan_${(S.branch||'Branch').replace(/\s/g,'_')}_${today()}.xlsx`);
+  toast('📗 تم تصدير خطة الاحتياج','inf');
 }
 
 // ══════════════════════════════════════════════
@@ -2419,8 +2624,8 @@ function exportCycleExcel(cid){
     ['إجمالي قيمة الانحراف',+r.totalVarVal.toFixed(2)],
   ];
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sum),'الملخص');
-  const rows=[['الصنف','الوحدة','افتتاحي','مشتريات','هالك','سحب داخلي','ختامي','استهلاك فعلي','استهلاك نظري','تكلفة الوحدة','انحراف كمية','انحراف قيمة']];
-  r.rows.forEach(row=>rows.push([row.n,row.u,row.op,row.pur,row.was,row.wd,row.cl,row.actual,row.theo,+row.unitCost.toFixed(2),+row.varQty.toFixed(3),+row.varVal.toFixed(2)]));
+  const rows=[['الصنف','الوحدة','افتتاحي','مشتريات','تحويل وارد','هالك','سحب داخلي','تحويل صادر','ختامي','استهلاك فعلي','استهلاك نظري','تكلفة الوحدة','انحراف كمية','انحراف قيمة']];
+  r.rows.forEach(row=>rows.push([row.n,row.u,row.op,row.pur,row.trIn,row.was,row.wd,row.trOut,row.cl,row.actual,row.theo,+row.unitCost.toFixed(2),+row.varQty.toFixed(3),+row.varVal.toFixed(2)]));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'التفاصيل');
   XLSX.writeFile(wb,`Cycle_${(S.branch||'Branch').replace(/\s/g,'_')}_${c.start}_${c.end}.xlsx`);
   toast('📗 تم تصدير Excel','inf');

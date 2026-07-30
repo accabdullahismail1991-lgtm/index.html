@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -439,6 +440,8 @@ td{padding:9px 13px;vertical-align:middle;}
   <span class="sb-label">إجراءات</span>
   <div class="sb-item" onclick="saveAndExport()"><span class="sb-ico">💾</span>حفظ وتصدير PDF</div>
   <div class="sb-item" onclick="exportCsv()"><span class="sb-ico">📊</span>تصدير CSV</div>
+  <div class="sb-item" onclick="exportFullDataExcel()"><span class="sb-ico">📗</span>تفريغ كل البيانات (Excel)</div>
+  <div class="sb-item" onclick="exportBackupJSON()"><span class="sb-ico">💽</span>نسخة احتياطية (JSON)</div>
   <div class="sb-item" onclick="clearQty()"><span class="sb-ico">🗑️</span>مسح الكميات</div>
 
   <div class="hist-wrap">
@@ -571,7 +574,12 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="mod-field">
     <label class="mod-lbl">تكلفة الوحدة (اختياري)</label>
     <input type="number" class="mod-in" id="ai-cost" placeholder="0.00" min="0" step="0.01">
-    <div class="mod-hint">تُستخدم لحساب قيمة الانحراف ونسبة التكلفة في دورة التسوية</div>
+    <div class="mod-hint">تُستخدم لحساب قيمة الانحراف ونسبة التكلفة — لو الصنف نصف مصنّع وله مكوّنات تحتها، هيتحسب سعره تلقائياً من مكوناته بدل الرقم ده</div>
+  </div>
+  <div class="mod-field">
+    <label class="mod-lbl">مكوّنات الصنف (اختياري — لو الصنف نصف مصنّع/خلطة)</label>
+    <div id="aiRecipeRows" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
+    <button class="hbtn" type="button" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="addItemRecipeRow()">➕ إضافة مكوّن</button>
   </div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('addItemModal')">إلغاء</button>
@@ -686,6 +694,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('rptModal')">إغلاق</button>
     <button class="hbtn" id="rptCsvBtn">📊 CSV</button>
+    <button class="hbtn" id="rptXlsBtn">📗 Excel</button>
     <button class="hbtn gold" id="rptPdfBtn">📄 PDF</button>
   </div>
 </div>
@@ -1277,6 +1286,8 @@ function openAddItem(){
   document.getElementById('ai-qty').value='';
   document.getElementById('ai-cost').value='';
   document.getElementById('ai-ref').readOnly=false;
+  curItemRecipeRows=[];
+  renderItemRecipeRows();
   // Pre-select current category
   if(curCat!=='all') document.getElementById('ai-cat').value=curCat;
   autoRef();
@@ -1296,7 +1307,27 @@ function openEditItem(ref){
   document.getElementById('ai-uom').value=it.u;
   document.getElementById('ai-qty').value=S.qty[it.r]||'';
   document.getElementById('ai-cost').value=it.cost||'';
+  curItemRecipeRows=(it.recipe||[]).map(r=>({...r}));
+  renderItemRecipeRows();
   document.getElementById('addItemModal').classList.add('open');
+}
+
+let curItemRecipeRows=[];
+function renderItemRecipeRows(){
+  const cont=document.getElementById('aiRecipeRows');
+  if(!curItemRecipeRows.length){cont.innerHTML='<div style="font-size:11.5px;color:var(--muted)">لا توجد مكوّنات — الصنف خامة أساسية</div>';return;}
+  cont.innerHTML=curItemRecipeRows.map((row,i)=>`
+    <div style="display:flex;gap:6px;align-items:center">
+      <select class="mod-in" style="flex:1.4" onchange="curItemRecipeRows[${i}].r=this.value">${ingredientOptions(row.r,editingItem)}</select>
+      <input type="number" class="mod-in" style="flex:.7" min="0" step="0.001" value="${row.q||''}" placeholder="الكمية/وحدة" oninput="curItemRecipeRows[${i}].q=parseFloat(this.value)||0">
+      <button class="hi-btn del" style="flex:none;padding:8px 10px" onclick="curItemRecipeRows.splice(${i},1);renderItemRecipeRows()">🗑</button>
+    </div>`).join('');
+}
+function addItemRecipeRow(){
+  const opts=S.items.filter(i=>i.r!==editingItem);
+  if(!opts.length){toast('⚠️ أضف أصناف أخرى أولاً','wrn');return;}
+  curItemRecipeRows.push({r:opts[0].r,q:0});
+  renderItemRecipeRows();
 }
 
 function autoRef(){
@@ -1334,14 +1365,16 @@ function saveItem(){
   if(!nameAr){nameEl.classList.add('err');toast('⚠️ أدخل اسم الصنف','wrn');return;}
   if(!editingItem&&S.items.find(i=>i.r===ref)){refEl.classList.add('err');toast('⚠️ رقم المرجع موجود مسبقاً','wrn');return;}
 
+  const recipe=curItemRecipeRows.filter(r=>r.r&&r.q>0);
+
   if(editingItem){
     const idx=S.items.findIndex(i=>i.r===editingItem);
     if(idx>=0){
-      S.items[idx]={...S.items[idx],n:nameAr,e:nameEn,c:cat,u:uom,cost,custom:true};
+      S.items[idx]={...S.items[idx],n:nameAr,e:nameEn,c:cat,u:uom,cost,recipe,custom:true};
     }
     toast('✅ تم تعديل الصنف: '+nameAr,'suc');
   } else {
-    S.items.push({r:ref,n:nameAr,e:nameEn,c:cat,u:uom,cost,custom:true});
+    S.items.push({r:ref,n:nameAr,e:nameEn,c:cat,u:uom,cost,recipe,custom:true});
     if(qty) S.qty[ref]=parseFloat(qty)||0;
     toast('✅ تم إضافة الصنف: '+nameAr,'suc');
   }
@@ -1458,7 +1491,7 @@ function renderManage(){
         <td style="padding:7px 10px">${it.custom?'<span style="font-size:10px;color:var(--orange);margin-left:4px">✨</span>':''}${it.n}</td>
         <td style="padding:7px 10px"><span style="font-size:11px;color:${cat.c}">${cat.l}</span></td>
         <td style="padding:7px 10px;font-family:var(--mono);color:var(--blue);font-size:11px">${it.u}</td>
-        <td style="padding:7px 10px;font-family:var(--mono);font-size:11px">${fmt(it.cost||0)}</td>
+        <td style="padding:7px 10px;font-family:var(--mono);font-size:11px">${fmt(effectiveItemCost(it))}${it.recipe&&it.recipe.length?' <span style="color:var(--purple);font-size:9.5px">(محسوبة)</span>':''}</td>
         <td style="padding:7px 10px;text-align:center;display:flex;gap:5px;justify-content:center">
           <button class="hi-btn" style="flex:none;padding:4px 8px" onclick="closeM('manageModal');openEditItem('${it.r}')">✏</button>
           <button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteItem('${it.r}');renderManage()">🗑</button>
@@ -1631,6 +1664,7 @@ function viewRpt(id){
   document.getElementById('rptContent').innerHTML=html;
   document.getElementById('rptPdfBtn').onclick=()=>exportPDF(r);
   document.getElementById('rptCsvBtn').onclick=()=>exportCsvRpt(r);
+  document.getElementById('rptXlsBtn').onclick=()=>exportReportExcel(r);
   document.getElementById('rptModal').classList.add('open');
 }
 
@@ -1813,8 +1847,22 @@ let curRecipeRows=[], editingMenuId=null;
 function recipeCost(recipe){
   return (recipe||[]).reduce((s,ing)=>{
     const it=S.items.find(i=>i.r===ing.r);
-    return s+(it?(it.cost||0)*ing.q:0);
+    return s+(it?effectiveItemCost(it)*ing.q:0);
   },0);
+}
+
+// Cost of an inventory item: its manual unit cost, or — if it's a
+// semi-finished item with its own recipe — the rolled-up cost of its components.
+function effectiveItemCost(it,_depth){
+  _depth=_depth||0;
+  if(!it) return 0;
+  if(it.recipe&&it.recipe.length&&_depth<6){
+    return it.recipe.reduce((s,ing)=>{
+      const sub=S.items.find(i=>i.r===ing.r);
+      return s+(sub?effectiveItemCost(sub,_depth+1)*ing.q:0);
+    },0);
+  }
+  return it.cost||0;
 }
 
 function openMenuMgr(){renderMenuList();document.getElementById('menuModal').classList.add('open');}
@@ -1835,8 +1883,8 @@ function renderMenuList(){
   }).join('');
 }
 
-function ingredientOptions(sel){
-  return S.items.map(it=>`<option value="${it.r}"${it.r===sel?' selected':''}>${it.n} (${it.u})</option>`).join('');
+function ingredientOptions(sel,exclude){
+  return S.items.filter(it=>it.r!==exclude).map(it=>`<option value="${it.r}"${it.r===sel?' selected':''}>${it.n} (${it.u})</option>`).join('');
 }
 function renderRecipeRows(){
   const cont=document.getElementById('miRecipeRows');
@@ -1949,7 +1997,7 @@ function createCycle(){
   if(!start||!end){toast('⚠️ حدد تاريخ البداية والنهاية','wrn');return;}
   if(end<start){toast('⚠️ تاريخ النهاية قبل البداية','wrn');return;}
   const c={id:'CYC'+Date.now().toString(36).toUpperCase(),start,end,closed:false,
-    sales:{},salesAmount:null,purchases:{},waste:{},openingOverride:{},closing:{},result:null};
+    sales:{},salesAmount:null,purchases:{},waste:{},withdrawals:{},openingOverride:{},closing:{},result:null};
   BCycles().push(c);
   curCycleId=c.id;curCycleTab='sales';
   save();closeM('newCycleModal');renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();
@@ -1984,6 +2032,7 @@ function renderCycleHeader(){
         :`<button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="reopenCycle()">🔓 إعادة فتح</button>`}
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="exportCyclePDF('${c.id}')">📄 PDF</button>
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="exportCycleCSV('${c.id}')">📊 CSV</button>
+      <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="exportCycleExcel('${c.id}')">📗 Excel</button>
       <button class="hbtn del" style="padding:6px 12px;font-size:12px" onclick="deleteCycle('${c.id}')">🗑</button>
     </div>
   </div>`;
@@ -1992,7 +2041,7 @@ function renderCycleHeader(){
 function renderCycleTabs(){
   const el=document.getElementById('cycleTabs');
   if(!curCycleId){el.innerHTML='';return;}
-  const tabs=[['sales','💰 المبيعات'],['purchases','📦 المشتريات/الطلبيات'],['waste','🗑️ الهالك'],['stock','🧮 الرصيد الافتتاحي/الختامي'],['results','📊 نتائج التسوية']];
+  const tabs=[['sales','💰 المبيعات'],['purchases','📦 المشتريات/الطلبيات'],['waste','🗑️ الهالك'],['withdraw','📤 سحب/صرف داخلي'],['stock','🧮 الرصيد الافتتاحي/الختامي'],['results','📊 نتائج التسوية']];
   el.innerHTML=tabs.map(([k,l])=>`<button class="hbtn${curCycleTab===k?' gold':''}" style="padding:7px 13px;font-size:12.5px" onclick="curCycleTab='${k}';renderCycleTabs();renderCycleBody()">${l}</button>`).join('');
 }
 
@@ -2003,6 +2052,7 @@ function renderCycleBody(){
   if(curCycleTab==='sales') return renderSalesTab(c,el);
   if(curCycleTab==='purchases') return renderPurchasesTab(c,el);
   if(curCycleTab==='waste') return renderWasteTab(c,el);
+  if(curCycleTab==='withdraw') return renderWithdrawTab(c,el);
   if(curCycleTab==='stock') return renderStockTab(c,el);
   if(curCycleTab==='results') return renderResultsTab(c,el);
 }
@@ -2090,6 +2140,31 @@ function setCycleWaste(cid,r,field,v){
   save();
 }
 
+function renderWithdrawTab(c,el){
+  const dis=c.closed?'disabled':'';
+  if(!c.withdrawals) c.withdrawals={};
+  const rows=S.items.map(it=>{
+    const w=c.withdrawals[it.r]||{};
+    return `<tr>
+      <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
+      <td><input type="number" class="qin" style="width:100px" min="0" step="0.001" value="${w.qty||''}" placeholder="0" ${dis} oninput="setCycleWithdraw('${c.id}','${it.r}','qty',this.value)"></td>
+      <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${w.reason||''}" placeholder="الجهة/الغرض (مثال: أكل عاملين، فرع تاني...)" ${dis} oninput="setCycleWithdraw('${c.id}','${it.r}','reason',this.value)"></td>
+    </tr>`;
+  }).join('');
+  el.innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>المرجع</th><th>الصنف</th><th>الوحدة</th><th>الكمية المسحوبة</th><th>سبب السحب/الجهة</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <p style="font-size:11px;color:var(--muted);margin-top:8px">سحب/صرف داخلي غير مرتبط بالمبيعات ولا الهالك (زي أكل العاملين، عينات، أو تحويل يدوي) — بيتخصم من الاستهلاك الفعلي زي الهالك بالظبط.</p>`;
+}
+function setCycleWithdraw(cid,r,field,v){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  if(!c.withdrawals) c.withdrawals={};
+  const w=c.withdrawals[r]||(c.withdrawals[r]={qty:0,reason:''});
+  w[field]=field==='reason'?v:(v===''?0:(parseFloat(v)||0));
+  if(!w.qty&&!w.reason) delete c.withdrawals[r];
+  save();
+}
+
 function renderStockTab(c,el){
   const opening=cycleOpening(c);
   const hasPrev=!!latestClosedBefore(c);
@@ -2146,14 +2221,15 @@ function computeCycleResults(c){
     const pur=(c.purchases[it.r]||{}).qty||0;
     const purCost=(c.purchases[it.r]||{}).cost||0;
     const was=(c.waste[it.r]||{}).qty||0;
+    const wd=((c.withdrawals||{})[it.r]||{}).qty||0;
     const cl=c.closing[it.r]||0;
     const theo=theoretical[it.r]||0;
-    if(!op&&!pur&&!was&&!cl&&!theo) return;
-    const actual=op+pur-was-cl;
-    const unitCost=pur>0?(purCost/pur):(it.cost||0);
+    if(!op&&!pur&&!was&&!wd&&!cl&&!theo) return;
+    const actual=op+pur-was-wd-cl;
+    const unitCost=pur>0?(purCost/pur):effectiveItemCost(it);
     const varQty=actual-theo;
     const varVal=varQty*unitCost;
-    rows.push({r:it.r,n:it.n,u:it.u,op,pur,was,cl,actual,theo,unitCost,varQty,varVal});
+    rows.push({r:it.r,n:it.n,u:it.u,op,pur,was,wd,cl,actual,theo,unitCost,varQty,varVal});
   });
   rows.sort((a,b)=>Math.abs(b.varVal)-Math.abs(a.varVal));
   const totalSalesComputed=S.menu.reduce((s,m)=>s+(c.sales[m.id]||0)*m.price,0);
@@ -2161,8 +2237,9 @@ function computeCycleResults(c){
   const totalActualCost=rows.reduce((s,r)=>s+r.actual*r.unitCost,0);
   const totalTheoCost=rows.reduce((s,r)=>s+r.theo*r.unitCost,0);
   const totalWasteCost=rows.reduce((s,r)=>s+r.was*r.unitCost,0);
+  const totalWithdrawCost=rows.reduce((s,r)=>s+r.wd*r.unitCost,0);
   return {
-    rows,totalSalesAmount,totalSalesComputed,totalActualCost,totalTheoCost,totalWasteCost,
+    rows,totalSalesAmount,totalSalesComputed,totalActualCost,totalTheoCost,totalWasteCost,totalWithdrawCost,
     totalVarVal:totalActualCost-totalTheoCost,
     actualCostPct:totalSalesAmount>0?(totalActualCost/totalSalesAmount*100):0,
     theoCostPct:totalSalesAmount>0?(totalTheoCost/totalSalesAmount*100):0,
@@ -2207,10 +2284,10 @@ function renderResultsTab(c,el){
     <div class="db-sub">الفرق بين تكلفة الاستهلاك الفعلي والنظري (موجب = استهلاك زيادة عن المتوقع من الوصفات)</div></div></div>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>الصنف</th><th>افتتاحي</th><th>مشتريات</th><th>هالك</th><th>ختامي</th><th>استهلاك فعلي</th><th>استهلاك نظري</th><th>انحراف كمية</th><th>انحراف قيمة</th></tr></thead>
+    <thead><tr><th>الصنف</th><th>افتتاحي</th><th>مشتريات</th><th>هالك</th><th>سحب داخلي</th><th>ختامي</th><th>استهلاك فعلي</th><th>استهلاك نظري</th><th>انحراف كمية</th><th>انحراف قيمة</th></tr></thead>
     <tbody>${r.rows.map(row=>`<tr>
       <td class="td-name">${row.n}</td>
-      <td>${fmt(row.op)}</td><td>${fmt(row.pur)}</td><td>${fmt(row.was)}</td><td>${fmt(row.cl)}</td>
+      <td>${fmt(row.op)}</td><td>${fmt(row.pur)}</td><td>${fmt(row.was)}</td><td>${fmt(row.wd)}</td><td>${fmt(row.cl)}</td>
       <td style="font-weight:700">${fmt(row.actual)}</td><td>${fmt(row.theo)}</td>
       <td style="color:${Math.abs(row.varQty)<0.001?'var(--muted)':(row.varQty>0?'var(--red)':'var(--green)')}">${fmt(row.varQty)}</td>
       <td style="color:${Math.abs(row.varVal)<0.01?'var(--muted)':(row.varVal>0?'var(--red)':'var(--green)')};font-weight:700">${fmt(row.varVal)}</td>
@@ -2227,9 +2304,9 @@ function exportCycleCSV(cid){
     csv+=`تكلفة الاستهلاك الفعلي,${c.result.totalActualCost}\n`;
     csv+=`نسبة التكلفة الفعلية,${c.result.actualCostPct.toFixed(2)}%\n`;
     csv+=`نسبة التكلفة النظرية,${c.result.theoCostPct.toFixed(2)}%\n\n`;
-    csv+='الصنف,افتتاحي,مشتريات,هالك,ختامي,استهلاك فعلي,استهلاك نظري,انحراف كمية,انحراف قيمة\n';
+    csv+='الصنف,افتتاحي,مشتريات,هالك,سحب داخلي,ختامي,استهلاك فعلي,استهلاك نظري,انحراف كمية,انحراف قيمة\n';
     c.result.rows.forEach(row=>{
-      csv+=`"${row.n}",${row.op},${row.pur},${row.was},${row.cl},${row.actual},${row.theo},${row.varQty.toFixed(3)},${row.varVal.toFixed(2)}\n`;
+      csv+=`"${row.n}",${row.op},${row.pur},${row.was},${row.wd},${row.cl},${row.actual},${row.theo},${row.varQty.toFixed(3)},${row.varVal.toFixed(2)}\n`;
     });
   }else{
     csv+=`دورة (مفتوحة - غير مغلقة بعد),${c.start},${c.end},${S.branch}\n`;
@@ -2280,13 +2357,13 @@ function exportCyclePDF(cid){
 
   const rows=r.rows.map((row,i)=>[
     String(i+1),row.n,row.u,
-    fmt(row.op),fmt(row.pur),fmt(row.was),fmt(row.cl),
+    fmt(row.op),fmt(row.pur),fmt(row.was),fmt(row.wd),fmt(row.cl),
     fmt(row.actual),fmt(row.theo),fmt(row.varQty),fmt(row.varVal),
   ]);
 
   if(rows.length){
     doc.autoTable({
-      head:[['#','Item','UOM','Opening','Purchases','Waste','Closing','Actual Usage','Theoretical','Var Qty','Var Value']],
+      head:[['#','Item','UOM','Opening','Purchases','Waste','Withdraw','Closing','Actual Usage','Theoretical','Var Qty','Var Value']],
       body:rows,startY:56,theme:'grid',
       styles:{font:'helvetica',fontSize:7.5,cellPadding:2.5,textColor:[215,220,235],lineColor:[30,42,58],lineWidth:.25,fillColor:[18,24,34]},
       headStyles:{fillColor:[240,192,64],textColor:[18,14,0],fontStyle:'bold',fontSize:7.5},
@@ -2305,6 +2382,104 @@ function exportCyclePDF(cid){
   }
   doc.save(`Cycle_${(S.branch||'Branch').replace(/\s/g,'_')}_${c.start}_${c.end}.pdf`);
   toast('📄 تم تصدير PDF','inf');
+}
+
+// ══════════════════════════════════════════════
+//  EXCEL / BACKUP EXPORT
+// ══════════════════════════════════════════════
+function exportReportExcel(r){
+  const items=r.items||S.items;
+  const rows=[['رقم المرجع','اسم الصنف','القسم','وحدة القياس','الكمية','ملاحظات','مخصص']];
+  items.forEach(it=>{
+    if(r.qty[it.r]==null) return;
+    const cats=r.cats||S.cats;
+    const cat=(cats[it.c]||{}).l||it.c;
+    rows.push([it.r,it.n,cat,it.u,r.qty[it.r],(r.notes||{})[it.r]||'',it.custom?'نعم':'لا']);
+  });
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'الجرد');
+  XLSX.writeFile(wb,`Inventory_${(r.branch||'Branch').replace(/\s/g,'_')}_${r.date}.xlsx`);
+  toast('📗 تم تصدير Excel','inf');
+}
+
+function exportCycleExcel(cid){
+  const c=getCycle(cid);if(!c)return;
+  if(!c.closed||!c.result){toast('⚠️ اقفل الدورة أولاً لحساب النتائج قبل التصدير','wrn');return;}
+  const r=c.result;
+  const wb=XLSX.utils.book_new();
+  const sum=[
+    ['تقرير دورة تسوية',''],
+    ['الفرع',S.branch],
+    ['الفترة',`${c.start} - ${c.end}`],
+    ['إجمالي المبيعات',r.totalSalesAmount],
+    ['تكلفة الاستهلاك الفعلي',r.totalActualCost],
+    ['تكلفة الاستهلاك النظري',r.totalTheoCost],
+    ['نسبة التكلفة الفعلية %',+r.actualCostPct.toFixed(2)],
+    ['نسبة التكلفة النظرية %',+r.theoCostPct.toFixed(2)],
+    ['إجمالي قيمة الانحراف',+r.totalVarVal.toFixed(2)],
+  ];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sum),'الملخص');
+  const rows=[['الصنف','الوحدة','افتتاحي','مشتريات','هالك','سحب داخلي','ختامي','استهلاك فعلي','استهلاك نظري','تكلفة الوحدة','انحراف كمية','انحراف قيمة']];
+  r.rows.forEach(row=>rows.push([row.n,row.u,row.op,row.pur,row.was,row.wd,row.cl,row.actual,row.theo,+row.unitCost.toFixed(2),+row.varQty.toFixed(3),+row.varVal.toFixed(2)]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'التفاصيل');
+  XLSX.writeFile(wb,`Cycle_${(S.branch||'Branch').replace(/\s/g,'_')}_${c.start}_${c.end}.xlsx`);
+  toast('📗 تم تصدير Excel','inf');
+}
+
+function exportFullDataExcel(){
+  const wb=XLSX.utils.book_new();
+
+  const itemRows=[['المرجع','الاسم','بالإنجليزي','القسم','الوحدة','التكلفة/وحدة','مكوّن من أصناف؟']];
+  S.items.forEach(it=>itemRows.push([it.r,it.n,it.e||'',(S.cats[it.c]||{}).l||it.c,it.u,+effectiveItemCost(it).toFixed(2),it.recipe&&it.recipe.length?'نعم':'لا']));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(itemRows),'الأصناف');
+
+  const qtyRows=[['المرجع','الاسم','الوحدة','الكمية الحالية','ملاحظات']];
+  S.items.forEach(it=>{
+    if(S.qty[it.r]==null) return;
+    qtyRows.push([it.r,it.n,it.u,S.qty[it.r],(S.notes||{})[it.r]||'']);
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(qtyRows),'الجرد الحالي');
+
+  const menuRows=[['الصنف','السعر','المكوّن','الكمية/وحدة']];
+  S.menu.forEach(m=>{
+    if(!m.recipe||!m.recipe.length){menuRows.push([m.n,m.price,'-','-']);return;}
+    m.recipe.forEach(ing=>{
+      const it=S.items.find(i=>i.r===ing.r);
+      menuRows.push([m.n,m.price,it?it.n:ing.r,ing.q]);
+    });
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(menuRows),'المنيو والوصفات');
+
+  const cycRows=[['البداية','النهاية','الحالة','إجمالي المبيعات','تكلفة الاستهلاك الفعلي','نسبة التكلفة الفعلية %','نسبة التكلفة النظرية %']];
+  sortedCycles().forEach(c=>{
+    if(c.closed&&c.result) cycRows.push([c.start,c.end,'مغلقة',+c.result.totalSalesAmount.toFixed(2),+c.result.totalActualCost.toFixed(2),+c.result.actualCostPct.toFixed(2),+c.result.theoCostPct.toFixed(2)]);
+    else cycRows.push([c.start,c.end,'مفتوحة','-','-','-','-']);
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(cycRows),'الدورات');
+
+  if(curRole==='admin'){
+    const brRows=[['الفرع','المدير','أمين المخزن','المشرف']];
+    Object.values(S.branches||{}).forEach(b=>brRows.push([b.name,b.manager||'-',b.storekeeper||'-',b.supervisor||'-']));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(brRows),'الفروع');
+  }
+
+  XLSX.writeFile(wb,`FullData_${(S.branch||'System').replace(/\s/g,'_')}_${today()}.xlsx`);
+  toast('📗 تم تصدير كل البيانات Excel','inf');
+}
+
+function exportBackupJSON(){
+  const backup={
+    exportedAt:new Date().toISOString(),
+    catalog:{cats:S.cats,items:S.items,menu:S.menu},
+    branch:{key:S.curBranch,name:S.branch,manager:S.manager,storekeeper:S.storekeeper,supervisor:S.supervisor,
+      date:S.date,sid:S.sid,qty:S.qty,notes:S.notes,reports:S.reports,
+      cycles:(S.branchData[S.curBranch]&&S.branchData[S.curBranch].cycles)||[]},
+  };
+  if(curRole==='admin') backup.branches=S.branches;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}));
+  a.download=`Backup_${(S.branch||'System').replace(/\s/g,'_')}_${today()}.json`;a.click();
+  toast('💽 تم تصدير النسخة الاحتياطية','inf');
 }
 
 // ══════════════════════════════════════════════

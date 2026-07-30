@@ -13,11 +13,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
 :root{
-  --bg:#12161d;--surface:#171c25;--card:#1c2230;--card2:#222939;
-  --border:#2a3242;--border2:#374156;
-  --gold:#e0b04c;--gold2:#b8873a;
-  --blue:#5b93d9;--green:#4dd6a0;--red:#e06868;--purple:#a888e0;--orange:#e0935a;
-  --text:#dfe4ee;--muted:#8a97b0;--muted2:#5a6780;
+  --bg:#eef0f4;--surface:#f6f7fa;--card:#ffffff;--card2:#f4f5f8;
+  --border:#e0e3e9;--border2:#cfd4dd;
+  --gold:#c99a1f;--gold2:#a67c15;
+  --blue:#2f6fd1;--green:#1f9d68;--red:#d0453f;--purple:#8456d0;--orange:#d1701f;
+  --text:#1d2430;--muted:#68748a;--muted2:#98a3b5;
   --font:'Tajawal',sans-serif;--mono:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -25,11 +25,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 
 /* HEADER */
 header{
-  background:linear-gradient(135deg,#0f1319,#111828);
+  background:linear-gradient(135deg,var(--surface),var(--card2));
   border-bottom:1px solid var(--border);height:68px;
   display:flex;align-items:center;justify-content:space-between;
   padding:0 24px;position:sticky;top:0;z-index:200;
-  box-shadow:0 2px 20px rgba(0,0,0,.5);
+  box-shadow:0 2px 20px rgba(0,0,0,.08);
 }
 .logo{display:flex;align-items:center;gap:14px;}
 .logo-icon{
@@ -90,7 +90,7 @@ header{
 .vn-dd-menu{
   display:none;position:absolute;top:calc(100% + 6px);right:0;min-width:220px;
   background:var(--card);border:1px solid var(--border2);border-radius:10px;
-  padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.5);z-index:250;
+  padding:6px;box-shadow:0 12px 30px rgba(20,30,50,.12);z-index:250;
 }
 .vn-dd.open .vn-dd-menu{display:block;}
 .vn-dd-item{
@@ -337,6 +337,12 @@ td{padding:9px 13px;vertical-align:middle;}
   color:var(--text);font-family:var(--font);font-size:13.5px;outline:none;transition:border .15s;
 }
 .mod-in:focus{border-color:var(--gold);}
+.isearch{position:relative;}
+.isearch-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;left:0;max-height:220px;overflow-y:auto;background:var(--card);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 20px rgba(20,30,50,.15);z-index:60;}
+.isearch-menu.open{display:block;}
+.isearch-opt{padding:8px 12px;font-size:12.5px;cursor:pointer;}
+.isearch-opt:hover{background:rgba(201,154,31,.12);}
+.isearch-empty{padding:10px 12px;font-size:12px;color:var(--muted);text-align:center;}
 .mod-in.err{border-color:var(--red);}
 .mod-hint{font-size:11px;color:var(--muted);margin-top:4px;}
 .mod-foot{display:flex;gap:9px;justify-content:flex-end;margin-top:20px;}
@@ -382,14 +388,14 @@ td{padding:9px 13px;vertical-align:middle;}
   background:var(--card2);border:1px solid var(--border2);border-radius:9px;
   padding:11px 18px;font-size:13px;z-index:500;
   display:flex;align-items:center;gap:9px;
-  box-shadow:0 8px 30px rgba(0,0,0,.5);
+  box-shadow:0 8px 30px rgba(20,30,50,.15);
   opacity:0;pointer-events:none;transition:all .3s;white-space:nowrap;
 }
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
-.toast.suc{border-color:rgba(46,232,154,.4);color:var(--green);}
-.toast.inf{border-color:rgba(61,142,240,.4);color:var(--blue);}
-.toast.wrn{border-color:rgba(240,192,64,.4);color:var(--gold);}
-.toast.err{border-color:rgba(240,80,80,.4);color:var(--red);}
+.toast.suc{border-color:rgba(31,157,104,.4);color:var(--green);}
+.toast.inf{border-color:rgba(47,111,209,.4);color:var(--blue);}
+.toast.wrn{border-color:rgba(201,154,31,.4);color:var(--gold);}
+.toast.err{border-color:rgba(208,69,63,.4);color:var(--red);}
 
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
@@ -420,7 +426,7 @@ td{padding:9px 13px;vertical-align:middle;}
   .layout{min-height:calc(100vh - 108px);}
   .sidebar{
     display:flex;position:fixed;top:0;right:-280px;height:100vh;width:260px;
-    z-index:400;transition:right .25s ease;box-shadow:-10px 0 30px rgba(0,0,0,.5);
+    z-index:400;transition:right .25s ease;box-shadow:-10px 0 30px rgba(20,30,50,.18);
   }
   .sidebar.mobile-open{right:0;}
 
@@ -537,6 +543,7 @@ td{padding:9px 13px;vertical-align:middle;}
     <button class="vn-btn" onclick="toggleDropdown('dd-reports')" data-i18n="📊 التقارير ▾">📊 التقارير ▾</button>
     <div class="vn-dd-menu">
       <div class="vn-dd-item" onclick="closeDropdowns();openDashboard()" data-i18n="📊 لوحة تحكم تفاعلية">📊 لوحة تحكم تفاعلية</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();openMenuSalesReport()">📊 مبيعات المنيو حسب التاريخ</div>
       <div class="vn-dd-item" onclick="closeDropdowns();openRequirementPlanner()" data-i18n="📈 تخطيط الاحتياج">📈 تخطيط الاحتياج</div>
       <div class="vn-dd-item" onclick="closeDropdowns();openQuickMovement()">➕ تسجيل حركة (تحويل/سحب/استلام)</div>
       <div class="vn-dd-item" onclick="closeDropdowns();openTransfersLog()" data-i18n="🔀 سجل التحويلات">🔀 سجل التحويلات</div>
@@ -634,12 +641,12 @@ td{padding:9px 13px;vertical-align:middle;}
     <table>
       <thead><tr>
         <th style="width:32px">#</th>
-        <th>رقم المرجع</th>
-        <th>اسم الصنف</th>
-        <th>القسم</th>
-        <th>الوحدة</th>
-        <th>الكمية الفعلية</th>
-        <th>ملاحظات</th>
+        <th data-i18n="رقم المرجع">رقم المرجع</th>
+        <th data-i18n="اسم الصنف">اسم الصنف</th>
+        <th data-i18n="القسم">القسم</th>
+        <th data-i18n="الوحدة">الوحدة</th>
+        <th data-i18n="الكمية الفعلية">الكمية الفعلية</th>
+        <th data-i18n="ملاحظات">ملاحظات</th>
         <th style="width:30px"></th>
       </tr></thead>
       <tbody id="tBody"></tbody>
@@ -1030,7 +1037,7 @@ td{padding:9px 13px;vertical-align:middle;}
   </div>
   <div class="mod-row">
     <div class="mod-field"><label class="mod-lbl">تاريخ الحركة *</label><input type="date" class="mod-in" id="qm-date" onchange="updateQuickMovementCycleInfo()"></div>
-    <div class="mod-field"><label class="mod-lbl">الصنف *</label><select class="mod-in" id="qm-item"></select></div>
+    <div class="mod-field"><label class="mod-lbl">الصنف *</label><div id="qm-item-wrap"></div></div>
   </div>
   <div class="mod-row">
     <div class="mod-field"><label class="mod-lbl">الكمية *</label><input type="number" inputmode="decimal" class="mod-in" id="qm-qty" min="0" step="0.001"></div>
@@ -1055,6 +1062,25 @@ td{padding:9px 13px;vertical-align:middle;}
     <button class="hbtn" onclick="closeM('transfersLogModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportTransfersLogExcel()">📗 Excel</button>
+  </div>
+</div>
+</div>
+
+<!-- MENU SALES BY DATE REPORT MODAL -->
+<div class="overlay" id="menuSalesModal">
+<div class="modal" style="width:820px">
+  <div class="mod-title">📊 تقرير مبيعات المنيو حسب التاريخ</div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">مبيعات كل صنف من المنيو مأخوذة من الدورات المغلقة، مع إمكانية التصفية بفترة تاريخ محدّدة.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
+    <div class="mod-field" style="margin-bottom:0"><label class="mod-lbl">من تاريخ</label><input type="date" class="mod-in" id="menuSalesDateFrom" onchange="renderMenuSalesReport()"></div>
+    <div class="mod-field" style="margin-bottom:0"><label class="mod-lbl">إلى تاريخ</label><input type="date" class="mod-in" id="menuSalesDateTo" onchange="renderMenuSalesReport()"></div>
+    <button class="hbtn" onclick="document.getElementById('menuSalesDateFrom').value='';document.getElementById('menuSalesDateTo').value='';renderMenuSalesReport()">🔄 كل الفترات</button>
+  </div>
+  <div id="menuSalesBody" style="max-height:520px;overflow-y:auto"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('menuSalesModal')" data-i18n="إغلاق">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportMenuSalesExcel()">📗 Excel</button>
   </div>
 </div>
 </div>
@@ -1176,6 +1202,12 @@ const I18N_EN={
   "العنوان": "Address",
   "الفرع": "Branch",
   "القسم *": "Category *",
+  "القسم": "Category",
+  "الوحدة": "Unit",
+  "رقم المرجع": "Reference",
+  "اسم الصنف": "Item Name",
+  "الكمية الفعلية": "Actual Qty",
+  "ملاحظات": "Notes",
   "الكمية الافتراضية": "Default Quantity",
   "الهاتف": "Phone",
   "بدء دورة جديدة": "Start New Cycle",
@@ -1259,7 +1291,72 @@ const I18N_EN={
   "🔒 إغلاق الدورة وحساب النتائج": "🔒 Close Cycle & Calculate Results",
   "🔓 إعادة فتح": "🔓 Reopen",
   "🖨️ طباعة": "🖨️ Print",
-  "🗂️ إضافة قسم جديد": "🗂️ Add New Category"
+  "🗂️ إضافة قسم جديد": "🗂️ Add New Category",
+  "#": "#",
+  "المرجع": "Ref",
+  "الصنف": "Item",
+  "القسم": "Category",
+  "الكمية": "Qty",
+  "الوحدة": "Unit",
+  "الدورة": "Cycle",
+  "افتتاحي": "Opening",
+  "مشتريات": "Purchases",
+  "تحويل وارد": "Transfer In",
+  "هالك": "Waste",
+  "سحب داخلي": "Withdraw",
+  "تحويل صادر": "Transfer Out",
+  "ختامي": "Closing",
+  "استهلاك فعلي": "Actual Usage",
+  "استهلاك نظري": "Theoretical Usage",
+  "انحراف قيمة": "Value Variance",
+  "الاتجاه": "Direction",
+  "الفرع الآخر": "Other Branch",
+  "الحالة": "Status",
+  "الاستهلاك الفعلي": "Actual Usage",
+  "الاستهلاك النظري": "Theoretical Usage",
+  "قيمة الانحراف": "Variance Value",
+  "الفرع": "Branch",
+  "المدير": "Manager",
+  "عدد الدورات المطابقة": "Matching Cycles",
+  "الفترة المشمولة": "Period Covered",
+  "إجمالي المبيعات": "Total Sales",
+  "تكلفة فعلية %": "Actual Cost %",
+  "تكلفة نظرية %": "Theoretical Cost %",
+  "المكوّن": "Component",
+  "الكمية لكل وحدة مباعة": "Qty per Unit Sold",
+  "التكلفة": "Cost",
+  "السعر": "Price",
+  "الكمية المباعة": "Qty Sold",
+  "الإجمالي (نظري)": "Total (Theoretical)",
+  "المكونات": "Components",
+  "الكمية المشتراة": "Qty Purchased",
+  "التكلفة الإجمالية": "Total Cost",
+  "الكمية الهالكة": "Wasted Qty",
+  "السبب": "Reason",
+  "الكمية المسحوبة": "Withdrawn Qty",
+  "سبب السحب/الجهة": "Reason/Party",
+  "الكمية المحوّلة صادر": "Transferred Out Qty",
+  "الفرع المستلم": "Receiving Branch",
+  "الكمية المحوّلة وارد": "Transferred In Qty",
+  "الفرع المرسل": "Sending Branch",
+  "الرصيد الافتتاحي": "Opening Balance",
+  "الرصيد الختامي (الجرد الفعلي)": "Closing Balance (Actual Count)",
+  "انحراف كمية": "Qty Variance",
+  "الصنف المباع": "Menu Item",
+  "متوسط يومي (تاريخي)": "Daily Avg (Historical)",
+  "الكمية المتوقعة للفترة (قابلة للتعديل)": "Expected Qty for Period (editable)",
+  "الخامة": "Raw Material",
+  "الاحتياج المتوقع": "Expected Requirement",
+  "الرصيد الحالي": "Current Balance",
+  "المطلوب طلبه": "Needed to Order",
+  "المستخدم": "User",
+  "الدور": "Role",
+  "إدارة الفروع": "Manage Branches",
+  "إدارة المستخدمين": "Manage Users",
+  "إدارة الأصناف": "Manage Items",
+  "إدارة المنيو": "Manage Menu",
+  "تقارير كل الفروع": "All Branches Reports",
+  "بيانات الشركة": "Company Info",
 };
 
 let curLang=localStorage.getItem('appLang')||'ar';
@@ -1284,6 +1381,25 @@ function toggleLang(){
   curLang=curLang==='en'?'ar':'en';
   localStorage.setItem('appLang',curLang);
   applyTranslations();
+  reRenderDynamicContentForLang();
+}
+function reRenderDynamicContentForLang(){
+  if(!bootedUI) return;
+  if(typeof renderTbl==='function') renderTbl();
+  if(curView==='cycle'){renderCycleTabs();renderCycleBody();}
+  const openRenders=[
+    ['usersModal',renderUsersList],
+    ['itemLedgerModal',renderItemLedger],
+    ['transfersLogModal',renderTransfersLog],
+    ['allBranchesModal',renderAllBranchesReport],
+    ['dashboardModal',renderDashboard],
+    ['planModal',renderRequirementPlanner],
+    ['menuSalesModal',renderMenuSalesReport],
+  ];
+  openRenders.forEach(([id,fn])=>{
+    const el=document.getElementById(id);
+    if(el&&el.classList.contains('open')&&typeof fn==='function') fn();
+  });
 }
 
 // ══════════════════════════════════════════════
@@ -1967,13 +2083,65 @@ function openEditItem(ref){
   document.getElementById('addItemModal').classList.add('open');
 }
 
+// ══════════════════════════════════════════════
+//  SEARCHABLE ITEM PICKER (بحث عن صنف بدل قائمة منسدلة طويلة) —
+//  مستخدم في مكونات الوصفات وأي مكان تاني يحتاج اختيار صنف من المخزون
+// ══════════════════════════════════════════════
+function isearchHtml(id,currentRef,opts){
+  opts=opts||{};
+  const it=currentRef?S.items.find(x=>x.r===currentRef):null;
+  const excl=opts.exclude?` data-exclude="${opts.exclude}"`:'';
+  const onsel=opts.onSelect?` data-onselect="${opts.onSelect}"`:'';
+  return `<div class="isearch" id="${id}"${excl}${onsel}>
+    <input type="text" class="mod-in isearch-input" placeholder="${opts.placeholder||'🔍 ابحث عن صنف بالاسم أو المرجع...'}"
+      value="${it?(it.n+' ('+it.r+')').replace(/"/g,'&quot;'):''}"
+      oninput="isearchFilter('${id}')" onfocus="isearchFilter('${id}')" onblur="setTimeout(()=>isearchClose('${id}'),180)">
+    <input type="hidden" class="isearch-value" value="${currentRef||''}">
+    <div class="isearch-menu"></div>
+  </div>`;
+}
+function isearchFilter(id){
+  const root=document.getElementById(id);if(!root)return;
+  const term=root.querySelector('.isearch-input').value.trim().toLowerCase();
+  const exclude=root.getAttribute('data-exclude');
+  let list=exclude?S.items.filter(it=>it.r!==exclude):S.items;
+  if(term) list=list.filter(it=>it.n.toLowerCase().includes(term)||it.r.toLowerCase().includes(term));
+  const menu=root.querySelector('.isearch-menu');
+  const shown=list.slice(0,60);
+  menu.innerHTML=shown.length?shown.map(it=>`<div class="isearch-opt" onmousedown="isearchPick('${id}','${it.r}')">${it.n} <span style="color:var(--muted);font-family:var(--mono);font-size:10.5px">(${it.r})</span></div>`).join('')
+    :'<div class="isearch-empty">لا توجد نتائج</div>';
+  menu.classList.add('open');
+}
+function isearchClose(id){
+  const root=document.getElementById(id);if(!root)return;
+  const menu=root.querySelector('.isearch-menu');
+  if(menu) menu.classList.remove('open');
+}
+function isearchPick(id,ref){
+  const root=document.getElementById(id);if(!root)return;
+  const it=S.items.find(x=>x.r===ref);
+  root.querySelector('.isearch-input').value=it?(it.n+' ('+it.r+')'):'';
+  root.querySelector('.isearch-value').value=ref;
+  root.querySelector('.isearch-menu').classList.remove('open');
+  const cb=root.getAttribute('data-onselect');
+  if(cb&&window[cb]) window[cb](ref,id);
+}
+function isearchGetValue(id){
+  const root=document.getElementById(id);
+  return root?root.querySelector('.isearch-value').value:'';
+}
+
 let curItemRecipeRows=[];
+function setItemRecipeRowRef(ref,pickerId){
+  const i=parseInt(pickerId.split('-').pop(),10);
+  if(curItemRecipeRows[i]) curItemRecipeRows[i].r=ref;
+}
 function renderItemRecipeRows(){
   const cont=document.getElementById('aiRecipeRows');
   if(!curItemRecipeRows.length){cont.innerHTML='<div style="font-size:11.5px;color:var(--muted)">لا توجد مكوّنات — الصنف خامة أساسية</div>';return;}
   cont.innerHTML=curItemRecipeRows.map((row,i)=>`
     <div style="display:flex;gap:6px;align-items:center">
-      <select class="mod-in" style="flex:1.4" onchange="curItemRecipeRows[${i}].r=this.value">${ingredientOptions(row.r,editingItem)}</select>
+      <div style="flex:1.4">${isearchHtml('ai-recipe-isearch-'+i,row.r,{exclude:editingItem,onSelect:'setItemRecipeRowRef'})}</div>
       <input type="number" inputmode="decimal" class="mod-in" style="flex:.7" min="0" step="0.001" value="${row.q||''}" placeholder="الكمية/وحدة" oninput="curItemRecipeRows[${i}].q=parseFloat(this.value)||0">
       <button class="hi-btn del" style="flex:none;padding:8px 10px" onclick="curItemRecipeRows.splice(${i},1);renderItemRecipeRows()">🗑</button>
     </div>`).join('');
@@ -2315,7 +2483,7 @@ function viewRpt(id){
       <div class="rsum so"><div class="rsum-v">${r.meta.pct}%</div><div class="rsum-l">الإنجاز</div></div>
     </div>
     <div style="max-height:320px;overflow-y:auto">
-    <table class="rtbl"><thead><tr><th>#</th><th>المرجع</th><th>الصنف</th><th>القسم</th><th>الكمية</th><th>الوحدة</th></tr></thead><tbody>`;
+    <table class="rtbl"><thead><tr><th>${t('#')}</th><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('القسم')}</th><th>${t('الكمية')}</th><th>${t('الوحدة')}</th></tr></thead><tbody>`;
   ent.forEach((it,i)=>{
     const q=r.qty[it.r];
     const cats=r.cats||S.cats;
@@ -2505,8 +2673,8 @@ function renderUsersList(){
   const branchSel=(u)=>`<option value="">بدون فرع</option>`+Object.entries(S.branches||{}).map(([k,b])=>`<option value="${k}"${u.branchId===k?' selected':''}>${b.name}</option>`).join('');
   cont.innerHTML=`<div class="tbl-wrap"><table>
     <thead><tr>
-      <th>المستخدم</th><th>الدور</th><th>الفرع</th>
-      ${PERMISSION_DEFS.map(p=>`<th style="text-align:center">${p.label}</th>`).join('')}
+      <th>${t('المستخدم')}</th><th>${t('الدور')}</th><th>${t('الفرع')}</th>
+      ${PERMISSION_DEFS.map(p=>`<th style="text-align:center">${t(p.label)}</th>`).join('')}
     </tr></thead>
     <tbody>${usersCache.map(u=>{
       const p=u.permissions||{};
@@ -2677,7 +2845,7 @@ function renderItemLedger(){
     return;
   }
   document.getElementById('ledgerBody').innerHTML=`<div class="tbl-wrap"><table>
-    <thead><tr><th>الدورة</th><th>افتتاحي</th><th>مشتريات</th><th>تحويل وارد</th><th>هالك</th><th>سحب داخلي</th><th>تحويل صادر</th><th>ختامي</th><th>استهلاك فعلي</th><th>استهلاك نظري</th><th>انحراف قيمة</th></tr></thead>
+    <thead><tr><th>${t('الدورة')}</th><th>${t('افتتاحي')}</th><th>${t('مشتريات')}</th><th>${t('تحويل وارد')}</th><th>${t('هالك')}</th><th>${t('سحب داخلي')}</th><th>${t('تحويل صادر')}</th><th>${t('ختامي')}</th><th>${t('استهلاك فعلي')}</th><th>${t('استهلاك نظري')}</th><th>${t('انحراف قيمة')}</th></tr></thead>
     <tbody>${rows.map(r=>`<tr>
       <td class="td-name" style="font-family:var(--mono);font-size:11px">${r.start} ← ${r.end}</td>
       <td>${fmt(r.op)}</td><td>${fmt(r.pur)}</td><td>${fmt(r.trIn)}</td><td>${fmt(r.was)}</td><td>${fmt(r.wd)}</td><td>${fmt(r.trOut)}</td><td>${fmt(r.cl)}</td>
@@ -2716,6 +2884,78 @@ function transfersLogRows(){
   });
   return rows;
 }
+function openMenuSalesReport(){
+  document.getElementById('menuSalesDateFrom').value='';
+  document.getElementById('menuSalesDateTo').value='';
+  document.getElementById('menuSalesModal').classList.add('open');
+  renderMenuSalesReport();
+}
+function menuSalesRows(){
+  const from=document.getElementById('menuSalesDateFrom').value||null;
+  const to=document.getElementById('menuSalesDateTo').value||null;
+  const rows=[];
+  sortedCycles().filter(c=>c.closed).forEach(c=>{
+    if(from&&c.end<from) return;
+    if(to&&c.start>to) return;
+    S.menu.forEach(m=>{
+      const qty=c.sales[m.id]||0;
+      if(!qty) return;
+      rows.push({start:c.start,end:c.end,name:m.n,price:m.price,qty,total:qty*m.price});
+    });
+  });
+  return rows.sort((a,b)=>a.start.localeCompare(b.start)||a.name.localeCompare(b.name,'ar'));
+}
+function renderMenuSalesReport(){
+  const rows=menuSalesRows();
+  const body=document.getElementById('menuSalesBody');
+  if(!rows.length){
+    body.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">لا توجد مبيعات مسجّلة في هذه الفترة.</div>';
+    return;
+  }
+  const totalQty=rows.reduce((s,r)=>s+r.qty,0);
+  const totalRev=rows.reduce((s,r)=>s+r.total,0);
+  const byItem={};
+  rows.forEach(r=>{
+    const a=byItem[r.name]||(byItem[r.name]={name:r.name,qty:0,total:0});
+    a.qty+=r.qty;a.total+=r.total;
+  });
+  const itemSummary=Object.values(byItem).sort((a,b)=>b.qty-a.qty);
+  body.innerHTML=`
+    <div class="dash-kpis" style="margin-bottom:16px">
+      ${dashKpi('إجمالي الكمية المباعة',fmt(totalQty),'#3d8ef0')}
+      ${dashKpi('إجمالي الإيراد',fmt(totalRev),'#2ee89a')}
+    </div>
+    <div style="font-weight:700;font-size:13px;margin-bottom:8px">📦 ملخص حسب الصنف</div>
+    <div class="tbl-wrap" style="max-height:260px;overflow-y:auto;margin-bottom:18px"><table>
+      <thead><tr><th>الصنف</th><th>إجمالي الكمية</th><th>إجمالي الإيراد</th></tr></thead>
+      <tbody>${itemSummary.map(r=>`<tr>
+        <td class="td-name">${r.name}</td>
+        <td style="font-family:var(--mono)">${fmt(r.qty)}</td>
+        <td style="font-family:var(--mono)">${fmt(r.total)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+    <div style="font-weight:700;font-size:13px;margin-bottom:8px">📅 التفصيل حسب الدورة/التاريخ</div>
+    <div class="tbl-wrap" style="max-height:320px;overflow-y:auto"><table>
+      <thead><tr><th>الدورة</th><th>الصنف</th><th>السعر</th><th>الكمية</th><th>الإجمالي</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td style="font-family:var(--mono);font-size:11px;white-space:nowrap">${r.start} ← ${r.end}</td>
+        <td class="td-name">${r.name}</td>
+        <td style="font-family:var(--mono)">${fmt(r.price)}</td>
+        <td style="font-family:var(--mono)">${fmt(r.qty)}</td>
+        <td style="font-family:var(--mono)">${fmt(r.total)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+}
+function exportMenuSalesExcel(){
+  const rows=menuSalesRows();
+  if(!rows.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
+  const wb=XLSX.utils.book_new();
+  const out=[['الدورة من','الدورة إلى','الصنف','السعر','الكمية','الإجمالي']];
+  rows.forEach(r=>out.push([r.start,r.end,r.name,+r.price.toFixed(2),+r.qty.toFixed(2),+r.total.toFixed(2)]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'مبيعات المنيو');
+  XLSX.writeFile(wb,`MenuSales_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
+  toast('📗 تم التصدير','inf');
+}
 function openTransfersLog(){
   renderTransfersLog();
   document.getElementById('transfersLogModal').classList.add('open');
@@ -2727,7 +2967,7 @@ function renderTransfersLog(){
     return;
   }
   document.getElementById('transfersLogBody').innerHTML=`<div class="tbl-wrap"><table>
-    <thead><tr><th>الدورة</th><th>الاتجاه</th><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th>الفرع الآخر</th><th>الحالة</th></tr></thead>
+    <thead><tr><th>${t('الدورة')}</th><th>${t('الاتجاه')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية')}</th><th>${t('الفرع الآخر')}</th><th>${t('الحالة')}</th></tr></thead>
     <tbody>${rows.map(r=>`<tr>
       <td style="font-family:var(--mono);font-size:11px">${r.start} ← ${r.end}</td>
       <td style="color:${r.dir==='out'?'var(--red)':'var(--green)'};font-weight:700">${r.dir==='out'?'🔀 صادر':'🔁 وارد'}</td>
@@ -2848,7 +3088,7 @@ function renderAllBranchesReport(){
   const itemTable=allBranchesItemRows.length?`
     <div style="font-weight:700;font-size:13px;margin:18px 0 8px">📦 إجمالي استهلاك الأصناف عبر الفروع المطابقة للفلتر</div>
     <div class="tbl-wrap" style="max-height:320px;overflow-y:auto"><table>
-      <thead><tr><th>الصنف</th><th>الوحدة</th><th>الاستهلاك الفعلي</th><th>الاستهلاك النظري</th><th>قيمة الانحراف</th></tr></thead>
+      <thead><tr><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الاستهلاك الفعلي')}</th><th>${t('الاستهلاك النظري')}</th><th>${t('قيمة الانحراف')}</th></tr></thead>
       <tbody>${allBranchesItemRows.map(r=>`<tr>
         <td class="td-name">${r.n}</td><td><span class="uom-pill">${r.u}</span></td>
         <td style="font-family:var(--mono)">${fmt(r.actual)}</td>
@@ -2859,7 +3099,7 @@ function renderAllBranchesReport(){
   document.getElementById('allBranchesBody').innerHTML=`${consolidated}
     <div style="font-weight:700;font-size:13px;margin-bottom:8px">🏢 تفصيل حسب الفرع</div>
     <div class="tbl-wrap"><table>
-    <thead><tr><th>الفرع</th><th>المدير</th><th>عدد الدورات المطابقة</th><th>الفترة المشمولة</th><th>إجمالي المبيعات</th><th>تكلفة فعلية %</th><th>تكلفة نظرية %</th><th>قيمة الانحراف</th></tr></thead>
+    <thead><tr><th>${t('الفرع')}</th><th>${t('المدير')}</th><th>${t('عدد الدورات المطابقة')}</th><th>${t('الفترة المشمولة')}</th><th>${t('إجمالي المبيعات')}</th><th>${t('تكلفة فعلية %')}</th><th>${t('تكلفة نظرية %')}</th><th>${t('قيمة الانحراف')}</th></tr></thead>
     <tbody>${allBranchesRows.map(r=>`<tr>
       <td class="td-name">${r.name}</td><td>${r.manager}</td>
       <td style="font-family:var(--mono);text-align:center">${r.cyclesClosed}</td>
@@ -3072,20 +3312,19 @@ function printCurrentReport(){
   const overlay=[...document.querySelectorAll('.overlay.open')].pop();
   if(!overlay){window.print();return;}
   const content=overlay.querySelector('.modal').innerHTML;
+  const appStyleEl=document.querySelector('head style');
+  const appStyles=appStyleEl?appStyleEl.textContent:'';
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
     <title>${(companyInfo.name||'نظام الجرد الذكي')}</title>
+    <style>${appStyles}</style>
     <style>
-      *{background-color:transparent !important;}
-      html,body{background:#fff !important;font-family:Tajawal,Arial,sans-serif;padding:24px;color:#111;}
-      table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;}
-      th,td{border:1px solid #ccc;padding:6px 9px;text-align:right;color:#111;}
-      th{background:#f0f0f0 !important;}
-      tr:nth-child(even) td{background:#fafafa !important;}
-      .mod-foot,button,input,select{display:none !important;}
-      .mod-title{font-size:18px;font-weight:800;margin-bottom:12px;color:#111;}
-      .dash-card,.dash-kpi{border:1px solid #ddd !important;border-radius:8px;}
-      .tbl-wrap{border:1px solid #ddd !important;}
+      body{background:#fff !important;padding:24px;}
+      .mod-foot,button,input:not([type="checkbox"]),select,.globalModalCloseBtn,.sidebar-backdrop{display:none !important;}
+      table{font-size:12px;}
+      th,td{border:1px solid var(--border2) !important;}
+      .mod-title{margin-bottom:14px;}
+      @page{margin:14mm;}
     </style></head><body>
     ${companyInfo.name?`<div style="font-weight:800;font-size:15px;margin-bottom:4px">${companyInfo.name}</div>`:''}
     ${content}
@@ -3160,7 +3399,7 @@ function renderMenuRecipeView(){
   </tr>`).join('');
   el.innerHTML=`<div style="margin-bottom:10px;font-size:13px"><b>${m.n}</b> — السعر: ${fmt(m.price)} · تكلفة الوصفة الإجمالية: ${fmt(recipeCost(m.recipe))}</div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>المكوّن</th><th>الكمية لكل وحدة مباعة</th><th>التكلفة</th></tr></thead>
+    <thead><tr><th>${t('المكوّن')}</th><th>${t('الكمية لكل وحدة مباعة')}</th><th>${t('التكلفة')}</th></tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
 }
@@ -3186,12 +3425,16 @@ function renderMenuList(){
 function ingredientOptions(sel,exclude){
   return S.items.filter(it=>it.r!==exclude).map(it=>`<option value="${it.r}"${it.r===sel?' selected':''}>${it.n} (${it.u})</option>`).join('');
 }
+function setMenuRecipeRowRef(ref,pickerId){
+  const i=parseInt(pickerId.split('-').pop(),10);
+  if(curRecipeRows[i]) curRecipeRows[i].r=ref;
+}
 function renderRecipeRows(){
   const cont=document.getElementById('miRecipeRows');
   if(!curRecipeRows.length){cont.innerHTML='<div style="font-size:11.5px;color:var(--muted)">لا توجد مكوّنات مضافة</div>';return;}
   cont.innerHTML=curRecipeRows.map((row,i)=>`
     <div style="display:flex;gap:6px;align-items:center">
-      <select class="mod-in" style="flex:1.4" onchange="curRecipeRows[${i}].r=this.value">${ingredientOptions(row.r)}</select>
+      <div style="flex:1.4">${isearchHtml('mi-recipe-isearch-'+i,row.r,{onSelect:'setMenuRecipeRowRef'})}</div>
       <input type="number" inputmode="decimal" class="mod-in" style="flex:.7" min="0" step="0.001" value="${row.q||''}" placeholder="الكمية/وحدة" oninput="curRecipeRows[${i}].q=parseFloat(this.value)||0">
       <button class="hi-btn del" style="flex:none;padding:8px 10px" onclick="curRecipeRows.splice(${i},1);renderRecipeRows()">🗑</button>
     </div>`).join('');
@@ -3276,8 +3519,11 @@ function renderCycleList(){
   const arr=[...BCycles()].sort((a,b)=>b.start.localeCompare(a.start));
   if(!arr.length){cont.innerHTML='<div class="no-hist">لا توجد دورات بعد</div>';return;}
   cont.innerHTML=arr.map(c=>`
-    <div class="hist-item${c.id===curCycleId?' cur':''}" style="cursor:pointer" onclick="curCycleId='${c.id}';renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();">
-      <div class="hi-date">📅 ${c.start} ← ${c.end}</div>
+    <div class="hist-item${c.id===curCycleId?' cur':''}" style="cursor:pointer" onclick="curCycleId='${c.id}';renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();" title="اضغط لعرض تفاصيل الدورة">
+      <div class="hi-date" style="display:flex;align-items:center;justify-content:space-between">
+        <span>📅 ${c.start} ← ${c.end}</span>
+        <span style="font-size:11px;color:var(--gold);font-weight:400">👁 عرض</span>
+      </div>
       <div class="hi-meta">${c.closed?'🔒 مغلقة':'🟢 مفتوحة'}${c.closed&&c.result?' · تكلفة '+c.result.actualCostPct.toFixed(1)+'%':''}</div>
     </div>`).join('');
 }
@@ -3407,7 +3653,7 @@ function renderSalesTab(c,el){
     <button class="hbtn gold" onclick="document.getElementById('foodicsImportFileInput').click()">📥 سحب مبيعات فوديكس (Excel)</button>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>الصنف</th><th>السعر</th><th>الكمية المباعة</th><th>الإجمالي (نظري)</th><th>المكونات</th></tr></thead>
+    <thead><tr><th>${t('الصنف')}</th><th>${t('السعر')}</th><th>${t('الكمية المباعة')}</th><th>${t('الإجمالي (نظري)')}</th><th>${t('المكونات')}</th></tr></thead>
     <tbody id="ctRows"></tbody>
   </table></div>
   <div class="dbanner" style="margin-top:12px" id="ctSalesBanner"></div>`;
@@ -3453,7 +3699,7 @@ function setCycleSalesAmount(cid,v){
 function renderPurchasesTab(c,el){
   el.innerHTML=`${cycleToolbar('إضافة صنف جديد',"openAddItem()")}
   <div class="tbl-wrap"><table>
-    <thead><tr><th>المرجع</th><th>الصنف</th><th>الوحدة</th><th>الكمية المشتراة</th><th>التكلفة الإجمالية</th></tr></thead>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المشتراة')}</th><th>${t('التكلفة الإجمالية')}</th></tr></thead>
     <tbody id="ctRows"></tbody></table></div>`;
   renderPurchasesRows(c);
 }
@@ -3481,7 +3727,7 @@ function setCyclePurchase(cid,r,field,v){
 function renderWasteTab(c,el){
   el.innerHTML=`${cycleToolbar('إضافة صنف جديد',"openAddItem()")}
   <div class="tbl-wrap"><table>
-    <thead><tr><th>المرجع</th><th>الصنف</th><th>الوحدة</th><th>الكمية الهالكة</th><th>السبب</th></tr></thead>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية الهالكة')}</th><th>${t('السبب')}</th></tr></thead>
     <tbody id="ctRows"></tbody></table></div>`;
   renderWasteRows(c);
 }
@@ -3510,7 +3756,7 @@ function renderWithdrawTab(c,el){
   if(!c.withdrawals) c.withdrawals={};
   el.innerHTML=`${cycleToolbar('إضافة صنف جديد',"openAddItem()")}
   <div class="tbl-wrap"><table>
-    <thead><tr><th>المرجع</th><th>الصنف</th><th>الوحدة</th><th>الكمية المسحوبة</th><th>سبب السحب/الجهة</th></tr></thead>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المسحوبة')}</th><th>${t('سبب السحب/الجهة')}</th></tr></thead>
     <tbody id="ctRows"></tbody></table></div>
     <p style="font-size:11px;color:var(--muted);margin-top:8px">سحب/صرف داخلي غير مرتبط بالمبيعات ولا الهالك (زي أكل العاملين، عينات، أو تحويل يدوي) — بيتخصم من الاستهلاك الفعلي زي الهالك بالظبط.</p>`;
   renderWithdrawRows(c);
@@ -3541,7 +3787,7 @@ function renderTransferOutTab(c,el){
   if(!c.transfersOut) c.transfersOut={};
   el.innerHTML=`${cycleToolbar('إضافة صنف جديد',"openAddItem()")}
   <div class="tbl-wrap"><table>
-    <thead><tr><th>المرجع</th><th>الصنف</th><th>الوحدة</th><th>الكمية المحوّلة صادر</th><th>الفرع المستلم</th></tr></thead>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المحوّلة صادر')}</th><th>${t('الفرع المستلم')}</th></tr></thead>
     <tbody id="ctRows"></tbody></table></div>
     <p style="font-size:11px;color:var(--muted);margin-top:8px">كمية خرجت من هذا الفرع لفرع تاني — بتتخصم من الاستهلاك الفعلي زي الهالك. الفرع المستقبِل يسجّلها بنفسه في تبويب "تحويل وارد" عنده.</p>`;
   renderTransferOutRows(c);
@@ -3572,7 +3818,7 @@ function renderTransferInTab(c,el){
   if(!c.transfersIn) c.transfersIn={};
   el.innerHTML=`${cycleToolbar('إضافة صنف جديد',"openAddItem()")}
   <div class="tbl-wrap"><table>
-    <thead><tr><th>المرجع</th><th>الصنف</th><th>الوحدة</th><th>الكمية المحوّلة وارد</th><th>الفرع المرسل</th></tr></thead>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المحوّلة وارد')}</th><th>${t('الفرع المرسل')}</th></tr></thead>
     <tbody id="ctRows"></tbody></table></div>
     <p style="font-size:11px;color:var(--muted);margin-top:8px">كمية وصلت لهذا الفرع من فرع تاني — بتتضاف للرصيد المتاح زي المشتريات بالظبط.</p>`;
   renderTransferInRows(c);
@@ -3610,8 +3856,7 @@ function openQuickMovement(){
   document.getElementById('qm-qty').value='';
   document.getElementById('qm-cost').value='';
   document.getElementById('qm-note').value='';
-  const itemSel=document.getElementById('qm-item');
-  itemSel.innerHTML=[...S.items].sort((a,b)=>a.n.localeCompare(b.n,'ar')).map(it=>`<option value="${it.r}">${it.n} (${it.u})</option>`).join('');
+  document.getElementById('qm-item-wrap').innerHTML=isearchHtml('qm-item-isearch','',{placeholder:'🔍 ابحث عن صنف بالاسم أو المرجع...'});
   updateQuickMovementFields();
   document.getElementById('quickMovementModal').classList.add('open');
 }
@@ -3633,7 +3878,7 @@ function updateQuickMovementCycleInfo(){
 }
 function saveQuickMovement(){
   const date=document.getElementById('qm-date').value;
-  const ref=document.getElementById('qm-item').value;
+  const ref=isearchGetValue('qm-item-isearch');
   const qty=parseFloat(document.getElementById('qm-qty').value);
   const type=document.getElementById('qm-type').value;
   const note=document.getElementById('qm-note').value.trim();
@@ -3670,7 +3915,7 @@ function renderStockTab(c,el){
   const hasPrev=!!latestClosedBefore(c);
   el.innerHTML=`${cycleToolbar('إضافة صنف جديد',"openAddItem()")}
   <div class="tbl-wrap"><table>
-    <thead><tr><th>المرجع</th><th>الصنف</th><th>الوحدة</th><th>الرصيد الافتتاحي</th><th>الرصيد الختامي (الجرد الفعلي)</th></tr></thead>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الرصيد الافتتاحي')}</th><th>${t('الرصيد الختامي (الجرد الفعلي)')}</th></tr></thead>
     <tbody id="ctRows"></tbody></table></div>
     ${!c.closed?`<div style="margin-top:10px"><button class="hbtn" onclick="pullLiveCount('${c.id}')">🔄 سحب الكميات من شاشة الجرد اليومي الحالية</button></div>`:''}
     ${hasPrev?`<p style="font-size:11px;color:var(--muted);margin-top:8px">الرصيد الافتتاحي معبّى تلقائيًا من ختامي الدورة السابقة، ويمكنك تعديله يدويًا لو محتاج تصحيح.</p>`:`<p style="font-size:11px;color:var(--muted);margin-top:8px">هذه أول دورة لهذا الفرع، فالرصيد الافتتاحي مُدخل يدوياً.</p>`}`;
@@ -3793,7 +4038,7 @@ function renderResultsTab(c,el){
     <div class="db-sub">الفرق بين تكلفة الاستهلاك الفعلي والنظري (موجب = استهلاك زيادة عن المتوقع من الوصفات)</div></div></div>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>الصنف</th><th>افتتاحي</th><th>مشتريات</th><th>تحويل وارد</th><th>هالك</th><th>سحب داخلي</th><th>تحويل صادر</th><th>ختامي</th><th>استهلاك فعلي</th><th>استهلاك نظري</th><th>انحراف كمية</th><th>انحراف قيمة</th></tr></thead>
+    <thead><tr><th>${t('الصنف')}</th><th>${t('افتتاحي')}</th><th>${t('مشتريات')}</th><th>${t('تحويل وارد')}</th><th>${t('هالك')}</th><th>${t('سحب داخلي')}</th><th>${t('تحويل صادر')}</th><th>${t('ختامي')}</th><th>${t('استهلاك فعلي')}</th><th>${t('استهلاك نظري')}</th><th>${t('انحراف كمية')}</th><th>${t('انحراف قيمة')}</th></tr></thead>
     <tbody>${r.rows.map(row=>`<tr>
       <td class="td-name">${row.n}</td>
       <td>${fmt(row.op)}</td><td>${fmt(row.pur)}</td><td>${fmt(row.trIn)}</td><td>${fmt(row.was)}</td><td>${fmt(row.wd)}</td><td>${fmt(row.trOut)}</td><td>${fmt(row.cl)}</td>
@@ -3981,7 +4226,7 @@ function renderRequirementPlanner(){
   }).join('');
   document.getElementById('planMenuSection').innerHTML=`
     <div class="tbl-wrap"><table>
-      <thead><tr><th>الصنف المباع</th><th>متوسط يومي (تاريخي)</th><th>الكمية المتوقعة للفترة (قابلة للتعديل)</th></tr></thead>
+      <thead><tr><th>${t('الصنف المباع')}</th><th>${t('متوسط يومي (تاريخي)')}</th><th>${t('الكمية المتوقعة للفترة (قابلة للتعديل)')}</th></tr></thead>
       <tbody>${menuRows}</tbody>
     </table></div>`;
 
@@ -4000,7 +4245,7 @@ function renderRequirementPlanner(){
     <div class="tbl-wrap">
       <div class="tbl-head"><div class="tbl-title">📦 احتياج الخامات المتوقع للفترة (${planDays} يوم)</div></div>
       <table>
-        <thead><tr><th>المرجع</th><th>الخامة</th><th>الوحدة</th><th>الاحتياج المتوقع</th><th>الرصيد الحالي</th><th>المطلوب طلبه</th></tr></thead>
+        <thead><tr><th>${t('المرجع')}</th><th>${t('الخامة')}</th><th>${t('الوحدة')}</th><th>${t('الاحتياج المتوقع')}</th><th>${t('الرصيد الحالي')}</th><th>${t('المطلوب طلبه')}</th></tr></thead>
         <tbody>${ingRows||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px">لا يوجد احتياج بعد — أضف كميات متوقعة للأصناف المباعة فوق</td></tr>'}</tbody>
       </table>
     </div>`;

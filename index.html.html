@@ -224,7 +224,7 @@ select{
 select:hover{border-color:var(--border2);}
 
 /* TABLE */
-.tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow:hidden;}
+.tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow-x:auto;}
 .tbl-head{
   display:flex;align-items:center;justify-content:space-between;
   padding:12px 18px;border-bottom:1px solid var(--border);
@@ -384,7 +384,53 @@ td{padding:9px 13px;vertical-align:middle;}
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px;}
-@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr);}.sidebar{display:none;}}
+
+/* RESPONSIVE: MOBILE / TABLET */
+.sidebarToggleBtn{display:none;}
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:390;}
+.sidebar-backdrop.show{display:block;}
+@media(max-width:900px){
+  header{height:auto;min-height:60px;padding:10px 14px;flex-wrap:wrap;row-gap:8px;}
+  .logo-name{font-size:15px;}
+  .hright{gap:6px;width:100%;justify-content:flex-start;}
+  .hbtn{padding:7px 11px;font-size:12px;}
+  .bchip{padding:6px 10px;font-size:12px;}
+
+  .viewnav{padding:8px 12px;height:auto;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;top:auto;position:sticky;}
+  .vn-btn{white-space:nowrap;font-size:12px;padding:7px 12px;flex-shrink:0;}
+  .vn-dd{flex-shrink:0;}
+  .vn-dd-menu{position:fixed;left:12px;right:12px;top:auto;width:auto;min-width:0;max-height:70vh;overflow-y:auto;}
+
+  main{padding:14px;}
+  .stats{grid-template-columns:repeat(2,1fr);gap:8px;}
+  .stat{padding:12px 14px;}
+  .stat-val{font-size:22px;}
+
+  .sidebarToggleBtn{display:flex;}
+  .layout{min-height:calc(100vh - 108px);}
+  .sidebar{
+    display:flex;position:fixed;top:0;right:-280px;height:100vh;width:260px;
+    z-index:400;transition:right .25s ease;box-shadow:-10px 0 30px rgba(0,0,0,.5);
+  }
+  .sidebar.mobile-open{right:0;}
+
+  .toolbar{gap:7px;}
+  .sw{min-width:0;flex:1 1 100%;}
+
+  table{font-size:12px;}
+  thead th,td{padding:7px 9px;}
+  .qin{width:70px;}
+  .note-in{width:80px;}
+  .note-in:focus{width:110px;}
+
+  .mod-row{grid-template-columns:1fr;gap:0;}
+  .modal{padding:18px;width:96vw;}
+}
+@media(max-width:480px){
+  .stats{grid-template-columns:1fr 1fr;}
+  .logo-sub{display:none;}
+  .dash-kpis{grid-template-columns:repeat(2,1fr);}
+}
 </style>
 </head>
 <body>
@@ -428,6 +474,7 @@ td{padding:9px 13px;vertical-align:middle;}
 </div>
 
 <div id="appRoot" style="display:none">
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleMobileSidebar()"></div>
 <header>
   <div class="logo">
     <img id="companyLogoImg" style="display:none;width:44px;height:44px;border-radius:12px;object-fit:contain;background:#fff;padding:3px">
@@ -438,6 +485,7 @@ td{padding:9px 13px;vertical-align:middle;}
     </div>
   </div>
   <div class="hright">
+    <button class="hbtn sidebarToggleBtn" id="sidebarToggleBtn" onclick="toggleMobileSidebar()" title="القوائم">☰</button>
     <button class="hbtn" id="langToggleBtn" onclick="toggleLang()" title="Language / اللغة" style="font-family:var(--mono)">EN</button>
     <div class="bchip" onclick="openBranchMgr()" style="cursor:pointer" title="إدارة الفروع" data-i18n-title="إدارة الفروع">
       <div class="bc-dot"></div>
@@ -2854,6 +2902,23 @@ function closeDropdowns(){
 }
 document.addEventListener('click',e=>{
   if(!e.target.closest('.vn-dd')) closeDropdowns();
+});
+
+// ══════════════════════════════════════════════
+//  MOBILE SIDEBAR DRAWER
+// ══════════════════════════════════════════════
+function toggleMobileSidebar(){
+  document.querySelectorAll('.sidebar').forEach(s=>s.classList.toggle('mobile-open'));
+  document.getElementById('sidebarBackdrop').classList.toggle('show');
+}
+function closeMobileSidebar(){
+  document.querySelectorAll('.sidebar').forEach(s=>s.classList.remove('mobile-open'));
+  document.getElementById('sidebarBackdrop').classList.remove('show');
+}
+document.addEventListener('click',e=>{
+  if(window.innerWidth<=900&&e.target.closest('.sb-item,.sb-cat-item')&&!e.target.closest('.sb-cat-edit')){
+    setTimeout(closeMobileSidebar,150);
+  }
 });
 
 // ══════════════════════════════════════════════

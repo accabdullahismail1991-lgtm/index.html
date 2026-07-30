@@ -835,6 +835,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <div id="rptContent"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('rptModal')" data-i18n="إغلاق">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" id="rptCsvBtn">📊 CSV</button>
     <button class="hbtn" id="rptXlsBtn">📗 Excel</button>
     <button class="hbtn gold" id="rptPdfBtn">📄 PDF</button>
@@ -934,6 +935,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <div id="menuRecipeViewBody"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('menuRecipeViewModal')" data-i18n="إغلاق">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
   </div>
 </div>
 </div>
@@ -951,6 +953,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <div id="planIngredientSection" style="margin-top:16px"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('planModal')" data-i18n="إغلاق">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="resetPlanOverrides()">🔄 إعادة من المتوسط التاريخي</button>
     <button class="hbtn gold" onclick="exportPlanExcel()">📗 تصدير Excel</button>
   </div>
@@ -2100,30 +2103,31 @@ function exportPDF(rpt){
   const W=doc.internal.pageSize.getWidth();
   const H=doc.internal.pageSize.getHeight();
 
-  doc.setFillColor(8,11,16);doc.rect(0,0,W,H,'F');
+  doc.setFillColor(255,255,255);doc.rect(0,0,W,H,'F');
   doc.setFillColor(240,192,64);doc.rect(0,0,W,20,'F');
   doc.setTextColor(20,15,0);doc.setFontSize(13);doc.setFont('Arabic','bold');
   doc.text('تقرير الجرد اليومي',W/2,13,{align:'center'});
   doc.setFontSize(7);doc.setFont('Arabic','normal');
   doc.text((companyInfo.name?companyInfo.name+' — ':'')+'Smart Inventory System v3.0',W/2,18,{align:'center'});
 
-  doc.setFillColor(15,19,25);doc.rect(0,20,W,16,'F');
-  doc.setTextColor(180,190,210);doc.setFontSize(8.5);doc.setFont('Arabic','normal');
+  doc.setFillColor(244,245,248);doc.rect(0,20,W,16,'F');
+  doc.setDrawColor(224,226,232);doc.setLineWidth(.2);doc.line(0,36,W,36);
+  doc.setTextColor(70,80,100);doc.setFontSize(8.5);doc.setFont('Arabic','normal');
   const dStr=new Date(rpt.date+'T00:00:00').toLocaleDateString('en-GB');
   const col=W/4;
   [`الفرع: ${rpt.branch}`,`التاريخ: ${dStr}`,`الجلسة: ${rpt.sid}`,`وقت الحفظ: ${rpt.savedAt}`].forEach((t,i)=>doc.text(t,14+i*col,28,{align:'left'}));
   doc.setFontSize(7.5);
   [`المدير: ${rpt.manager||'-'}`,`أمين المخزن: ${rpt.storekeeper||'-'}`,`المشرف: ${rpt.supervisor||'-'}`,`نسبة الإكمال: ${rpt.meta.pct}% (${rpt.meta.entered}/${rpt.meta.total})`].forEach((t,i)=>doc.text(t,14+i*col,34,{align:'left'}));
 
-  const kpis=[{l:'إجمالي الأصناف',v:rpt.meta.total,rgb:[61,142,240]},{l:'تم عدّها',v:rpt.meta.entered,rgb:[46,232,154]},{l:'رصيد صفر',v:rpt.meta.zero,rgb:[240,80,80]},{l:'نسبة الإكمال',v:rpt.meta.pct+'%',rgb:[240,192,64]}];
+  const kpis=[{l:'إجمالي الأصناف',v:rpt.meta.total,rgb:[61,142,240]},{l:'تم عدّها',v:rpt.meta.entered,rgb:[35,175,120]},{l:'رصيد صفر',v:rpt.meta.zero,rgb:[220,60,60]},{l:'نسبة الإكمال',v:rpt.meta.pct+'%',rgb:[200,150,20]}];
   kpis.forEach((k,i)=>{
     const x=14+i*66,y=38;
-    doc.setFillColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setGState(doc.GState({opacity:.12}));
+    doc.setFillColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setGState(doc.GState({opacity:.08}));
     doc.roundedRect(x,y,60,14,2,2,'F');doc.setGState(doc.GState({opacity:1}));
     doc.setDrawColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setLineWidth(.4);doc.roundedRect(x,y,60,14,2,2,'S');
     doc.setTextColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setFontSize(14);doc.setFont('Arabic','bold');
     doc.text(String(k.v),x+30,y+9,{align:'center'});
-    doc.setFontSize(6.5);doc.setTextColor(160,170,190);doc.setFont('Arabic','normal');
+    doc.setFontSize(6.5);doc.setTextColor(100,108,125);doc.setFont('Arabic','normal');
     doc.text(k.l,x+30,y+13,{align:'center'});
   });
 
@@ -2144,29 +2148,29 @@ function exportPDF(rpt){
     doc.autoTable({
       head:[['#','المرجع','اسم الصنف','القسم','الوحدة','الكمية','النوع','ملاحظات']],
       body:rows,startY:56,theme:'grid',
-      styles:{font:'Arabic',fontSize:7.5,cellPadding:2.5,textColor:[215,220,235],lineColor:[30,42,58],lineWidth:.25,fillColor:[18,24,34],halign:'right'},
+      styles:{font:'Arabic',fontSize:7.5,cellPadding:2.5,textColor:[40,45,55],lineColor:[222,225,232],lineWidth:.25,fillColor:[255,255,255],halign:'right'},
       headStyles:{font:'Arabic',fillColor:[240,192,64],textColor:[18,14,0],fontStyle:'bold',fontSize:8,halign:'right'},
-      alternateRowStyles:{fillColor:[14,19,28]},
+      alternateRowStyles:{fillColor:[247,248,250]},
       columnStyles:{
-        0:{cellWidth:9,halign:'center',textColor:[80,95,120]},
-        1:{cellWidth:26,textColor:[100,120,155],fontSize:7,halign:'center'},
+        0:{cellWidth:9,halign:'center',textColor:[130,138,150]},
+        1:{cellWidth:26,textColor:[110,120,135],fontSize:7,halign:'center'},
         2:{cellWidth:60},
-        3:{cellWidth:28,textColor:[150,160,185]},
+        3:{cellWidth:28,textColor:[90,98,112]},
         4:{cellWidth:14,halign:'center',textColor:[61,142,240]},
         5:{cellWidth:18,halign:'center',fontStyle:'bold'},
-        6:{cellWidth:18,halign:'center',textColor:[240,120,48],fontSize:7},
-        7:{cellWidth:55,textColor:[140,155,180],fontSize:7},
+        6:{cellWidth:18,halign:'center',textColor:[210,110,40],fontSize:7},
+        7:{cellWidth:55,textColor:[100,108,122],fontSize:7},
       },
-      didParseCell:(d)=>{if(d.section==='body'&&d.column.index===5){d.cell.styles.textColor=parseFloat(d.cell.raw)===0?[240,80,80]:[46,232,154];}},
+      didParseCell:(d)=>{if(d.section==='body'&&d.column.index===5){d.cell.styles.textColor=parseFloat(d.cell.raw)===0?[210,60,60]:[30,150,100];}},
       margin:{left:14,right:14},
     });
   }
 
   for(let p=1;p<=doc.internal.getNumberOfPages();p++){
     doc.setPage(p);
-    doc.setFillColor(10,14,20);doc.rect(0,H-9,W,9,'F');
-    doc.setDrawColor(34,44,61);doc.setLineWidth(.3);doc.line(0,H-9,W,H-9);
-    doc.setFontSize(7);doc.setTextColor(80,95,118);doc.setFont('Arabic','normal');
+    doc.setFillColor(244,245,248);doc.rect(0,H-9,W,9,'F');
+    doc.setDrawColor(224,226,232);doc.setLineWidth(.3);doc.line(0,H-9,W,H-9);
+    doc.setFontSize(7);doc.setTextColor(120,128,140);doc.setFont('Arabic','normal');
     doc.text(`Smart Inventory v3.0 | ${rpt.branch} | ${dStr} | ${rpt.sid}`,14,H-3.5);
     doc.text(`صفحة ${p} من ${doc.internal.getNumberOfPages()}`,W-14,H-3.5,{align:'right'});
   }
@@ -2932,12 +2936,16 @@ function printCurrentReport(){
   w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
     <title>${(companyInfo.name||'نظام الجرد الذكي')}</title>
     <style>
-      body{font-family:Tajawal,Arial,sans-serif;padding:24px;color:#111;}
+      *{background-color:transparent !important;}
+      html,body{background:#fff !important;font-family:Tajawal,Arial,sans-serif;padding:24px;color:#111;}
       table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;}
-      th,td{border:1px solid #ccc;padding:6px 9px;text-align:right;}
-      th{background:#f0f0f0;}
+      th,td{border:1px solid #ccc;padding:6px 9px;text-align:right;color:#111;}
+      th{background:#f0f0f0 !important;}
+      tr:nth-child(even) td{background:#fafafa !important;}
       .mod-foot,button,input,select{display:none !important;}
-      .mod-title{font-size:18px;font-weight:800;margin-bottom:12px;}
+      .mod-title{font-size:18px;font-weight:800;margin-bottom:12px;color:#111;}
+      .dash-card,.dash-kpi{border:1px solid #ddd !important;border-radius:8px;}
+      .tbl-wrap{border:1px solid #ddd !important;}
     </style></head><body>
     ${companyInfo.name?`<div style="font-weight:800;font-size:15px;margin-bottom:4px">${companyInfo.name}</div>`:''}
     ${content}
@@ -3613,32 +3621,33 @@ function exportCyclePDF(cid){
   const W=doc.internal.pageSize.getWidth();
   const H=doc.internal.pageSize.getHeight();
 
-  doc.setFillColor(8,11,16);doc.rect(0,0,W,H,'F');
+  doc.setFillColor(255,255,255);doc.rect(0,0,W,H,'F');
   doc.setFillColor(240,192,64);doc.rect(0,0,W,20,'F');
   doc.setTextColor(20,15,0);doc.setFontSize(13);doc.setFont('Arabic','bold');
   doc.text('تقرير دورة التسوية',W/2,13,{align:'center'});
   doc.setFontSize(7);doc.setFont('Arabic','normal');
   doc.text((companyInfo.name?companyInfo.name+' — ':'')+'Smart Inventory System v3.0',W/2,18,{align:'center'});
 
-  doc.setFillColor(15,19,25);doc.rect(0,20,W,16,'F');
-  doc.setTextColor(180,190,210);doc.setFontSize(8.5);doc.setFont('Arabic','normal');
+  doc.setFillColor(244,245,248);doc.rect(0,20,W,16,'F');
+  doc.setDrawColor(224,226,232);doc.setLineWidth(.2);doc.line(0,36,W,36);
+  doc.setTextColor(70,80,100);doc.setFontSize(8.5);doc.setFont('Arabic','normal');
   const col=W/4;
   [`الفرع: ${S.branch}`,`الفترة: من ${c.start} إلى ${c.end}`,`تاريخ الحساب: ${r.computedAt}`,``].forEach((t,i)=>doc.text(t,14+i*col,28));
 
   const kpis=[
     {l:'إجمالي المبيعات',v:fmt(r.totalSalesAmount),rgb:[61,142,240]},
-    {l:'تكلفة الاستهلاك الفعلي',v:fmt(r.totalActualCost),rgb:[240,80,80]},
-    {l:'نسبة التكلفة الفعلية',v:r.actualCostPct.toFixed(1)+'%',rgb:[240,192,64]},
-    {l:'نسبة التكلفة النظرية',v:r.theoCostPct.toFixed(1)+'%',rgb:[46,232,154]},
+    {l:'تكلفة الاستهلاك الفعلي',v:fmt(r.totalActualCost),rgb:[220,60,60]},
+    {l:'نسبة التكلفة الفعلية',v:r.actualCostPct.toFixed(1)+'%',rgb:[200,150,20]},
+    {l:'نسبة التكلفة النظرية',v:r.theoCostPct.toFixed(1)+'%',rgb:[30,150,100]},
   ];
   kpis.forEach((k,i)=>{
     const x=14+i*66,y=36;
-    doc.setFillColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setGState(doc.GState({opacity:.12}));
+    doc.setFillColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setGState(doc.GState({opacity:.08}));
     doc.roundedRect(x,y,60,14,2,2,'F');doc.setGState(doc.GState({opacity:1}));
     doc.setDrawColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setLineWidth(.4);doc.roundedRect(x,y,60,14,2,2,'S');
     doc.setTextColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setFontSize(13);doc.setFont('Arabic','bold');
     doc.text(String(k.v),x+30,y+9,{align:'center'});
-    doc.setFontSize(6.5);doc.setTextColor(160,170,190);doc.setFont('Arabic','normal');
+    doc.setFontSize(6.5);doc.setTextColor(100,108,125);doc.setFont('Arabic','normal');
     doc.text(k.l,x+30,y+13,{align:'center'});
   });
 
@@ -3652,19 +3661,19 @@ function exportCyclePDF(cid){
     doc.autoTable({
       head:[['#','الصنف','الوحدة','افتتاحي','مشتريات','تحويل وارد','هالك','مسحوبات','تحويل صادر','ختامي','استهلاك فعلي','نظري','فرق الكمية','فرق القيمة']],
       body:rows,startY:56,theme:'grid',
-      styles:{font:'Arabic',fontSize:7.5,cellPadding:2.5,textColor:[215,220,235],lineColor:[30,42,58],lineWidth:.25,fillColor:[18,24,34],halign:'center'},
+      styles:{font:'Arabic',fontSize:7.5,cellPadding:2.5,textColor:[40,45,55],lineColor:[222,225,232],lineWidth:.25,fillColor:[255,255,255],halign:'center'},
       headStyles:{font:'Arabic',fillColor:[240,192,64],textColor:[18,14,0],fontStyle:'bold',fontSize:7.5,halign:'center'},
       columnStyles:{1:{halign:'right'}},
-      alternateRowStyles:{fillColor:[14,19,28]},
+      alternateRowStyles:{fillColor:[247,248,250]},
       margin:{left:14,right:14},
     });
   }
 
   for(let p=1;p<=doc.internal.getNumberOfPages();p++){
     doc.setPage(p);
-    doc.setFillColor(10,14,20);doc.rect(0,H-9,W,9,'F');
-    doc.setDrawColor(34,44,61);doc.setLineWidth(.3);doc.line(0,H-9,W,H-9);
-    doc.setFontSize(7);doc.setTextColor(80,95,118);doc.setFont('Arabic','normal');
+    doc.setFillColor(244,245,248);doc.rect(0,H-9,W,9,'F');
+    doc.setDrawColor(224,226,232);doc.setLineWidth(.3);doc.line(0,H-9,W,H-9);
+    doc.setFontSize(7);doc.setTextColor(120,128,140);doc.setFont('Arabic','normal');
     doc.text(`Smart Inventory v3.0 | ${S.branch} | ${c.start} - ${c.end}`,14,H-3.5);
     doc.text(`صفحة ${p} من ${doc.internal.getNumberOfPages()}`,W-14,H-3.5,{align:'right'});
   }

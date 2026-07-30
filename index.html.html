@@ -395,7 +395,7 @@ td{padding:9px 13px;vertical-align:middle;}
     <div class="logo-icon">🗃️</div>
     <div>
       <div class="logo-name">نظام الجرد الذكي</div>
-      <div class="logo-sub">SMART INVENTORY v3.0</div>
+      <div class="logo-sub">SMART INVENTORY v3.0 · <span id="buildStamp"></span></div>
     </div>
   </div>
   <div class="hright">
@@ -442,7 +442,9 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="sb-item" onclick="saveAndExport()"><span class="sb-ico">💾</span>حفظ وتصدير PDF</div>
   <div class="sb-item" onclick="exportCsv()"><span class="sb-ico">📊</span>تصدير CSV</div>
   <div class="sb-item" onclick="exportFullDataExcel()"><span class="sb-ico">📗</span>تفريغ كل البيانات (Excel)</div>
-  <div class="sb-item" onclick="exportBackupJSON()"><span class="sb-ico">💽</span>نسخة احتياطية (JSON)</div>
+  <div class="sb-item" onclick="exportBackupJSON()"><span class="sb-ico">💽</span>حفظ نسخة احتياطية (JSON)</div>
+  <div class="sb-item" onclick="document.getElementById('backupFileInput').click()"><span class="sb-ico">📤</span>استعادة من نسخة احتياطية</div>
+  <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none" onchange="handleBackupFileSelected(event)">
   <div class="sb-item" onclick="clearQty()"><span class="sb-ico">🗑️</span>مسح الكميات</div>
 
   <div class="hist-wrap">
@@ -920,6 +922,12 @@ const DEFAULT_ITEMS = [
 ];
 
 const PALETTE=['#f0c040','#3d8ef0','#2ee89a','#f05050','#9d6cf5','#f07830','#f0e040','#3dc8f0','#e840a0','#40c8a0','#a0b040','#c07030'];
+
+// Bump this string whenever a change is pushed, so a glance at the header
+// confirms which build is actually live (GitHub Pages can take a minute to update).
+const BUILD_STAMP='تحديث 2026-07-30';
+document.addEventListener('DOMContentLoaded',()=>{const el=document.getElementById('buildStamp');if(el)el.textContent=BUILD_STAMP;});
+if(document.readyState!=='loading'){const el=document.getElementById('buildStamp');if(el)el.textContent=BUILD_STAMP;}
 let selColor='#f0c040', selIcoVal='📦', editingCat=null, editingItem=null;
 
 // ══════════════════════════════════════════════
@@ -2685,6 +2693,50 @@ function exportBackupJSON(){
   a.href=URL.createObjectURL(new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}));
   a.download=`Backup_${(S.branch||'System').replace(/\s/g,'_')}_${today()}.json`;a.click();
   toast('💽 تم تصدير النسخة الاحتياطية','inf');
+}
+
+function handleBackupFileSelected(e){
+  const file=e.target.files[0];
+  e.target.value=''; // reset so re-selecting the same file still fires onchange next time
+  if(!file) return;
+  if(curRole!=='admin'){toast('⚠️ الاستعادة متاحة للإدارة/المالية بس','wrn');return;}
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    let data;
+    try{ data=JSON.parse(ev.target.result); }
+    catch(err){ toast('⚠️ ملف غير صالح — لازم يكون نسخة JSON اتصدرت من نفس النظام','err'); return; }
+    if(!data||!data.catalog||!data.branch){ toast('⚠️ صيغة الملف غير معروفة، مش نسخة احتياطية من هذا النظام','err'); return; }
+    confirmRestoreBackup(data);
+  };
+  reader.readAsText(file);
+}
+function confirmRestoreBackup(data){
+  const itemCount=(data.catalog.items||[]).length;
+  const cycleCount=(data.branch.cycles||[]).length;
+  const branchName=data.branch.name||data.branch.key||'-';
+  const when=data.exportedAt?new Date(data.exportedAt).toLocaleString('ar-SA'):'غير معروف';
+  const msg=`استعادة نسخة احتياطية بتاريخ ${when}\n\n`+
+    `هيتم استبدال:\n`+
+    `- كتالوج الأصناف والمنيو بالكامل (${itemCount} صنف)\n`+
+    `- كل بيانات فرع "${branchName}" (الجرد، التقارير، ${cycleCount} دورة تسوية)\n\n`+
+    `أي بيانات حالية لنفس الفرع أو الكتالوج هتتمسح نهائياً وتتستبدل بمحتوى الملف. ده إجراء لا يمكن التراجع عنه. متأكد إنك عايز تكمل؟`;
+  if(!confirm(msg)) return;
+  restoreBackup(data);
+}
+function restoreBackup(data){
+  const branchKey=data.branch.key;
+  if(!branchKey){toast('⚠️ الملف ناقص معرّف الفرع','err');return;}
+  db.collection('catalog').doc('main').set(data.catalog)
+    .then(()=>db.collection('branches').doc(branchKey).set({
+      name:data.branch.name,manager:data.branch.manager||'',storekeeper:data.branch.storekeeper||'',supervisor:data.branch.supervisor||'',
+      date:data.branch.date,sid:data.branch.sid,qty:data.branch.qty||{},notes:data.branch.notes||{},reports:data.branch.reports||[],
+      cycles:data.branch.cycles||[],
+    }))
+    .then(()=>{
+      toast('✅ تم استعادة النسخة الاحتياطية بنجاح','suc');
+      if(curRole==='admin') switchToBranchDoc(branchKey);
+    })
+    .catch(e=>toast('⚠️ خطأ في الاستعادة: '+e.message,'err'));
 }
 
 // ══════════════════════════════════════════════

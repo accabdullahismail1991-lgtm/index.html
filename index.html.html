@@ -1141,8 +1141,12 @@ td{padding:9px 13px;vertical-align:middle;}
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportMenuSalesExcel()">📗 Excel</button>
   </div>
-  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">مبيعات كل صنف من المنيو مأخوذة من الدورات المغلقة، مع إمكانية التصفية بفترة تاريخ محدّدة.</p>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">مبيعات كل صنف من المنيو مأخوذة من الدورات المغلقة، مع إمكانية التصفية بفترة تاريخ محدّدة أو بفرع محدد.</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
+    <div class="mod-field" id="menuSalesBranchFilterWrap" style="display:none;margin-bottom:0">
+      <label class="mod-lbl">الفرع</label>
+      <select class="mod-in" id="ms-branch-filter" style="width:auto" onchange="setMenuSalesBranchFilter(this.value)"></select>
+    </div>
     <div class="mod-field" style="margin-bottom:0"><label class="mod-lbl">من تاريخ</label><input type="date" class="mod-in" id="menuSalesDateFrom" onchange="renderMenuSalesReport()"></div>
     <div class="mod-field" style="margin-bottom:0"><label class="mod-lbl">إلى تاريخ</label><input type="date" class="mod-in" id="menuSalesDateTo" onchange="renderMenuSalesReport()"></div>
     <button class="hbtn" onclick="document.getElementById('menuSalesDateFrom').value='';document.getElementById('menuSalesDateTo').value='';renderMenuSalesReport()">🔄 كل الفترات</button>
@@ -3164,33 +3168,59 @@ function transfersLogRows(){
   });
   return rows;
 }
+let menuSalesBranchFilter='__current__';
 function openMenuSalesReport(){
   if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  menuSalesBranchFilter='__current__';
   document.getElementById('menuSalesDateFrom').value='';
   document.getElementById('menuSalesDateTo').value='';
+  populateMenuSalesBranchFilter();
   document.getElementById('menuSalesModal').classList.add('open');
   renderMenuSalesReport();
+}
+function populateMenuSalesBranchFilter(){
+  const wrap=document.getElementById('menuSalesBranchFilterWrap');
+  if(!canViewAllReportsUI()||Object.keys(S.branches||{}).length<2){wrap.style.display='none';return;}
+  wrap.style.display='';
+  document.getElementById('ms-branch-filter').innerHTML=branchFilterOptionsHtml(menuSalesBranchFilter);
+}
+function setMenuSalesBranchFilter(v){
+  menuSalesBranchFilter=v;
+  if(v==='__current__'||crossBranchRawDocs){renderMenuSalesReport();return;}
+  document.getElementById('menuSalesBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري تحميل بيانات الفروع...</div>';
+  loadCrossBranchDocs().then(renderMenuSalesReport).catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
 }
 function menuSalesRows(){
   const from=document.getElementById('menuSalesDateFrom').value||null;
   const to=document.getElementById('menuSalesDateTo').value||null;
+  const src=crossBranchDataSource(menuSalesBranchFilter);
   const rows=[];
-  sortedCycles().filter(c=>c.closed).forEach(c=>{
-    if(from&&c.end<from) return;
-    if(to&&c.start>to) return;
-    S.menu.forEach(m=>{
-      const qty=c.sales[m.id]||0;
-      if(!qty) return;
-      rows.push({start:c.start,end:c.end,name:m.n,price:m.price,qty,total:qty*m.price});
+  let deliveryTotal=0,actualTotal=0,hasActual=false;
+  src.cyclesArrays.forEach(arr=>{
+    (arr||[]).filter(c=>c.closed).forEach(c=>{
+      if(from&&c.end<from) return;
+      if(to&&c.start>to) return;
+      S.menu.forEach(m=>{
+        const qty=c.sales[m.id]||0;
+        if(!qty) return;
+        rows.push({start:c.start,end:c.end,name:m.n,price:m.price,qty,total:qty*m.price});
+      });
+      if(c.deliverySalesAmount!=null) deliveryTotal+=c.deliverySalesAmount;
+      if(c.salesAmount!=null){actualTotal+=c.salesAmount;hasActual=true;}
     });
   });
-  return rows.sort((a,b)=>a.start.localeCompare(b.start)||a.name.localeCompare(b.name,'ar'));
+  rows.sort((a,b)=>a.start.localeCompare(b.start)||a.name.localeCompare(b.name,'ar'));
+  rows.deliveryTotal=deliveryTotal;
+  rows.actualTotal=hasActual?actualTotal:null;
+  rows.branchLabel=src.label;
+  return rows;
 }
 function renderMenuSalesReport(){
   const rows=menuSalesRows();
   const body=document.getElementById('menuSalesBody');
   if(!rows.length){
-    body.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">لا توجد مبيعات مسجّلة في هذه الفترة.</div>';
+    body.innerHTML=`${reportHeaderBlock({title:'📊 تقرير مبيعات المنيو حسب التاريخ',branchName:rows.branchLabel})}
+    <div style="padding:20px;text-align:center;color:var(--muted)">لا توجد مبيعات مسجّلة في هذه الفترة.</div>`;
     return;
   }
   const totalQty=rows.reduce((s,r)=>s+r.qty,0);
@@ -3202,9 +3232,12 @@ function renderMenuSalesReport(){
   });
   const itemSummary=Object.values(byItem).sort((a,b)=>b.qty-a.qty);
   body.innerHTML=`
+    ${reportHeaderBlock({title:'📊 تقرير مبيعات المنيو حسب التاريخ',branchName:rows.branchLabel})}
     <div class="dash-kpis" style="margin-bottom:16px">
       ${dashKpi('إجمالي الكمية المباعة',fmt(totalQty),'#3d8ef0')}
-      ${dashKpi('إجمالي الإيراد',fmt(totalRev),'#2ee89a')}
+      ${dashKpi('إجمالي الإيراد (نظري)',fmt(totalRev),'#2ee89a')}
+      ${rows.actualTotal!=null?dashKpi('إجمالي المبيعات الفعلي',fmt(rows.actualTotal),'#f0c040'):''}
+      ${dashKpi('🛵 مبيعات تطبيقات التوصيل',fmt(rows.deliveryTotal),'#3d8ef0')}
     </div>
     <div style="font-weight:700;font-size:13px;margin-bottom:8px">📦 ملخص حسب الصنف</div>
     <div class="tbl-wrap" style="max-height:260px;overflow-y:auto;margin-bottom:18px"><table>
@@ -3234,7 +3267,12 @@ function exportMenuSalesExcel(){
   const out=[['الدورة من','الدورة إلى','الصنف','السعر','الكمية','الإجمالي']];
   rows.forEach(r=>out.push([r.start,r.end,r.name,+r.price.toFixed(2),+r.qty.toFixed(2),+r.total.toFixed(2)]));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'مبيعات المنيو');
-  XLSX.writeFile(wb,`MenuSales_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
+  const totRows=[['المؤشر','القيمة'],
+    ['إجمالي المبيعات الفعلي',rows.actualTotal!=null?+rows.actualTotal.toFixed(2):'-'],
+    ['مبيعات تطبيقات التوصيل',+rows.deliveryTotal.toFixed(2)],
+  ];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(totRows),'إجمالي المبيعات الفعلي');
+  XLSX.writeFile(wb,`MenuSales_${(rows.branchLabel||S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
   toast('📗 تم التصدير','inf');
 }
 function openTransfersLog(){
@@ -4676,6 +4714,7 @@ function computeCycleResults(c){
   const totalTransferInCost=rows.reduce((s,r)=>s+r.trIn*r.unitCost,0);
   return {
     rows,totalSalesAmount,totalSalesComputed,totalActualCost,totalTheoCost,totalWasteCost,totalWithdrawCost,totalTransferOutCost,totalTransferInCost,
+    deliverySalesAmount:c.deliverySalesAmount!=null?c.deliverySalesAmount:null,
     totalVarVal:totalActualCost-totalTheoCost,
     actualCostPct:totalSalesAmount>0?(totalActualCost/totalSalesAmount*100):0,
     theoCostPct:totalSalesAmount>0?(totalTheoCost/totalSalesAmount*100):0,
@@ -4732,6 +4771,7 @@ function renderResultsTab(c,el){
   ${reportHeaderBlock({title:'📊 تقرير نتائج التسوية (Cost of Sales Report)',branchName:S.branch,periodLabel:`${c.start} ← ${c.end}`})}
   <div class="stats" style="margin-bottom:16px">
     ${kpi('إجمالي المبيعات',fmt(r.totalSalesAmount),'#3d8ef0')}
+    ${r.deliverySalesAmount!=null?kpi('🛵 مبيعات تطبيقات التوصيل',fmt(r.deliverySalesAmount),'#3d8ef0'):''}
     ${kpi('تكلفة الاستهلاك الفعلي',fmt(r.totalActualCost),'#f05050')}
     ${kpi('نسبة التكلفة الفعلية',r.actualCostPct.toFixed(1)+'%','#f0c040')}
     ${kpi('نسبة التكلفة النظرية',r.theoCostPct.toFixed(1)+'%','#2ee89a')}
@@ -4755,6 +4795,7 @@ function exportCycleCSV(cid){
   if(c.closed&&c.result){
     csv+=`تقرير دورة تسوية,${c.start},${c.end},${S.branch}\n`;
     csv+=`إجمالي المبيعات,${c.result.totalSalesAmount}\n`;
+    if(c.result.deliverySalesAmount!=null) csv+=`مبيعات تطبيقات التوصيل,${c.result.deliverySalesAmount}\n`;
     csv+=`تكلفة الاستهلاك الفعلي,${c.result.totalActualCost}\n`;
     csv+=`نسبة التكلفة الفعلية,${c.result.actualCostPct.toFixed(2)}%\n`;
     csv+=`نسبة التكلفة النظرية,${c.result.theoCostPct.toFixed(2)}%\n\n`;
@@ -4801,11 +4842,14 @@ function exportCyclePDF(cid){
 
   const kpis=[
     {l:'إجمالي المبيعات',v:fmt(r.totalSalesAmount),rgb:BLUE},
+  ];
+  if(r.deliverySalesAmount!=null) kpis.push({l:'مبيعات تطبيقات التوصيل',v:fmt(r.deliverySalesAmount),rgb:BLUE});
+  kpis.push(
     {l:'تكلفة الاستهلاك الفعلي',v:fmt(r.totalActualCost),rgb:RED},
     {l:'نسبة التكلفة الفعلية',v:r.actualCostPct.toFixed(1)+'%',rgb:withinTarget?GREEN:RED},
     {l:'نسبة التكلفة النظرية',v:r.theoCostPct.toFixed(1)+'%',rgb:GREEN},
     {l:'إجمالي قيمة الانحراف',v:r.totalVarVal<-0.004?`(${fmt(Math.abs(r.totalVarVal))})`:fmt(r.totalVarVal),rgb:withinVariance?GREEN:RED},
-  ];
+  );
   const kpiW=(W-28)/kpis.length;
   kpis.forEach((k,i)=>{
     const x=14+i*kpiW,y=36,bw=kpiW-4;
@@ -5131,6 +5175,7 @@ function exportCycleExcel(cid){
     ['الفرع',S.branch],
     ['الفترة',`${c.start} - ${c.end}`],
     ['إجمالي المبيعات',r.totalSalesAmount],
+    ...(r.deliverySalesAmount!=null?[['مبيعات تطبيقات التوصيل',r.deliverySalesAmount]]:[]),
     ['تكلفة الاستهلاك الفعلي',r.totalActualCost],
     ['تكلفة الاستهلاك النظري',r.totalTheoCost],
     ['نسبة التكلفة الفعلية %',+r.actualCostPct.toFixed(2)],

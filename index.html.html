@@ -227,7 +227,8 @@ main{flex:1;padding:22px;overflow:auto;min-width:0;}
 .rpt-pro-exception-tbl td{padding:3px 0;border-bottom:1px dashed var(--border);}
 .rpt-pro-exception-tbl tr:last-child td{border-bottom:none;}
 .rpt-pro-cat-row td{background:var(--card2);font-weight:700;font-size:11.5px;color:var(--gold);padding:6px 13px;}
-.rpt-pro-sub-row td{background:rgba(255,255,255,.01);font-weight:700;font-size:11.5px;border-top:1px solid var(--border);}
+.rpt-pro-sub-row td{background:rgba(201,154,31,.12);font-weight:700;font-size:11.5px;border-top:1px solid var(--border);}
+.tbl-total-row td{background:rgba(201,154,31,.12);font-weight:700;font-size:12px;border-top:2px solid var(--gold2);}
 .rpt-pro-sign{display:flex;gap:24px;margin-top:32px;padding-top:8px;flex-wrap:wrap;}
 .rpt-pro-sign-cell{flex:1;min-width:160px;}
 .rpt-pro-sign-line{border-bottom:1px solid var(--muted2);height:34px;}
@@ -705,6 +706,13 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="sidebar">
   <span class="sb-label" data-i18n="دورات التسوية">دورات التسوية</span>
   <div class="sb-item sb-item-pinned" onclick="openNewCycle()" title="بدء دورة تسوية جديدة" data-i18n-title="بدء دورة تسوية جديدة"><span class="sb-ico">➕</span><span data-i18n="بدء دورة جديدة">بدء دورة جديدة</span></div>
+  <div class="sb-div"></div>
+  <div style="padding:0 14px 10px">
+    <div style="font-size:10.5px;color:var(--muted);margin-bottom:5px">🔍 فلترة الدورات بالتاريخ</div>
+    <input type="date" class="mod-in" style="width:100%;margin-bottom:6px;font-size:11.5px;padding:6px 8px" id="cycleFilterFrom" onchange="renderCycleList()" title="من تاريخ">
+    <input type="date" class="mod-in" style="width:100%;font-size:11.5px;padding:6px 8px" id="cycleFilterTo" onchange="renderCycleList()" title="إلى تاريخ">
+    <button class="hbtn" style="width:100%;justify-content:center;margin-top:6px;padding:5px;font-size:11px" onclick="document.getElementById('cycleFilterFrom').value='';document.getElementById('cycleFilterTo').value='';renderCycleList()">🔄 مسح الفلتر</button>
+  </div>
   <div class="sb-div"></div>
   <div id="cycleList" class="sb-scroll"></div>
 </div>
@@ -4722,8 +4730,12 @@ function selectLatestCycle(){
 
 function renderCycleList(){
   const cont=document.getElementById('cycleList');
-  const arr=[...BCycles()].sort((a,b)=>b.start.localeCompare(a.start));
-  if(!arr.length){cont.innerHTML='<div class="no-hist">لا توجد دورات بعد</div>';return;}
+  let arr=[...BCycles()].sort((a,b)=>b.start.localeCompare(a.start));
+  const fromEl=document.getElementById('cycleFilterFrom'),toEl=document.getElementById('cycleFilterTo');
+  const from=fromEl?fromEl.value:'',to=toEl?toEl.value:'';
+  if(from) arr=arr.filter(c=>c.end>=from);
+  if(to) arr=arr.filter(c=>c.start<=to);
+  if(!arr.length){cont.innerHTML=`<div class="no-hist">${(from||to)?'لا توجد دورات تغطي الفترة المحددة':'لا توجد دورات بعد'}</div>`;return;}
   cont.innerHTML=arr.map(c=>`
     <div class="hist-item${c.id===curCycleId?' cur':''}" style="cursor:pointer" onclick="curCycleId='${c.id}';renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();" title="اضغط لعرض تفاصيل الدورة">
       <div class="hi-date" style="display:flex;align-items:center;justify-content:space-between">
@@ -4806,7 +4818,7 @@ function renderCycleHeader(){
 function renderCycleTabs(){
   const el=document.getElementById('cycleTabs');
   if(!curCycleId){el.innerHTML='';return;}
-  const tabs=[['sales','💰 المبيعات'],['purchases','📦 المشتريات/الطلبيات'],['waste','🗑️ الهالك'],['withdraw','📤 سحب/صرف داخلي'],['transferOut','🔀 تحويل صادر'],['transferIn','🔁 تحويل وارد'],['stock','🧮 الرصيد الافتتاحي/الختامي'],['results','📊 نتائج التسوية']];
+  const tabs=[['sales','💰 المبيعات'],['purchases','📦 المشتريات/الطلبيات'],['waste','🗑️ الهالك'],['withdraw','📤 سحب/صرف داخلي'],['transferOut','🔀 تحويل صادر'],['transferIn','🔁 تحويل وارد'],['opening','📥 الرصيد الافتتاحي'],['closing','📦 الرصيد الختامي'],['results','📊 نتائج التسوية']];
   el.innerHTML=tabs.map(([k,l])=>`<button class="hbtn${curCycleTab===k?' gold':''}" style="padding:7px 13px;font-size:12.5px" onclick="curCycleTab='${k}';cycleTabSearch='';renderCycleTabs();renderCycleBody()">${l}</button>`).join('');
 }
 
@@ -4820,7 +4832,8 @@ function renderCycleBody(){
   if(curCycleTab==='withdraw') return renderWithdrawTab(c,el);
   if(curCycleTab==='transferOut') return renderTransferOutTab(c,el);
   if(curCycleTab==='transferIn') return renderTransferInTab(c,el);
-  if(curCycleTab==='stock') return renderStockTab(c,el);
+  if(curCycleTab==='opening') return renderOpeningTab(c,el);
+  if(curCycleTab==='closing') return renderClosingTab(c,el);
   if(curCycleTab==='results') return renderResultsTab(c,el);
 }
 
@@ -4848,7 +4861,6 @@ function renderCycleTabRows(){
   if(curCycleTab==='withdraw') return renderWithdrawRows(c);
   if(curCycleTab==='transferOut') return renderTransferOutRows(c);
   if(curCycleTab==='transferIn') return renderTransferInRows(c);
-  if(curCycleTab==='stock') return renderStockRows(c);
 }
 
 function renderSalesTab(c,el){
@@ -5397,27 +5409,62 @@ function persistIncomingTransferDecision(reqId,status,items,rejectReason){
   }).catch(e=>toast('⚠️ خطأ في حفظ قرار التحويل: '+e.message,'err'));
 }
 
-function renderStockTab(c,el){
-  const hasPrev=!!latestClosedBefore(c);
-  el.innerHTML=`${cycleToolbar('إضافة صنف جديد',"openAddItem()")}
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الرصيد الافتتاحي')}</th><th>${t('الرصيد الختامي (الجرد الفعلي)')}</th></tr></thead>
-    <tbody id="ctRows"></tbody></table></div>
-    ${!c.closed?`<div style="margin-top:10px"><button class="hbtn" onclick="pullLiveCount('${c.id}')">🔄 سحب الكميات من شاشة الجرد اليومي الحالية</button></div>`:''}
-    ${hasPrev?`<p style="font-size:11px;color:var(--muted);margin-top:8px">الرصيد الافتتاحي معبّى تلقائيًا من ختامي الدورة السابقة، ويمكنك تعديله يدويًا لو محتاج تصحيح.</p>`:`<p style="font-size:11px;color:var(--muted);margin-top:8px">هذه أول دورة لهذا الفرع، فالرصيد الافتتاحي مُدخل يدوياً.</p>`}`;
-  renderStockRows(c);
+// ══════════════════════════════════════════════
+//  OPENING BALANCE TAB (separate screen from closing — add-as-needed,
+//  not a full catalog listing). Items carried over from the previous
+//  cycle's closing stock still show up automatically since cycleOpening()
+//  always merges them in for the actual calculations; this tab just
+//  controls which rows are visible for manual entry/correction.
+// ══════════════════════════════════════════════
+function openingActiveRefs(c){
+  const prev=latestClosedBefore(c);
+  const refs=new Set();
+  if(prev) Object.keys(prev.closing||{}).forEach(r=>refs.add(r));
+  Object.keys(c.openingOverride||{}).forEach(r=>refs.add(r));
+  return refs;
 }
-function renderStockRows(c){
-  const opening=cycleOpening(c);
+function renderOpeningTab(c,el){
+  const hasPrev=!!latestClosedBefore(c);
+  el.innerHTML=`<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    <div style="flex:1;min-width:240px;max-width:380px">${isearchHtml('openAddIsearch','',{placeholder:'🔍 ابحث عن صنف لإضافته للرصيد الافتتاحي...',onSelect:'addOpeningItem'})}</div>
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الرصيد الافتتاحي')}</th><th></th></tr></thead>
+    <tbody id="ctRows"></tbody></table></div>
+    ${hasPrev?`<p style="font-size:11px;color:var(--muted);margin-top:8px">الأصناف اللي كان لها رصيد ختامي في الدورة السابقة بتظهر هنا تلقائيًا. لإضافة صنف جديد، استخدم البحث بالأعلى.</p>`:`<p style="font-size:11px;color:var(--muted);margin-top:8px">هذه أول دورة لهذا الفرع — أضف الأصناف اللي عندك رصيد بداية لها من البحث بالأعلى.</p>`}`;
+  renderOpeningRows(c);
+}
+function addOpeningItem(ref){
+  if(!ref) return;
+  const c=getCycle(curCycleId);
+  if(!c){toast('⚠️ افتح دورة تسوية الأول','wrn');return;}
+  if(c.closed){toast('⚠️ الدورة مقفولة — أعد فتحها الأول عشان تضيف أصناف للرصيد الافتتاحي','wrn');return;}
+  if(c.openingOverride[ref]==null) c.openingOverride[ref]=0;
+  save();
+  renderOpeningRows(c);
+  const root=document.getElementById('openAddIsearch');
+  if(root){root.querySelector('.isearch-input').value='';root.querySelector('.isearch-value').value='';}
+}
+function removeOpeningItem(cid,r){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  delete c.openingOverride[r];
+  save();
+  renderOpeningRows(c);
+}
+function renderOpeningRows(c){
   const dis=c.closed?'disabled':'';
-  const list=cycleFilterList(S.items,it=>it.n,it=>it.r);
-  const rows=list.map(it=>{
-    const op=opening[it.r]||0;
-    const cl=c.closing[it.r];
+  const prev=latestClosedBefore(c);
+  const prevClosing=prev?(prev.closing||{}):{};
+  const opening=cycleOpening(c);
+  const refs=[...openingActiveRefs(c)].sort();
+  const rows=refs.map(r=>{
+    const it=S.items.find(x=>x.r===r);if(!it)return'';
+    const carried=prevClosing[r]!=null&&c.openingOverride[r]==null;
+    const val=opening[r]||0;
     return `<tr>
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
-      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${op||''}" placeholder="0" ${dis} oninput="setCycleOpeningOverride('${c.id}','${it.r}',this.value)"></td>
-      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${cl!=null?cl:''}" placeholder="0" ${dis} oninput="setCycleClosing('${c.id}','${it.r}',this.value)"></td>
+      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${val||''}" placeholder="0" ${dis} oninput="setCycleOpeningOverride('${c.id}','${r}',this.value)"></td>
+      <td>${carried?'<span style="font-size:10px;color:var(--muted)">من الدورة السابقة</span>':(dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeOpeningItem('${c.id}','${r}')" title="إزالة">🗑️</button>`)}</td>
     </tr>`;
   }).join('');
   document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(5);
@@ -5426,6 +5473,56 @@ function setCycleOpeningOverride(cid,r,v){
   const c=getCycle(cid);if(!c||c.closed)return;
   c.openingOverride[r]=v===''?0:(parseFloat(v)||0);
   save();
+}
+
+// ══════════════════════════════════════════════
+//  CLOSING BALANCE TAB (separate screen from opening — add-as-needed)
+// ══════════════════════════════════════════════
+function renderClosingTab(c,el){
+  el.innerHTML=`<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    <div style="flex:1;min-width:240px;max-width:380px">${isearchHtml('closeAddIsearch','',{placeholder:'🔍 ابحث عن صنف لإضافته للرصيد الختامي...',onSelect:'addClosingItem'})}</div>
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الرصيد الختامي (الجرد الفعلي)')}</th><th></th></tr></thead>
+    <tbody id="ctRows"></tbody></table></div>
+    ${!c.closed?`<div style="margin-top:10px"><button class="hbtn" onclick="pullLiveCount('${c.id}')">🔄 سحب الكميات من شاشة الجرد اليومي الحالية</button></div>`:''}`;
+  renderClosingRows(c);
+}
+function addClosingItem(ref){
+  if(!ref) return;
+  const c=getCycle(curCycleId);
+  if(!c){toast('⚠️ افتح دورة تسوية الأول','wrn');return;}
+  if(c.closed){toast('⚠️ الدورة مقفولة — أعد فتحها الأول عشان تضيف أصناف للرصيد الختامي','wrn');return;}
+  if(c.closing[ref]==null){
+    c.closing[ref]=0;
+    if(!c.closingSetAt) c.closingSetAt={};
+    c.closingSetAt[ref]=new Date().toISOString();
+  }
+  save();
+  renderClosingRows(c);
+  const root=document.getElementById('closeAddIsearch');
+  if(root){root.querySelector('.isearch-input').value='';root.querySelector('.isearch-value').value='';}
+}
+function removeClosingItem(cid,r){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  delete c.closing[r];
+  if(c.closingSetAt) delete c.closingSetAt[r];
+  save();
+  renderClosingRows(c);
+}
+function renderClosingRows(c){
+  const dis=c.closed?'disabled':'';
+  const refs=Object.keys(c.closing||{}).sort();
+  const rows=refs.map(r=>{
+    const it=S.items.find(x=>x.r===r);if(!it)return'';
+    const cl=c.closing[r];
+    return `<tr>
+      <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
+      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${cl!=null?cl:''}" placeholder="0" ${dis} oninput="setCycleClosing('${c.id}','${r}',this.value)"></td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeClosingItem('${c.id}','${r}')" title="إزالة">🗑️</button>`}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(5);
 }
 function setCycleClosing(cid,r,v){
   const c=getCycle(cid);if(!c||c.closed)return;

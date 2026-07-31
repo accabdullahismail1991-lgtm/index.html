@@ -508,15 +508,15 @@ td{padding:9px 13px;vertical-align:middle;}
       <div class="mod-field"><label class="mod-lbl" data-i18n="البريد الإلكتروني">البريد الإلكتروني</label><input class="mod-in" id="auth-email" type="email" placeholder="name@example.com"></div>
       <div class="mod-field"><label class="mod-lbl" data-i18n="كلمة المرور">كلمة المرور</label><input class="mod-in" id="auth-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <div id="authError" style="color:var(--red);font-size:12px;margin-bottom:12px;display:none;line-height:1.6"></div>
-      <button class="hbtn gold" style="width:100%;justify-content:center;padding:11px;margin-bottom:8px" onclick="doLogin()">دخول</button>
-      <button class="hbtn" style="width:100%;justify-content:center;padding:11px" onclick="doSignup()">إنشاء حساب جديد</button>
+      <button class="hbtn gold" style="width:100%;justify-content:center;padding:11px;margin-bottom:8px" onclick="doLogin()" data-i18n="دخول">دخول</button>
+      <button class="hbtn" style="width:100%;justify-content:center;padding:11px" onclick="doSignup()" data-i18n="إنشاء حساب جديد">إنشاء حساب جديد</button>
       <p style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.8;text-align:center">لو أول مرة، اعمل حساب جديد ولازم مسؤول من الإدارة يفعّله ويحدد فرعك.</p>
     </div>
     <div id="authPending" style="display:none;text-align:center">
       <div style="font-size:32px;margin-bottom:10px">⏳</div>
       <div style="font-weight:700;margin-bottom:6px">بانتظار تفعيل الحساب</div>
       <p style="color:var(--muted);font-size:12.5px;line-height:1.8;margin-bottom:16px">تم إنشاء حسابك بنجاح، بس محتاج مسؤول من الإدارة يفعّله ويحدد الفرع بتاعك.</p>
-      <button class="hbtn" style="width:100%;justify-content:center;padding:10px" onclick="doLogout()">خروج</button>
+      <button class="hbtn" style="width:100%;justify-content:center;padding:10px" onclick="doLogout()" data-i18n="خروج">خروج</button>
     </div>
   </div>
 </div>
@@ -592,8 +592,8 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="vn-dd" id="dd-movements">
     <button class="vn-btn" onclick="toggleDropdown('dd-movements')" data-i18n="🔄 إدخال وحركات ▾">🔄 إدخال وحركات ▾</button>
     <div class="vn-dd-menu">
-      <div class="vn-dd-item" onclick="closeDropdowns();openQuickMovement()">➕ تسجيل حركة (تحويل/سحب/استلام)</div>
-      <div class="vn-dd-item" id="ddIncomingTransfersItem" onclick="closeDropdowns();openIncomingTransfersReview()">📥 مراجعة التحويلات الواردة</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();openQuickMovement()" data-i18n="➕ تسجيل حركة (تحويل/سحب/استلام)">➕ تسجيل حركة (تحويل/سحب/استلام)</div>
+      <div class="vn-dd-item" id="ddIncomingTransfersItem" onclick="closeDropdowns();openIncomingTransfersReview()" data-i18n="📥 مراجعة التحويلات الواردة">📥 مراجعة التحويلات الواردة</div>
       <div class="vn-dd-item" id="ddMaintenanceItem" onclick="closeDropdowns();openMaintenanceLog()" data-i18n="🔧 سجل الأعطال والصيانة">🔧 سجل الأعطال والصيانة</div>
       <div class="vn-dd-item" id="ddEmployeesItem" onclick="closeDropdowns();openEmployeesScreen()" data-i18n="👥 بيانات الموظفين">👥 بيانات الموظفين</div>
       <div class="vn-dd-item" id="ddDirectCostsItem" onclick="closeDropdowns();openDirectCostsScreen()" data-i18n="🧾 بنود التكاليف المباشرة">🧾 بنود التكاليف المباشرة</div>
@@ -604,7 +604,7 @@ td{padding:9px 13px;vertical-align:middle;}
     <button class="vn-btn" onclick="toggleDropdown('dd-reports')" data-i18n="📊 التقارير ▾">📊 التقارير ▾</button>
     <div class="vn-dd-menu">
       <div class="vn-dd-item" id="ddDashboardItem" onclick="closeDropdowns();openDashboard()" data-i18n="📊 لوحة تحكم تفاعلية">📊 لوحة تحكم تفاعلية</div>
-      <div class="vn-dd-item" id="ddMenuSalesItem" onclick="closeDropdowns();openMenuSalesReport()">📊 مبيعات المنيو حسب التاريخ</div>
+      <div class="vn-dd-item" id="ddMenuSalesItem" onclick="closeDropdowns();openMenuSalesReport()" data-i18n="📊 مبيعات المنيو حسب التاريخ">📊 مبيعات المنيو حسب التاريخ</div>
       <div class="vn-dd-item" id="ddPlannerItem" onclick="closeDropdowns();openRequirementPlanner()" data-i18n="📈 تخطيط الاحتياج">📈 تخطيط الاحتياج</div>
       <div class="vn-dd-item" id="ddTransfersLogItem" onclick="closeDropdowns();openTransfersLog()" data-i18n="🔀 سجل التحويلات">🔀 سجل التحويلات</div>
       <div class="vn-dd-item" id="ddWasteReportItem" onclick="closeDropdowns();openWasteReport()" data-i18n="🗑️ تقرير أكثر الأصناف هالكًا">🗑️ تقرير أكثر الأصناف هالكًا</div>
@@ -659,10 +659,10 @@ td{padding:9px 13px;vertical-align:middle;}
 <!-- MAIN -->
 <main>
   <div class="stats">
-    <div class="stat s1"><div class="stat-ico">📦</div><div class="stat-val" id="st-tot">0</div><div class="stat-lbl">إجمالي الأصناف</div></div>
-    <div class="stat s2"><div class="stat-ico">✅</div><div class="stat-val" id="st-ent">0</div><div class="stat-lbl">تم جردها</div></div>
-    <div class="stat s3"><div class="stat-ico">⚠️</div><div class="stat-val" id="st-zer">0</div><div class="stat-lbl">صفرية</div></div>
-    <div class="stat s4"><div class="stat-ico">📈</div><div class="stat-val" id="st-pct">0%</div><div class="stat-lbl">نسبة الإنجاز</div><div class="prog"><div class="prog-f" id="progF" style="width:0"></div></div></div>
+    <div class="stat s1"><div class="stat-ico">📦</div><div class="stat-val" id="st-tot">0</div><div class="stat-lbl" data-i18n="إجمالي الأصناف">إجمالي الأصناف</div></div>
+    <div class="stat s2"><div class="stat-ico">✅</div><div class="stat-val" id="st-ent">0</div><div class="stat-lbl" data-i18n="تم جردها">تم جردها</div></div>
+    <div class="stat s3"><div class="stat-ico">⚠️</div><div class="stat-val" id="st-zer">0</div><div class="stat-lbl" data-i18n="صفرية">صفرية</div></div>
+    <div class="stat s4"><div class="stat-ico">📈</div><div class="stat-val" id="st-pct">0%</div><div class="stat-lbl" data-i18n="نسبة الإنجاز">نسبة الإنجاز</div><div class="prog"><div class="prog-f" id="progF" style="width:0"></div></div></div>
   </div>
 
   <div class="dbanner">
@@ -672,7 +672,7 @@ td{padding:9px 13px;vertical-align:middle;}
     </div>
     <div class="db-r">
       <div class="unsaved" id="unsavedDot"></div>
-      <button class="hbtn" style="padding:6px 11px;font-size:12px" onclick="saveAndExport()">💾 حفظ</button>
+      <button class="hbtn" style="padding:6px 11px;font-size:12px" onclick="saveAndExport()" data-i18n="💾 حفظ">💾 حفظ</button>
     </div>
   </div>
 
@@ -681,16 +681,16 @@ td{padding:9px 13px;vertical-align:middle;}
       <span class="sw-ico">🔍</span>
       <input type="text" id="srch" placeholder="ابحث بالاسم أو رقم المرجع..." oninput="renderTbl()">
     </div>
-    <select id="uomF" onchange="renderTbl()"><option value="">كل الوحدات</option></select>
+    <select id="uomF" onchange="renderTbl()"><option value="" data-i18n="كل الوحدات">كل الوحدات</option></select>
     <select id="typeF" onchange="renderTbl()">
-      <option value="">كل الأنواع</option>
-      <option value="raw">خامة</option><option value="semi">نصف مصنّع</option><option value="finished">منتج نهائي/جاهز</option>
+      <option value="" data-i18n="كل الأنواع">كل الأنواع</option>
+      <option value="raw" data-i18n="خامة">خامة</option><option value="semi" data-i18n="نصف مصنّع">نصف مصنّع</option><option value="finished" data-i18n="منتج نهائي/جاهز">منتج نهائي/جاهز</option>
     </select>
     <select id="stF" onchange="renderTbl()">
-      <option value="">كل الحالات</option>
-      <option value="F">مدخل كمية</option><option value="Z">صفري</option><option value="E">لم يُجرد</option>
+      <option value="" data-i18n="كل الحالات">كل الحالات</option>
+      <option value="F" data-i18n="مدخل كمية">مدخل كمية</option><option value="Z" data-i18n="صفري">صفري</option><option value="E" data-i18n="لم يُجرد">لم يُجرد</option>
     </select>
-    <button class="hbtn org" style="padding:7px 13px;font-size:12.5px" onclick="openAddItem()">➕ إضافة صنف</button>
+    <button class="hbtn org" style="padding:7px 13px;font-size:12.5px" onclick="openAddItem()" data-i18n="➕ إضافة صنف">➕ إضافة صنف</button>
   </div>
 
   <div class="tbl-wrap">
@@ -698,7 +698,7 @@ td{padding:9px 13px;vertical-align:middle;}
       <div class="tbl-title"><span id="tIco">📦</span>&nbsp;<span id="tTit">جميع الأصناف</span></div>
       <div style="display:flex;align-items:center;gap:10px">
         <div class="tbl-cnt" id="tCnt"></div>
-        <button class="hbtn org" style="padding:5px 11px;font-size:11.5px" onclick="openAddItem()">➕ إضافة</button>
+        <button class="hbtn org" style="padding:5px 11px;font-size:11.5px" onclick="openAddItem()" data-i18n="➕ إضافة">➕ إضافة</button>
       </div>
     </div>
     <table>
@@ -728,7 +728,7 @@ td{padding:9px 13px;vertical-align:middle;}
     <div style="font-size:10.5px;color:var(--muted);margin-bottom:5px">🔍 فلترة الدورات بالتاريخ</div>
     <input type="date" class="mod-in" style="width:100%;margin-bottom:6px;font-size:11.5px;padding:6px 8px" id="cycleFilterFrom" onchange="renderCycleList()" title="من تاريخ">
     <input type="date" class="mod-in" style="width:100%;font-size:11.5px;padding:6px 8px" id="cycleFilterTo" onchange="renderCycleList()" title="إلى تاريخ">
-    <button class="hbtn" style="width:100%;justify-content:center;margin-top:6px;padding:5px;font-size:11px" onclick="document.getElementById('cycleFilterFrom').value='';document.getElementById('cycleFilterTo').value='';renderCycleList()">🔄 مسح الفلتر</button>
+    <button class="hbtn" style="width:100%;justify-content:center;margin-top:6px;padding:5px;font-size:11px" onclick="document.getElementById('cycleFilterFrom').value='';document.getElementById('cycleFilterTo').value='';renderCycleList()" data-i18n="🔄 مسح الفلتر">🔄 مسح الفلتر</button>
   </div>
   <div class="sb-div"></div>
   <div id="cycleList" class="sb-scroll"></div>
@@ -775,9 +775,9 @@ td{padding:9px 13px;vertical-align:middle;}
     <div class="mod-field">
       <label class="mod-lbl" data-i18n="نوع الصنف">نوع الصنف</label>
       <select class="mod-in" id="ai-type">
-        <option value="raw">خامة</option>
-        <option value="semi">نصف مصنّع</option>
-        <option value="finished">منتج نهائي/جاهز</option>
+        <option value="raw" data-i18n="خامة">خامة</option>
+        <option value="semi" data-i18n="نصف مصنّع">نصف مصنّع</option>
+        <option value="finished" data-i18n="منتج نهائي/جاهز">منتج نهائي/جاهز</option>
       </select>
     </div>
   </div>
@@ -795,11 +795,11 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="mod-field">
     <label class="mod-lbl" data-i18n="مكوّنات الصنف (اختياري — لو الصنف نصف مصنّع/خلطة)">مكوّنات الصنف (اختياري — لو الصنف نصف مصنّع/خلطة)</label>
     <div id="aiRecipeRows" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
-    <button class="hbtn" type="button" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="addItemRecipeRow()">➕ إضافة مكوّن</button>
+    <button class="hbtn" type="button" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="addItemRecipeRow()" data-i18n="➕ إضافة مكوّن">➕ إضافة مكوّن</button>
   </div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('addItemModal')" data-i18n="إلغاء">إلغاء</button>
-    <button class="hbtn gold" onclick="saveItem()" id="addItemBtn" data-i18n="✓ إضافة الصنف">✓ إضافة الصنف</button>
+    <button class="hbtn gold" onclick="saveItem()" id="addItemBtn">✓ إضافة الصنف</button>
   </div>
 </div>
 </div>
@@ -813,20 +813,20 @@ td{padding:9px 13px;vertical-align:middle;}
   </div>
   <div class="mod-row">
     <div class="mod-field" style="margin-bottom:0">
-      <label class="mod-lbl">نوع الوحدة</label>
+      <label class="mod-lbl" data-i18n="نوع الوحدة">نوع الوحدة</label>
       <select class="mod-in" id="uom-new-kind">
-        <option value="weight">وزن (أساسها كجم)</option>
-        <option value="volume">حجم (أساسها لتر)</option>
-        <option value="count" selected>عدد (أساسها قطعة)</option>
+        <option value="weight" data-i18n="وزن (أساسها كجم)">وزن (أساسها كجم)</option>
+        <option value="volume" data-i18n="حجم (أساسها لتر)">حجم (أساسها لتر)</option>
+        <option value="count" selected data-i18n="عدد (أساسها قطعة)">عدد (أساسها قطعة)</option>
       </select>
     </div>
     <div class="mod-field" style="margin-bottom:0">
-      <label class="mod-lbl">تعادل كام من الوحدة الأساسية؟</label>
+      <label class="mod-lbl" data-i18n="تعادل كام من الوحدة الأساسية؟">تعادل كام من الوحدة الأساسية؟</label>
       <input type="number" inputmode="decimal" class="mod-in" id="uom-new-factor" placeholder="مثال: 24" min="0.0001" step="0.0001">
     </div>
   </div>
   <div class="mod-hint" style="margin:-8px 0 14px">مثال: "كرتونة" نوعها عدد وتعادل 24 يعني 1 كرتونة = 24 قطعة. لو الوحدة جزء من وحدة أساسية زي الجرام، اختار وزن واكتب 0.001 (1 جرام = 0.001 كجم). بعد الإضافة تقدر تعدّل أي تفصيلة — الاسم، النوع، المعامل، الرمز، والملاحظات — من الجدول تحت مباشرة.</div>
-  <button class="hbtn gold" style="width:100%;justify-content:center;padding:9px;margin-bottom:16px" onclick="addUom()">➕ إضافة وحدة</button>
+  <button class="hbtn gold" style="width:100%;justify-content:center;padding:9px;margin-bottom:16px" onclick="addUom()" data-i18n="➕ إضافة وحدة">➕ إضافة وحدة</button>
   <div id="uomList"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('uomModal')" data-i18n="إغلاق">إغلاق</button>
@@ -878,7 +878,7 @@ td{padding:9px 13px;vertical-align:middle;}
   </div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('addCatModal')" data-i18n="إلغاء">إلغاء</button>
-    <button class="hbtn gold" onclick="saveCat()" id="addCatBtn" data-i18n="✓ إضافة القسم">✓ إضافة القسم</button>
+    <button class="hbtn gold" onclick="saveCat()" id="addCatBtn">✓ إضافة القسم</button>
   </div>
 </div>
 </div>
@@ -893,13 +893,13 @@ td{padding:9px 13px;vertical-align:middle;}
       <input type="text" id="mgSrch" placeholder="بحث..." oninput="renderManage()" style="padding:7px 13px 7px 36px">
     </div>
     <select class="mod-in" id="mgCat" onchange="renderManage()" style="width:auto">
-      <option value="">كل الأقسام</option>
+      <option value="" data-i18n="كل الأقسام">كل الأقسام</option>
     </select>
   </div>
   <div style="max-height:420px;overflow-y:auto" id="manageList"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('manageModal')" data-i18n="إغلاق">إغلاق</button>
-    <button class="hbtn org" onclick="closeM('manageModal');openAddItem()">➕ إضافة صنف جديد</button>
+    <button class="hbtn org" onclick="closeM('manageModal');openAddItem()" data-i18n="➕ إضافة صنف جديد">➕ إضافة صنف جديد</button>
   </div>
 </div>
 </div>
@@ -925,8 +925,8 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="mod-title" data-i18n="📅 يوم جرد جديد">📅 يوم جرد جديد</div>
   <p style="color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.8">اختر كيف تريد البدء:</p>
   <div style="display:flex;gap:10px">
-    <button class="hbtn" style="flex:1;justify-content:center;padding:12px" onclick="startDay(false)">🔄 بدء من صفر</button>
-    <button class="hbtn grn" style="flex:1;justify-content:center;padding:12px" onclick="startDay(true)">📋 إبقاء الكميات</button>
+    <button class="hbtn" style="flex:1;justify-content:center;padding:12px" onclick="startDay(false)" data-i18n="🔄 بدء من صفر">🔄 بدء من صفر</button>
+    <button class="hbtn grn" style="flex:1;justify-content:center;padding:12px" onclick="startDay(true)" data-i18n="📋 إبقاء الكميات">📋 إبقاء الكميات</button>
   </div>
   <div class="mod-foot"><button class="hbtn" onclick="closeM('newDayModal')" data-i18n="إلغاء">إلغاء</button></div>
 </div>
@@ -961,7 +961,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <div id="branchMgrList"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('branchMgrModal')" data-i18n="إغلاق">إغلاق</button>
-    <button class="hbtn org" onclick="openNewBranchForm()">➕ إضافة فرع جديد</button>
+    <button class="hbtn org" onclick="openNewBranchForm()" data-i18n="➕ إضافة فرع جديد">➕ إضافة فرع جديد</button>
   </div>
 </div>
 </div>
@@ -976,7 +976,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="mod-field"><label class="mod-lbl" data-i18n="مشرف الجرد">مشرف الجرد</label><input class="mod-in" id="nb-super"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('newBranchModal')" data-i18n="إلغاء">إلغاء</button>
-    <button class="hbtn gold" id="createBranchBtn" onclick="createNewBranch()" data-i18n="✓ إنشاء الفرع">✓ إنشاء الفرع</button>
+    <button class="hbtn gold" id="createBranchBtn" onclick="createNewBranch()">✓ إنشاء الفرع</button>
   </div>
 </div>
 </div>
@@ -990,9 +990,9 @@ td{padding:9px 13px;vertical-align:middle;}
     <div class="mod-field"><label class="mod-lbl" data-i18n="تاريخ النهاية *">تاريخ النهاية *</label><input type="date" class="mod-in" id="nc-end"></div>
   </div>
   <div style="display:flex;gap:6px;margin:-6px 0 14px">
-    <button class="hbtn" type="button" style="flex:1;justify-content:center;padding:6px;font-size:11.5px" onclick="setCyclePreset(0)">يومية</button>
-    <button class="hbtn" type="button" style="flex:1;justify-content:center;padding:6px;font-size:11.5px" onclick="setCyclePreset(6)">أسبوعية</button>
-    <button class="hbtn" type="button" style="flex:1;justify-content:center;padding:6px;font-size:11.5px" onclick="setCyclePreset(13)">كل أسبوعين</button>
+    <button class="hbtn" type="button" style="flex:1;justify-content:center;padding:6px;font-size:11.5px" onclick="setCyclePreset(0)" data-i18n="يومية">يومية</button>
+    <button class="hbtn" type="button" style="flex:1;justify-content:center;padding:6px;font-size:11.5px" onclick="setCyclePreset(6)" data-i18n="أسبوعية">أسبوعية</button>
+    <button class="hbtn" type="button" style="flex:1;justify-content:center;padding:6px;font-size:11.5px" onclick="setCyclePreset(13)" data-i18n="كل أسبوعين">كل أسبوعين</button>
   </div>
   <p style="font-size:11.5px;color:var(--muted);line-height:1.8">الرصيد الافتتاحي هياخد تلقائياً من الرصيد الختامي لآخر دورة مغلقة لنفس الفرع (أو تقدر تدخله يدوياً لو دي أول دورة).</p>
   <div class="mod-foot">
@@ -1010,12 +1010,12 @@ td{padding:9px 13px;vertical-align:middle;}
   <div style="max-height:400px;overflow-y:auto" id="menuList"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('menuModal')" data-i18n="إغلاق">إغلاق</button>
-    <button class="hbtn" onclick="exportRecipesExcel()">📗 تصدير المكونات الحالية</button>
-    <button class="hbtn" onclick="downloadSimpleMenuImportTemplate()">📄 قالب أصناف فقط (بدون مكوّنات)</button>
-    <button class="hbtn" onclick="document.getElementById('simpleMenuImportFileInput').click()">📥 استيراد أصناف فقط (Excel)</button>
-    <button class="hbtn" onclick="downloadRecipeImportTemplate()">📄 قالب استيراد أصناف المنيو (بالشرح)</button>
-    <button class="hbtn" onclick="document.getElementById('recipeImportFileInput').click()">📥 استيراد أصناف المنيو (Excel)</button>
-    <button class="hbtn org" onclick="closeM('menuModal');openAddMenuItem()">➕ إضافة صنف جديد</button>
+    <button class="hbtn" onclick="exportRecipesExcel()" data-i18n="📗 تصدير المكونات الحالية">📗 تصدير المكونات الحالية</button>
+    <button class="hbtn" onclick="downloadSimpleMenuImportTemplate()" data-i18n="📄 قالب أصناف فقط (بدون مكوّنات)">📄 قالب أصناف فقط (بدون مكوّنات)</button>
+    <button class="hbtn" onclick="document.getElementById('simpleMenuImportFileInput').click()" data-i18n="📥 استيراد أصناف فقط (Excel)">📥 استيراد أصناف فقط (Excel)</button>
+    <button class="hbtn" onclick="downloadRecipeImportTemplate()" data-i18n="📄 قالب استيراد أصناف المنيو (بالشرح)">📄 قالب استيراد أصناف المنيو (بالشرح)</button>
+    <button class="hbtn" onclick="document.getElementById('recipeImportFileInput').click()" data-i18n="📥 استيراد أصناف المنيو (Excel)">📥 استيراد أصناف المنيو (Excel)</button>
+    <button class="hbtn org" onclick="closeM('menuModal');openAddMenuItem()" data-i18n="➕ إضافة صنف جديد">➕ إضافة صنف جديد</button>
   </div>
 </div>
 </div>
@@ -1032,11 +1032,11 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="mod-field">
     <label class="mod-lbl" data-i18n="مقادير الوصفة (المكوّنات من المخزون)">مقادير الوصفة (المكوّنات من المخزون)</label>
     <div id="miRecipeRows" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
-    <button class="hbtn" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="addRecipeRow()">➕ إضافة مكوّن</button>
+    <button class="hbtn" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="addRecipeRow()" data-i18n="➕ إضافة مكوّن">➕ إضافة مكوّن</button>
   </div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('menuItemModal')" data-i18n="إلغاء">إلغاء</button>
-    <button class="hbtn gold" onclick="saveMenuItem()" id="miSaveBtn" data-i18n="✓ حفظ الصنف">✓ حفظ الصنف</button>
+    <button class="hbtn gold" onclick="saveMenuItem()" id="miSaveBtn">✓ حفظ الصنف</button>
   </div>
 </div>
 </div>
@@ -1064,13 +1064,13 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('planModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
-    <button class="hbtn" onclick="resetPlanOverrides()">🔄 إعادة من المتوسط التاريخي</button>
-    <button class="hbtn gold" onclick="exportPlanExcel()">📗 تصدير Excel</button>
+    <button class="hbtn" onclick="resetPlanOverrides()" data-i18n="🔄 إعادة من المتوسط التاريخي">🔄 إعادة من المتوسط التاريخي</button>
+    <button class="hbtn gold" onclick="exportPlanExcel()" data-i18n="📗 تصدير Excel">📗 تصدير Excel</button>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">النظام بيحسب متوسط استهلاك يومي لكل صنف من بيانات الدورات المغلقة السابقة، وبيقترح احتياج الفترة القادمة تلقائياً — وتقدر تعدّل الكميات المتوقعة لأي صنف يدوياً.</p>
   <div class="mod-row" style="align-items:end">
     <div class="mod-field" id="planBranchFilterWrap" style="display:none">
-      <label class="mod-lbl">الفرع</label>
+      <label class="mod-lbl" data-i18n="الفرع">الفرع</label>
       <select class="mod-in" id="plan-branch-filter" onchange="setPlanBranchFilter(this.value)"></select>
     </div>
     <div class="mod-field"><label class="mod-lbl" data-i18n="عدد الأيام المطلوب التخطيط لها">عدد الأيام المطلوب التخطيط لها</label><input type="number" inputmode="decimal" class="mod-in" id="plan-days" value="14" min="1" step="1" onchange="setPlanDays(this.value)"></div>
@@ -1081,8 +1081,8 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('planModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
-    <button class="hbtn" onclick="resetPlanOverrides()">🔄 إعادة من المتوسط التاريخي</button>
-    <button class="hbtn gold" onclick="exportPlanExcel()">📗 تصدير Excel</button>
+    <button class="hbtn" onclick="resetPlanOverrides()" data-i18n="🔄 إعادة من المتوسط التاريخي">🔄 إعادة من المتوسط التاريخي</button>
+    <button class="hbtn gold" onclick="exportPlanExcel()" data-i18n="📗 تصدير Excel">📗 تصدير Excel</button>
   </div>
 </div>
 </div>
@@ -1104,12 +1104,12 @@ td{padding:9px 13px;vertical-align:middle;}
     <input type="file" class="mod-in" id="co-logo-file" accept="image/*" onchange="handleLogoFileSelected(event)">
     <div style="margin-top:8px;display:flex;align-items:center;gap:10px">
       <img id="co-logo-preview" style="max-height:56px;max-width:140px;display:none;border-radius:6px;background:#fff;padding:4px">
-      <button class="hbtn" type="button" style="padding:5px 10px;font-size:11.5px" onclick="clearCompanyLogo()">🗑 حذف الشعار</button>
+      <button class="hbtn" type="button" style="padding:5px 10px;font-size:11.5px" onclick="clearCompanyLogo()" data-i18n="🗑 حذف الشعار">🗑 حذف الشعار</button>
     </div>
     <div class="mod-hint">صورة صغيرة (أقل من 400KB) — بتظهر في الهيدر وفي رأس تقارير PDF</div>
   </div>
   <div class="mod-field">
-    <label class="mod-lbl">نسبة ضريبة القيمة المضافة % (اختياري)</label>
+    <label class="mod-lbl" data-i18n="نسبة ضريبة القيمة المضافة % (اختياري)">نسبة ضريبة القيمة المضافة % (اختياري)</label>
     <input type="number" inputmode="decimal" class="mod-in" id="co-vat" min="0" max="100" step="0.1" placeholder="مثال: 14">
     <div class="mod-hint">سعر بيع أصناف المنيو المُدخل في النظام يُعتبر شامل الضريبة. نسبة تكلفة المبيعات (Food Cost %) في كل التقارير بتتحسب على صافي المبيعات بعد خصم الضريبة دي، مطابقةً للمعيار المحاسبي المتبع في تقارير المطاعم. سيبها فاضية أو صفر لو مفيش ضريبة على مبيعاتك.</div>
   </div>
@@ -1141,30 +1141,30 @@ td{padding:9px 13px;vertical-align:middle;}
 <!-- QUICK MOVEMENT ENTRY MODAL (تحويل/سحب/استلام مستقل، مرتبط بالدورة حسب تاريخ الحركة) -->
 <div class="overlay" id="quickMovementModal">
 <div class="modal" style="width:720px">
-  <div class="mod-title">🔀 تسجيل حركة (تحويل/سحب/استلام)</div>
+  <div class="mod-title" data-i18n="🔀 تسجيل حركة (تحويل/سحب/استلام)">🔀 تسجيل حركة (تحويل/سحب/استلام)</div>
   <div class="mod-row">
     <div class="mod-field">
-      <label class="mod-lbl">نوع الحركة *</label>
+      <label class="mod-lbl" data-i18n="نوع الحركة *">نوع الحركة *</label>
       <select class="mod-in" id="qm-type" onchange="updateQuickMovementFields()">
-        <option value="transferOut">تحويل صادر لفرع تاني</option>
-        <option value="transferIn">تحويل وارد من فرع تاني</option>
-        <option value="withdraw">سحب/صرف داخلي</option>
-        <option value="purchase">مشتريات/استلام بضاعة</option>
+        <option value="transferOut" data-i18n="تحويل صادر لفرع تاني">تحويل صادر لفرع تاني</option>
+        <option value="transferIn" data-i18n="تحويل وارد من فرع تاني">تحويل وارد من فرع تاني</option>
+        <option value="withdraw" data-i18n="سحب/صرف داخلي">سحب/صرف داخلي</option>
+        <option value="purchase" data-i18n="مشتريات/استلام بضاعة">مشتريات/استلام بضاعة</option>
       </select>
     </div>
-    <div class="mod-field"><label class="mod-lbl">تاريخ الحركة *</label><input type="date" class="mod-in" id="qm-date" onchange="updateQuickMovementCycleInfo()"></div>
+    <div class="mod-field"><label class="mod-lbl" data-i18n="تاريخ الحركة *">تاريخ الحركة *</label><input type="date" class="mod-in" id="qm-date" onchange="updateQuickMovementCycleInfo()"></div>
   </div>
-  <div class="mod-field"><label class="mod-lbl" id="qm-note-lbl">سبب السحب / اسم الفرع الآخر</label><div id="qm-note-wrap"><input class="mod-in" id="qm-note"></div></div>
+  <div class="mod-field"><label class="mod-lbl" id="qm-note-lbl" data-i18n="سبب السحب / اسم الفرع الآخر">سبب السحب / اسم الفرع الآخر</label><div id="qm-note-wrap"><input class="mod-in" id="qm-note"></div></div>
   <div id="qm-transfer-hint" style="display:none;font-size:11px;color:var(--muted);margin:-8px 0 12px">📥 هيوصل طلب للفرع المستلم في شاشة "مراجعة التحويلات الواردة" عنده، ومش هيتحسب عندهم كرصيد إلا لما يعتمدوه.</div>
   <div id="qm-cycle-info" style="font-size:11.5px;color:var(--muted);margin-bottom:10px"></div>
-  <div class="mod-field"><label class="mod-lbl">إضافة صنف للحركة</label><div id="qm-item-wrap"></div></div>
+  <div class="mod-field"><label class="mod-lbl" data-i18n="إضافة صنف للحركة">إضافة صنف للحركة</label><div id="qm-item-wrap"></div></div>
   <div class="tbl-wrap" style="margin-bottom:14px"><table>
     <thead><tr><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th id="qm-cost-col-lbl" style="display:none">التكلفة الإجمالية</th><th></th></tr></thead>
     <tbody id="qmRows"></tbody>
   </table></div>
   <div class="mod-foot">
-    <button class="hbtn" onclick="closeM('quickMovementModal')">إلغاء</button>
-    <button class="hbtn gold" onclick="saveQuickMovement()">✓ تسجيل الحركة</button>
+    <button class="hbtn" onclick="closeM('quickMovementModal')" data-i18n="إلغاء">إلغاء</button>
+    <button class="hbtn gold" onclick="saveQuickMovement()" data-i18n="✓ تسجيل الحركة">✓ تسجيل الحركة</button>
   </div>
 </div>
 </div>
@@ -1172,11 +1172,11 @@ td{padding:9px 13px;vertical-align:middle;}
 <!-- INCOMING TRANSFERS REVIEW MODAL (مراجعة واعتماد التحويلات الواردة من الفروع التانية) -->
 <div class="overlay" id="incomingTransfersModal">
 <div class="modal" style="width:820px">
-  <div class="mod-title">📥 مراجعة التحويلات الواردة</div>
+  <div class="mod-title" data-i18n="📥 مراجعة التحويلات الواردة">📥 مراجعة التحويلات الواردة</div>
   <p style="font-size:11px;color:var(--muted);margin:-6px 0 14px">التحويلات اللي فروع تانية بعتتها لك — لازم تعتمدها الأول عشان تتحسب كرصيد وارد عندك في دورة التسوية.</p>
   <div id="incomingTransfersBody"></div>
   <div class="mod-foot">
-    <button class="hbtn" onclick="closeM('incomingTransfersModal')">إغلاق</button>
+    <button class="hbtn" onclick="closeM('incomingTransfersModal')" data-i18n="إغلاق">إغلاق</button>
   </div>
 </div>
 </div>
@@ -1203,7 +1203,7 @@ td{padding:9px 13px;vertical-align:middle;}
 <!-- MENU SALES BY DATE REPORT MODAL -->
 <div class="overlay" id="menuSalesModal">
 <div class="modal" style="width:820px">
-  <div class="mod-title">📊 تقرير مبيعات المنيو حسب التاريخ</div>
+  <div class="mod-title" data-i18n="📊 تقرير مبيعات المنيو حسب التاريخ">📊 تقرير مبيعات المنيو حسب التاريخ</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('menuSalesModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
@@ -1212,12 +1212,12 @@ td{padding:9px 13px;vertical-align:middle;}
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">مبيعات كل صنف من المنيو مأخوذة من الدورات المغلقة، مع إمكانية التصفية بفترة تاريخ محدّدة أو بفرع محدد.</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
     <div class="mod-field" id="menuSalesBranchFilterWrap" style="display:none;margin-bottom:0">
-      <label class="mod-lbl">الفرع</label>
+      <label class="mod-lbl" data-i18n="الفرع">الفرع</label>
       <select class="mod-in" id="ms-branch-filter" style="width:auto" onchange="setMenuSalesBranchFilter(this.value)"></select>
     </div>
-    <div class="mod-field" style="margin-bottom:0"><label class="mod-lbl">من تاريخ</label><input type="date" class="mod-in" id="menuSalesDateFrom" onchange="renderMenuSalesReport()"></div>
-    <div class="mod-field" style="margin-bottom:0"><label class="mod-lbl">إلى تاريخ</label><input type="date" class="mod-in" id="menuSalesDateTo" onchange="renderMenuSalesReport()"></div>
-    <button class="hbtn" onclick="document.getElementById('menuSalesDateFrom').value='';document.getElementById('menuSalesDateTo').value='';renderMenuSalesReport()">🔄 كل الفترات</button>
+    <div class="mod-field" style="margin-bottom:0"><label class="mod-lbl" data-i18n="من تاريخ">من تاريخ</label><input type="date" class="mod-in" id="menuSalesDateFrom" onchange="renderMenuSalesReport()"></div>
+    <div class="mod-field" style="margin-bottom:0"><label class="mod-lbl" data-i18n="إلى تاريخ">إلى تاريخ</label><input type="date" class="mod-in" id="menuSalesDateTo" onchange="renderMenuSalesReport()"></div>
+    <button class="hbtn" onclick="document.getElementById('menuSalesDateFrom').value='';document.getElementById('menuSalesDateTo').value='';renderMenuSalesReport()" data-i18n="🔄 كل الفترات">🔄 كل الفترات</button>
   </div>
   <div id="menuSalesBody" style="max-height:520px;overflow-y:auto"></div>
   <div class="mod-foot">
@@ -1240,20 +1240,20 @@ td{padding:9px 13px;vertical-align:middle;}
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">كل الفروع مجمّعة في تقرير واحد: إجمالي موحّد + تفصيل حسب الفرع + إجمالي استهلاك الأصناف عبر كل الفروع، لكل الدورات المغلقة اللي تقع في الفلتر المختار. متاح للإدارة أو لمن له صلاحية عرض تقارير كل الفروع.</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
     <div class="mod-field" style="margin-bottom:0">
-      <label class="mod-lbl">الفرع</label>
+      <label class="mod-lbl" data-i18n="الفرع">الفرع</label>
       <select class="mod-in" id="abrBranchFilter" style="width:auto" onchange="loadAllBranchesData()">
-        <option value="all">كل الفروع</option>
+        <option value="all" data-i18n="كل الفروع">كل الفروع</option>
       </select>
     </div>
     <div class="mod-field" style="margin-bottom:0">
-      <label class="mod-lbl">من تاريخ</label>
+      <label class="mod-lbl" data-i18n="من تاريخ">من تاريخ</label>
       <input type="date" class="mod-in" id="abrDateFrom" onchange="loadAllBranchesData()">
     </div>
     <div class="mod-field" style="margin-bottom:0">
-      <label class="mod-lbl">إلى تاريخ</label>
+      <label class="mod-lbl" data-i18n="إلى تاريخ">إلى تاريخ</label>
       <input type="date" class="mod-in" id="abrDateTo" onchange="loadAllBranchesData()">
     </div>
-    <button class="hbtn" onclick="resetAllBranchesFilters()">🔄 كل الفترات</button>
+    <button class="hbtn" onclick="resetAllBranchesFilters()" data-i18n="🔄 كل الفترات">🔄 كل الفترات</button>
   </div>
   <div id="allBranchesBody" style="max-height:560px;overflow-y:auto"></div>
   <div class="mod-foot">
@@ -1310,18 +1310,18 @@ td{padding:9px 13px;vertical-align:middle;}
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">إجمالي كميات وقيمة الهالك لكل صنف، مرتّبة تنازلياً من الأكبر قيمة، عبر كل دورات الفرع المختار — أو مجمّعة لكل الفروع.</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
     <div class="mod-field" id="wasteBranchFilterWrap" style="display:none;margin-bottom:0">
-      <label class="mod-lbl">الفرع</label>
+      <label class="mod-lbl" data-i18n="الفرع">الفرع</label>
       <select class="mod-in" id="wr-branch-filter" style="width:auto" onchange="setWasteReportBranchFilter(this.value)"></select>
     </div>
     <div class="mod-field" style="margin-bottom:0">
-      <label class="mod-lbl">من تاريخ</label>
+      <label class="mod-lbl" data-i18n="من تاريخ">من تاريخ</label>
       <input type="date" class="mod-in" id="wr-date-from" onchange="renderWasteReport()">
     </div>
     <div class="mod-field" style="margin-bottom:0">
-      <label class="mod-lbl">إلى تاريخ</label>
+      <label class="mod-lbl" data-i18n="إلى تاريخ">إلى تاريخ</label>
       <input type="date" class="mod-in" id="wr-date-to" onchange="renderWasteReport()">
     </div>
-    <button class="hbtn" onclick="document.getElementById('wr-date-from').value='';document.getElementById('wr-date-to').value='';renderWasteReport()">🔄 كل الفترات</button>
+    <button class="hbtn" onclick="document.getElementById('wr-date-from').value='';document.getElementById('wr-date-to').value='';renderWasteReport()" data-i18n="🔄 كل الفترات">🔄 كل الفترات</button>
   </div>
   <div id="wasteReportBody"></div>
 </div>
@@ -1338,15 +1338,15 @@ td{padding:9px 13px;vertical-align:middle;}
   </div>
   <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px">
     <div class="mod-row">
-      <div class="mod-field"><label class="mod-lbl">التاريخ</label><input type="date" class="mod-in" id="mnt-date"></div>
-      <div class="mod-field"><label class="mod-lbl">المعدة/الموقع *</label><input type="text" class="mod-in" id="mnt-equipment" placeholder="مثال: فريزر رقم 2"></div>
+      <div class="mod-field"><label class="mod-lbl" data-i18n="التاريخ">التاريخ</label><input type="date" class="mod-in" id="mnt-date"></div>
+      <div class="mod-field"><label class="mod-lbl" data-i18n="المعدة/الموقع *">المعدة/الموقع *</label><input type="text" class="mod-in" id="mnt-equipment" placeholder="مثال: فريزر رقم 2"></div>
     </div>
-    <div class="mod-field"><label class="mod-lbl">وصف العطل *</label><input type="text" class="mod-in" id="mnt-desc" placeholder="اشرح المشكلة..."></div>
+    <div class="mod-field"><label class="mod-lbl" data-i18n="وصف العطل *">وصف العطل *</label><input type="text" class="mod-in" id="mnt-desc" placeholder="اشرح المشكلة..."></div>
     <div class="mod-row">
-      <div class="mod-field"><label class="mod-lbl">المُبلّغ</label><input type="text" class="mod-in" id="mnt-reporter" placeholder="اسم الموظف..."></div>
-      <div class="mod-field"><label class="mod-lbl">تكلفة الإصلاح المتوقعة (اختياري)</label><input type="number" inputmode="decimal" class="mod-in" id="mnt-cost" min="0" step="0.01"></div>
+      <div class="mod-field"><label class="mod-lbl" data-i18n="المُبلّغ">المُبلّغ</label><input type="text" class="mod-in" id="mnt-reporter" placeholder="اسم الموظف..."></div>
+      <div class="mod-field"><label class="mod-lbl" data-i18n="تكلفة الإصلاح المتوقعة (اختياري)">تكلفة الإصلاح المتوقعة (اختياري)</label><input type="number" inputmode="decimal" class="mod-in" id="mnt-cost" min="0" step="0.01"></div>
     </div>
-    <button class="hbtn gold" style="width:100%;justify-content:center;padding:10px" onclick="addMaintenanceEntry()">➕ تسجيل عطل جديد</button>
+    <button class="hbtn gold" style="width:100%;justify-content:center;padding:10px" onclick="addMaintenanceEntry()" data-i18n="➕ تسجيل عطل جديد">➕ تسجيل عطل جديد</button>
   </div>
   <div id="maintenanceList"></div>
 </div>
@@ -1380,20 +1380,20 @@ td{padding:9px 13px;vertical-align:middle;}
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">نقطة التعادل اليومية محسوبة من بيانات الموظفين وبنود التكاليف المباشرة المسجّلة لهذا الفرع — عدّلها من الشاشتين المخصصتين.</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
     <div class="mod-field" id="beBranchFilterWrap" style="display:none;margin-bottom:0">
-      <label class="mod-lbl">الفرع</label>
+      <label class="mod-lbl" data-i18n="الفرع">الفرع</label>
       <select class="mod-in" id="be-branch-filter" style="width:auto" onchange="setBreakEvenBranchFilter(this.value)"></select>
     </div>
     <div class="mod-field" style="margin-bottom:0">
-      <label class="mod-lbl">من تاريخ</label>
+      <label class="mod-lbl" data-i18n="من تاريخ">من تاريخ</label>
       <input type="date" class="mod-in" id="be-date-from" style="width:150px" onchange="setBreakEvenDateFilter()">
     </div>
     <div class="mod-field" style="margin-bottom:0">
-      <label class="mod-lbl">إلى تاريخ</label>
+      <label class="mod-lbl" data-i18n="إلى تاريخ">إلى تاريخ</label>
       <input type="date" class="mod-in" id="be-date-to" style="width:150px" onchange="setBreakEvenDateFilter()">
     </div>
-    <button class="hbtn" onclick="clearBreakEvenDateFilter()" title="رجوع لمتوسط كل الدورات">✖️ كل الفترات</button>
-    <button class="hbtn" onclick="openEmployeesScreen()">👥 بيانات الموظفين</button>
-    <button class="hbtn" onclick="openDirectCostsScreen()">🧾 بنود التكاليف المباشرة</button>
+    <button class="hbtn" onclick="clearBreakEvenDateFilter()" title="رجوع لمتوسط كل الدورات" data-i18n="✖️ كل الفترات">✖️ كل الفترات</button>
+    <button class="hbtn" onclick="openEmployeesScreen()" data-i18n="👥 بيانات الموظفين">👥 بيانات الموظفين</button>
+    <button class="hbtn" onclick="openDirectCostsScreen()" data-i18n="🧾 بنود التكاليف المباشرة">🧾 بنود التكاليف المباشرة</button>
   </div>
   <div id="breakEvenBody"></div>
 </div>
@@ -1410,11 +1410,11 @@ td{padding:9px 13px;vertical-align:middle;}
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">موظفي كل فرع ورواتبهم الشهرية — تُستخدم في حساب نقطة التعادل اليومية. يمكن نقل الموظف لفرع آخر بحركة مرتبطة بتاريخ.</p>
   <div class="mod-field" id="employeesBranchFilterWrap" style="display:none;max-width:280px;margin-bottom:14px">
-    <label class="mod-lbl">الفرع</label>
+    <label class="mod-lbl" data-i18n="الفرع">الفرع</label>
     <select class="mod-in" id="employees-branch-filter" onchange="setEmployeesBranchFilter(this.value)"></select>
   </div>
   <div id="employeesBody"></div>
-  <button class="hbtn gold" id="addEmployeeBtn" style="width:100%;justify-content:center;padding:10px;margin-top:14px" onclick="addEmployee()">➕ إضافة موظف</button>
+  <button class="hbtn gold" id="addEmployeeBtn" style="width:100%;justify-content:center;padding:10px;margin-top:14px" onclick="addEmployee()" data-i18n="➕ إضافة موظف">➕ إضافة موظف</button>
 </div>
 </div>
 
@@ -1424,16 +1424,16 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="mod-title" data-i18n="🔀 نقل موظف لفرع آخر">🔀 نقل موظف لفرع آخر</div>
   <div id="transferEmpInfo" style="font-size:13px;margin-bottom:14px;color:var(--muted)"></div>
   <div class="mod-field">
-    <label class="mod-lbl">الفرع الجديد *</label>
+    <label class="mod-lbl" data-i18n="الفرع الجديد *">الفرع الجديد *</label>
     <select class="mod-in" id="te-target-branch"></select>
   </div>
   <div class="mod-field">
-    <label class="mod-lbl">تاريخ النقل *</label>
+    <label class="mod-lbl" data-i18n="تاريخ النقل *">تاريخ النقل *</label>
     <input type="date" class="mod-in" id="te-date">
   </div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('transferEmployeeModal')" data-i18n="إلغاء">إلغاء</button>
-    <button class="hbtn gold" onclick="confirmTransferEmployee()">✓ تأكيد النقل</button>
+    <button class="hbtn gold" onclick="confirmTransferEmployee()" data-i18n="✓ تأكيد النقل">✓ تأكيد النقل</button>
   </div>
 </div>
 </div>
@@ -1449,11 +1449,11 @@ td{padding:9px 13px;vertical-align:middle;}
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">بنود التكاليف المباشرة الشهرية لكل فرع (إيجار، كهرباء، تأمين، تسويق...) — تُستخدم في حساب نقطة التعادل اليومية.</p>
   <div class="mod-field" id="directCostsBranchFilterWrap" style="display:none;max-width:280px;margin-bottom:14px">
-    <label class="mod-lbl">الفرع</label>
+    <label class="mod-lbl" data-i18n="الفرع">الفرع</label>
     <select class="mod-in" id="direct-costs-branch-filter" onchange="setDirectCostsBranchFilter(this.value)"></select>
   </div>
   <div id="directCostsBody"></div>
-  <button class="hbtn gold" id="addDirectCostBtn" style="width:100%;justify-content:center;padding:10px;margin-top:14px" onclick="addDirectCost()">➕ إضافة بند تكلفة</button>
+  <button class="hbtn gold" id="addDirectCostBtn" style="width:100%;justify-content:center;padding:10px;margin-top:14px" onclick="addDirectCost()" data-i18n="➕ إضافة بند تكلفة">➕ إضافة بند تكلفة</button>
 </div>
 </div>
 
@@ -1479,7 +1479,7 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="modal" style="width:580px">
   <div class="mod-title" data-i18n="👤 إدارة المستخدمين والصلاحيات">👤 إدارة المستخدمين والصلاحيات</div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">حدد صلاحية كل مستخدم (إدارة/مالية تشوف كل الفروع، أو موظف فرع مقفول على فرع واحد) والفرع بتاعه، أو أنشئ حساب جديد مباشرة من غير ما تستنى الموظف يسجل بنفسه.</p>
-  <button class="hbtn org" style="width:100%;justify-content:center;padding:9px;margin-bottom:14px" onclick="openCreateUserForm()">➕ إنشاء حساب مباشرة</button>
+  <button class="hbtn org" style="width:100%;justify-content:center;padding:9px;margin-bottom:14px" onclick="openCreateUserForm()" data-i18n="➕ إنشاء حساب مباشرة">➕ إنشاء حساب مباشرة</button>
   <div id="usersList" style="max-height:420px;overflow-y:auto"></div>
   <div class="mod-foot"><button class="hbtn" onclick="closeM('usersModal')" data-i18n="إغلاق">إغلاق</button></div>
 </div>
@@ -1497,26 +1497,26 @@ td{padding:9px 13px;vertical-align:middle;}
     <label class="mod-lbl" data-i18n="كلمة المرور *">كلمة المرور *</label>
     <div style="display:flex;gap:8px">
       <input class="mod-in" id="cu-pass" placeholder="6 أحرف على الأقل" style="flex:1">
-      <button class="hbtn" type="button" style="flex:none;padding:0 12px" onclick="generateUserPassword()">🎲 توليد</button>
+      <button class="hbtn" type="button" style="flex:none;padding:0 12px" onclick="generateUserPassword()" data-i18n="🎲 توليد">🎲 توليد</button>
     </div>
   </div>
   <div class="mod-row">
     <div class="mod-field">
       <label class="mod-lbl" data-i18n="الصلاحية">الصلاحية</label>
       <select class="mod-in" id="cu-role">
-        <option value="branch">موظف فرع</option>
-        <option value="admin">إدارة/مالية</option>
+        <option value="branch" data-i18n="موظف فرع">موظف فرع</option>
+        <option value="admin" data-i18n="إدارة/مالية">إدارة/مالية</option>
       </select>
     </div>
     <div class="mod-field">
       <label class="mod-lbl" data-i18n="الفرع">الفرع</label>
-      <select class="mod-in" id="cu-branch"><option value="">بدون فرع</option></select>
+      <select class="mod-in" id="cu-branch"><option value="" data-i18n="بدون فرع">بدون فرع</option></select>
     </div>
   </div>
   <div id="createUserResult" style="display:none;background:rgba(46,232,154,.08);border:1px solid rgba(46,232,154,.3);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12.5px;line-height:1.9"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('createUserModal')" data-i18n="إغلاق">إغلاق</button>
-    <button class="hbtn gold" id="createUserBtn" onclick="createUserDirectly()" data-i18n="✓ إنشاء الحساب">✓ إنشاء الحساب</button>
+    <button class="hbtn gold" id="createUserBtn" onclick="createUserDirectly()">✓ إنشاء الحساب</button>
   </div>
 </div>
 </div>
@@ -1719,6 +1719,135 @@ const I18N_EN={
   "بيانات الشركة": "Company Info",
   "عرض مكونات الأصناف": "View Item Components",
   "عرض تقارير الفرع": "View Branch Reports",
+  "دخول": "Login",
+  "إنشاء حساب جديد": "Create New Account",
+  "📗 تصدير الأصناف الحالية (لتحديث التكلفة)": "📗 Export Current Items (to Update Cost)",
+  "➕ تسجيل حركة (تحويل/سحب/استلام)": "➕ Record Movement (Transfer/Withdraw/Receive)",
+  "📥 مراجعة التحويلات الواردة": "📥 Review Incoming Transfers",
+  "📊 مبيعات المنيو حسب التاريخ": "📊 Menu Sales by Date",
+  "💾 حفظ": "💾 Save",
+  "كل الوحدات": "All Units",
+  "كل الأنواع": "All Types",
+  "خامة": "Raw Material",
+  "نصف مصنّع": "Semi-Finished",
+  "منتج نهائي/جاهز": "Finished/Ready Product",
+  "كل الحالات": "All Statuses",
+  "مدخل كمية": "Quantity Entered",
+  "صفري": "Zero",
+  "لم يُجرد": "Not Counted",
+  "➕ إضافة": "➕ Add",
+  "🔄 مسح الفلتر": "🔄 Clear Filter",
+  "➕ إضافة مكوّن": "➕ Add Component",
+  "نوع الوحدة": "Unit Type",
+  "وزن (أساسها كجم)": "Weight (base: kg)",
+  "حجم (أساسها لتر)": "Volume (base: L)",
+  "عدد (أساسها قطعة)": "Count (base: piece)",
+  "تعادل كام من الوحدة الأساسية؟": "Equivalent in the Base Unit?",
+  "➕ إضافة وحدة": "➕ Add Unit",
+  "كل الأقسام": "All Categories",
+  "🔄 بدء من صفر": "🔄 Start From Scratch",
+  "📋 إبقاء الكميات": "📋 Keep Quantities",
+  "➕ إضافة فرع جديد": "➕ Add New Branch",
+  "يومية": "Daily",
+  "أسبوعية": "Weekly",
+  "كل أسبوعين": "Every Two Weeks",
+  "📗 تصدير المكونات الحالية": "📗 Export Current Recipes",
+  "📄 قالب أصناف فقط (بدون مكوّنات)": "📄 Items Only Template (No Recipe)",
+  "📥 استيراد أصناف فقط (Excel)": "📥 Import Items Only (Excel)",
+  "📥 استيراد أصناف المنيو (Excel)": "📥 Import Menu Items (Excel)",
+  "🔄 إعادة من المتوسط التاريخي": "🔄 Reset From Historical Average",
+  "📗 تصدير Excel": "📗 Export Excel",
+  "🗑 حذف الشعار": "🗑 Remove Logo",
+  "نسبة ضريبة القيمة المضافة % (اختياري)": "VAT Rate % (optional)",
+  "🔀 تسجيل حركة (تحويل/سحب/استلام)": "🔀 Record Movement (Transfer/Withdraw/Receive)",
+  "نوع الحركة *": "Movement Type *",
+  "تحويل صادر لفرع تاني": "Transfer Out to Another Branch",
+  "تحويل وارد من فرع تاني": "Transfer In From Another Branch",
+  "سحب/صرف داخلي": "Internal Withdrawal",
+  "مشتريات/استلام بضاعة": "Purchases/Goods Receiving",
+  "تاريخ الحركة *": "Movement Date *",
+  "سبب السحب / اسم الفرع الآخر": "Withdrawal Reason / Other Branch Name",
+  "إضافة صنف للحركة": "Add Item to Movement",
+  "✓ تسجيل الحركة": "✓ Record Movement",
+  "📊 تقرير مبيعات المنيو حسب التاريخ": "📊 Menu Sales Report by Date",
+  "من تاريخ": "From Date",
+  "إلى تاريخ": "To Date",
+  "🔄 كل الفترات": "🔄 All Periods",
+  "كل الفروع": "All Branches",
+  "نظام آخر": "Other System",
+  "التاريخ": "Date",
+  "المعدة/الموقع *": "Equipment/Location *",
+  "المعدة/الموقع": "Equipment/Location",
+  "وصف العطل *": "Issue Description *",
+  "وصف العطل": "Issue Description",
+  "المُبلّغ": "Reported By",
+  "تكلفة الإصلاح المتوقعة (اختياري)": "Expected Repair Cost (optional)",
+  "➕ تسجيل عطل جديد": "➕ Log New Issue",
+  "🔍 تأكيد مطابقة أصناف الاستيراد مع المنيو": "🔍 Confirm Import Item Matching with Menu",
+  "✖️ كل الفترات": "✖️ All Periods",
+  "➕ إضافة موظف": "➕ Add Employee",
+  "الفرع الجديد *": "New Branch *",
+  "تاريخ النقل *": "Transfer Date *",
+  "✓ تأكيد النقل": "✓ Confirm Transfer",
+  "➕ إضافة بند تكلفة": "➕ Add Cost Item",
+  "➕ إنشاء حساب مباشرة": "➕ Create Account Directly",
+  "🎲 توليد": "🎲 Generate",
+  "موظف فرع": "Branch Employee",
+  "إدارة/مالية": "Admin/Finance",
+  "بدون فرع": "No Branch",
+  "🌐 كل الفروع (تقرير موحّد)": "🌐 All Branches (Unified Report)",
+  "تبديل": "Switch",
+  "بانتظار": "Pending",
+  "عدد أيام الشهر المستخدمة لتوزيع التكاليف الثابتة": "Days in Month Used to Spread Fixed Costs",
+  "📦 المخزون الختامي": "📦 Closing Stock",
+  "📄 قالب استيراد المبيعات": "📄 Sales Import Template",
+  "📥 استيراد مبيعات من ملف خارجي (فوديكس / أودو / أونكس ...)": "📥 Import Sales From External File (Foodics / Odoo / Onyx ...)",
+  "📋 عرض المكونات": "📋 View Components",
+  "-- اختر الفرع --": "-- Select Branch --",
+  "❌ رفض": "❌ Reject",
+  "✅ اعتماد": "✅ Approve",
+  "🔄 سحب الكميات من شاشة الجرد اليومي الحالية": "🔄 Pull Quantities From Current Daily Inventory Screen",
+  "🌐 كل الفروع (مجمّع)": "🌐 All Branches (Aggregated)",
+  "إجمالي الكمية الهالكة": "Total Wasted Quantity",
+  "إجمالي القيمة": "Total Value",
+  "الاسم": "Name",
+  "الوظيفة": "Role",
+  "الراتب الشهري": "Monthly Salary",
+  "البند": "Item",
+  "القيمة الشهرية": "Monthly Value",
+  "عدد الموظفين": "Number of Employees",
+  "إجمالي التكاليف الثابتة الشهرية": "Total Monthly Fixed Costs",
+  "التكلفة الثابتة اليومية": "Daily Fixed Cost",
+  "نسبة التكلفة المتغيرة": "Variable Cost %",
+  "نقطة التعادل اليومية": "Daily Break-Even Point",
+  "نقطة التعادل الشهرية": "Monthly Break-Even Point",
+  "نقطة التعادل اليومية القياسية": "Standard Daily Break-Even Point",
+  "الإجمالي الفعلي (اختياري)": "Actual Total (optional)",
+  "تكلفة المبيعات (نظري)": "Cost of Sales (Theoretical)",
+  "القيمة المالية": "Monetary Value",
+  "الاسم في نقطة البيع": "POS Name",
+  "الصنف في النظام": "System Item",
+  "الإجمالي الفعلي": "Actual Total",
+  "اختر الصنف المطابق من المنيو": "Select the Matching Menu Item",
+  "عدد الأصناف المتأثرة": "Number of Affected Items",
+  "إجمالي قيمة الهالك": "Total Waste Value",
+  "أعلى صنف هالكًا": "Highest Waste Item",
+  "نسبة هامش المساهمة": "Contribution Margin %",
+  "⚖️ نقطة التعادل اليومية (إيراد)": "⚖️ Daily Break-Even Point (Revenue)",
+  "نقطة التعادل الشهرية (إيراد)": "Monthly Break-Even Point (Revenue)",
+  "نقطة التعادل الشهرية القياسية": "Standard Monthly Break-Even Point",
+  "عدد الأصناف المجرودة": "Number of Items Counted",
+  "إجمالي قيمة المخزون الختامي": "Total Closing Stock Value",
+  "أصناف فيها تعارض مصادر": "Items with Source Conflicts",
+  "🛵 مبيعات تطبيقات التوصيل": "🛵 Delivery App Sales",
+  "تكلفة الاستهلاك الفعلي": "Actual Consumption Cost",
+  "نسبة التكلفة الفعلية": "Actual Cost %",
+  "نسبة التكلفة النظرية": "Theoretical Cost %",
+  "متوسط صافي المبيعات اليومي للدورة": "Average Daily Net Sales for the Cycle",
+  "إجمالي الأصناف": "Total Items",
+  "تم جردها": "Counted",
+  "صفرية": "Zero Balance",
+  "نسبة الإنجاز": "Completion %",
 };
 
 let curLang=localStorage.getItem('appLang')||'ar';
@@ -1739,6 +1868,30 @@ function applyTranslations(){
   const langBtn=document.getElementById('langToggleBtn');
   if(langBtn) langBtn.textContent=curLang==='en'?'AR':'EN';
 }
+// most screens re-render fresh (new DOM nodes) when opened rather than going
+// through reRenderDynamicContentForLang's fixed list — this catches any
+// [data-i18n] element as soon as it's inserted, so English mode applies
+// immediately the first time a modal/screen is opened, not just after the
+// next language toggle. No-op while curLang is 'ar' (the default), so this
+// costs nothing for users who never switch language.
+new MutationObserver(muts=>{
+  if(curLang!=='en') return;
+  muts.forEach(mut=>{
+    mut.addedNodes.forEach(node=>{
+      if(node.nodeType!==1) return;
+      if(node.hasAttribute){
+        if(node.hasAttribute('data-i18n')) node.textContent=t(node.getAttribute('data-i18n'));
+        if(node.hasAttribute('data-i18n-title')) node.title=t(node.getAttribute('data-i18n-title'));
+        if(node.hasAttribute('data-i18n-ph')) node.placeholder=t(node.getAttribute('data-i18n-ph'));
+      }
+      if(node.querySelectorAll){
+        node.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});
+        node.querySelectorAll('[data-i18n-title]').forEach(el=>{el.title=t(el.getAttribute('data-i18n-title'));});
+        node.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.getAttribute('data-i18n-ph'));});
+      }
+    });
+  });
+}).observe(document.body,{childList:true,subtree:true});
 function toggleLang(){
   curLang=curLang==='en'?'ar':'en';
   localStorage.setItem('appLang',curLang);
@@ -1748,6 +1901,7 @@ function toggleLang(){
 function reRenderDynamicContentForLang(){
   if(!bootedUI) return;
   if(typeof renderTbl==='function') renderTbl();
+  if(typeof renderIncomingTransfersBadge==='function') renderIncomingTransfersBadge();
   if(curView==='cycle'){renderCycleTabs();renderCycleBody();}
   const openRenders=[
     ['usersModal',renderUsersList],
@@ -1766,6 +1920,8 @@ function reRenderDynamicContentForLang(){
     ['employeesModal',renderEmployeesScreen],
     ['directCostsModal',renderDirectCostsScreen],
     ['incomingTransfersModal',renderIncomingTransfersScreen],
+    ['uomModal',renderUomList],
+    ['menuModal',renderMenuList],
   ];
   openRenders.forEach(([id,fn])=>{
     const el=document.getElementById(id);
@@ -2150,7 +2306,7 @@ function showBranchGate(keys){
   document.getElementById('authScreen').style.display='none';
   document.getElementById('appRoot').style.display='none';
   document.getElementById('branchGateScreen').style.display='flex';
-  const allOpt=canViewAllReportsUI()?`<option value="__all__">🌐 كل الفروع (تقرير موحّد)</option>`:'';
+  const allOpt=canViewAllReportsUI()?`<option value="__all__" data-i18n="🌐 كل الفروع (تقرير موحّد)">🌐 كل الفروع (تقرير موحّد)</option>`:'';
   document.getElementById('branchGateSelect').innerHTML=allOpt+keys.map(k=>{
     const b=S.branches[k]||{};
     return `<option value="${k}">${b.name||k}${b.manager?' — مدير: '+b.manager:''}</option>`;
@@ -2444,7 +2600,7 @@ function populateCatSelects(){
   const s2=document.getElementById('mgCat');
   const opts=Object.entries(S.cats).map(([k,v])=>`<option value="${k}">${v.i||''} ${v.l}</option>`).join('');
   s1.innerHTML=opts;
-  s2.innerHTML='<option value="">كل الأقسام</option>'+opts;
+  s2.innerHTML='<option value="" data-i18n="كل الأقسام">كل الأقسام</option>'+opts;
 }
 
 function populateUomSelects(){
@@ -2456,7 +2612,7 @@ function populateUomSelects(){
   if(uoms.some(u=>u.name===curAi)) aiUom.value=curAi;
   const uomF=document.getElementById('uomF');
   const curF=uomF.value;
-  uomF.innerHTML='<option value="">كل الوحدات</option>'+opts;
+  uomF.innerHTML='<option value="" data-i18n="كل الوحدات">كل الوحدات</option>'+opts;
   uomF.value=curF;
 }
 
@@ -2633,7 +2789,7 @@ function filterCat(cat,el){
   el.classList.add('active');
   const cat_data=S.cats[cat];
   document.getElementById('tIco').textContent=cat==='all'?'📦':(cat_data?.i||'📦');
-  document.getElementById('tTit').textContent=cat==='all'?'جميع الأصناف':(cat_data?.l||cat);
+  document.getElementById('tTit').textContent=cat==='all'?t('جميع الأصناف'):(cat_data?.l||cat);
   renderTbl();
 }
 
@@ -3218,7 +3374,7 @@ function renderBranchMgrList(){
         <div style="font-weight:700;font-size:13px">${b.name}${k===S.curBranch?' <span style="color:var(--gold);font-size:10px">(الحالي)</span>':''}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">مدير: ${b.manager||'-'}</div>
       </div>
-      ${canManage&&k!==S.curBranch?`<button class="hi-btn" style="flex:none;padding:5px 10px" onclick="switchBranch('${k}');renderBranchMgrList()">تبديل</button>`:''}
+      ${canManage&&k!==S.curBranch?`<button class="hi-btn" style="flex:none;padding:5px 10px" onclick="switchBranch('${k}');renderBranchMgrList()" data-i18n="تبديل">تبديل</button>`:''}
       <button class="hi-btn" style="flex:none;padding:5px 8px" onclick="closeM('branchMgrModal');openSetup()" title="تعديل بيانات الفرع">✏</button>
       ${canManage&&Object.keys(S.branches).length>1?`<button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteBranch('${k}')" title="حذف الفرع">🗑</button>`:''}
     </div>`).join('');
@@ -3285,7 +3441,7 @@ function openUsersMgr(){
 function renderUsersList(){
   const cont=document.getElementById('usersList');
   if(!usersCache.length){cont.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">لا يوجد مستخدمين بعد</div>';return;}
-  const branchSel=(u)=>`<option value="">بدون فرع</option>`+Object.entries(S.branches||{}).map(([k,b])=>`<option value="${k}"${u.branchId===k?' selected':''}>${b.name}</option>`).join('');
+  const branchSel=(u)=>`<option value="" data-i18n="بدون فرع">بدون فرع</option>`+Object.entries(S.branches||{}).map(([k,b])=>`<option value="${k}"${u.branchId===k?' selected':''}>${b.name}</option>`).join('');
   cont.innerHTML=`<div class="tbl-wrap"><table>
     <thead><tr>
       <th>${t('المستخدم')}</th><th>${t('الدور')}</th><th>${t('الفرع')}</th>
@@ -3297,9 +3453,9 @@ function renderUsersList(){
       return `<tr>
         <td class="td-name">${u.email}${u.role==='pending'?'<div style="color:var(--gold);font-size:10px;margin-top:2px">⏳ بانتظار التفعيل</div>':''}</td>
         <td><select class="mod-in" style="width:auto;padding:6px 9px;font-size:11.5px" onchange="setUserRole('${u.uid}',this.value)">
-          <option value="pending"${u.role==='pending'?' selected':''}>بانتظار</option>
-          <option value="branch"${u.role==='branch'?' selected':''}>موظف فرع</option>
-          <option value="admin"${isAdmin?' selected':''}>إدارة/مالية</option>
+          <option value="pending"${u.role==='pending'?' selected':''} data-i18n="بانتظار">بانتظار</option>
+          <option value="branch"${u.role==='branch'?' selected':''} data-i18n="موظف فرع">موظف فرع</option>
+          <option value="admin"${isAdmin?' selected':''} data-i18n="إدارة/مالية">إدارة/مالية</option>
         </select></td>
         <td><select class="mod-in" style="width:auto;padding:6px 9px;font-size:11.5px" onchange="setUserBranch('${u.uid}',this.value)" ${isAdmin?'disabled':''}>
           ${branchSel(u)}
@@ -3336,7 +3492,7 @@ function openCreateUserForm(){
   document.getElementById('cu-pass').value='';
   document.getElementById('cu-role').value='branch';
   const branchSel=document.getElementById('cu-branch');
-  branchSel.innerHTML='<option value="">بدون فرع</option>'+Object.entries(S.branches||{}).map(([k,b])=>`<option value="${k}">${b.name}</option>`).join('');
+  branchSel.innerHTML='<option value="" data-i18n="بدون فرع">بدون فرع</option>'+Object.entries(S.branches||{}).map(([k,b])=>`<option value="${k}">${b.name}</option>`).join('');
   document.getElementById('createUserResult').style.display='none';
   document.getElementById('createUserBtn').disabled=false;
   document.getElementById('createUserModal').classList.add('open');
@@ -3758,9 +3914,9 @@ function renderWasteReport(){
   }).join('');
   document.getElementById('wasteReportBody').innerHTML=`${reportHeaderBlock({title:'🗑️ تقرير أكثر الأصناف هالكًا',branchName:rep.label,periodLabel:(document.getElementById('wr-date-from').value||document.getElementById('wr-date-to').value)?`${document.getElementById('wr-date-from').value||'...'} ← ${document.getElementById('wr-date-to').value||'...'}`:'كل الفترات'})}
   <div class="stats" style="margin-bottom:16px">
-    ${kpi('عدد الأصناف المتأثرة',rep.rows.length,'#3d8ef0')}
-    ${kpi('إجمالي قيمة الهالك',fmt(rep.totalValue),'#f05050')}
-    ${kpi('أعلى صنف هالكًا',rep.rows[0].n,'#f0c040')}
+    ${kpi(t('عدد الأصناف المتأثرة'),rep.rows.length,'#3d8ef0')}
+    ${kpi(t('إجمالي قيمة الهالك'),fmt(rep.totalValue),'#f05050')}
+    ${kpi(t('أعلى صنف هالكًا'),rep.rows[0].n,'#f0c040')}
   </div>
   ${topVarianceHtml(exceptionTop,5,`أعلى ${Math.min(5,exceptionTop.length)} أصناف بأكبر قيمة هالك (Exception Report)`)}
   <div class="tbl-wrap"><table>
@@ -4214,24 +4370,24 @@ function renderBreakEvenModule(){
       <input type="number" inputmode="decimal" class="mod-in" min="0" max="100" step="0.1" value="${r.varPctOverrideRaw!=null?r.varPctOverrideRaw:''}" placeholder="${r.histVarPct.toFixed(1)}" ${editable?'':'disabled'} onchange="setBreakEvenSetting('beVarPctOverride',this.value)">
     </div>
     <div class="mod-field">
-      <label class="mod-lbl">عدد أيام الشهر المستخدمة لتوزيع التكاليف الثابتة</label>
+      <label class="mod-lbl" data-i18n="عدد أيام الشهر المستخدمة لتوزيع التكاليف الثابتة">عدد أيام الشهر المستخدمة لتوزيع التكاليف الثابتة</label>
       <input type="number" class="mod-in" min="1" max="31" step="1" value="${r.daysInMonth}" ${editable?'':'disabled'} onchange="setBreakEvenSetting('beDaysInMonth',this.value)">
     </div>
   </div>
 
   <div class="stats" style="margin-bottom:16px">
-    ${kpi('إجمالي التكاليف الثابتة الشهرية',fmt(r.totalFixed),'#3d8ef0')}
-    ${kpi('التكلفة الثابتة اليومية',fmt(r.dailyFixed),'#f0c040')}
-    ${kpi('نسبة هامش المساهمة',r.contributionPct.toFixed(1)+'%','#2ee89a')}
-    ${kpi('⚖️ نقطة التعادل اليومية (إيراد)',fmt(r.dailyBreakEven),'#f05050')}
-    ${kpi('نقطة التعادل الشهرية (إيراد)',fmt(r.monthlyBreakEven),'#f05050')}
+    ${kpi(t('إجمالي التكاليف الثابتة الشهرية'),fmt(r.totalFixed),'#3d8ef0')}
+    ${kpi(t('التكلفة الثابتة اليومية'),fmt(r.dailyFixed),'#f0c040')}
+    ${kpi(t('نسبة هامش المساهمة'),r.contributionPct.toFixed(1)+'%','#2ee89a')}
+    ${kpi(t('⚖️ نقطة التعادل اليومية (إيراد)'),fmt(r.dailyBreakEven),'#f05050')}
+    ${kpi(t('نقطة التعادل الشهرية (إيراد)'),fmt(r.monthlyBreakEven),'#f05050')}
   </div>
   <p style="font-size:11px;color:var(--muted);line-height:1.8">نقطة التعادل = التكلفة الثابتة اليومية ÷ نسبة هامش المساهمة (100% − نسبة التكلفة المتغيرة). يعني ده أقل إيراد يومي لازم الفرع يحققه عشان يغطي كل مصاريفه الثابتة (رواتب + تكاليف مباشرة) من غير ما يخسر.</p>
 
   <div style="font-weight:700;font-size:13px;margin:16px 0 8px">📐 المعيار الطبيعي (القياسي)</div>
   <div class="stats" style="margin-bottom:10px">
     ${kpi(`نقطة التعادل اليومية القياسية (بافتراض تكلفة طعام ${FOOD_COST_TARGET_PCT}%)`,fmt(r.dailyBreakEvenStandard),'#7a5cff')}
-    ${kpi('نقطة التعادل الشهرية القياسية',fmt(r.monthlyBreakEvenStandard),'#7a5cff')}
+    ${kpi(t('نقطة التعادل الشهرية القياسية'),fmt(r.monthlyBreakEvenStandard),'#7a5cff')}
   </div>
   <p style="font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:14px">المعيار الطبيعي بيحسب نقطة التعادل بنفس التكاليف الثابتة لكن بافتراض إن نسبة تكلفة الطعام عند الهدف المعتمد (${FOOD_COST_TARGET_PCT}%) بدل الأداء الفعلي — يعني ده الشكل اللي المفروض يكون عليه الفرع لو حقق هدفه، تقدر تقارنه بنقطة التعادل الفعلية بالأعلى عشان تشوف تأثير الأداء الحالي على المطلوب تحقيقه.</p>
   ${reportSignatureBlock(['أُعِدّ بواسطة (المحاسب)','رُوجع بواسطة (مدير الفرع)','اعتُمد بواسطة (الإدارة المالية)'])}`;
@@ -4290,7 +4446,7 @@ function openAllBranchesReport(){
 function populateAllBranchesFilterSelect(){
   const sel=document.getElementById('abrBranchFilter');
   const cur=sel.value||'all';
-  sel.innerHTML='<option value="all">كل الفروع</option>'+allBranchesRawDocs.map(d=>`<option value="${d.key}">${d.data.name||d.key}</option>`).join('');
+  sel.innerHTML='<option value="all" data-i18n="كل الفروع">كل الفروع</option>'+allBranchesRawDocs.map(d=>`<option value="${d.key}">${d.data.name||d.key}</option>`).join('');
   sel.value=[...sel.options].some(o=>o.value===cur)?cur:'all';
 }
 function resetAllBranchesFilters(){
@@ -4947,7 +5103,7 @@ function renderCycleHeader(){
       ${!c.closed
         ?`<button class="hbtn gold" style="padding:6px 12px;font-size:12px" onclick="closeCycle()" data-i18n="🔒 إغلاق الدورة وحساب النتائج">🔒 إغلاق الدورة وحساب النتائج</button>`
         :`<button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="reopenCycle()" data-i18n="🔓 إعادة فتح">🔓 إعادة فتح</button>`}
-      <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="openClosingStockReport('${c.id}')" title="تقرير المخزون الختامي المستقل لنهاية الدورة">📦 المخزون الختامي</button>
+      <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="openClosingStockReport('${c.id}')" title="تقرير المخزون الختامي المستقل لنهاية الدورة" data-i18n="📦 المخزون الختامي">📦 المخزون الختامي</button>
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="exportCyclePDF('${c.id}')">📄 PDF</button>
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="exportCycleCSV('${c.id}')">📊 CSV</button>
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="exportCycleExcel('${c.id}')">📗 Excel</button>
@@ -5010,8 +5166,8 @@ function renderSalesTab(c,el){
   }
   el.innerHTML=`${cycleToolbar('إضافة صنف للمنيو',"openAddMenuItem()")}
   <div style="display:flex;gap:8px;margin:-4px 0 12px;flex-wrap:wrap">
-    <button class="hbtn" onclick="downloadSalesImportTemplate()">📄 قالب استيراد المبيعات</button>
-    <button class="hbtn gold" onclick="document.getElementById('salesImportFileInput').click()">📥 استيراد مبيعات من ملف خارجي (فوديكس / أودو / أونكس ...)</button>
+    <button class="hbtn" onclick="downloadSalesImportTemplate()" data-i18n="📄 قالب استيراد المبيعات">📄 قالب استيراد المبيعات</button>
+    <button class="hbtn gold" onclick="document.getElementById('salesImportFileInput').click()" data-i18n="📥 استيراد مبيعات من ملف خارجي (فوديكس / أودو / أونكس ...)">📥 استيراد مبيعات من ملف خارجي (فوديكس / أودو / أونكس ...)</button>
   </div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>${t('الصنف')}</th><th>${t('السعر')}</th><th>${t('الكمية المباعة')}</th><th>${t('الإجمالي (نظري)')}</th><th>${t('الإجمالي الفعلي (اختياري)')}</th><th>${t('تكلفة المبيعات (نظري)')}</th><th>${t('المكونات')}</th></tr></thead>
@@ -5036,7 +5192,7 @@ function renderSalesRows(c){
       <td style="font-family:var(--mono)">${fmt(sub)}</td>
       <td><input type="number" inputmode="decimal" class="qin" style="width:110px" min="0" step="0.01" value="${overrideVal!=null?overrideVal:''}" placeholder="${fmt(sub)}" ${dis} oninput="setCycleSaleValue('${c.id}','${m.id}',this.value)"></td>
       <td style="font-family:var(--mono);color:var(--red)">${fmt(cost)}</td>
-      <td>${canViewRecipesUI()?`<button class="hbtn" style="padding:4px 10px;font-size:11px" onclick="openMenuRecipeView('${m.id}')">📋 عرض المكونات</button>`:''}</td>
+      <td>${canViewRecipesUI()?`<button class="hbtn" style="padding:4px 10px;font-size:11px" onclick="openMenuRecipeView('${m.id}')" data-i18n="📋 عرض المكونات">📋 عرض المكونات</button>`:''}</td>
     </tr>`;
   }).join('');
   document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(7);
@@ -5213,7 +5369,7 @@ function setCycleWithdraw(cid,r,field,v){
 function branchSelectOptions(selectedName){
   const cur=S.curBranch;
   const names=Object.keys(S.branches).filter(k=>k!==cur).map(k=>S.branches[k].name||k);
-  let html='<option value="">-- اختر الفرع --</option>';
+  let html='<option value="" data-i18n="-- اختر الفرع --">-- اختر الفرع --</option>';
   names.forEach(n=>{
     const esc=String(n).replace(/"/g,'&quot;');
     html+=`<option value="${esc}" ${n===selectedName?'selected':''}>${n}</option>`;
@@ -5454,7 +5610,7 @@ function genTransferReqId(){return 'TR'+Date.now().toString(36).toUpperCase()+Ma
 function branchSelectOptionsByKey(selectedKey){
   const cur=S.curBranch;
   const keys=Object.keys(S.branches||{}).filter(k=>k!==cur);
-  let html='<option value="">-- اختر الفرع --</option>';
+  let html='<option value="" data-i18n="-- اختر الفرع --">-- اختر الفرع --</option>';
   keys.forEach(k=>{
     html+=`<option value="${k}" ${k===selectedKey?'selected':''}>${(S.branches[k]||{}).name||k}</option>`;
   });
@@ -5493,7 +5649,7 @@ function renderIncomingTransfersBadge(){
   const el=document.getElementById('ddIncomingTransfersItem');
   if(!el) return;
   const pending=(S.incomingTransfers||[]).filter(r=>r.status==='pending').length;
-  el.innerHTML=`📥 مراجعة التحويلات الواردة${pending?` <span style="background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-right:6px">${pending}</span>`:''}`;
+  el.innerHTML=`${t('📥 مراجعة التحويلات الواردة')}${pending?` <span style="background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-right:6px">${pending}</span>`:''}`;
 }
 function openIncomingTransfersReview(){
   renderIncomingTransfersScreen();
@@ -5527,8 +5683,8 @@ function renderIncomingTransfersScreen(){
       </tr>`).join('')}</tbody></table>
       <input class="mod-in" style="margin-bottom:10px" placeholder="سبب الرفض (لو هترفض)" id="itr-reject-reason-${req.id}">
       <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button class="hbtn" onclick="rejectTransferRequest('${req.id}')">❌ رفض</button>
-        <button class="hbtn gold" onclick="approveTransferRequest('${req.id}')">✅ اعتماد</button>
+        <button class="hbtn" onclick="rejectTransferRequest('${req.id}')" data-i18n="❌ رفض">❌ رفض</button>
+        <button class="hbtn gold" onclick="approveTransferRequest('${req.id}')" data-i18n="✅ اعتماد">✅ اعتماد</button>
       </div>
     </div>`;
   }).join(''):'<div style="text-align:center;padding:16px;color:var(--muted)">لا توجد تحويلات قيد المراجعة حاليًا.</div>';
@@ -5667,7 +5823,7 @@ function renderClosingTab(c,el){
   <div class="tbl-wrap"><table>
     <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الرصيد الختامي (الجرد الفعلي)')}</th><th></th></tr></thead>
     <tbody id="ctRows"></tbody></table></div>
-    ${!c.closed?`<div style="margin-top:10px"><button class="hbtn" onclick="pullLiveCount('${c.id}')">🔄 سحب الكميات من شاشة الجرد اليومي الحالية</button></div>`:''}`;
+    ${!c.closed?`<div style="margin-top:10px"><button class="hbtn" onclick="pullLiveCount('${c.id}')" data-i18n="🔄 سحب الكميات من شاشة الجرد اليومي الحالية">🔄 سحب الكميات من شاشة الجرد اليومي الحالية</button></div>`:''}`;
   renderClosingRows(c);
 }
 function addClosingItem(ref){
@@ -5792,9 +5948,9 @@ function renderClosingStockReport(){
   }).join('');
   el.innerHTML=`${reportHeaderBlock({title:'📦 تقرير المخزون الختامي (Closing Inventory Report)',branchName:S.branch,periodLabel:`${c.start} ← ${c.end}`})}
   <div class="stats" style="margin-bottom:16px">
-    ${kpi('عدد الأصناف المجرودة',rep.rows.length,'#3d8ef0')}
-    ${kpi('إجمالي قيمة المخزون الختامي',fmt(rep.totalValue),'#f0c040')}
-    ${kpi('أصناف فيها تعارض مصادر',rep.mismatchCount,rep.mismatchCount?'#f05050':'#2ee89a')}
+    ${kpi(t('عدد الأصناف المجرودة'),rep.rows.length,'#3d8ef0')}
+    ${kpi(t('إجمالي قيمة المخزون الختامي'),fmt(rep.totalValue),'#f0c040')}
+    ${kpi(t('أصناف فيها تعارض مصادر'),rep.mismatchCount,rep.mismatchCount?'#f05050':'#2ee89a')}
   </div>
   ${banner}
   <div class="tbl-wrap"><table>
@@ -5934,16 +6090,16 @@ function renderResultsTab(c,el){
   el.innerHTML=`
   ${reportHeaderBlock({title:'📊 تقرير نتائج التسوية (Cost of Sales Report)',branchName:S.branch,periodLabel:`${c.start} ← ${c.end}`})}
   <div class="stats" style="margin-bottom:16px">
-    ${kpi('إجمالي المبيعات',fmt(r.totalSalesAmount),'#3d8ef0')}
-    ${r.deliverySalesAmount!=null?kpi('🛵 مبيعات تطبيقات التوصيل',fmt(r.deliverySalesAmount),'#3d8ef0'):''}
-    ${kpi('تكلفة الاستهلاك الفعلي',fmt(r.totalActualCost),'#f05050')}
-    ${kpi('نسبة التكلفة الفعلية',r.actualCostPct.toFixed(1)+'%','#f0c040')}
-    ${kpi('نسبة التكلفة النظرية',r.theoCostPct.toFixed(1)+'%','#2ee89a')}
+    ${kpi(t('إجمالي المبيعات'),fmt(r.totalSalesAmount),'#3d8ef0')}
+    ${r.deliverySalesAmount!=null?kpi(t('🛵 مبيعات تطبيقات التوصيل'),fmt(r.deliverySalesAmount),'#3d8ef0'):''}
+    ${kpi(t('تكلفة الاستهلاك الفعلي'),fmt(r.totalActualCost),'#f05050')}
+    ${kpi(t('نسبة التكلفة الفعلية'),r.actualCostPct.toFixed(1)+'%','#f0c040')}
+    ${kpi(t('نسبة التكلفة النظرية'),r.theoCostPct.toFixed(1)+'%','#2ee89a')}
   </div>
   ${companyInfo.vatPct?`<p style="font-size:10.5px;color:var(--muted);margin:-10px 0 12px">إجمالي المبيعات المعروض شامل الضريبة (${companyInfo.vatPct}%) — نسب التكلفة والانحراف بالأعلى محسوبة على صافي المبيعات (${fmt(r.netSalesAmount)}) بعد خصم الضريبة، طبقًا للمعيار المحاسبي المتبع.</p>`:''}
   ${be?`<div class="stats" style="margin-bottom:16px">
-    ${kpi('⚖️ نقطة التعادل اليومية (إيراد)',fmt(be.dailyBreakEven),'#f05050')}
-    ${kpi('متوسط صافي المبيعات اليومي للدورة',fmt(be.avgDailyNetSales),'#3d8ef0')}
+    ${kpi(t('⚖️ نقطة التعادل اليومية (إيراد)'),fmt(be.dailyBreakEven),'#f05050')}
+    ${kpi(t('متوسط صافي المبيعات اليومي للدورة'),fmt(be.avgDailyNetSales),'#3d8ef0')}
     ${kpi(be.achievementPct>=100?'✅ نسبة تحقق نقطة التعادل':'⚠️ نسبة تحقق نقطة التعادل',be.achievementPct.toFixed(1)+'%',be.achievementPct>=100?'#2ee89a':'#f05050')}
   </div>
   <p style="font-size:10.5px;color:var(--muted);margin:-10px 0 14px;line-height:1.8">نقطة التعادل محسوبة من التكاليف الثابتة الشهرية لهذا الفرع (رواتب الموظفين + بنود التكاليف المباشرة) ونسبة التكلفة الفعلية لهذه الدورة (${r.actualCostPct.toFixed(1)}%). نسبة التحقق = متوسط صافي المبيعات اليومي خلال الدورة ÷ نقطة التعادل اليومية — 100% فأكثر يعني الفرع غطّى مصاريفه الثابتة في المتوسط خلال الفترة دي. عدّل بيانات الموظفين والتكاليف المباشرة من ⚖️ نقطة التعادل اليومية.</p>`:''}
@@ -6160,7 +6316,7 @@ function loadCrossBranchDocs(){
 }
 function branchFilterOptionsHtml(selected){
   const others=Object.keys(S.branches||{}).filter(k=>k!==S.curBranch).map(k=>`<option value="${k}">${S.branches[k].name||k}</option>`).join('');
-  const opts=`<option value="__current__">الفرع الحالي (${S.branch||''})</option><option value="__all__">🌐 كل الفروع (مجمّع)</option>${others}`;
+  const opts=`<option value="__current__">الفرع الحالي (${S.branch||''})</option><option value="__all__" data-i18n="🌐 كل الفروع (مجمّع)">🌐 كل الفروع (مجمّع)</option>${others}`;
   const div=document.createElement('div');div.innerHTML=`<select>${opts}</select>`;
   const sel=div.firstChild;sel.value=selected||'__current__';
   return sel.innerHTML;

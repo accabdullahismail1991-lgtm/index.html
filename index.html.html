@@ -4857,7 +4857,6 @@ function emptyCycleRow(colspan){
 function renderCycleTabRows(){
   const c=curCycleId?getCycle(curCycleId):null;if(!c)return;
   if(curCycleTab==='sales') return renderSalesRows(c);
-  if(curCycleTab==='purchases') return renderPurchasesRows(c);
   if(curCycleTab==='waste') return renderWasteRows(c);
   if(curCycleTab==='withdraw') return renderWithdrawRows(c);
   if(curCycleTab==='transferOut') return renderTransferOutRows(c);
@@ -4953,30 +4952,53 @@ function setCycleDeliverySalesAmount(cid,v){
 }
 
 function renderPurchasesTab(c,el){
-  el.innerHTML=`${cycleToolbar('إضافة صنف جديد',"openAddItem()")}
+  if(!c.purchases) c.purchases={};
+  el.innerHTML=`<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    ${c.closed?'<div style="font-size:12px;color:var(--muted)">🔒 الدورة مقفولة — أعد فتحها الأول لإضافة أصناف جديدة</div>':`<div style="flex:1;min-width:240px;max-width:380px">${isearchHtml('purAddIsearch','',{placeholder:'🔍 ابحث عن صنف لإضافته للمشتريات...',onSelect:'addPurchaseItem'})}</div>`}
+  </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المشتراة')}</th><th>${t('التكلفة الإجمالية')}</th></tr></thead>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المشتراة')}</th><th>${t('التكلفة الإجمالية')}</th><th></th></tr></thead>
     <tbody id="ctRows"></tbody></table></div>`;
+  renderPurchasesRows(c);
+}
+function addPurchaseItem(ref){
+  if(!ref) return;
+  const c=getCycle(curCycleId);
+  if(!c){toast('⚠️ افتح دورة تسوية الأول','wrn');return;}
+  if(c.closed){toast('⚠️ الدورة مقفولة — أعد فتحها الأول عشان تضيف أصناف للمشتريات','wrn');return;}
+  if(!c.purchases) c.purchases={};
+  if(!c.purchases[ref]) c.purchases[ref]={qty:0,cost:0};
+  save();
+  renderPurchasesRows(c);
+  const root=document.getElementById('purAddIsearch');
+  if(root){root.querySelector('.isearch-input').value='';root.querySelector('.isearch-value').value='';}
+}
+function removePurchaseItem(cid,r){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  delete c.purchases[r];
+  save();
   renderPurchasesRows(c);
 }
 function renderPurchasesRows(c){
   const dis=c.closed?'disabled':'';
-  const list=cycleFilterList(S.items,it=>it.n,it=>it.r);
-  const rows=list.map(it=>{
-    const p=c.purchases[it.r]||{};
+  const refs=Object.keys(c.purchases||{}).sort();
+  const rows=refs.map(r=>{
+    const it=S.items.find(x=>x.r===r);if(!it)return'';
+    const p=c.purchases[r];
     return `<tr>
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
-      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${p.qty||''}" placeholder="0" ${dis} oninput="setCyclePurchase('${c.id}','${it.r}','qty',this.value)"></td>
-      <td><input type="number" inputmode="decimal" class="qin" style="width:110px" min="0" step="0.01" value="${p.cost||''}" placeholder="0.00" ${dis} oninput="setCyclePurchase('${c.id}','${it.r}','cost',this.value)"></td>
+      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${p.qty||''}" placeholder="0" ${dis} oninput="setCyclePurchase('${c.id}','${r}','qty',this.value)"></td>
+      <td><input type="number" inputmode="decimal" class="qin" style="width:110px" min="0" step="0.01" value="${p.cost||''}" placeholder="0.00" ${dis} oninput="setCyclePurchase('${c.id}','${r}','cost',this.value)"></td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removePurchaseItem('${c.id}','${r}')" title="إزالة">🗑️</button>`}</td>
     </tr>`;
   }).join('');
-  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(5);
+  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(6);
 }
 function setCyclePurchase(cid,r,field,v){
   const c=getCycle(cid);if(!c||c.closed)return;
+  if(!c.purchases) c.purchases={};
   const p=c.purchases[r]||(c.purchases[r]={qty:0,cost:0});
   p[field]=v===''?0:(parseFloat(v)||0);
-  if(!p.qty&&!p.cost) delete c.purchases[r];
   save();
 }
 

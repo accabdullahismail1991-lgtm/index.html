@@ -565,6 +565,8 @@ td{padding:9px 13px;vertical-align:middle;}
       <div class="vn-dd-item" onclick="closeDropdowns();openMenuMgr()" data-i18n="🍽️ الأصناف المباعة والوصفات">🍽️ الأصناف المباعة والوصفات</div>
       <div class="vn-dd-item" onclick="closeDropdowns();openPosMatchModal()" data-i18n="🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية">🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية</div>
       <div class="vn-dd-item" onclick="closeDropdowns();exportRecipesExcel()" data-i18n="📗 تصدير مكونات المنيو الحالية">📗 تصدير مكونات المنيو الحالية</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('simpleMenuImportFileInput').click()" data-i18n="📥 استيراد أصناف منيو فقط بدون مكوّنات (Excel)">📥 استيراد أصناف منيو فقط بدون مكوّنات (Excel)</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();downloadSimpleMenuImportTemplate()" data-i18n="📄 قالب أصناف منيو فقط (بدون مكوّنات)">📄 قالب أصناف منيو فقط (بدون مكوّنات)</div>
       <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('recipeImportFileInput').click()" data-i18n="📥 استيراد أصناف المنيو والمكونات (Excel)">📥 استيراد أصناف المنيو والمكونات (Excel)</div>
       <div class="vn-dd-item" onclick="closeDropdowns();downloadRecipeImportTemplate()" data-i18n="📄 قالب استيراد أصناف المنيو (بالشرح)">📄 قالب استيراد أصناف المنيو (بالشرح)</div>
       <div class="vn-dd-div"></div>
@@ -632,6 +634,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFileSelected(event)">
   <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none" onchange="handleBackupFileSelected(event)">
   <input type="file" id="recipeImportFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleRecipeImportFileSelected(event)">
+  <input type="file" id="simpleMenuImportFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleSimpleMenuImportFileSelected(event)">
   <input type="file" id="salesImportFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleSalesImportFileSelected(event)">
 
   <div class="hist-wrap">
@@ -990,11 +993,13 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="overlay" id="menuModal">
 <div class="modal" style="width:640px">
   <div class="mod-title" data-i18n="🍽️ الأصناف المباعة ووصفاتها (BOM)">🍽️ الأصناف المباعة ووصفاتها (BOM)</div>
-  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">عرّف هنا كل صنف بيتباع في المنيو، وحدد مقادير كل مكوّن من المخزون بيدخل في تحضيره — يُستخدم ده لحساب الاستهلاك النظري من المبيعات ومقارنته بالجرد الفعلي في دورة التسوية. عندك أصناف كتير؟ حمّل "📄 قالب استيراد أصناف المنيو" تحت (فيه تبويب شرح وتعليمات) واملأه وارفعه بدل ما تدخل كل صنف لوحده.</p>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">عرّف هنا كل صنف بيتباع في المنيو، وحدد مقادير كل مكوّن من المخزون بيدخل في تحضيره — يُستخدم ده لحساب الاستهلاك النظري من المبيعات ومقارنته بالجرد الفعلي في دورة التسوية. عندك أصناف كتير؟ استورد "اسم وسعر بس" وضيف المكوّنات بعدين من هنا، أو استورد بالمكوّنات كاملة من ملف واحد — الاختيارين تحت.</p>
   <div style="max-height:400px;overflow-y:auto" id="menuList"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('menuModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="exportRecipesExcel()">📗 تصدير المكونات الحالية</button>
+    <button class="hbtn" onclick="downloadSimpleMenuImportTemplate()">📄 قالب أصناف فقط (بدون مكوّنات)</button>
+    <button class="hbtn" onclick="document.getElementById('simpleMenuImportFileInput').click()">📥 استيراد أصناف فقط (Excel)</button>
     <button class="hbtn" onclick="downloadRecipeImportTemplate()">📄 قالب استيراد أصناف المنيو (بالشرح)</button>
     <button class="hbtn" onclick="document.getElementById('recipeImportFileInput').click()">📥 استيراد أصناف المنيو (Excel)</button>
     <button class="hbtn org" onclick="closeM('menuModal');openAddMenuItem()">➕ إضافة صنف جديد</button>
@@ -1607,6 +1612,7 @@ const I18N_EN={
   "💽 حفظ نسخة احتياطية (JSON)": "💽 Save Backup (JSON)",
   "💾 حفظ وتصدير": "💾 Save & Export",
   "📄 قالب استيراد أصناف المنيو (بالشرح)": "📄 Menu Import Template (with instructions)",
+  "📄 قالب أصناف منيو فقط (بدون مكوّنات)": "📄 Menu Items Only Template (no recipe)",
   "📄 قالب الاستيراد": "📄 Import Template",
   "📅 يوم جديد": "📅 New Day",
   "📅 يوم جرد جديد": "📅 New Inventory Day",
@@ -1624,6 +1630,7 @@ const I18N_EN={
   "📤 استعادة من نسخة احتياطية": "📤 Restore from Backup",
   "📥 استيراد أصناف (Excel)": "📥 Import Items (Excel)",
   "📥 استيراد أصناف المنيو والمكونات (Excel)": "📥 Import Menu Items & Recipes (Excel)",
+  "📥 استيراد أصناف منيو فقط بدون مكوّنات (Excel)": "📥 Import Menu Items Only, No Recipe (Excel)",
   "📦 الأصناف ▾": "📦 Items ▾",
   "🔀 سجل التحويلات": "🔀 Transfers Log",
   "🔀 سجل التحويلات بين الفروع": "🔀 Inter-Branch Transfers Log",
@@ -6669,6 +6676,92 @@ function processRecipeImportRows(rows){
   if(selfRefSkipped) parts.push(`⚠️ ${selfRefSkipped} سطر متجاهل (الصنف مكوّن لنفسه)`);
   if(skippedRows) parts.push(`${skippedRows} سطر متجاهل (بيانات ناقصة)`);
   toast('✅ تم الاستيراد: '+parts.join('، '),'suc');
+}
+
+// ══════════════════════════════════════════════
+//  SIMPLE MENU ITEMS IMPORT (اسم وسعر بس، من غير مكوّنات — للي عايز يسحب
+//  أصناف المنيو بسرعة ويضيف المكوّنات بعدين من شاشة "الأصناف المباعة")
+//  Unlike processRecipeImportRows, this NEVER touches an existing item's
+//  recipe — it only creates new items (with an empty recipe) or updates the
+//  price of ones that already exist, so it's safe to use even after
+//  components were already added manually.
+// ══════════════════════════════════════════════
+const SIMPLE_MENU_IMPORT_ALIASES={
+  name:['اسم الصنف','Item Name','Name','Product Name','الصنف','اسم المنتج'],
+  price:['السعر','Price','سعر البيع','Selling Price'],
+};
+function matchSimpleMenuImportColumn(header){
+  const h=String(header||'').trim().toLowerCase();
+  for(const key in SIMPLE_MENU_IMPORT_ALIASES){
+    if(SIMPLE_MENU_IMPORT_ALIASES[key].some(a=>a.toLowerCase()===h)) return key;
+  }
+  return null;
+}
+function downloadSimpleMenuImportTemplate(){
+  const wb=XLSX.utils.book_new();
+  const help=[
+    ['شرح ملف استيراد أصناف المنيو (بدون مكوّنات)'],
+    [''],
+    ['ده قالب بسيط لإضافة أصناف منيو بالاسم والسعر بس، من غير ما تحدد مكوّناتها دلوقتي — تقدر تضيف المكوّنات بعدين وقتما تحب من "🍽️ الأصناف المباعة والوصفات".'],
+    ['اسم الصنف','اكتب اسم صنف المنيو. لو الاسم ده موجود بالفعل هيتحدّث سعره بس (المكوّنات اللي مضافة له من قبل مش هتتمسح)، ولو مش موجود هيتضاف كصنف جديد بدون مكوّنات.'],
+    ['السعر','سعر بيع الصنف للعميل.'],
+    [''],
+    ['محتاج تستورد المكوّنات كمان مع الصنف من نفس الملف؟ استخدم "📄 قالب استيراد أصناف المنيو (بالشرح)" بدل القالب ده.'],
+  ];
+  const helpWs=XLSX.utils.aoa_to_sheet(help);
+  helpWs['!cols']=[{wch:20},{wch:90}];
+  XLSX.utils.book_append_sheet(wb,helpWs,'الشرح والتعليمات');
+  const rows=[
+    ['اسم الصنف','السعر'],
+    ['مثال: مشروب غازي','25'],
+    ['مثال: عصير طازة','35'],
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:34},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws,'أصناف المنيو');
+  XLSX.writeFile(wb,'قالب_استيراد_أصناف_منيو_بدون_مكونات.xlsx');
+  toast('📄 تم تحميل القالب — اسم وسعر بس، وتقدر تضيف المكوّنات بعدين من شاشة المنيو','inf');
+}
+function handleSimpleMenuImportFileSelected(e){
+  const file=e.target.files[0];
+  e.target.value='';
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=new Uint8Array(ev.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      processSimpleMenuImportRows(rows);
+    }catch(err){ toast('⚠️ تعذر قراءة الملف: '+err.message,'err'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function processSimpleMenuImportRows(rows){
+  if(!rows||!rows.length){toast('⚠️ الملف فارغ','wrn');return;}
+  const header=rows[0];
+  const colMap={};
+  header.forEach((h,i)=>{const key=matchSimpleMenuImportColumn(h);if(key)colMap[key]=i;});
+  if(colMap.name==null){
+    toast('⚠️ الملف لازم يحتوي على عمود "اسم الصنف" على الأقل — حمّل القالب من شاشة المنيو','err');
+    return;
+  }
+  let added=0,updated=0,skippedRows=0;
+  for(let i=1;i<rows.length;i++){
+    const row=rows[i];
+    if(!row||!row.length) continue;
+    const name=String(row[colMap.name]||'').trim();
+    if(!name){skippedRows++;continue;}
+    const price=colMap.price!=null&&row[colMap.price]!==''?parseFloat(row[colMap.price]):null;
+    const m=S.menu.find(x=>x.n.trim().toLowerCase()===name.toLowerCase());
+    if(m){ if(price!=null&&!isNaN(price)) m.price=price; updated++; }
+    else { S.menu.push({id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),n:name,price:(price!=null&&!isNaN(price))?price:0,recipe:[]}); added++; }
+  }
+  save();renderMenuList();
+  const parts=[`${added} صنف جديد`,`${updated} صنف اتحدّث سعره`];
+  if(skippedRows) parts.push(`${skippedRows} سطر متجاهل (اسم فاضي)`);
+  toast('✅ تم الاستيراد: '+parts.join('، ')+' — أضف المكوّنات وقتما تحب من شاشة المنيو','suc');
 }
 
 // ══════════════════════════════════════════════

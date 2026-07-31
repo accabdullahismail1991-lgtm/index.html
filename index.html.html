@@ -582,6 +582,7 @@ td{padding:9px 13px;vertical-align:middle;}
       <div class="vn-dd-item" id="ddTransfersLogItem" onclick="closeDropdowns();openTransfersLog()" data-i18n="🔀 سجل التحويلات">🔀 سجل التحويلات</div>
       <div class="vn-dd-item" id="ddWasteReportItem" onclick="closeDropdowns();openWasteReport()" data-i18n="🗑️ تقرير أكثر الأصناف هالكًا">🗑️ تقرير أكثر الأصناف هالكًا</div>
       <div class="vn-dd-item" id="ddMaintenanceItem" onclick="closeDropdowns();openMaintenanceLog()" data-i18n="🔧 سجل الأعطال والصيانة">🔧 سجل الأعطال والصيانة</div>
+      <div class="vn-dd-item" id="ddBreakEvenItem" onclick="closeDropdowns();openBreakEvenModule()" data-i18n="⚖️ نقطة التعادل اليومية">⚖️ نقطة التعادل اليومية</div>
       <div class="vn-dd-item" id="ddAllBranchReports" style="display:none" onclick="closeDropdowns();openAllBranchesReport()" data-i18n="🌐 تقرير كل الفروع">🌐 تقرير كل الفروع</div>
       <div class="vn-dd-div"></div>
       <div class="vn-dd-item" onclick="closeDropdowns();exportFullDataExcel()" data-i18n="📗 تفريغ كل البيانات (Excel)">📗 تفريغ كل البيانات (Excel)</div>
@@ -1300,6 +1301,26 @@ td{padding:9px 13px;vertical-align:middle;}
 </div>
 </div>
 
+<!-- BREAK-EVEN POINT MODULE (نقطة التعادل اليومية لكل فرع) -->
+<div class="overlay" id="breakEvenModal">
+<div class="modal" style="width:980px">
+  <div class="mod-title" data-i18n="⚖️ نقطة التعادل اليومية">⚖️ نقطة التعادل اليومية</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('breakEvenModal')" data-i18n="إغلاق">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportBreakEvenExcel()">📗 Excel</button>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">سجّل رواتب الموظفين وبنود التكاليف المباشرة الشهرية (إيجار، كهرباء، تأمين...) لهذا الفرع، والنظام هيحسب لك نقطة التعادل اليومية — أقل إيراد لازم تحققه يوميًا عشان تغطي مصاريفك الثابتة.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
+    <div class="mod-field" id="beBranchFilterWrap" style="display:none;margin-bottom:0">
+      <label class="mod-lbl">الفرع</label>
+      <select class="mod-in" id="be-branch-filter" style="width:auto" onchange="setBreakEvenBranchFilter(this.value)"></select>
+    </div>
+  </div>
+  <div id="breakEvenBody"></div>
+</div>
+</div>
+
 <!-- INTERACTIVE DASHBOARD MODAL -->
 <div class="overlay" id="dashboardModal">
 <div class="modal" style="width:960px">
@@ -1372,6 +1393,9 @@ td{padding:9px 13px;vertical-align:middle;}
 const I18N_EN={
   "🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية": "🔗 Match Item Names With External Systems",
   "📦 تقرير المخزون الختامي": "📦 Closing Stock Report",
+  "⚖️ نقطة التعادل اليومية": "⚖️ Daily Break-Even Point",
+  "🗑️ تقرير أكثر الأصناف هالكًا": "🗑️ Top Waste Items Report",
+  "🔧 سجل الأعطال والصيانة": "🔧 Maintenance & Malfunctions Log",
   "من الجرد اليومي": "From Daily Count",
   "من حركة الدورة": "From Cycle Entry",
   "الرصيد الختامي المعتمد": "Adopted Closing Balance",
@@ -1596,6 +1620,7 @@ function reRenderDynamicContentForLang(){
     ['wasteReportModal',renderWasteReport],
     ['maintenanceModal',renderMaintenanceList],
     ['importReconcileModal',renderImportReconcile],
+    ['breakEvenModal',renderBreakEvenModule],
   ];
   openRenders.forEach(([id,fn])=>{
     const el=document.getElementById(id);
@@ -1751,6 +1776,7 @@ let S={
   qty:{}, notes:{},
   reports:[],
   maintenance:[],
+  employees:[], directCosts:[], beVarPctOverride:null, beDaysInMonth:30,
   cats:{...DEFAULT_CATS},
   items:[...DEFAULT_ITEMS],
   branches:{}, curBranch:'', branchData:{},
@@ -2011,6 +2037,7 @@ function startDataSync(){
   document.getElementById('ddTransfersLogItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('ddWasteReportItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('ddMaintenanceItem').style.display=canViewReportsUI()?'':'none';
+  document.getElementById('ddBreakEvenItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('branchSwitch').disabled=!canManageBranchesUI();
 
   if(!unsubCompany){
@@ -2077,11 +2104,12 @@ function switchToBranchDoc(key){
   S.curBranch=key;
   unsubBranch=db.collection('branches').doc(key).onSnapshot(snap=>{
     const d=snap.data();if(!d)return;
-    const incoming=JSON.stringify({name:d.name,manager:d.manager,storekeeper:d.storekeeper,supervisor:d.supervisor,date:d.date,sid:d.sid,qty:d.qty||{},notes:d.notes||{},reports:d.reports||[],cycles:d.cycles||[],maintenance:d.maintenance||[]});
+    const incoming=JSON.stringify({name:d.name,manager:d.manager,storekeeper:d.storekeeper,supervisor:d.supervisor,date:d.date,sid:d.sid,qty:d.qty||{},notes:d.notes||{},reports:d.reports||[],cycles:d.cycles||[],maintenance:d.maintenance||[],employees:d.employees||[],directCosts:d.directCosts||[],beVarPctOverride:d.beVarPctOverride!=null?d.beVarPctOverride:null,beDaysInMonth:d.beDaysInMonth||30});
     branchReady=true;
     if(incoming===lastSentBranchJSON){tryBootUI();if(bootedUI)consumePendingOpenAllBranches();return;}
     S.date=d.date||today();S.sid=d.sid||genSid();
     S.qty=d.qty||{};S.notes=d.notes||{};S.reports=d.reports||[];S.maintenance=d.maintenance||[];
+    S.employees=d.employees||[];S.directCosts=d.directCosts||[];S.beVarPctOverride=d.beVarPctOverride!=null?d.beVarPctOverride:null;S.beDaysInMonth=d.beDaysInMonth||30;
     S.branch=d.name||'';S.manager=d.manager||'';S.storekeeper=d.storekeeper||'';S.supervisor=d.supervisor||'';
     if(!S.branches) S.branches={};
     S.branches[key]={name:S.branch,manager:S.manager,storekeeper:S.storekeeper,supervisor:S.supervisor};
@@ -2104,6 +2132,7 @@ function scheduleBranchSave(){
     const payload={
       name:S.branch,manager:S.manager,storekeeper:S.storekeeper,supervisor:S.supervisor,
       date:S.date,sid:S.sid,qty:S.qty,notes:S.notes,reports:S.reports,maintenance:S.maintenance||[],
+      employees:S.employees||[],directCosts:S.directCosts||[],beVarPctOverride:S.beVarPctOverride!=null?S.beVarPctOverride:null,beDaysInMonth:S.beDaysInMonth||30,
       cycles:(S.branchData[S.curBranch]&&S.branchData[S.curBranch].cycles)||[]
     };
     lastSentBranchJSON=JSON.stringify(payload);
@@ -2906,7 +2935,7 @@ function createNewBranch(){
   const btn=document.getElementById('createBranchBtn');
   btn.disabled=true;btn.textContent='⏳ جاري الإنشاء...';
   const ref=db.collection('branches').doc();
-  ref.set({name,manager,storekeeper,supervisor,date:today(),sid:genSid(),qty:{},notes:{},reports:[],maintenance:[],cycles:[]})
+  ref.set({name,manager,storekeeper,supervisor,date:today(),sid:genSid(),qty:{},notes:{},reports:[],maintenance:[],employees:[],directCosts:[],beVarPctOverride:null,beDaysInMonth:30,cycles:[]})
     .then(()=>{
       toast('✅ تم إضافة الفرع: '+name,'suc');
       closeM('newBranchModal');
@@ -3476,6 +3505,193 @@ function exportMaintenanceExcel(){
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'الأعطال والصيانة');
   XLSX.writeFile(wb,`Maintenance_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
   toast('📗 تم تصدير سجل الصيانة','inf');
+}
+
+// ══════════════════════════════════════════════
+//  BREAK-EVEN POINT MODULE (نقطة التعادل اليومية لكل فرع على حدة)
+//  التعادل اليومي = التكلفة الثابتة اليومية ÷ نسبة هامش المساهمة (100% - نسبة التكلفة المتغيرة)
+// ══════════════════════════════════════════════
+let breakEvenBranchFilter='__current__';
+function openBreakEvenModule(){
+  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  breakEvenBranchFilter='__current__';
+  populateBreakEvenBranchFilter();
+  renderBreakEvenModule();
+  document.getElementById('breakEvenModal').classList.add('open');
+}
+function populateBreakEvenBranchFilter(){
+  const wrap=document.getElementById('beBranchFilterWrap');
+  if(!canViewAllReportsUI()||Object.keys(S.branches||{}).length<2){wrap.style.display='none';return;}
+  wrap.style.display='';
+  document.getElementById('be-branch-filter').innerHTML=branchFilterOptionsHtml(breakEvenBranchFilter);
+}
+function setBreakEvenBranchFilter(v){
+  breakEvenBranchFilter=v;
+  if(v==='__current__'||crossBranchRawDocs){renderBreakEvenModule();return;}
+  document.getElementById('breakEvenBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري تحميل بيانات الفروع...</div>';
+  loadCrossBranchDocs().then(renderBreakEvenModule).catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
+}
+function addEmployee(){
+  if(!S.employees) S.employees=[];
+  S.employees.push({id:'EMP'+Date.now().toString(36).toUpperCase(),name:'',role:'',salary:0});
+  save();renderBreakEvenModule();
+}
+function setEmployeeField(id,field,v){
+  const e=(S.employees||[]).find(x=>x.id===id);if(!e)return;
+  e[field]=field==='salary'?(parseFloat(v)||0):v;
+  save();renderBreakEvenModule();
+}
+function deleteEmployee(id){
+  if(!confirm('حذف هذا الموظف من القائمة؟'))return;
+  S.employees=(S.employees||[]).filter(x=>x.id!==id);
+  save();renderBreakEvenModule();
+}
+function addDirectCost(){
+  if(!S.directCosts) S.directCosts=[];
+  S.directCosts.push({id:'DC'+Date.now().toString(36).toUpperCase(),name:'',amount:0});
+  save();renderBreakEvenModule();
+}
+function setDirectCostField(id,field,v){
+  const dcost=(S.directCosts||[]).find(x=>x.id===id);if(!dcost)return;
+  dcost[field]=field==='amount'?(parseFloat(v)||0):v;
+  save();renderBreakEvenModule();
+}
+function deleteDirectCost(id){
+  if(!confirm('حذف هذا البند؟'))return;
+  S.directCosts=(S.directCosts||[]).filter(x=>x.id!==id);
+  save();renderBreakEvenModule();
+}
+function setBreakEvenSetting(field,v){
+  if(field==='beVarPctOverride') S.beVarPctOverride=v===''?null:(parseFloat(v)||0);
+  else if(field==='beDaysInMonth') S.beDaysInMonth=Math.max(1,parseInt(v)||30);
+  save();renderBreakEvenModule();
+}
+function computeBreakEvenForBranch(cyclesArr,employees,directCosts,varPctOverride,daysInMonth,label){
+  employees=employees||[];directCosts=directCosts||[];
+  const totalSalaries=employees.reduce((s,e)=>s+(e.salary||0),0);
+  const totalDirectCosts=directCosts.reduce((s,d)=>s+(d.amount||0),0);
+  const totalFixed=totalSalaries+totalDirectCosts;
+  const dim=daysInMonth||30;
+  const dailyFixed=totalFixed/dim;
+  const closed=(cyclesArr||[]).filter(c=>c.closed&&c.result);
+  const histVarPct=closed.length?closed.reduce((s,c)=>s+c.result.actualCostPct,0)/closed.length:FOOD_COST_TARGET_PCT;
+  const varPct=varPctOverride!=null?varPctOverride:histVarPct;
+  const contributionPct=Math.max(1,100-varPct);
+  const dailyBreakEven=dailyFixed/(contributionPct/100);
+  const monthlyBreakEven=dailyBreakEven*dim;
+  return {label,employees,directCosts,totalSalaries,totalDirectCosts,totalFixed,dailyFixed,
+    varPct,varPctOverrideRaw:varPctOverride,histVarPct,contributionPct,dailyBreakEven,monthlyBreakEven,daysInMonth:dim};
+}
+function computeBreakEven(){
+  if(breakEvenBranchFilter==='__current__') return computeBreakEvenForBranch(BCycles(),S.employees,S.directCosts,S.beVarPctOverride,S.beDaysInMonth,S.branch||'');
+  if(!crossBranchRawDocs) return null;
+  if(breakEvenBranchFilter==='__all__') return Object.entries(crossBranchRawDocs).map(([key,d])=>
+    computeBreakEvenForBranch(d.cycles||[],d.employees||[],d.directCosts||[],d.beVarPctOverride!=null?d.beVarPctOverride:null,d.beDaysInMonth||30,(S.branches[key]||{}).name||key));
+  const d=crossBranchRawDocs[breakEvenBranchFilter]||{};
+  return computeBreakEvenForBranch(d.cycles||[],d.employees||[],d.directCosts||[],d.beVarPctOverride!=null?d.beVarPctOverride:null,d.beDaysInMonth||30,(S.branches[breakEvenBranchFilter]||{}).name||breakEvenBranchFilter);
+}
+function renderBreakEvenModule(){
+  const el=document.getElementById('breakEvenBody');
+  const editable=breakEvenBranchFilter==='__current__';
+  const result=computeBreakEven();
+  if(result==null){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري تحميل بيانات الفروع...</div>';return;}
+  const kpi=(l,v,color)=>`<div class="stat" style="border-color:${color}55"><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>`;
+  if(Array.isArray(result)){
+    el.innerHTML=`${reportHeaderBlock({title:'⚖️ نقطة التعادل اليومية — مقارنة بين الفروع'})}
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>${t('الفرع')}</th><th>${t('عدد الموظفين')}</th><th>${t('إجمالي التكاليف الثابتة الشهرية')}</th><th>${t('التكلفة الثابتة اليومية')}</th><th>${t('نسبة التكلفة المتغيرة')}</th><th>${t('نقطة التعادل اليومية')}</th><th>${t('نقطة التعادل الشهرية')}</th></tr></thead>
+      <tbody>${result.map(r=>`<tr>
+        <td class="td-name">${r.label}</td>
+        <td style="text-align:center">${r.employees.length}</td>
+        <td style="font-family:var(--mono)">${fmt(r.totalFixed)}</td>
+        <td style="font-family:var(--mono)">${fmt(r.dailyFixed)}</td>
+        <td style="font-family:var(--mono)">${r.varPct.toFixed(1)}%</td>
+        <td style="font-family:var(--mono);font-weight:700;color:var(--gold)">${fmt(r.dailyBreakEven)}</td>
+        <td style="font-family:var(--mono)">${fmt(r.monthlyBreakEven)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+    ${reportSignatureBlock(['أُعِدّ بواسطة','رُوجع بواسطة (الإدارة المالية)','اعتُمد بواسطة (الإدارة العليا)'])}`;
+    return;
+  }
+  const r=result;
+  const empRows=r.employees.map(e=>editable?`<tr>
+      <td><input type="text" class="mod-in" style="min-width:140px" value="${(e.name||'').replace(/"/g,'&quot;')}" onchange="setEmployeeField('${e.id}','name',this.value)" placeholder="اسم الموظف"></td>
+      <td><input type="text" class="mod-in" style="min-width:120px" value="${(e.role||'').replace(/"/g,'&quot;')}" onchange="setEmployeeField('${e.id}','role',this.value)" placeholder="الوظيفة"></td>
+      <td><input type="number" inputmode="decimal" class="mod-in" style="width:120px" min="0" step="0.01" value="${e.salary||0}" onchange="setEmployeeField('${e.id}','salary',this.value)"></td>
+      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteEmployee('${e.id}')" title="حذف الموظف">🗑</button></td>
+    </tr>`:`<tr>
+      <td class="td-name">${e.name||'-'}</td><td>${e.role||'-'}</td><td style="font-family:var(--mono)">${fmt(e.salary||0)}</td><td></td>
+    </tr>`).join('');
+  const dcRows=r.directCosts.map(dcost=>editable?`<tr>
+      <td><input type="text" class="mod-in" style="min-width:160px" value="${(dcost.name||'').replace(/"/g,'&quot;')}" onchange="setDirectCostField('${dcost.id}','name',this.value)" placeholder="مثال: إيجار"></td>
+      <td><input type="number" inputmode="decimal" class="mod-in" style="width:130px" min="0" step="0.01" value="${dcost.amount||0}" onchange="setDirectCostField('${dcost.id}','amount',this.value)"></td>
+      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteDirectCost('${dcost.id}')" title="حذف البند">🗑</button></td>
+    </tr>`:`<tr>
+      <td class="td-name">${dcost.name||'-'}</td><td style="font-family:var(--mono)">${fmt(dcost.amount||0)}</td><td></td>
+    </tr>`).join('');
+  el.innerHTML=`${reportHeaderBlock({title:'⚖️ نقطة التعادل اليومية',branchName:r.label})}
+  <div style="font-weight:700;font-size:13px;margin-bottom:8px">👥 بيانات الموظفين (الرواتب الشهرية)</div>
+  <div class="tbl-wrap" style="margin-bottom:10px"><table>
+    <thead><tr><th>${t('الاسم')}</th><th>${t('الوظيفة')}</th><th>${t('الراتب الشهري')}</th><th></th></tr></thead>
+    <tbody>${empRows||`<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px">لا يوجد موظفين مسجّلين بعد</td></tr>`}</tbody>
+  </table></div>
+  ${editable?`<button class="hbtn" style="margin-bottom:18px" onclick="addEmployee()">➕ إضافة موظف</button>`:'<div style="margin-bottom:18px"></div>'}
+
+  <div style="font-weight:700;font-size:13px;margin-bottom:8px">🧾 بنود التكاليف المباشرة الشهرية (إيجار، كهرباء، تأمين، تسويق...)</div>
+  <div class="tbl-wrap" style="margin-bottom:10px"><table>
+    <thead><tr><th>${t('البند')}</th><th>${t('القيمة الشهرية')}</th><th></th></tr></thead>
+    <tbody>${dcRows||`<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:16px">لا توجد بنود تكاليف مسجّلة بعد</td></tr>`}</tbody>
+  </table></div>
+  ${editable?`<button class="hbtn" style="margin-bottom:18px" onclick="addDirectCost()">➕ إضافة بند تكلفة</button>`:'<div style="margin-bottom:18px"></div>'}
+
+  <div class="mod-row" style="align-items:end;margin-bottom:16px">
+    <div class="mod-field">
+      <label class="mod-lbl">نسبة التكلفة المتغيرة % (فارغ = تلقائي من متوسط الدورات السابقة: ${r.histVarPct.toFixed(1)}%)</label>
+      <input type="number" inputmode="decimal" class="mod-in" min="0" max="100" step="0.1" value="${r.varPctOverrideRaw!=null?r.varPctOverrideRaw:''}" placeholder="${r.histVarPct.toFixed(1)}" ${editable?'':'disabled'} onchange="setBreakEvenSetting('beVarPctOverride',this.value)">
+    </div>
+    <div class="mod-field">
+      <label class="mod-lbl">عدد أيام الشهر المستخدمة لتوزيع التكاليف الثابتة</label>
+      <input type="number" class="mod-in" min="1" max="31" step="1" value="${r.daysInMonth}" ${editable?'':'disabled'} onchange="setBreakEvenSetting('beDaysInMonth',this.value)">
+    </div>
+  </div>
+
+  <div class="stats" style="margin-bottom:16px">
+    ${kpi('إجمالي التكاليف الثابتة الشهرية',fmt(r.totalFixed),'#3d8ef0')}
+    ${kpi('التكلفة الثابتة اليومية',fmt(r.dailyFixed),'#f0c040')}
+    ${kpi('نسبة هامش المساهمة',r.contributionPct.toFixed(1)+'%','#2ee89a')}
+    ${kpi('⚖️ نقطة التعادل اليومية (إيراد)',fmt(r.dailyBreakEven),'#f05050')}
+    ${kpi('نقطة التعادل الشهرية (إيراد)',fmt(r.monthlyBreakEven),'#f05050')}
+  </div>
+  <p style="font-size:11px;color:var(--muted);line-height:1.8">نقطة التعادل = التكلفة الثابتة اليومية ÷ نسبة هامش المساهمة (100% − نسبة التكلفة المتغيرة). يعني ده أقل إيراد يومي لازم الفرع يحققه عشان يغطي كل مصاريفه الثابتة (رواتب + تكاليف مباشرة) من غير ما يخسر.</p>
+  ${reportSignatureBlock(['أُعِدّ بواسطة (المحاسب)','رُوجع بواسطة (مدير الفرع)','اعتُمد بواسطة (الإدارة المالية)'])}`;
+}
+function exportBreakEvenExcel(){
+  const result=computeBreakEven();
+  if(!result){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
+  const wb=XLSX.utils.book_new();
+  if(Array.isArray(result)){
+    const out=[['الفرع','عدد الموظفين','إجمالي التكاليف الثابتة الشهرية','التكلفة الثابتة اليومية','نسبة التكلفة المتغيرة %','نقطة التعادل اليومية','نقطة التعادل الشهرية']];
+    result.forEach(r=>out.push([r.label,r.employees.length,+r.totalFixed.toFixed(2),+r.dailyFixed.toFixed(2),+r.varPct.toFixed(2),+r.dailyBreakEven.toFixed(2),+r.monthlyBreakEven.toFixed(2)]));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'مقارنة نقطة التعادل');
+  }else{
+    const empRows=[['الاسم','الوظيفة','الراتب الشهري']];
+    result.employees.forEach(e=>empRows.push([e.name||'-',e.role||'-',e.salary||0]));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(empRows),'الموظفين');
+    const dcRows=[['البند','القيمة الشهرية']];
+    result.directCosts.forEach(d=>dcRows.push([d.name||'-',d.amount||0]));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(dcRows),'التكاليف المباشرة');
+    const sumRows=[['المؤشر','القيمة'],
+      ['إجمالي التكاليف الثابتة الشهرية',+result.totalFixed.toFixed(2)],
+      ['التكلفة الثابتة اليومية',+result.dailyFixed.toFixed(2)],
+      ['نسبة التكلفة المتغيرة %',+result.varPct.toFixed(2)],
+      ['نسبة هامش المساهمة %',+result.contributionPct.toFixed(2)],
+      ['نقطة التعادل اليومية',+result.dailyBreakEven.toFixed(2)],
+      ['نقطة التعادل الشهرية',+result.monthlyBreakEven.toFixed(2)],
+    ];
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sumRows),'ملخص نقطة التعادل');
+  }
+  XLSX.writeFile(wb,`BreakEven_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
+  toast('📗 تم تصدير نقطة التعادل','inf');
 }
 
 // ══════════════════════════════════════════════
@@ -4190,7 +4406,7 @@ function renderSalesTab(c,el){
     <button class="hbtn gold" onclick="document.getElementById('foodicsImportFileInput').click()">📥 سحب مبيعات فوديكس (Excel)</button>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>${t('الصنف')}</th><th>${t('السعر')}</th><th>${t('الكمية المباعة')}</th><th>${t('الإجمالي (نظري)')}</th><th>${t('المكونات')}</th></tr></thead>
+    <thead><tr><th>${t('الصنف')}</th><th>${t('السعر')}</th><th>${t('الكمية المباعة')}</th><th>${t('الإجمالي (نظري)')}</th><th>${t('تكلفة المبيعات (نظري)')}</th><th>${t('المكونات')}</th></tr></thead>
     <tbody id="ctRows"></tbody>
   </table></div>
   <div class="dbanner" style="margin-top:12px" id="ctSalesBanner"></div>`;
@@ -4202,23 +4418,26 @@ function renderSalesRows(c){
   const rows=list.map(m=>{
     const qty=c.sales[m.id]||0;
     const sub=qty*m.price;
+    const cost=qty*recipeCost(m.recipe);
     return `<tr>
       <td class="td-name">${m.n}</td>
       <td style="font-family:var(--mono);color:var(--blue)">${fmt(m.price)}</td>
       <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="1" value="${qty||''}" placeholder="0" ${dis} oninput="setCycleSale('${c.id}','${m.id}',this.value)"></td>
       <td style="font-family:var(--mono)">${fmt(sub)}</td>
+      <td style="font-family:var(--mono);color:var(--red)">${fmt(cost)}</td>
       <td>${canViewRecipesUI()?`<button class="hbtn" style="padding:4px 10px;font-size:11px" onclick="openMenuRecipeView('${m.id}')">📋 عرض المكونات</button>`:''}</td>
     </tr>`;
   }).join('');
-  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(5);
+  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(6);
   renderSalesBanner(c);
 }
 function renderSalesBanner(c){
   const el=document.getElementById('ctSalesBanner');if(!el)return;
   const dis=c.closed?'disabled':'';
-  let sumComputed=0;
-  S.menu.forEach(m=>{sumComputed+=(c.sales[m.id]||0)*m.price;});
+  let sumComputed=0,sumCost=0;
+  S.menu.forEach(m=>{sumComputed+=(c.sales[m.id]||0)*m.price;sumCost+=(c.sales[m.id]||0)*recipeCost(m.recipe);});
   el.innerHTML=`<div class="db-l"><div><div class="db-main" id="ctSalesComputed">الإجمالي المحسوب من الكميات: ${fmt(sumComputed)}</div>
+      <div class="db-sub">تكلفة المنتجات المباعة (نظري): ${fmt(sumCost)} · هامش الربح النظري: ${fmt(sumComputed-sumCost)}</div>
       <div class="db-sub">أدخل هنا إجمالي المبيعات الفعلي (من نظام الكاشير/الفواتير) لو مختلف عن المحسوب</div>
       <div id="ctSalesDiff"></div></div></div>
     <div class="db-r" style="gap:14px">
@@ -5108,22 +5327,26 @@ function renderRequirementPlanner(){
     </table></div>`;
 
   const req=planIngredientRequirement(hist);
+  let totalOrderCost=0;
   const ingRows=Object.keys(req).filter(r=>req[r]>0).map(r=>{
     const it=S.items.find(i=>i.r===r);if(!it) return '';
     const need=req[r],current=planCurrentQty(r),toOrder=Math.max(0,need-current);
+    const unitCost=effectiveItemCost(it),cost=toOrder*unitCost;
+    totalOrderCost+=cost;
     return `<tr>
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
       <td style="font-family:var(--mono)">${fmt(need)}</td>
       <td style="font-family:var(--mono);color:var(--blue)">${fmt(current)}</td>
       <td style="font-family:var(--mono);font-weight:700;color:${toOrder>0?'var(--red)':'var(--green)'}">${fmt(toOrder)}</td>
+      <td style="font-family:var(--mono)">${fmt(cost)}</td>
     </tr>`;
   }).filter(Boolean).join('');
   document.getElementById('planIngredientSection').innerHTML=`
     <div class="tbl-wrap">
-      <div class="tbl-head"><div class="tbl-title">📦 احتياج الخامات المتوقع للفترة (${planDays} يوم)</div></div>
+      <div class="tbl-head"><div class="tbl-title">📦 احتياج الخامات المتوقع للفترة (${planDays} يوم)</div><div class="tbl-cnt">تكلفة الطلب المتوقعة: ${fmt(totalOrderCost)}</div></div>
       <table>
-        <thead><tr><th>${t('المرجع')}</th><th>${t('الخامة')}</th><th>${t('الوحدة')}</th><th>${t('الاحتياج المتوقع')}</th><th>${t('الرصيد الحالي')}</th><th>${t('المطلوب طلبه')}</th></tr></thead>
-        <tbody>${ingRows||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px">لا يوجد احتياج بعد — أضف كميات متوقعة للأصناف المباعة فوق</td></tr>'}</tbody>
+        <thead><tr><th>${t('المرجع')}</th><th>${t('الخامة')}</th><th>${t('الوحدة')}</th><th>${t('الاحتياج المتوقع')}</th><th>${t('الرصيد الحالي')}</th><th>${t('المطلوب طلبه')}</th><th>${t('التكلفة')}</th></tr></thead>
+        <tbody>${ingRows||'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px">لا يوجد احتياج بعد — أضف كميات متوقعة للأصناف المباعة فوق</td></tr>'}</tbody>
       </table>
     </div>`;
 }
@@ -5136,11 +5359,11 @@ function exportPlanExcel(){
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(menuRows),'المبيعات المتوقعة');
 
   const req=planIngredientRequirement(hist);
-  const ingRows=[['المرجع','الخامة','الوحدة','الاحتياج المتوقع','الرصيد الحالي','المطلوب طلبه']];
+  const ingRows=[['المرجع','الخامة','الوحدة','الاحتياج المتوقع','الرصيد الحالي','المطلوب طلبه','التكلفة']];
   Object.keys(req).forEach(r=>{
     const it=S.items.find(i=>i.r===r);if(!it) return;
     const need=req[r],current=planCurrentQty(r),toOrder=Math.max(0,need-current);
-    ingRows.push([it.r,it.n,it.u,+need.toFixed(3),current,+toOrder.toFixed(3)]);
+    ingRows.push([it.r,it.n,it.u,+need.toFixed(3),current,+toOrder.toFixed(3),+(toOrder*effectiveItemCost(it)).toFixed(2)]);
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ingRows),'احتياج الخامات');
   XLSX.writeFile(wb,`RequirementPlan_${(S.branch||'Branch').replace(/\s/g,'_')}_${today()}.xlsx`);

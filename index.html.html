@@ -583,6 +583,8 @@ td{padding:9px 13px;vertical-align:middle;}
       <div class="vn-dd-item" id="ddWasteReportItem" onclick="closeDropdowns();openWasteReport()" data-i18n="🗑️ تقرير أكثر الأصناف هالكًا">🗑️ تقرير أكثر الأصناف هالكًا</div>
       <div class="vn-dd-item" id="ddMaintenanceItem" onclick="closeDropdowns();openMaintenanceLog()" data-i18n="🔧 سجل الأعطال والصيانة">🔧 سجل الأعطال والصيانة</div>
       <div class="vn-dd-item" id="ddBreakEvenItem" onclick="closeDropdowns();openBreakEvenModule()" data-i18n="⚖️ نقطة التعادل اليومية">⚖️ نقطة التعادل اليومية</div>
+      <div class="vn-dd-item" id="ddEmployeesItem" onclick="closeDropdowns();openEmployeesScreen()" data-i18n="👥 بيانات الموظفين">👥 بيانات الموظفين</div>
+      <div class="vn-dd-item" id="ddDirectCostsItem" onclick="closeDropdowns();openDirectCostsScreen()" data-i18n="🧾 بنود التكاليف المباشرة">🧾 بنود التكاليف المباشرة</div>
       <div class="vn-dd-item" id="ddAllBranchReports" style="display:none" onclick="closeDropdowns();openAllBranchesReport()" data-i18n="🌐 تقرير كل الفروع">🌐 تقرير كل الفروع</div>
       <div class="vn-dd-div"></div>
       <div class="vn-dd-item" onclick="closeDropdowns();exportFullDataExcel()" data-i18n="📗 تفريغ كل البيانات (Excel)">📗 تفريغ كل البيانات (Excel)</div>
@@ -1310,14 +1312,46 @@ td{padding:9px 13px;vertical-align:middle;}
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportBreakEvenExcel()">📗 Excel</button>
   </div>
-  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">سجّل رواتب الموظفين وبنود التكاليف المباشرة الشهرية (إيجار، كهرباء، تأمين...) لهذا الفرع، والنظام هيحسب لك نقطة التعادل اليومية — أقل إيراد لازم تحققه يوميًا عشان تغطي مصاريفك الثابتة.</p>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">نقطة التعادل اليومية محسوبة من بيانات الموظفين وبنود التكاليف المباشرة المسجّلة لهذا الفرع — عدّلها من الشاشتين المخصصتين.</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
     <div class="mod-field" id="beBranchFilterWrap" style="display:none;margin-bottom:0">
       <label class="mod-lbl">الفرع</label>
       <select class="mod-in" id="be-branch-filter" style="width:auto" onchange="setBreakEvenBranchFilter(this.value)"></select>
     </div>
+    <button class="hbtn" onclick="openEmployeesScreen()">👥 بيانات الموظفين</button>
+    <button class="hbtn" onclick="openDirectCostsScreen()">🧾 بنود التكاليف المباشرة</button>
   </div>
   <div id="breakEvenBody"></div>
+</div>
+</div>
+
+<!-- EMPLOYEES DATA SCREEN (بيانات الموظفين لكل فرع — مستقلة عن تقرير نقطة التعادل) -->
+<div class="overlay" id="employeesModal">
+<div class="modal" style="width:760px">
+  <div class="mod-title" data-i18n="👥 بيانات الموظفين">👥 بيانات الموظفين</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('employeesModal')" data-i18n="إغلاق">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportEmployeesExcel()">📗 Excel</button>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.8">موظفي هذا الفرع ورواتبهم الشهرية — تُستخدم في حساب نقطة التعادل اليومية.</p>
+  <div id="employeesBody"></div>
+  <button class="hbtn gold" style="width:100%;justify-content:center;padding:10px;margin-top:14px" onclick="addEmployee()">➕ إضافة موظف</button>
+</div>
+</div>
+
+<!-- DIRECT COSTS DATA SCREEN (بنود التكاليف المباشرة لكل فرع — مستقلة عن تقرير نقطة التعادل) -->
+<div class="overlay" id="directCostsModal">
+<div class="modal" style="width:760px">
+  <div class="mod-title" data-i18n="🧾 بنود التكاليف المباشرة">🧾 بنود التكاليف المباشرة</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('directCostsModal')" data-i18n="إغلاق">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportDirectCostsExcel()">📗 Excel</button>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.8">بنود التكاليف المباشرة الشهرية لهذا الفرع (إيجار، كهرباء، تأمين، تسويق...) — تُستخدم في حساب نقطة التعادل اليومية.</p>
+  <div id="directCostsBody"></div>
+  <button class="hbtn gold" style="width:100%;justify-content:center;padding:10px;margin-top:14px" onclick="addDirectCost()">➕ إضافة بند تكلفة</button>
 </div>
 </div>
 
@@ -1394,6 +1428,8 @@ const I18N_EN={
   "🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية": "🔗 Match Item Names With External Systems",
   "📦 تقرير المخزون الختامي": "📦 Closing Stock Report",
   "⚖️ نقطة التعادل اليومية": "⚖️ Daily Break-Even Point",
+  "👥 بيانات الموظفين": "👥 Employee Data",
+  "🧾 بنود التكاليف المباشرة": "🧾 Direct Cost Items",
   "🗑️ تقرير أكثر الأصناف هالكًا": "🗑️ Top Waste Items Report",
   "🔧 سجل الأعطال والصيانة": "🔧 Maintenance & Malfunctions Log",
   "من الجرد اليومي": "From Daily Count",
@@ -1621,6 +1657,8 @@ function reRenderDynamicContentForLang(){
     ['maintenanceModal',renderMaintenanceList],
     ['importReconcileModal',renderImportReconcile],
     ['breakEvenModal',renderBreakEvenModule],
+    ['employeesModal',renderEmployeesScreen],
+    ['directCostsModal',renderDirectCostsScreen],
   ];
   openRenders.forEach(([id,fn])=>{
     const el=document.getElementById(id);
@@ -2038,6 +2076,8 @@ function startDataSync(){
   document.getElementById('ddWasteReportItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('ddMaintenanceItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('ddBreakEvenItem').style.display=canViewReportsUI()?'':'none';
+  document.getElementById('ddEmployeesItem').style.display=canViewReportsUI()?'':'none';
+  document.getElementById('ddDirectCostsItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('branchSwitch').disabled=!canManageBranchesUI();
 
   if(!unsubCompany){
@@ -3531,35 +3571,98 @@ function setBreakEvenBranchFilter(v){
   document.getElementById('breakEvenBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري تحميل بيانات الفروع...</div>';
   loadCrossBranchDocs().then(renderBreakEvenModule).catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
 }
+function refreshEmployeesAndBreakEven(){renderEmployeesScreen();renderBreakEvenModule();}
+function refreshDirectCostsAndBreakEven(){renderDirectCostsScreen();renderBreakEvenModule();}
 function addEmployee(){
   if(!S.employees) S.employees=[];
   S.employees.push({id:'EMP'+Date.now().toString(36).toUpperCase(),name:'',role:'',salary:0});
-  save();renderBreakEvenModule();
+  save();refreshEmployeesAndBreakEven();
 }
 function setEmployeeField(id,field,v){
   const e=(S.employees||[]).find(x=>x.id===id);if(!e)return;
   e[field]=field==='salary'?(parseFloat(v)||0):v;
-  save();renderBreakEvenModule();
+  save();refreshEmployeesAndBreakEven();
 }
 function deleteEmployee(id){
   if(!confirm('حذف هذا الموظف من القائمة؟'))return;
   S.employees=(S.employees||[]).filter(x=>x.id!==id);
-  save();renderBreakEvenModule();
+  save();refreshEmployeesAndBreakEven();
 }
 function addDirectCost(){
   if(!S.directCosts) S.directCosts=[];
   S.directCosts.push({id:'DC'+Date.now().toString(36).toUpperCase(),name:'',amount:0});
-  save();renderBreakEvenModule();
+  save();refreshDirectCostsAndBreakEven();
 }
 function setDirectCostField(id,field,v){
   const dcost=(S.directCosts||[]).find(x=>x.id===id);if(!dcost)return;
   dcost[field]=field==='amount'?(parseFloat(v)||0):v;
-  save();renderBreakEvenModule();
+  save();refreshDirectCostsAndBreakEven();
 }
 function deleteDirectCost(id){
   if(!confirm('حذف هذا البند؟'))return;
   S.directCosts=(S.directCosts||[]).filter(x=>x.id!==id);
-  save();renderBreakEvenModule();
+  save();refreshDirectCostsAndBreakEven();
+}
+function openEmployeesScreen(){
+  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  renderEmployeesScreen();
+  document.getElementById('employeesModal').classList.add('open');
+}
+function renderEmployeesScreen(){
+  const el=document.getElementById('employeesBody');if(!el)return;
+  const list=S.employees||[];
+  if(!list.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted)">لا يوجد موظفين مسجّلين بعد.</div>';return;}
+  const total=list.reduce((s,e)=>s+(e.salary||0),0);
+  el.innerHTML=`<div class="dbanner" style="margin-bottom:14px"><div class="db-l"><div><div class="db-main">${list.length} موظف</div><div class="db-sub">إجمالي الرواتب الشهرية: ${fmt(total)}</div></div></div></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>${t('الاسم')}</th><th>${t('الوظيفة')}</th><th>${t('الراتب الشهري')}</th><th></th></tr></thead>
+    <tbody>${list.map(e=>`<tr>
+      <td><input type="text" class="mod-in" style="min-width:140px" value="${(e.name||'').replace(/"/g,'&quot;')}" onchange="setEmployeeField('${e.id}','name',this.value)" placeholder="اسم الموظف"></td>
+      <td><input type="text" class="mod-in" style="min-width:120px" value="${(e.role||'').replace(/"/g,'&quot;')}" onchange="setEmployeeField('${e.id}','role',this.value)" placeholder="الوظيفة"></td>
+      <td><input type="number" inputmode="decimal" class="mod-in" style="width:120px" min="0" step="0.01" value="${e.salary||0}" onchange="setEmployeeField('${e.id}','salary',this.value)"></td>
+      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteEmployee('${e.id}')" title="حذف الموظف">🗑</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+function exportEmployeesExcel(){
+  const list=S.employees||[];
+  if(!list.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
+  const wb=XLSX.utils.book_new();
+  const out=[['الاسم','الوظيفة','الراتب الشهري']];
+  list.forEach(e=>out.push([e.name||'-',e.role||'-',e.salary||0]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'الموظفين');
+  XLSX.writeFile(wb,`Employees_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
+  toast('📗 تم التصدير','inf');
+}
+function openDirectCostsScreen(){
+  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  renderDirectCostsScreen();
+  document.getElementById('directCostsModal').classList.add('open');
+}
+function renderDirectCostsScreen(){
+  const el=document.getElementById('directCostsBody');if(!el)return;
+  const list=S.directCosts||[];
+  if(!list.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted)">لا توجد بنود تكاليف مسجّلة بعد.</div>';return;}
+  const total=list.reduce((s,d)=>s+(d.amount||0),0);
+  el.innerHTML=`<div class="dbanner" style="margin-bottom:14px"><div class="db-l"><div><div class="db-main">${list.length} بند</div><div class="db-sub">إجمالي التكاليف المباشرة الشهرية: ${fmt(total)}</div></div></div></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>${t('البند')}</th><th>${t('القيمة الشهرية')}</th><th></th></tr></thead>
+    <tbody>${list.map(dcost=>`<tr>
+      <td><input type="text" class="mod-in" style="min-width:160px" value="${(dcost.name||'').replace(/"/g,'&quot;')}" onchange="setDirectCostField('${dcost.id}','name',this.value)" placeholder="مثال: إيجار"></td>
+      <td><input type="number" inputmode="decimal" class="mod-in" style="width:130px" min="0" step="0.01" value="${dcost.amount||0}" onchange="setDirectCostField('${dcost.id}','amount',this.value)"></td>
+      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteDirectCost('${dcost.id}')" title="حذف البند">🗑</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+function exportDirectCostsExcel(){
+  const list=S.directCosts||[];
+  if(!list.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
+  const wb=XLSX.utils.book_new();
+  const out=[['البند','القيمة الشهرية']];
+  list.forEach(d=>out.push([d.name||'-',d.amount||0]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'التكاليف المباشرة');
+  XLSX.writeFile(wb,`DirectCosts_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
+  toast('📗 تم التصدير','inf');
 }
 function setBreakEvenSetting(field,v){
   if(field==='beVarPctOverride') S.beVarPctOverride=v===''?null:(parseFloat(v)||0);
@@ -3614,35 +3717,24 @@ function renderBreakEvenModule(){
     return;
   }
   const r=result;
-  const empRows=r.employees.map(e=>editable?`<tr>
-      <td><input type="text" class="mod-in" style="min-width:140px" value="${(e.name||'').replace(/"/g,'&quot;')}" onchange="setEmployeeField('${e.id}','name',this.value)" placeholder="اسم الموظف"></td>
-      <td><input type="text" class="mod-in" style="min-width:120px" value="${(e.role||'').replace(/"/g,'&quot;')}" onchange="setEmployeeField('${e.id}','role',this.value)" placeholder="الوظيفة"></td>
-      <td><input type="number" inputmode="decimal" class="mod-in" style="width:120px" min="0" step="0.01" value="${e.salary||0}" onchange="setEmployeeField('${e.id}','salary',this.value)"></td>
-      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteEmployee('${e.id}')" title="حذف الموظف">🗑</button></td>
-    </tr>`:`<tr>
-      <td class="td-name">${e.name||'-'}</td><td>${e.role||'-'}</td><td style="font-family:var(--mono)">${fmt(e.salary||0)}</td><td></td>
+  const empRows=r.employees.map(e=>`<tr>
+      <td class="td-name">${e.name||'-'}</td><td>${e.role||'-'}</td><td style="font-family:var(--mono)">${fmt(e.salary||0)}</td>
     </tr>`).join('');
-  const dcRows=r.directCosts.map(dcost=>editable?`<tr>
-      <td><input type="text" class="mod-in" style="min-width:160px" value="${(dcost.name||'').replace(/"/g,'&quot;')}" onchange="setDirectCostField('${dcost.id}','name',this.value)" placeholder="مثال: إيجار"></td>
-      <td><input type="number" inputmode="decimal" class="mod-in" style="width:130px" min="0" step="0.01" value="${dcost.amount||0}" onchange="setDirectCostField('${dcost.id}','amount',this.value)"></td>
-      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteDirectCost('${dcost.id}')" title="حذف البند">🗑</button></td>
-    </tr>`:`<tr>
-      <td class="td-name">${dcost.name||'-'}</td><td style="font-family:var(--mono)">${fmt(dcost.amount||0)}</td><td></td>
+  const dcRows=r.directCosts.map(dcost=>`<tr>
+      <td class="td-name">${dcost.name||'-'}</td><td style="font-family:var(--mono)">${fmt(dcost.amount||0)}</td>
     </tr>`).join('');
   el.innerHTML=`${reportHeaderBlock({title:'⚖️ نقطة التعادل اليومية',branchName:r.label})}
-  <div style="font-weight:700;font-size:13px;margin-bottom:8px">👥 بيانات الموظفين (الرواتب الشهرية)</div>
-  <div class="tbl-wrap" style="margin-bottom:10px"><table>
-    <thead><tr><th>${t('الاسم')}</th><th>${t('الوظيفة')}</th><th>${t('الراتب الشهري')}</th><th></th></tr></thead>
-    <tbody>${empRows||`<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px">لا يوجد موظفين مسجّلين بعد</td></tr>`}</tbody>
+  <div style="font-weight:700;font-size:13px;margin-bottom:8px">👥 بيانات الموظفين (الرواتب الشهرية)${editable?` — <a href="#" onclick="openEmployeesScreen();return false" style="color:var(--gold);font-weight:400;font-size:11px">تعديل ✏️</a>`:''}</div>
+  <div class="tbl-wrap" style="margin-bottom:18px"><table>
+    <thead><tr><th>${t('الاسم')}</th><th>${t('الوظيفة')}</th><th>${t('الراتب الشهري')}</th></tr></thead>
+    <tbody>${empRows||`<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:16px">لا يوجد موظفين مسجّلين بعد</td></tr>`}</tbody>
   </table></div>
-  ${editable?`<button class="hbtn" style="margin-bottom:18px" onclick="addEmployee()">➕ إضافة موظف</button>`:'<div style="margin-bottom:18px"></div>'}
 
-  <div style="font-weight:700;font-size:13px;margin-bottom:8px">🧾 بنود التكاليف المباشرة الشهرية (إيجار، كهرباء، تأمين، تسويق...)</div>
-  <div class="tbl-wrap" style="margin-bottom:10px"><table>
-    <thead><tr><th>${t('البند')}</th><th>${t('القيمة الشهرية')}</th><th></th></tr></thead>
-    <tbody>${dcRows||`<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:16px">لا توجد بنود تكاليف مسجّلة بعد</td></tr>`}</tbody>
+  <div style="font-weight:700;font-size:13px;margin-bottom:8px">🧾 بنود التكاليف المباشرة الشهرية (إيجار، كهرباء، تأمين، تسويق...)${editable?` — <a href="#" onclick="openDirectCostsScreen();return false" style="color:var(--gold);font-weight:400;font-size:11px">تعديل ✏️</a>`:''}</div>
+  <div class="tbl-wrap" style="margin-bottom:18px"><table>
+    <thead><tr><th>${t('البند')}</th><th>${t('القيمة الشهرية')}</th></tr></thead>
+    <tbody>${dcRows||`<tr><td colspan="2" style="text-align:center;color:var(--muted);padding:16px">لا توجد بنود تكاليف مسجّلة بعد</td></tr>`}</tbody>
   </table></div>
-  ${editable?`<button class="hbtn" style="margin-bottom:18px" onclick="addDirectCost()">➕ إضافة بند تكلفة</button>`:'<div style="margin-bottom:18px"></div>'}
 
   <div class="mod-row" style="align-items:end;margin-bottom:16px">
     <div class="mod-field">

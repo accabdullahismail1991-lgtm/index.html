@@ -13,15 +13,25 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
 :root{
-  --bg:#eef0f4;--surface:#f6f7fa;--card:#ffffff;--card2:#f4f5f8;
-  --border:#e0e3e9;--border2:#cfd4dd;
+  --bg:#f2f3f8;--surface:#f8f9fc;--card:#ffffff;--card2:#f5f6fa;
+  --border:#e3e6ee;--border2:#d2d7e2;
   --gold:#c99a1f;--gold2:#a67c15;
   --blue:#2f6fd1;--green:#1f9d68;--red:#d0453f;--purple:#8456d0;--orange:#d1701f;
-  --text:#1d2430;--muted:#68748a;--muted2:#98a3b5;
+  --text:#1a2030;--muted:#68748a;--muted2:#98a3b5;
+  --tint:rgba(26,32,48,.035);--tint2:rgba(26,32,48,.06);
+  --shadow-sm:0 1px 2px rgba(20,30,55,.04),0 2px 8px rgba(20,30,55,.05);
+  --shadow-md:0 6px 20px rgba(20,30,55,.09);
   --font:'Tajawal',sans-serif;--mono:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:var(--font);font-weight:500;min-height:100vh;overflow-x:hidden;}
+body{
+  background-color:var(--bg);
+  background-image:radial-gradient(circle at 12% -10%,rgba(201,154,31,.05),transparent 38%),
+    radial-gradient(circle at 100% 10%,rgba(47,111,209,.045),transparent 42%),
+    radial-gradient(circle at 50% 100%,rgba(132,86,208,.03),transparent 45%);
+  background-attachment:fixed;background-repeat:no-repeat;
+  color:var(--text);font-family:var(--font);font-weight:500;min-height:100vh;overflow-x:hidden;
+}
 
 /* HEADER */
 header{
@@ -97,7 +107,7 @@ header{
   display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;
   font-size:13px;color:var(--text);cursor:pointer;transition:background .12s;white-space:nowrap;
 }
-.vn-dd-item:hover{background:rgba(255,255,255,.05);}
+.vn-dd-item:hover{background:var(--tint);}
 .vn-dd-div{height:1px;background:var(--border);margin:5px 4px;}
 
 /* LAYOUT */
@@ -120,7 +130,7 @@ header{
   cursor:pointer;border-right:3px solid transparent;
   transition:all .15s;font-size:13px;color:var(--muted);
 }
-.sb-item:hover{background:rgba(255,255,255,.03);color:var(--text);}
+.sb-item:hover{background:var(--tint);color:var(--text);}
 .sb-item.active{background:rgba(240,192,64,.07);color:var(--gold);border-right-color:var(--gold);}
 .sb-ico{font-size:14px;flex-shrink:0;}
 .sb-badge{
@@ -140,7 +150,7 @@ header{
   border-right:3px solid transparent;
   transition:all .12s;cursor:pointer;
 }
-.sb-cat-item:hover{background:rgba(255,255,255,.025);color:var(--text);}
+.sb-cat-item:hover{background:var(--tint);color:var(--text);}
 .sb-cat-item.active{background:rgba(240,192,64,.06);color:var(--gold);border-right-color:var(--gold);}
 .sb-cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .sb-cat-edit{
@@ -177,8 +187,8 @@ main{flex:1;padding:22px;overflow:auto;min-width:0;}
 
 /* STATS */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
-.stat{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:16px 18px;position:relative;overflow:hidden;transition:transform .15s;}
-.stat:hover{transform:translateY(-2px);}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:16px 18px;position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s;box-shadow:var(--shadow-sm);}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
 .stat::before{content:'';position:absolute;top:-18px;left:-18px;width:80px;height:80px;border-radius:50%;opacity:.08;}
 .s1::before{background:var(--gold);}
 .s2::before{background:var(--green);}
@@ -255,11 +265,11 @@ select{
 select:hover{border-color:var(--border2);}
 
 /* TABLE */
-.tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow-x:auto;}
+.tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow-x:auto;box-shadow:var(--shadow-sm);}
 .tbl-head{
   display:flex;align-items:center;justify-content:space-between;
   padding:12px 18px;border-bottom:1px solid var(--border);
-  background:rgba(255,255,255,.01);
+  background:var(--tint);
 }
 .tbl-title{font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;}
 .tbl-cnt{font-family:var(--mono);font-size:11.5px;color:var(--muted);}
@@ -284,7 +294,7 @@ td{padding:9px 13px;vertical-align:middle;}
 }
 .cat-pill{
   display:inline-flex;align-items:center;gap:5px;
-  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  background:var(--tint);border:1px solid var(--border);
   border-radius:5px;padding:2px 8px;font-size:11px;color:var(--muted);white-space:nowrap;
 }
 .cpill-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
@@ -302,7 +312,7 @@ td{padding:9px 13px;vertical-align:middle;}
 }
 .qbtn:hover{border-color:var(--gold);color:var(--gold);}
 .qin{
-  width:82px;background:rgba(255,255,255,.05);border:1px solid var(--border);
+  width:82px;background:var(--tint2);border:1px solid var(--border);
   border-radius:6px;padding:4px 9px;color:var(--text);
   font-family:var(--mono);font-size:12.5px;text-align:center;outline:none;transition:all .15s;
 }
@@ -315,7 +325,7 @@ td{padding:9px 13px;vertical-align:middle;}
   color:var(--muted);font-family:var(--font);font-size:11.5px;
   outline:none;transition:all .15s;
 }
-.note-in:focus{border-color:var(--border2);background:rgba(255,255,255,.04);color:var(--text);width:150px;}
+.note-in:focus{border-color:var(--border2);background:var(--tint);color:var(--text);width:150px;}
 .note-in::placeholder{color:rgba(120,136,168,.3);}
 .row-del{
   width:24px;height:24px;border-radius:5px;border:1px solid transparent;
@@ -406,14 +416,17 @@ td{padding:9px 13px;vertical-align:middle;}
 .rsum.sr .rsum-v{color:var(--red);}
 .rsum.so .rsum-v{color:var(--gold);}
 .rtbl{width:100%;border-collapse:collapse;font-size:12px;}
-.rtbl th{background:rgba(255,255,255,.04);padding:7px 11px;text-align:right;font-size:10px;color:var(--muted);font-family:var(--mono);border-bottom:1px solid var(--border);}
+.rtbl th{background:var(--tint);padding:7px 11px;text-align:right;font-size:10px;color:var(--muted);font-family:var(--mono);border-bottom:1px solid var(--border);}
 .rtbl td{padding:6px 11px;border-bottom:1px solid rgba(34,44,61,.6);}
 .rtd-q{font-family:var(--mono);font-weight:600;color:var(--green);}
 .rtd-z{font-family:var(--mono);font-weight:600;color:var(--red);}
 
 /* AUTH SCREEN */
-.auth-wrap{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;}
-.auth-card{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:32px;width:380px;max-width:100%;}
+.auth-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;
+  background-color:var(--bg);
+  background-image:radial-gradient(circle at 0% 0%,rgba(201,154,31,.05),transparent 32%),radial-gradient(circle at 100% 100%,rgba(47,111,209,.05),transparent 35%);
+}
+.auth-card{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:32px;width:380px;max-width:100%;box-shadow:var(--shadow-md);}
 
 /* TOAST */
 .toast{
@@ -2906,12 +2919,12 @@ function renderManage(){
   if(!list.length){cont.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted)">لا توجد أصناف</div>';return;}
   cont.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12.5px">
     <thead><tr>
-      <th style="background:rgba(255,255,255,.04);padding:8px 10px;text-align:right;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">المرجع</th>
-      <th style="background:rgba(255,255,255,.04);padding:8px 10px;text-align:right;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">الاسم</th>
-      <th style="background:rgba(255,255,255,.04);padding:8px 10px;text-align:right;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">القسم</th>
-      <th style="background:rgba(255,255,255,.04);padding:8px 10px;text-align:right;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">الوحدة</th>
-      <th style="background:rgba(255,255,255,.04);padding:8px 10px;text-align:right;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">التكلفة/وحدة</th>
-      <th style="background:rgba(255,255,255,.04);padding:8px 10px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">إجراء</th>
+      <th style="background:var(--tint);padding:8px 10px;text-align:right;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">المرجع</th>
+      <th style="background:var(--tint);padding:8px 10px;text-align:right;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">الاسم</th>
+      <th style="background:var(--tint);padding:8px 10px;text-align:right;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">القسم</th>
+      <th style="background:var(--tint);padding:8px 10px;text-align:right;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">الوحدة</th>
+      <th style="background:var(--tint);padding:8px 10px;text-align:right;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">التكلفة/وحدة</th>
+      <th style="background:var(--tint);padding:8px 10px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:10px;border-bottom:1px solid var(--border)">إجراء</th>
     </tr></thead>
     <tbody>${list.map(it=>{
       const cat=S.cats[it.c]||{l:'—',c:'#888'};

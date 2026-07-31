@@ -568,6 +568,7 @@ td{padding:9px 13px;vertical-align:middle;}
       <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('recipeImportFileInput').click()" data-i18n="📥 استيراد مكونات المنيو (Excel)">📥 استيراد مكونات المنيو (Excel)</div>
       <div class="vn-dd-item" onclick="closeDropdowns();downloadRecipeImportTemplate()" data-i18n="📄 قالب استيراد المكونات">📄 قالب استيراد المكونات</div>
       <div class="vn-dd-div"></div>
+      <div class="vn-dd-item" onclick="closeDropdowns();exportItemsExcel()" data-i18n="📗 تصدير الأصناف الحالية (لتحديث التكلفة)">📗 تصدير الأصناف الحالية (لتحديث التكلفة)</div>
       <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('importFileInput').click()" data-i18n="📥 استيراد أصناف (Excel)">📥 استيراد أصناف (Excel)</div>
       <div class="vn-dd-item" onclick="closeDropdowns();downloadImportTemplate()" data-i18n="📄 قالب الاستيراد">📄 قالب الاستيراد</div>
     </div>
@@ -6243,6 +6244,26 @@ function downloadImportTemplate(){
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'استيراد الأصناف');
   XLSX.writeFile(wb,'قالب_استيراد_الأصناف.xlsx');
   toast('📄 تم تحميل القالب','inf');
+}
+
+// exports every current item in the exact column layout the importer
+// expects, so it can be opened, cost (or any other column) edited, and
+// re-imported straight away to bulk-update — same round-trip pattern as
+// exportRecipesExcel() for menu components.
+const ITEM_TYPE_IMPORT_LABELS={raw:'خامة',semi:'نصف مصنّع',finished:'منتج نهائي/جاهز'};
+function exportItemsExcel(){
+  if(!S.items.length){toast('⚠️ لا توجد أصناف للتصدير','wrn');return;}
+  const wb=XLSX.utils.book_new();
+  const rows=[['رقم المرجع','الاسم','بالإنجليزي','القسم','الوحدة','التكلفة/وحدة','النوع','الكمية','مكوّن من أصناف؟ (التكلفة بتتحسب تلقائيًا من المكوّنات وتعديلها هنا هيتجاهل)']];
+  S.items.forEach(it=>{
+    const hasRecipe=!!(it.recipe&&it.recipe.length);
+    rows.push([it.r,it.n,it.e||'',(S.cats[it.c]||{}).l||it.c,it.u,+effectiveItemCost(it).toFixed(2),ITEM_TYPE_IMPORT_LABELS[it.type]||'خامة',S.qty[it.r]!=null?S.qty[it.r]:'',hasRecipe?'نعم':'']);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:16},{wch:28},{wch:22},{wch:16},{wch:10},{wch:14},{wch:16},{wch:12},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,ws,'الأصناف الحالية');
+  XLSX.writeFile(wb,`Items_${(S.branch||'System').replace(/\s/g,'_')}_${today()}.xlsx`);
+  toast('📗 تم تصدير الأصناف — عدّل التكلفة (أو أي عمود) وأعد الاستيراد لتحديثها','inf');
 }
 
 function handleImportFileSelected(e){

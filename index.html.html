@@ -5014,9 +5014,10 @@ function renderSalesTab(c,el){
     <button class="hbtn gold" onclick="document.getElementById('salesImportFileInput').click()">📥 استيراد مبيعات من ملف خارجي (فوديكس / أودو / أونكس ...)</button>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>${t('الصنف')}</th><th>${t('السعر')}</th><th>${t('الكمية المباعة')}</th><th>${t('الإجمالي (نظري)')}</th><th>${t('تكلفة المبيعات (نظري)')}</th><th>${t('المكونات')}</th></tr></thead>
+    <thead><tr><th>${t('الصنف')}</th><th>${t('السعر')}</th><th>${t('الكمية المباعة')}</th><th>${t('الإجمالي (نظري)')}</th><th>${t('الإجمالي الفعلي (اختياري)')}</th><th>${t('تكلفة المبيعات (نظري)')}</th><th>${t('المكونات')}</th></tr></thead>
     <tbody id="ctRows"></tbody>
   </table></div>
+  <div style="font-size:10.5px;color:var(--muted);margin-top:6px">لو نفس الصنف اتباع بأكتر من سعر في نفس الدورة (عرض، أو سعر مختلف من تطبيق توصيل)، اكتب الإجمالي الفعلي الحقيقي للصنف في عموده — هيتغلب على الإجمالي النظري (سعر × كمية) في حساب المبيعات.</div>
   <div class="dbanner" style="margin-top:12px" id="ctSalesBanner"></div>`;
   renderSalesRows(c);
 }
@@ -5026,25 +5027,27 @@ function renderSalesRows(c){
   const rows=list.map(m=>{
     const qty=c.sales[m.id]||0;
     const sub=qty*m.price;
+    const overrideVal=(c.salesValue||{})[m.id];
     const cost=qty*recipeCost(m.recipe);
     return `<tr>
       <td class="td-name">${m.n}</td>
       <td style="font-family:var(--mono);color:var(--blue)">${fmt(m.price)}</td>
       <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="1" value="${qty||''}" placeholder="0" ${dis} oninput="setCycleSale('${c.id}','${m.id}',this.value)"></td>
       <td style="font-family:var(--mono)">${fmt(sub)}</td>
+      <td><input type="number" inputmode="decimal" class="qin" style="width:110px" min="0" step="0.01" value="${overrideVal!=null?overrideVal:''}" placeholder="${fmt(sub)}" ${dis} oninput="setCycleSaleValue('${c.id}','${m.id}',this.value)"></td>
       <td style="font-family:var(--mono);color:var(--red)">${fmt(cost)}</td>
       <td>${canViewRecipesUI()?`<button class="hbtn" style="padding:4px 10px;font-size:11px" onclick="openMenuRecipeView('${m.id}')">📋 عرض المكونات</button>`:''}</td>
     </tr>`;
   }).join('');
-  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(6);
+  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(7);
   renderSalesBanner(c);
 }
 function renderSalesBanner(c){
   const el=document.getElementById('ctSalesBanner');if(!el)return;
   const dis=c.closed?'disabled':'';
   let sumComputed=0,sumCost=0;
-  S.menu.forEach(m=>{sumComputed+=(c.sales[m.id]||0)*m.price;sumCost+=(c.sales[m.id]||0)*recipeCost(m.recipe);});
-  el.innerHTML=`<div class="db-l"><div><div class="db-main" id="ctSalesComputed">الإجمالي المحسوب من الكميات: ${fmt(sumComputed)}</div>
+  S.menu.forEach(m=>{sumComputed+=cycleItemSaleTotal(c,m);sumCost+=(c.sales[m.id]||0)*recipeCost(m.recipe);});
+  el.innerHTML=`<div class="db-l"><div><div class="db-main" id="ctSalesComputed">الإجمالي المحسوب (بالإجماليات الفعلية للأصناف لو مدخلة، وإلا سعر × كمية): ${fmt(sumComputed)}</div>
       <div class="db-sub">تكلفة المنتجات المباعة (نظري): ${fmt(sumCost)} · هامش الربح النظري: ${fmt(sumComputed-sumCost)}</div>
       <div class="db-sub">أدخل هنا إجمالي المبيعات الفعلي (من نظام الكاشير/الفواتير) لو مختلف عن المحسوب</div>
       <div id="ctSalesDiff"></div></div></div>
@@ -5063,7 +5066,7 @@ function renderSalesBanner(c){
 function updateSalesDiff(c){
   const el=document.getElementById('ctSalesDiff');if(!el)return;
   let sumComputed=0;
-  S.menu.forEach(m=>{sumComputed+=(c.sales[m.id]||0)*m.price;});
+  S.menu.forEach(m=>{sumComputed+=cycleItemSaleTotal(c,m);});
   if(c.salesAmount==null||c.salesAmount===''){el.innerHTML='';return;}
   const diff=c.salesAmount-sumComputed;
   const pct=sumComputed>0?(diff/sumComputed*100):0;
@@ -5077,6 +5080,12 @@ function updateSalesDiff(c){
 function setCycleSale(cid,mid,v){
   const c=getCycle(cid);if(!c||c.closed)return;
   if(v==='') delete c.sales[mid]; else c.sales[mid]=parseFloat(v)||0;
+  save();renderSalesBanner(c);
+}
+function setCycleSaleValue(cid,mid,v){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  if(!c.salesValue) c.salesValue={};
+  if(v==='') delete c.salesValue[mid]; else c.salesValue[mid]=parseFloat(v)||0;
   save();renderSalesBanner(c);
 }
 function setCycleSalesAmount(cid,v){
@@ -5806,6 +5815,14 @@ function exportClosingStockExcel(){
   XLSX.writeFile(wb,`مخزون_ختامي_${c.start}_${c.end}.xlsx`);
 }
 
+// the actual total sale value for one menu item in a cycle: an explicit
+// per-item override (c.salesValue) when set — needed because the same item
+// can sell at more than one real price (promotions, delivery-app markup) —
+// otherwise falls back to quantity × the single catalog price
+function cycleItemSaleTotal(c,m){
+  const override=(c.salesValue||{})[m.id];
+  return override!=null?override:(c.sales[m.id]||0)*m.price;
+}
 function computeCycleResults(c){
   const opening=cycleOpening(c);
   const theoretical={};
@@ -5835,7 +5852,7 @@ function computeCycleResults(c){
     rows.push({r:it.r,n:it.n,u:it.u,op,pur,was,wd,trOut,trIn,cl,actual,theo,unitCost,varQty,varVal});
   });
   rows.sort((a,b)=>Math.abs(b.varVal)-Math.abs(a.varVal));
-  const totalSalesComputed=S.menu.reduce((s,m)=>s+(c.sales[m.id]||0)*m.price,0);
+  const totalSalesComputed=S.menu.reduce((s,m)=>s+cycleItemSaleTotal(c,m),0);
   const totalSalesAmount=c.salesAmount!=null?c.salesAmount:totalSalesComputed;
   const totalActualCost=rows.reduce((s,r)=>s+r.actual*r.unitCost,0);
   const totalTheoCost=rows.reduce((s,r)=>s+r.theo*r.unitCost,0);
@@ -6788,6 +6805,7 @@ function processSimpleMenuImportRows(rows){
 const SALES_IMPORT_ALIASES={
   name:['Product Name','Product','Item','Item Name','SKU','Description','اسم المنتج','اسم الصنف','الصنف','المنتج','الوصف'],
   qty:['Quantity','Qty','Quantity Sold','Sold Qty','Qty Ordered','Qty Delivered','الكمية','الكمية المباعة','العدد'],
+  value:['Total','Net Amount','Total Amount','Sales Value','Net Sales','Amount','الإجمالي','قيمة المبيعات','إجمالي المبيعات','صافي المبيعات'],
   date:['Date','Order Date','Business Date','تاريخ الطلب','التاريخ'],
 };
 function matchSalesImportColumn(header){
@@ -6808,14 +6826,14 @@ function normalizeSalesImportDate(v){
 function downloadSalesImportTemplate(){
   const wb=XLSX.utils.book_new();
   const rows=[
-    ['Product Name','Quantity','Date'],
-    ['مثال: برجر لحم كلاسيك','25','2026-07-30'],
+    ['Product Name','Quantity','Total','Date'],
+    ['مثال: برجر لحم كلاسيك','25','1625','2026-07-30'],
   ];
   const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:30},{wch:14},{wch:16}];
+  ws['!cols']=[{wch:30},{wch:14},{wch:14},{wch:16}];
   XLSX.utils.book_append_sheet(wb,ws,'Sales Import');
   XLSX.writeFile(wb,'قالب_استيراد_المبيعات.xlsx');
-  toast('📄 تم تحميل القالب — بيشتغل مع أي تصدير من فوديكس أو أودو أو أي نظام تاني طالما أسماء الأعمدة قريبة من القالب. عمود التاريخ اختياري (لو الشيت كله ليوم واحد)، ولو مش موجود هيتحسب على الدورة المفتوحة حاليًا','inf');
+  toast('📄 تم تحميل القالب — بيشتغل مع أي تصدير من فوديكس أو أودو أو أي نظام تاني طالما أسماء الأعمدة قريبة من القالب. عمود "Total" اختياري — لو الصنف بيتباع بأكتر من سعر (عروض/تطبيقات توصيل)، ضيفه عشان الإجمالي الفعلي يتسجل صح بدل ما يتحسب من سعر واحد ثابت × الكمية. عمود التاريخ اختياري (لو الشيت كله ليوم واحد)، ولو مش موجود هيتحسب على الدورة المفتوحة حاليًا','inf');
 }
 function handleSalesImportFileSelected(e){
   const file=e.target.files[0];
@@ -6842,7 +6860,9 @@ function processSalesImportRows(rows){
     toast('⚠️ الملف لازم يحتوي على عمودي اسم الصنف والكمية على الأقل — حمّل قالب استيراد المبيعات من تبويب المبيعات','err');
     return;
   }
+  const hasValueCol=colMap.value!=null;
   const qtyByName={};
+  const valueByName={};
   const datesSeen=new Set();
   for(let i=1;i<rows.length;i++){
     const row=rows[i];
@@ -6852,6 +6872,10 @@ function processSalesImportRows(rows){
     if(!name||isNaN(qty)) continue;
     const key=name.toLowerCase();
     qtyByName[key]={n:name,qty:(qtyByName[key]?qtyByName[key].qty:0)+qty};
+    if(hasValueCol){
+      const val=parseFloat(row[colMap.value]);
+      if(!isNaN(val)) valueByName[key]=(valueByName[key]||0)+val;
+    }
     if(colMap.date!=null&&row[colMap.date]!==''){
       const d=normalizeSalesImportDate(row[colMap.date]);
       if(d) datesSeen.add(d);
@@ -6872,10 +6896,16 @@ function processSalesImportRows(rows){
 
   const matchedList=[];const unmatchedList=[];
   Object.values(qtyByName).forEach(({n,qty})=>{
+    const key=n.toLowerCase();
+    const value=hasValueCol?(valueByName[key]!=null?valueByName[key]:null):null;
     const m=findMenuItemByExternalName(n);
-    if(!m){unmatchedList.push({name:n,qty});return;}
+    if(!m){unmatchedList.push({name:n,qty,value});return;}
     targetCycle.sales[m.id]=qty;
-    matchedList.push({name:n,qty,menuId:m.id,menuName:m.n});
+    if(value!=null){
+      if(!targetCycle.salesValue) targetCycle.salesValue={};
+      targetCycle.salesValue[m.id]=value;
+    }
+    matchedList.push({name:n,qty,value,menuId:m.id,menuName:m.n});
   });
   save();
   if(curCycleId===targetCycle.id){renderCycleTabs();renderCycleBody();}
@@ -6896,27 +6926,30 @@ function renderImportReconcile(){
   const rec=lastImportReconcile;
   if(!rec){el.innerHTML='';return;}
   const c=getCycle(rec.targetCycleId);
+  const hasAnyValue=rec.matched.some(m=>m.value!=null)||rec.unmatched.some(u=>u.value!=null);
   const matchedHtml=rec.matched.length?`
     <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--green)">✅ تم مطابقتها وتطبيقها على الدورة (${rec.matched.length})</div>
     <div class="tbl-wrap" style="margin-bottom:18px"><table>
-      <thead><tr><th>${t('الاسم في نقطة البيع')}</th><th>${t('الصنف في النظام')}</th><th>${t('الكمية')}</th></tr></thead>
+      <thead><tr><th>${t('الاسم في نقطة البيع')}</th><th>${t('الصنف في النظام')}</th><th>${t('الكمية')}</th>${hasAnyValue?`<th>${t('الإجمالي الفعلي')}</th>`:''}</tr></thead>
       <tbody>${rec.matched.map(m=>`<tr>
         <td style="font-size:12px">${m.name}</td>
         <td class="td-name">${m.menuName}</td>
         <td style="font-family:var(--mono);text-align:center">${fmt(m.qty)}</td>
+        ${hasAnyValue?`<td style="font-family:var(--mono);text-align:center">${m.value!=null?fmt(m.value):'-'}</td>`:''}
       </tr>`).join('')}</tbody>
     </table></div>`:'';
   const unmatchedHtml=rec.unmatched.length?`
     <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--red)">⚠️ يحتاج مطابقة يدوية (${rec.unmatched.length}) — الدورة: ${c?c.start+' ← '+c.end:'-'}</div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>${t('الاسم في نقطة البيع')}</th><th>${t('الكمية')}</th><th>${t('اختر الصنف المطابق من المنيو')}</th></tr></thead>
+      <thead><tr><th>${t('الاسم في نقطة البيع')}</th><th>${t('الكمية')}</th>${hasAnyValue?`<th>${t('الإجمالي الفعلي')}</th>`:''}<th>${t('اختر الصنف المطابق من المنيو')}</th></tr></thead>
       <tbody>${rec.unmatched.map((u,i)=>`<tr>
         <td style="font-size:12px">${u.name}</td>
         <td style="font-family:var(--mono);text-align:center">${fmt(u.qty)}</td>
+        ${hasAnyValue?`<td style="font-family:var(--mono);text-align:center">${u.value!=null?fmt(u.value):'-'}</td>`:''}
         <td>${unmatchedMenuIsearchHtml(i)}</td>
       </tr>`).join('')}</tbody>
     </table></div>
-    <p style="font-size:11px;color:var(--muted);margin-top:8px">اختيار الصنف بيطبّق الكمية على الدورة فورًا، وبيسجّل اسم نقطة البيع كاسم بديل تلقائي للصنف عشان الاستيرادات الجاية تتطابق لوحدها.</p>`:
+    <p style="font-size:11px;color:var(--muted);margin-top:8px">اختيار الصنف بيطبّق الكمية (والإجمالي الفعلي لو موجود) على الدورة فورًا، وبيسجّل اسم نقطة البيع كاسم بديل تلقائي للصنف عشان الاستيرادات الجاية تتطابق لوحدها.</p>`:
     `<div style="text-align:center;padding:16px;color:var(--green)">✅ كل الأصناف اتطابقت من غير أي مشاكل.</div>`;
   el.innerHTML=`${matchedHtml}${unmatchedHtml}`;
 }
@@ -6951,7 +6984,11 @@ function resolveUnmatchedImportItem(idx,menuId){
   if(!m.posNames) m.posNames={};
   m.posNames.other=u.name;
   c.sales[m.id]=(c.sales[m.id]||0)+u.qty;
-  rec.matched.push({name:u.name,qty:u.qty,menuId:m.id,menuName:m.n});
+  if(u.value!=null){
+    if(!c.salesValue) c.salesValue={};
+    c.salesValue[m.id]=(c.salesValue[m.id]!=null?c.salesValue[m.id]:0)+u.value;
+  }
+  rec.matched.push({name:u.name,qty:u.qty,value:u.value,menuId:m.id,menuName:m.n});
   rec.unmatched.splice(idx,1);
   save();saveCatalog();
   if(curCycleId===c.id){renderCycleTabs();renderCycleBody();}

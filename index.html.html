@@ -565,8 +565,8 @@ td{padding:9px 13px;vertical-align:middle;}
       <div class="vn-dd-item" onclick="closeDropdowns();openMenuMgr()" data-i18n="🍽️ الأصناف المباعة والوصفات">🍽️ الأصناف المباعة والوصفات</div>
       <div class="vn-dd-item" onclick="closeDropdowns();openPosMatchModal()" data-i18n="🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية">🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية</div>
       <div class="vn-dd-item" onclick="closeDropdowns();exportRecipesExcel()" data-i18n="📗 تصدير مكونات المنيو الحالية">📗 تصدير مكونات المنيو الحالية</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('recipeImportFileInput').click()" data-i18n="📥 استيراد مكونات المنيو (Excel)">📥 استيراد مكونات المنيو (Excel)</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();downloadRecipeImportTemplate()" data-i18n="📄 قالب استيراد المكونات">📄 قالب استيراد المكونات</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('recipeImportFileInput').click()" data-i18n="📥 استيراد أصناف المنيو والمكونات (Excel)">📥 استيراد أصناف المنيو والمكونات (Excel)</div>
+      <div class="vn-dd-item" onclick="closeDropdowns();downloadRecipeImportTemplate()" data-i18n="📄 قالب استيراد أصناف المنيو (بالشرح)">📄 قالب استيراد أصناف المنيو (بالشرح)</div>
       <div class="vn-dd-div"></div>
       <div class="vn-dd-item" onclick="closeDropdowns();exportItemsExcel()" data-i18n="📗 تصدير الأصناف الحالية (لتحديث التكلفة)">📗 تصدير الأصناف الحالية (لتحديث التكلفة)</div>
       <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('importFileInput').click()" data-i18n="📥 استيراد أصناف (Excel)">📥 استيراد أصناف (Excel)</div>
@@ -990,13 +990,13 @@ td{padding:9px 13px;vertical-align:middle;}
 <div class="overlay" id="menuModal">
 <div class="modal" style="width:640px">
   <div class="mod-title" data-i18n="🍽️ الأصناف المباعة ووصفاتها (BOM)">🍽️ الأصناف المباعة ووصفاتها (BOM)</div>
-  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">عرّف هنا كل صنف بيتباع في المنيو، وحدد مقادير كل مكوّن من المخزون بيدخل في تحضيره — يُستخدم ده لحساب الاستهلاك النظري من المبيعات ومقارنته بالجرد الفعلي في دورة التسوية.</p>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">عرّف هنا كل صنف بيتباع في المنيو، وحدد مقادير كل مكوّن من المخزون بيدخل في تحضيره — يُستخدم ده لحساب الاستهلاك النظري من المبيعات ومقارنته بالجرد الفعلي في دورة التسوية. عندك أصناف كتير؟ حمّل "📄 قالب استيراد أصناف المنيو" تحت (فيه تبويب شرح وتعليمات) واملأه وارفعه بدل ما تدخل كل صنف لوحده.</p>
   <div style="max-height:400px;overflow-y:auto" id="menuList"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('menuModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="exportRecipesExcel()">📗 تصدير المكونات الحالية</button>
-    <button class="hbtn" onclick="downloadRecipeImportTemplate()">📄 قالب استيراد المكونات</button>
-    <button class="hbtn" onclick="document.getElementById('recipeImportFileInput').click()">📥 استيراد مكونات (Excel)</button>
+    <button class="hbtn" onclick="downloadRecipeImportTemplate()">📄 قالب استيراد أصناف المنيو (بالشرح)</button>
+    <button class="hbtn" onclick="document.getElementById('recipeImportFileInput').click()">📥 استيراد أصناف المنيو (Excel)</button>
     <button class="hbtn org" onclick="closeM('menuModal');openAddMenuItem()">➕ إضافة صنف جديد</button>
   </div>
 </div>
@@ -1606,7 +1606,7 @@ const I18N_EN={
   "👤 المستخدمين والصلاحيات": "👤 Users & Permissions",
   "💽 حفظ نسخة احتياطية (JSON)": "💽 Save Backup (JSON)",
   "💾 حفظ وتصدير": "💾 Save & Export",
-  "📄 قالب استيراد المكونات": "📄 Components Import Template",
+  "📄 قالب استيراد أصناف المنيو (بالشرح)": "📄 Menu Import Template (with instructions)",
   "📄 قالب الاستيراد": "📄 Import Template",
   "📅 يوم جديد": "📅 New Day",
   "📅 يوم جرد جديد": "📅 New Inventory Day",
@@ -1623,7 +1623,7 @@ const I18N_EN={
   "📗 تفريغ كل البيانات (Excel)": "📗 Export All Data (Excel)",
   "📤 استعادة من نسخة احتياطية": "📤 Restore from Backup",
   "📥 استيراد أصناف (Excel)": "📥 Import Items (Excel)",
-  "📥 استيراد مكونات المنيو (Excel)": "📥 Import Recipes (Excel)",
+  "📥 استيراد أصناف المنيو والمكونات (Excel)": "📥 Import Menu Items & Recipes (Excel)",
   "📦 الأصناف ▾": "📦 Items ▾",
   "🔀 سجل التحويلات": "🔀 Transfers Log",
   "🔀 سجل التحويلات بين الفروع": "🔀 Inter-Branch Transfers Log",
@@ -6555,19 +6555,43 @@ function exportRecipesExcel(){
 }
 function downloadRecipeImportTemplate(){
   const wb=XLSX.utils.book_new();
+  const help=[
+    ['شرح ملف استيراد أصناف المنيو'],
+    [''],
+    ['ده الملف اللي بتستخدمه عشان تضيف أصناف منيو جديدة (أو تعدّل أصناف موجودة) دفعة واحدة من إكسل، بدل ما تدخلها واحد واحد من الشاشة.'],
+    ['الأصناف اللي هتضيفها بالملف بتتحط في تبويب "استيراد المكونات" — املأه واحفظ الملف، وبعدين ارفعه من زرار "📥 استيراد أصناف المنيو".'],
+    [''],
+    ['شرح كل عمود:'],
+    ['نوع الوصفة (منيو / شبه مصنع)','اكتب "منيو" للصنف اللي بيتباع للعميل ومظهر في المنيو. اكتب "شبه مصنع" لو الصنف مكوّن داخلي (زي عجينة أو صوص) بيدخل في تحضير أصناف تانية — ولازم يكون معرّف في "الأصناف" الأول قبل ما تستورد له وصفة.'],
+    ['اسم أو مرجع الصنف صاحب الوصفة','اسم صنف المنيو (زي "برجر لحم كلاسيك") أو مرجع الصنف شبه المصنّع (زي DOUGH-01). لو الاسم ده موجود بالفعل هيتعدّل، ولو مش موجود هيتضاف كصنف جديد (بس لصنف المنيو فقط — الشبه مصنّع لازم يكون موجود بالأصناف الأول).'],
+    ['سعر البيع (للمنيو فقط)','سعر بيع صنف المنيو للعميل. سيبه فاضي في أسطر المكوّنات التانية لنفس الصنف — يكفي تكتبه مرة واحدة بس في أول سطر ليه.'],
+    ['مرجع مكوّن من المخزون','مرجع صنف من "الأصناف" (المخزون) بيدخل في تحضير الصنف ده. سيبه فاضي تمامًا لو عايز تضيف الصنف بدون وصفة/مكوّنات دلوقتي (تقدر تضيفها بعدين من الشاشة).'],
+    ['اسم المكوّن (اختياري للمراجعة)','مجرد توضيح ليك انت تتأكد إنك حاطط المرجع الصح — النظام مش بيقرأ العمود ده، وممكن تسيبه فاضي.'],
+    ['الكمية لكل وحدة','كمية المكوّن ده المستخدمة في تحضير وحدة واحدة من الصنف (بنفس وحدة قياس المكوّن في الأصناف — لو محتاج وحدة مختلفة عدّلها بعدين من شاشة المكوّنات اللي فيها اختيار الوحدة).'],
+    [''],
+    ['قواعد مهمة:'],
+    ['• كل مكوّن في سطر مستقل، وكرّر نفس اسم الصنف صاحب الوصفة بالظبط في كل الأسطر بتاعته (يستحسن تنسخه بدل ما تكتبه تاني عشان تتجنب فرق بسيط في الكتابة).'],
+    ['• عايز تضيف صنف منيو بدون أي مكوّنات؟ اكتب اسمه وسعره في سطر واحد وسيب عمود "مرجع مكوّن من المخزون" فاضي في السطر ده.'],
+    ['• استيراد الملف ده بيستبدل وصفة الصنف بالكامل بالمكوّنات المكتوبة — لو الصنف كان ليه مكوّنات قبل كده ومش موجودة في الملف، هتتشال.'],
+    ['• لو مش متأكد من مرجع صنف معين، صدّر الأصناف الحالية أولاً من "📗 تصدير الأصناف الحالية" وشوف عمود المرجع.'],
+  ];
+  const helpWs=XLSX.utils.aoa_to_sheet(help);
+  helpWs['!cols']=[{wch:34},{wch:90}];
+  XLSX.utils.book_append_sheet(wb,helpWs,'الشرح والتعليمات');
   const rows=[
     ['نوع الوصفة (منيو / شبه مصنع)','اسم أو مرجع الصنف صاحب الوصفة','سعر البيع (للمنيو فقط)','مرجع مكوّن من المخزون','اسم المكوّن (اختياري للمراجعة)','الكمية لكل وحدة'],
     ['منيو','مثال: برجر لحم كلاسيك','50','BUN-01','خبز برجر','1'],
     ['منيو','مثال: برجر لحم كلاسيك','50','MEAT-01','لحم مفروم','0.15'],
     ['منيو','مثال: برجر لحم كلاسيك','50','CHEESE-01','جبنة شيدر','1'],
+    ['منيو','مثال: مشروب غازي (بدون وصفة)','25','','',''],
     ['شبه مصنع','مثال: DOUGH-01 (لازم يكون معرّف في الأصناف الأول)','','FLR-01','دقيق','0.5'],
     ['شبه مصنع','مثال: DOUGH-01 (لازم يكون معرّف في الأصناف الأول)','','YST-01','خميرة','0.01'],
   ];
   const ws=XLSX.utils.aoa_to_sheet(rows);
   ws['!cols']=[{wch:26},{wch:40},{wch:18},{wch:20},{wch:24},{wch:16}];
   XLSX.utils.book_append_sheet(wb,ws,'استيراد المكونات');
-  XLSX.writeFile(wb,'قالب_استيراد_مكونات_المنيو.xlsx');
-  toast('📄 تم تحميل القالب — كل مكوّن في سطر مستقل، وكرّر نفس اسم الصنف صاحب الوصفة في كل أسطره','inf');
+  XLSX.writeFile(wb,'قالب_استيراد_أصناف_المنيو.xlsx');
+  toast('📄 تم تحميل القالب — فيه تبويب "الشرح والتعليمات" اقرأه الأول، وتبويب "استيراد المكونات" للبيانات. كل مكوّن في سطر مستقل، وكرّر نفس اسم الصنف في كل أسطره — أو سيب عمود المكوّن فاضي لصنف بدون وصفة','inf');
 }
 function handleRecipeImportFileSelected(e){
   const file=e.target.files[0];
@@ -6605,25 +6629,29 @@ function processRecipeImportRows(rows){
     if(!row||!row.length) continue;
     const ownerType=colMap.ownerType!=null?normalizeRecipeOwnerType(row[colMap.ownerType]):'menu';
     const ownerName=String(row[colMap.ownerName]||'').trim();
-    const compRef=String(row[colMap.compRef]||'').trim().toUpperCase();
-    const compQty=parseFloat(row[colMap.compQty]);
-    if(!ownerName||!compRef||isNaN(compQty)||compQty<=0){skippedRows++;continue;}
-    if(ownerType==='semi'&&compRef===ownerName.toUpperCase()){selfRefSkipped++;continue;}
-    const comp=S.items.find(it=>it.r===compRef);
-    if(!comp){unknownComponent++;continue;}
+    if(!ownerName) continue;
     const key=ownerType+'::'+ownerName.toLowerCase();
     if(!(key in groupIndex)){
       groupIndex[key]=groups.length;
       groups.push({type:ownerType,name:ownerName,price:(colMap.price!=null&&row[colMap.price]!=='')?(parseFloat(row[colMap.price])||null):null,compMap:{},order:[]});
     }
     const g=groups[groupIndex[key]];
+    // a row can register the owner (e.g. a menu item with a price but no
+    // recipe yet) with no ingredient by leaving the component ref blank
+    const compRefRaw=String(row[colMap.compRef]||'').trim();
+    if(!compRefRaw) continue;
+    const compRef=compRefRaw.toUpperCase();
+    const compQty=parseFloat(row[colMap.compQty]);
+    if(isNaN(compQty)||compQty<=0){skippedRows++;continue;}
+    if(ownerType==='semi'&&compRef===ownerName.toUpperCase()){selfRefSkipped++;continue;}
+    const comp=S.items.find(it=>it.r===compRef);
+    if(!comp){unknownComponent++;continue;}
     if(!(compRef in g.compMap)) g.order.push(compRef);
     g.compMap[compRef]=compQty;
   }
   let menuAdded=0,menuUpdated=0,semiUpdated=0,semiNotFound=0;
   groups.forEach(g=>{
     const comps=g.order.map(r=>({r,q:g.compMap[r]}));
-    if(!comps.length) return;
     if(g.type==='menu'){
       const m=S.menu.find(x=>x.n.trim().toLowerCase()===g.name.toLowerCase());
       if(m){ m.recipe=comps; if(g.price!=null) m.price=g.price; menuUpdated++; }

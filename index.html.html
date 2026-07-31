@@ -780,13 +780,26 @@ td{padding:9px 13px;vertical-align:middle;}
 
 <!-- UNITS OF MEASURE MODAL -->
 <div class="overlay" id="uomModal">
-<div class="modal" style="width:420px">
+<div class="modal" style="width:460px">
   <div class="mod-title" data-i18n="📏 وحدات القياس">📏 وحدات القياس</div>
+  <div class="mod-field">
+    <input class="mod-in" id="uom-new" placeholder="اسم وحدة جديدة (مثال: كرتونة، شيكارة)">
+  </div>
   <div class="mod-row">
-    <div class="mod-field" style="flex:1;margin-bottom:0">
-      <input class="mod-in" id="uom-new" placeholder="اسم وحدة جديدة (مثال: كرتونة)">
+    <div class="mod-field" style="margin-bottom:0">
+      <label class="mod-lbl">نوع الوحدة</label>
+      <select class="mod-in" id="uom-new-kind">
+        <option value="weight">وزن (أساسها كجم)</option>
+        <option value="volume">حجم (أساسها لتر)</option>
+        <option value="count" selected>عدد (أساسها قطعة)</option>
+      </select>
+    </div>
+    <div class="mod-field" style="margin-bottom:0">
+      <label class="mod-lbl">تعادل كام من الوحدة الأساسية؟</label>
+      <input type="number" inputmode="decimal" class="mod-in" id="uom-new-factor" placeholder="مثال: 24" min="0.0001" step="0.0001">
     </div>
   </div>
+  <div class="mod-hint" style="margin:-8px 0 14px">مثال: "كرتونة" نوعها عدد وتعادل 24 يعني 1 كرتونة = 24 قطعة. لو الوحدة جزء من وحدة أساسية زي الجرام، اختار وزن واكتب 0.001 (1 جرام = 0.001 كجم)</div>
   <button class="hbtn gold" style="width:100%;justify-content:center;padding:9px;margin-bottom:16px" onclick="addUom()">➕ إضافة وحدة</button>
   <div id="uomList" style="max-height:320px;overflow-y:auto"></div>
   <div class="mod-foot">
@@ -1704,8 +1717,61 @@ function reRenderDynamicContentForLang(){
 
 // ══════════════════════════════════════════════
 //  DEFAULT UNITS OF MEASURE
+//  Each uom is {name, kind, factor, base}. "factor" is how many of the
+//  kind's base unit one of this uom equals (base units themselves = 1).
+//  This lets weight/volume units (and custom packaging units like
+//  "كرتونة"/"شيكارة") convert against each other instead of being
+//  unrelated strings. "Pcs" is the single canonical count unit — the old
+//  default list also had "Units" as a duplicate of it, migrated away below.
 // ══════════════════════════════════════════════
-const DEFAULT_UOMS=['kg','g','L','ML','Pcs','Units'];
+const DEFAULT_UOMS=[
+  {name:'kg',kind:'weight',factor:1,base:true},
+  {name:'g',kind:'weight',factor:0.001,base:false},
+  {name:'L',kind:'volume',factor:1,base:true},
+  {name:'ML',kind:'volume',factor:0.001,base:false},
+  {name:'Pcs',kind:'count',factor:1,base:true},
+];
+const UOM_KIND_LABELS={weight:'وزن',volume:'حجم',count:'عدد'};
+function inferUomKind(name){
+  const n=(name||'').toString().trim().toLowerCase();
+  if(['kg','كجم','كيلو','كيلوجرام','كج'].includes(n)) return 'weight';
+  if(['g','جم','جرام','غرام','غم'].includes(n)) return 'weight';
+  if(['l','لتر','لتر.'].includes(n)) return 'volume';
+  if(['ml','مل','مللي'].includes(n)) return 'volume';
+  return 'count';
+}
+function normalizeUoms(raw){
+  const list=(raw&&raw.length?raw:DEFAULT_UOMS).map(u=>{
+    if(typeof u==='string'){
+      const name=u==='Units'?'Pcs':u; // "Units" was a pure duplicate of "Pcs"
+      const known=DEFAULT_UOMS.find(d=>d.name===name);
+      return known?{...known}:{name,kind:inferUomKind(name),factor:1,base:false};
+    }
+    return {...u};
+  });
+  const seen=new Set(),out=[];
+  list.forEach(u=>{ if(!seen.has(u.name)){seen.add(u.name);out.push(u);} });
+  DEFAULT_UOMS.filter(d=>d.base).forEach(d=>{ if(!seen.has(d.name)){seen.add(d.name);out.push({...d});} });
+  return out;
+}
+function baseUnitNameForKind(kind){
+  const b=(S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS).find(u=>u.base&&u.kind===kind);
+  return b?b.name:'';
+}
+// suggests the nearest larger same-kind unit for a quantity, e.g. shows
+// "≈3 شيكارة" next to a 75kg purchase requirement when a 25kg bag uom exists
+function packagingSuggestionText(it,qty){
+  if(!it||!qty||qty<=1e-9) return '';
+  const uoms=(S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS);
+  const uomObj=uoms.find(u=>u.name===it.u);
+  if(!uomObj) return '';
+  const candidates=uoms.filter(u=>u.kind===uomObj.kind&&u.name!==it.u&&u.factor>uomObj.factor).sort((a,b)=>a.factor-b.factor);
+  if(!candidates.length) return '';
+  const pack=candidates[0];
+  const packQty=(qty*uomObj.factor)/pack.factor;
+  if(packQty<0.05) return '';
+  return `≈ ${fmt(packQty)} ${pack.name}`;
+}
 
 // ══════════════════════════════════════════════
 //  DEFAULT CATEGORIES
@@ -2130,9 +2196,13 @@ function startDataSync(){
       S.cats=hasData&&d.cats&&Object.keys(d.cats).length?d.cats:{...DEFAULT_CATS};
       S.items=hasData?d.items:[...DEFAULT_ITEMS];
       S.menu=(d&&d.menu)||[];
-      S.uoms=(d&&d.uoms&&d.uoms.length)?d.uoms:[...DEFAULT_UOMS];
+      const legacyUoms=d&&d.uoms&&d.uoms.length&&typeof d.uoms[0]==='string';
+      S.uoms=normalizeUoms(d&&d.uoms);
+      let unitsMigrated=false;
+      S.items.forEach(it=>{ if(it.u==='Units'){it.u='Pcs';unitsMigrated=true;} });
       catalogReady=true;
       if(!hasData&&curRole==='admin') saveCatalog();
+      else if((legacyUoms||unitsMigrated)&&curRole==='admin') saveCatalog();
       tryBootUI();
       if(bootedUI){renderSidebar();renderTbl();updateStats();populateCatSelects();populateUomSelects();if(document.getElementById('menuModal').classList.contains('open'))renderMenuList();if(curView==='cycle')renderCycleBody();}
     },e=>toast('⚠️ خطأ في تحميل الكتالوج: '+e.message,'err'));
@@ -2220,6 +2290,10 @@ function saveCatalog(){
   clearTimeout(_saveCatalogTimer);
   _saveCatalogTimer=setTimeout(()=>{
     if(!db) return;
+    // catalog/main is the single shared source for every branch's item names/costs —
+    // never let an empty items array overwrite it, so a future bug can't wipe every
+    // branch's catalog back to the hardcoded defaults.
+    if(!S.items||!S.items.length){toast('⚠️ تعذّر حفظ الكتالوج — قائمة الأصناف فاضية، اتلغى الحفظ لحماية بيانات كل الفروع','err');return;}
     const payload={cats:S.cats,items:S.items,menu:S.menu,uoms:S.uoms};
     lastSentCatalogJSON=JSON.stringify(payload);
     db.collection('catalog').doc('main').set(payload,{merge:true})
@@ -2288,11 +2362,11 @@ function populateCatSelects(){
 
 function populateUomSelects(){
   const uoms=(S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS);
-  const opts=uoms.map(u=>`<option value="${u}">${u}</option>`).join('');
+  const opts=uoms.map(u=>`<option value="${u.name}">${u.name}</option>`).join('');
   const aiUom=document.getElementById('ai-uom');
   const curAi=aiUom.value;
   aiUom.innerHTML=opts;
-  if(uoms.includes(curAi)) aiUom.value=curAi;
+  if(uoms.some(u=>u.name===curAi)) aiUom.value=curAi;
   const uomF=document.getElementById('uomF');
   const curF=uomF.value;
   uomF.innerHTML='<option value="">كل الوحدات</option>'+opts;
@@ -2303,10 +2377,15 @@ function openUomMgr(){renderUomList();document.getElementById('uomModal').classL
 function renderUomList(){
   const uoms=(S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS);
   document.getElementById('uomList').innerHTML=uoms.map(u=>{
-    const used=S.items.some(it=>it.u===u);
+    const used=S.items.some(it=>it.u===u.name);
+    const kindLbl=UOM_KIND_LABELS[u.kind]||'';
+    const eqTxt=u.base?'وحدة أساسية':`1 ${u.name} = ${fmt(u.factor)} ${baseUnitNameForKind(u.kind)}`;
     return `<div style="display:flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid var(--border);border-radius:8px;margin-bottom:7px">
-      <div style="flex:1;font-weight:600;font-size:13px">${u}${used?` <span style="font-size:10px;color:var(--muted)">(مستخدمة)</span>`:''}</div>
-      <button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteUom('${u}')" title="حذف الوحدة">🗑</button>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px">${u.name}${used?` <span style="font-size:10px;color:var(--muted)">(مستخدمة)</span>`:''}</div>
+        <div style="font-size:10.5px;color:var(--muted);margin-top:2px">${kindLbl} — ${eqTxt}</div>
+      </div>
+      <button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteUom('${u.name}')" title="${u.base?'وحدة أساسية — لا يمكن حذفها':'حذف الوحدة'}" ${u.base?'disabled':''}>🗑</button>
     </div>`;
   }).join('');
 }
@@ -2314,19 +2393,27 @@ function addUom(){
   if(!canManageItemsUI()){toast('⚠️ إدارة الأصناف ووحدات القياس متاحة للإدارة أو لمن له صلاحية إدارة الأصناف بس','wrn');return;}
   const input=document.getElementById('uom-new');
   const val=input.value.trim();
+  const kindSel=document.getElementById('uom-new-kind');
+  const kind=kindSel?kindSel.value:'count';
+  const factorInput=document.getElementById('uom-new-factor');
+  const factorRaw=factorInput?parseFloat(factorInput.value):NaN;
   if(!val){toast('⚠️ أدخل اسم الوحدة','wrn');return;}
   if(!S.uoms) S.uoms=[...DEFAULT_UOMS];
-  if(S.uoms.includes(val)){toast('⚠️ الوحدة موجودة بالفعل','wrn');return;}
-  S.uoms.push(val);
+  if(S.uoms.some(u=>u.name===val)){toast('⚠️ الوحدة موجودة بالفعل','wrn');return;}
+  const factor=factorRaw>0?factorRaw:1;
+  S.uoms.push({name:val,kind,factor,base:false});
   input.value='';
+  if(factorInput) factorInput.value='';
   save();renderUomList();populateUomSelects();
   toast('✅ تم إضافة الوحدة: '+val,'suc');
 }
 function deleteUom(u){
   if(!canManageItemsUI()){toast('⚠️ إدارة الأصناف ووحدات القياس متاحة للإدارة أو لمن له صلاحية إدارة الأصناف بس','wrn');return;}
+  const obj=(S.uoms||[]).find(x=>x.name===u);
+  if(obj&&obj.base){toast('⚠️ دي وحدة أساسية ومربوطة بوحدات تانية — لا يمكن حذفها','wrn');return;}
   if(S.items.some(it=>it.u===u)){toast('⚠️ الوحدة دي مستخدمة في أصناف — غيّر وحدتها الأول','wrn');return;}
   if(!confirm(`حذف وحدة "${u}"؟`))return;
-  S.uoms=(S.uoms||[]).filter(x=>x!==u);
+  S.uoms=(S.uoms||[]).filter(x=>x.name!==u);
   save();renderUomList();populateUomSelects();
   toast('🗑️ تم حذف الوحدة','wrn');
 }
@@ -5624,11 +5711,12 @@ function renderRequirementPlanner(){
     const need=req[r],current=planCurrentQty(r),toOrder=Math.max(0,need-current);
     const unitCost=effectiveItemCost(it),cost=toOrder*unitCost;
     totalOrderCost+=cost;
+    const pkgTxt=packagingSuggestionText(it,toOrder);
     return `<tr>
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
       <td style="font-family:var(--mono)">${fmt(need)}</td>
       <td style="font-family:var(--mono);color:var(--blue)">${fmt(current)}</td>
-      <td style="font-family:var(--mono);font-weight:700;color:${toOrder>0?'var(--red)':'var(--green)'}">${fmt(toOrder)}</td>
+      <td style="font-family:var(--mono);font-weight:700;color:${toOrder>0?'var(--red)':'var(--green)'}">${fmt(toOrder)}${pkgTxt?`<div style="font-size:9.5px;color:var(--muted);font-weight:400;margin-top:2px">${pkgTxt}</div>`:''}</td>
       <td style="font-family:var(--mono)">${fmt(cost)}</td>
     </tr>`;
   }).filter(Boolean).join('');
@@ -5830,8 +5918,9 @@ function processImportRows(rows){
     const catRaw=colMap.cat!=null?String(row[colMap.cat]||'').trim():'';
     let catKey=findCatKeyByLabel(catRaw);
     if(!catKey){catKey=defaultCat;if(catRaw)unknownCat++;}
-    const uom=colMap.uom!=null?String(row[colMap.uom]||'').trim():'';
-    if(uom&&!(S.uoms||DEFAULT_UOMS).includes(uom)&&!newUoms.includes(uom)) newUoms.push(uom);
+    let uom=colMap.uom!=null?String(row[colMap.uom]||'').trim():'';
+    if(uom==='Units') uom='Pcs'; // "Units" was a pure duplicate of "Pcs", merge on import too
+    if(uom&&!(S.uoms||DEFAULT_UOMS).some(u=>u.name===uom)&&!newUoms.some(u=>u.name===uom)) newUoms.push({name:uom,kind:inferUomKind(uom),factor:1,base:false});
     const cost=colMap.cost!=null?(parseFloat(row[colMap.cost])||0):0;
     const type=colMap.type!=null?normalizeImportType(row[colMap.type]):'raw';
     const qty=colMap.qty!=null&&row[colMap.qty]!==''?(parseFloat(row[colMap.qty])||0):null;
@@ -5841,7 +5930,7 @@ function processImportRows(rows){
       S.items[existingIdx]={...S.items[existingIdx],n:name,e:nameEn,c:catKey,u:uom||S.items[existingIdx].u,cost,type,custom:true};
       updated++;
     }else{
-      S.items.push({r:ref,n:name,e:nameEn,c:catKey,u:uom||(S.uoms||DEFAULT_UOMS)[0],cost,type,recipe:[],custom:true});
+      S.items.push({r:ref,n:name,e:nameEn,c:catKey,u:uom||(S.uoms||DEFAULT_UOMS)[0].name,cost,type,recipe:[],custom:true});
       added++;
     }
     if(qty!=null) S.qty[ref]=qty;

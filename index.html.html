@@ -1094,27 +1094,27 @@ td{padding:9px 13px;vertical-align:middle;}
 
 <!-- QUICK MOVEMENT ENTRY MODAL (تحويل/سحب/استلام مستقل، مرتبط بالدورة حسب تاريخ الحركة) -->
 <div class="overlay" id="quickMovementModal">
-<div class="modal" style="width:520px">
+<div class="modal" style="width:720px">
   <div class="mod-title">🔀 تسجيل حركة (تحويل/سحب/استلام)</div>
-  <div class="mod-field">
-    <label class="mod-lbl">نوع الحركة *</label>
-    <select class="mod-in" id="qm-type" onchange="updateQuickMovementFields()">
-      <option value="transferOut">تحويل صادر لفرع تاني</option>
-      <option value="transferIn">تحويل وارد من فرع تاني</option>
-      <option value="withdraw">سحب/صرف داخلي</option>
-      <option value="purchase">مشتريات/استلام بضاعة</option>
-    </select>
-  </div>
   <div class="mod-row">
+    <div class="mod-field">
+      <label class="mod-lbl">نوع الحركة *</label>
+      <select class="mod-in" id="qm-type" onchange="updateQuickMovementFields()">
+        <option value="transferOut">تحويل صادر لفرع تاني</option>
+        <option value="transferIn">تحويل وارد من فرع تاني</option>
+        <option value="withdraw">سحب/صرف داخلي</option>
+        <option value="purchase">مشتريات/استلام بضاعة</option>
+      </select>
+    </div>
     <div class="mod-field"><label class="mod-lbl">تاريخ الحركة *</label><input type="date" class="mod-in" id="qm-date" onchange="updateQuickMovementCycleInfo()"></div>
-    <div class="mod-field"><label class="mod-lbl">الصنف *</label><div id="qm-item-wrap"></div></div>
-  </div>
-  <div class="mod-row">
-    <div class="mod-field"><label class="mod-lbl">الكمية *</label><input type="number" inputmode="decimal" class="mod-in" id="qm-qty" min="0" step="0.001"></div>
-    <div class="mod-field" id="qm-cost-wrap" style="display:none"><label class="mod-lbl">التكلفة الإجمالية</label><input type="number" inputmode="decimal" class="mod-in" id="qm-cost" min="0" step="0.01"></div>
   </div>
   <div class="mod-field"><label class="mod-lbl" id="qm-note-lbl">سبب السحب / اسم الفرع الآخر</label><div id="qm-note-wrap"><input class="mod-in" id="qm-note"></div></div>
   <div id="qm-cycle-info" style="font-size:11.5px;color:var(--muted);margin-bottom:10px"></div>
+  <div class="mod-field"><label class="mod-lbl">إضافة صنف للحركة</label><div id="qm-item-wrap"></div></div>
+  <div class="tbl-wrap" style="margin-bottom:14px"><table>
+    <thead><tr><th>الصنف</th><th>الوحدة</th><th>الكمية</th><th id="qm-cost-col-lbl" style="display:none">التكلفة الإجمالية</th><th></th></tr></thead>
+    <tbody id="qmRows"></tbody>
+  </table></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('quickMovementModal')">إلغاء</button>
     <button class="hbtn gold" onclick="saveQuickMovement()">✓ تسجيل الحركة</button>
@@ -4950,18 +4950,48 @@ function setCycleTransferIn(cid,r,field,v){
 //  بيتسجل تلقائياً في الدورة اللي تاريخها يغطي تاريخ الحركة، وبيتراكم
 //  فوق أي كمية سابقة لنفس الصنف بدل ما يستبدلها بالكامل)
 // ══════════════════════════════════════════════
+let qmRows=[];
 function openQuickMovement(){
   document.getElementById('qm-type').value='transferOut';
   document.getElementById('qm-date').value=today();
-  document.getElementById('qm-qty').value='';
-  document.getElementById('qm-cost').value='';
-  document.getElementById('qm-item-wrap').innerHTML=isearchHtml('qm-item-isearch','',{placeholder:'🔍 ابحث عن صنف بالاسم أو المرجع...'});
+  qmRows=[];
+  document.getElementById('qm-item-wrap').innerHTML=isearchHtml('qm-item-isearch','',{placeholder:'🔍 ابحث عن صنف لإضافته للحركة...',onSelect:'qmAddItem'});
   updateQuickMovementFields();
   document.getElementById('quickMovementModal').classList.add('open');
 }
+function qmAddItem(ref){
+  if(!ref) return;
+  if(!qmRows.find(r=>r.ref===ref)) qmRows.push({ref,qty:0,cost:0});
+  renderQmRows();
+  const root=document.getElementById('qm-item-isearch');
+  if(root){root.querySelector('.isearch-input').value='';root.querySelector('.isearch-value').value='';}
+}
+function qmRemoveItem(ref){
+  qmRows=qmRows.filter(r=>r.ref!==ref);
+  renderQmRows();
+}
+function qmSetRowField(ref,field,v){
+  const row=qmRows.find(r=>r.ref===ref);if(!row)return;
+  row[field]=v===''?0:(parseFloat(v)||0);
+}
+function renderQmRows(){
+  const type=document.getElementById('qm-type').value;
+  const showCost=type==='purchase';
+  document.getElementById('qm-cost-col-lbl').style.display=showCost?'':'none';
+  const cont=document.getElementById('qmRows');if(!cont)return;
+  cont.innerHTML=qmRows.length?qmRows.map(r=>{
+    const it=S.items.find(x=>x.r===r.ref);
+    return `<tr>
+      <td class="td-name">${it?it.n:r.ref}</td>
+      <td><span class="uom-pill">${it?it.u:''}</span></td>
+      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${r.qty||''}" placeholder="0" oninput="qmSetRowField('${r.ref}','qty',this.value)"></td>
+      <td ${showCost?'':'style="display:none"'}><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.01" value="${r.cost||''}" placeholder="0.00" oninput="qmSetRowField('${r.ref}','cost',this.value)"></td>
+      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="qmRemoveItem('${r.ref}')" title="إزالة">🗑</button></td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">لم تُضف أصناف بعد — استخدم البحث بالأعلى</td></tr>`;
+}
 function updateQuickMovementFields(){
   const type=document.getElementById('qm-type').value;
-  document.getElementById('qm-cost-wrap').style.display=type==='purchase'?'':'none';
   const labels={transferOut:'اسم الفرع المستلم',transferIn:'اسم الفرع المرسل',withdraw:'سبب السحب/الجهة',purchase:'ملاحظة (اختياري)'};
   document.getElementById('qm-note-lbl').textContent=labels[type];
   const wrap=document.getElementById('qm-note-wrap');
@@ -4971,6 +5001,7 @@ function updateQuickMovementFields(){
     wrap.innerHTML=`<input class="mod-in" id="qm-note">`;
   }
   updateQuickMovementCycleInfo();
+  renderQmRows();
 }
 function updateQuickMovementCycleInfo(){
   const date=document.getElementById('qm-date').value;
@@ -4983,36 +5014,35 @@ function updateQuickMovementCycleInfo(){
 }
 function saveQuickMovement(){
   const date=document.getElementById('qm-date').value;
-  const ref=isearchGetValue('qm-item-isearch');
-  const qty=parseFloat(document.getElementById('qm-qty').value);
   const type=document.getElementById('qm-type').value;
   const note=document.getElementById('qm-note').value.trim();
-  const cost=parseFloat(document.getElementById('qm-cost').value)||0;
   if(!date){toast('⚠️ اختر تاريخ الحركة','wrn');return;}
-  if(!ref){toast('⚠️ اختر الصنف','wrn');return;}
-  if(!qty||qty<=0){toast('⚠️ أدخل كمية صحيحة','wrn');return;}
+  const validRows=qmRows.filter(r=>r.qty>0);
+  if(!validRows.length){toast('⚠️ أضف صنف واحد على الأقل بكمية صحيحة','wrn');return;}
   const c=findCycleForDate(date);
   if(!c){toast('⚠️ لا توجد دورة تسوية تغطي هذا التاريخ — افتح دورة تشمله الأول','err');return;}
   if(c.closed){toast('⚠️ الدورة مقفولة — أعد فتحها الأول','err');return;}
-  if(type==='transferOut'){
-    if(!c.transfersOut) c.transfersOut={};
-    const t=c.transfersOut[ref]||{qty:0,reason:''};
-    c.transfersOut[ref]={qty:(t.qty||0)+qty,reason:note||t.reason||''};
-  }else if(type==='transferIn'){
-    if(!c.transfersIn) c.transfersIn={};
-    const t=c.transfersIn[ref]||{qty:0,reason:''};
-    c.transfersIn[ref]={qty:(t.qty||0)+qty,reason:note||t.reason||''};
-  }else if(type==='withdraw'){
-    if(!c.withdrawals) c.withdrawals={};
-    const t=c.withdrawals[ref]||{qty:0,reason:''};
-    c.withdrawals[ref]={qty:(t.qty||0)+qty,reason:note||t.reason||''};
-  }else if(type==='purchase'){
-    const p=c.purchases[ref]||{qty:0,cost:0};
-    c.purchases[ref]={qty:(p.qty||0)+qty,cost:(p.cost||0)+cost};
-  }
+  validRows.forEach(({ref,qty,cost})=>{
+    if(type==='transferOut'){
+      if(!c.transfersOut) c.transfersOut={};
+      const t=c.transfersOut[ref]||{qty:0,reason:''};
+      c.transfersOut[ref]={qty:(t.qty||0)+qty,reason:note||t.reason||''};
+    }else if(type==='transferIn'){
+      if(!c.transfersIn) c.transfersIn={};
+      const t=c.transfersIn[ref]||{qty:0,reason:''};
+      c.transfersIn[ref]={qty:(t.qty||0)+qty,reason:note||t.reason||''};
+    }else if(type==='withdraw'){
+      if(!c.withdrawals) c.withdrawals={};
+      const t=c.withdrawals[ref]||{qty:0,reason:''};
+      c.withdrawals[ref]={qty:(t.qty||0)+qty,reason:note||t.reason||''};
+    }else if(type==='purchase'){
+      const p=c.purchases[ref]||{qty:0,cost:0};
+      c.purchases[ref]={qty:(p.qty||0)+qty,cost:(p.cost||0)+(cost||0)};
+    }
+  });
   save();
   closeM('quickMovementModal');
-  toast(`✅ تم تسجيل الحركة في دورة ${c.start} ← ${c.end}`,'suc');
+  toast(`✅ تم تسجيل الحركة (${validRows.length} صنف) في دورة ${c.start} ← ${c.end}`,'suc');
   if(curCycleId===c.id){renderCycleTabs();renderCycleBody();}
 }
 

@@ -572,19 +572,25 @@ td{padding:9px 13px;vertical-align:middle;}
     </div>
   </div>
 
+  <div class="vn-dd" id="dd-movements">
+    <button class="vn-btn" onclick="toggleDropdown('dd-movements')" data-i18n="🔄 إدخال وحركات ▾">🔄 إدخال وحركات ▾</button>
+    <div class="vn-dd-menu">
+      <div class="vn-dd-item" onclick="closeDropdowns();openQuickMovement()">➕ تسجيل حركة (تحويل/سحب/استلام)</div>
+      <div class="vn-dd-item" id="ddMaintenanceItem" onclick="closeDropdowns();openMaintenanceLog()" data-i18n="🔧 سجل الأعطال والصيانة">🔧 سجل الأعطال والصيانة</div>
+      <div class="vn-dd-item" id="ddEmployeesItem" onclick="closeDropdowns();openEmployeesScreen()" data-i18n="👥 بيانات الموظفين">👥 بيانات الموظفين</div>
+      <div class="vn-dd-item" id="ddDirectCostsItem" onclick="closeDropdowns();openDirectCostsScreen()" data-i18n="🧾 بنود التكاليف المباشرة">🧾 بنود التكاليف المباشرة</div>
+    </div>
+  </div>
+
   <div class="vn-dd" id="dd-reports">
     <button class="vn-btn" onclick="toggleDropdown('dd-reports')" data-i18n="📊 التقارير ▾">📊 التقارير ▾</button>
     <div class="vn-dd-menu">
       <div class="vn-dd-item" id="ddDashboardItem" onclick="closeDropdowns();openDashboard()" data-i18n="📊 لوحة تحكم تفاعلية">📊 لوحة تحكم تفاعلية</div>
       <div class="vn-dd-item" id="ddMenuSalesItem" onclick="closeDropdowns();openMenuSalesReport()">📊 مبيعات المنيو حسب التاريخ</div>
       <div class="vn-dd-item" id="ddPlannerItem" onclick="closeDropdowns();openRequirementPlanner()" data-i18n="📈 تخطيط الاحتياج">📈 تخطيط الاحتياج</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();openQuickMovement()">➕ تسجيل حركة (تحويل/سحب/استلام)</div>
       <div class="vn-dd-item" id="ddTransfersLogItem" onclick="closeDropdowns();openTransfersLog()" data-i18n="🔀 سجل التحويلات">🔀 سجل التحويلات</div>
       <div class="vn-dd-item" id="ddWasteReportItem" onclick="closeDropdowns();openWasteReport()" data-i18n="🗑️ تقرير أكثر الأصناف هالكًا">🗑️ تقرير أكثر الأصناف هالكًا</div>
-      <div class="vn-dd-item" id="ddMaintenanceItem" onclick="closeDropdowns();openMaintenanceLog()" data-i18n="🔧 سجل الأعطال والصيانة">🔧 سجل الأعطال والصيانة</div>
       <div class="vn-dd-item" id="ddBreakEvenItem" onclick="closeDropdowns();openBreakEvenModule()" data-i18n="⚖️ نقطة التعادل اليومية">⚖️ نقطة التعادل اليومية</div>
-      <div class="vn-dd-item" id="ddEmployeesItem" onclick="closeDropdowns();openEmployeesScreen()" data-i18n="👥 بيانات الموظفين">👥 بيانات الموظفين</div>
-      <div class="vn-dd-item" id="ddDirectCostsItem" onclick="closeDropdowns();openDirectCostsScreen()" data-i18n="🧾 بنود التكاليف المباشرة">🧾 بنود التكاليف المباشرة</div>
       <div class="vn-dd-item" id="ddAllBranchReports" style="display:none" onclick="closeDropdowns();openAllBranchesReport()" data-i18n="🌐 تقرير كل الفروع">🌐 تقرير كل الفروع</div>
       <div class="vn-dd-div"></div>
       <div class="vn-dd-item" onclick="closeDropdowns();exportFullDataExcel()" data-i18n="📗 تفريغ كل البيانات (Excel)">📗 تفريغ كل البيانات (Excel)</div>
@@ -1456,6 +1462,7 @@ const I18N_EN={
   "🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية": "🔗 Match Item Names With External Systems",
   "📦 تقرير المخزون الختامي": "📦 Closing Stock Report",
   "⚖️ نقطة التعادل اليومية": "⚖️ Daily Break-Even Point",
+  "🔄 إدخال وحركات ▾": "🔄 Entries & Movements ▾",
   "👥 بيانات الموظفين": "👥 Employee Data",
   "🔀 نقل موظف لفرع آخر": "🔀 Transfer Employee to Another Branch",
   "🧾 بنود التكاليف المباشرة": "🧾 Direct Cost Items",

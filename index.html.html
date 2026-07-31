@@ -632,7 +632,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFileSelected(event)">
   <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none" onchange="handleBackupFileSelected(event)">
   <input type="file" id="recipeImportFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleRecipeImportFileSelected(event)">
-  <input type="file" id="foodicsImportFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFoodicsImportFileSelected(event)">
+  <input type="file" id="salesImportFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleSalesImportFileSelected(event)">
 
   <div class="hist-wrap">
     <span class="hist-lbl">📋 التقارير المحفوظة</span>
@@ -1252,7 +1252,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="mod-title" data-i18n="🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية">🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية</div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.8">لو اسم الصنف عندك في أودو (Odoo) أو أونكس (Onyx) أو فوديكس (Foodics) مختلف عن اسمه هنا، سجّل الاسم المطابق تحت — النظام هيستخدمه عند سحب المبيعات عشان يلاقي الصنف صح من غير ما تغيّر أسماء المنيو عندك.</p>
   <div class="tbl-wrap"><table>
-    <thead><tr><th data-i18n="الصنف">الصنف</th><th>Odoo</th><th>Onyx</th><th>Foodics</th></tr></thead>
+    <thead><tr><th data-i18n="الصنف">الصنف</th><th>Odoo</th><th>Onyx</th><th>Foodics</th><th data-i18n="نظام آخر">نظام آخر</th></tr></thead>
     <tbody id="posMatchRows"></tbody>
   </table></div>
   <div class="mod-foot">
@@ -1365,6 +1365,15 @@ td{padding:9px 13px;vertical-align:middle;}
       <label class="mod-lbl">الفرع</label>
       <select class="mod-in" id="be-branch-filter" style="width:auto" onchange="setBreakEvenBranchFilter(this.value)"></select>
     </div>
+    <div class="mod-field" style="margin-bottom:0">
+      <label class="mod-lbl">من تاريخ</label>
+      <input type="date" class="mod-in" id="be-date-from" style="width:150px" onchange="setBreakEvenDateFilter()">
+    </div>
+    <div class="mod-field" style="margin-bottom:0">
+      <label class="mod-lbl">إلى تاريخ</label>
+      <input type="date" class="mod-in" id="be-date-to" style="width:150px" onchange="setBreakEvenDateFilter()">
+    </div>
+    <button class="hbtn" onclick="clearBreakEvenDateFilter()" title="رجوع لمتوسط كل الدورات">✖️ كل الفترات</button>
     <button class="hbtn" onclick="openEmployeesScreen()">👥 بيانات الموظفين</button>
     <button class="hbtn" onclick="openDirectCostsScreen()">🧾 بنود التكاليف المباشرة</button>
   </div>
@@ -1786,6 +1795,22 @@ function normalizeUoms(raw){
 function baseUnitNameForKind(kind){
   const b=(S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS).find(u=>u.base&&u.kind===kind);
   return b?b.name:'';
+}
+function uomObj(name){
+  return (S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS).find(u=>u.name===name);
+}
+// converts a quantity between two same-kind units (e.g. g -> kg); returns
+// the quantity unchanged if either unit is unknown or they're different kinds
+function convertQty(qty,fromUnit,toUnit){
+  if(fromUnit===toUnit) return qty;
+  const f=uomObj(fromUnit),t=uomObj(toUnit);
+  if(!f||!t||f.kind!==t.kind) return qty;
+  return qty*f.factor/t.factor;
+}
+function unitsOfSameKind(unitName){
+  const uoms=(S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS);
+  const u=uoms.find(x=>x.name===unitName);
+  return u?uoms.filter(x=>x.kind===u.kind):uoms;
 }
 // suggests the nearest larger same-kind unit for a quantity, e.g. shows
 // "≈3 شيكارة" next to a 75kg purchase requirement when a 25kg bag uom exists
@@ -2630,7 +2655,7 @@ function openEditItem(ref){
   document.getElementById('ai-qty').value=S.qty[it.r]||'';
   document.getElementById('ai-cost').value=it.cost||'';
   document.getElementById('ai-type').value=it.type||'raw';
-  curItemRecipeRows=(it.recipe||[]).map(r=>({...r}));
+  curItemRecipeRows=(it.recipe||[]).map(r=>{const ing=S.items.find(x=>x.r===r.r);return {...r,uom:ing?ing.u:''};});
   renderItemRecipeRows();
   document.getElementById('addItemModal').classList.add('open');
 }
@@ -2686,22 +2711,36 @@ function isearchGetValue(id){
 let curItemRecipeRows=[];
 function setItemRecipeRowRef(ref,pickerId){
   const i=parseInt(pickerId.split('-').pop(),10);
-  if(curItemRecipeRows[i]) curItemRecipeRows[i].r=ref;
+  if(curItemRecipeRows[i]){
+    curItemRecipeRows[i].r=ref;
+    const it=S.items.find(x=>x.r===ref);
+    curItemRecipeRows[i].uom=it?it.u:'';
+    renderItemRecipeRows();
+  }
+}
+function setItemRecipeRowUom(i,uom){
+  if(curItemRecipeRows[i]) curItemRecipeRows[i].uom=uom;
 }
 function renderItemRecipeRows(){
   const cont=document.getElementById('aiRecipeRows');
   if(!curItemRecipeRows.length){cont.innerHTML='<div style="font-size:11.5px;color:var(--muted)">لا توجد مكوّنات — الصنف خامة أساسية</div>';return;}
-  cont.innerHTML=curItemRecipeRows.map((row,i)=>`
+  cont.innerHTML=curItemRecipeRows.map((row,i)=>{
+    const it=S.items.find(x=>x.r===row.r);
+    const rowUnit=row.uom||(it?it.u:'');
+    const unitOpts=unitsOfSameKind(rowUnit).map(u=>`<option value="${u.name}"${u.name===rowUnit?' selected':''}>${u.name}</option>`).join('');
+    return `
     <div style="display:flex;gap:6px;align-items:center">
-      <div style="flex:1.4">${isearchHtml('ai-recipe-isearch-'+i,row.r,{exclude:editingItem,onSelect:'setItemRecipeRowRef'})}</div>
-      <input type="number" inputmode="decimal" class="mod-in" style="flex:.7" min="0" step="0.001" value="${row.q||''}" placeholder="الكمية/وحدة" oninput="curItemRecipeRows[${i}].q=parseFloat(this.value)||0">
+      <div style="flex:1.3">${isearchHtml('ai-recipe-isearch-'+i,row.r,{exclude:editingItem,onSelect:'setItemRecipeRowRef'})}</div>
+      <input type="number" inputmode="decimal" class="mod-in" style="flex:.6" min="0" step="0.001" value="${row.q||''}" placeholder="الكمية" oninput="curItemRecipeRows[${i}].q=parseFloat(this.value)||0">
+      <select class="mod-in" style="flex:.5" onchange="setItemRecipeRowUom(${i},this.value)">${unitOpts}</select>
       <button class="hi-btn del" style="flex:none;padding:8px 10px" onclick="curItemRecipeRows.splice(${i},1);renderItemRecipeRows()" title="حذف المكوّن">🗑</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 function addItemRecipeRow(){
   const opts=S.items.filter(i=>i.r!==editingItem);
   if(!opts.length){toast('⚠️ أضف أصناف أخرى أولاً','wrn');return;}
-  curItemRecipeRows.push({r:opts[0].r,q:0});
+  curItemRecipeRows.push({r:opts[0].r,q:0,uom:opts[0].u});
   renderItemRecipeRows();
 }
 
@@ -2741,7 +2780,11 @@ function saveItem(){
   if(!nameAr){nameEl.classList.add('err');toast('⚠️ أدخل اسم الصنف','wrn');return;}
   if(!editingItem&&S.items.find(i=>i.r===ref)){refEl.classList.add('err');toast('⚠️ رقم المرجع موجود مسبقاً','wrn');return;}
 
-  const recipe=curItemRecipeRows.filter(r=>r.r&&r.q>0);
+  const recipe=curItemRecipeRows.filter(r=>r.r&&r.q>0).map(row=>{
+    const ing=S.items.find(x=>x.r===row.r);
+    const baseUnit=ing?ing.u:row.uom;
+    return {r:row.r,q:convertQty(row.q,row.uom||baseUnit,baseUnit)};
+  });
 
   if(editingItem){
     const idx=S.items.findIndex(i=>i.r===editingItem);
@@ -3801,6 +3844,9 @@ let breakEvenBranchFilter='__current__';
 function openBreakEvenModule(){
   if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
   breakEvenBranchFilter='__current__';
+  breakEvenDateFrom=null;breakEvenDateTo=null;
+  document.getElementById('be-date-from').value='';
+  document.getElementById('be-date-to').value='';
   populateBreakEvenBranchFilter();
   renderBreakEvenModule();
   document.getElementById('breakEvenModal').classList.add('open');
@@ -4048,29 +4094,54 @@ function setBreakEvenSetting(field,v){
   else if(field==='beDaysInMonth') S.beDaysInMonth=Math.max(1,parseInt(v)||30);
   save();renderBreakEvenModule();
 }
-function computeBreakEvenForBranch(cyclesArr,employees,directCosts,varPctOverride,daysInMonth,label){
+let breakEvenDateFrom=null,breakEvenDateTo=null;
+function setBreakEvenDateFilter(){
+  const from=document.getElementById('be-date-from').value;
+  const to=document.getElementById('be-date-to').value;
+  breakEvenDateFrom=from||null;
+  breakEvenDateTo=to||null;
+  renderBreakEvenModule();
+}
+function clearBreakEvenDateFilter(){
+  document.getElementById('be-date-from').value='';
+  document.getElementById('be-date-to').value='';
+  breakEvenDateFrom=null;breakEvenDateTo=null;
+  renderBreakEvenModule();
+}
+function computeBreakEvenForBranch(cyclesArr,employees,directCosts,varPctOverride,daysInMonth,label,dateFrom,dateTo){
   employees=employees||[];directCosts=directCosts||[];
   const totalSalaries=employees.reduce((s,e)=>s+(e.salary||0),0);
   const totalDirectCosts=directCosts.reduce((s,d)=>s+(d.amount||0),0);
   const totalFixed=totalSalaries+totalDirectCosts;
   const dim=daysInMonth||30;
   const dailyFixed=totalFixed/dim;
-  const closed=(cyclesArr||[]).filter(c=>c.closed&&c.result);
+  let closed=(cyclesArr||[]).filter(c=>c.closed&&c.result);
+  // when a date filter is set, only cycles overlapping that range feed the
+  // historical variable-cost % average — lets the break-even reflect a
+  // specific period's actual performance instead of all-time history
+  if(dateFrom||dateTo) closed=closed.filter(c=>(!dateFrom||c.end>=dateFrom)&&(!dateTo||c.start<=dateTo));
   const histVarPct=closed.length?closed.reduce((s,c)=>s+c.result.actualCostPct,0)/closed.length:FOOD_COST_TARGET_PCT;
   const varPct=varPctOverride!=null?varPctOverride:histVarPct;
   const contributionPct=Math.max(1,100-varPct);
   const dailyBreakEven=dailyFixed/(contributionPct/100);
   const monthlyBreakEven=dailyBreakEven*dim;
+  // standard/benchmark break-even: same fixed costs, but using the target
+  // food-cost % (FOOD_COST_TARGET_PCT) instead of actual historical
+  // performance — "where break-even SHOULD sit if the branch hits its target"
+  const stdContributionPct=Math.max(1,100-FOOD_COST_TARGET_PCT);
+  const dailyBreakEvenStandard=dailyFixed/(stdContributionPct/100);
+  const monthlyBreakEvenStandard=dailyBreakEvenStandard*dim;
   return {label,employees,directCosts,totalSalaries,totalDirectCosts,totalFixed,dailyFixed,
-    varPct,varPctOverrideRaw:varPctOverride,histVarPct,contributionPct,dailyBreakEven,monthlyBreakEven,daysInMonth:dim};
+    varPct,varPctOverrideRaw:varPctOverride,histVarPct,contributionPct,dailyBreakEven,monthlyBreakEven,daysInMonth:dim,
+    cyclesUsed:closed.length,dateFrom:dateFrom||null,dateTo:dateTo||null,dailyBreakEvenStandard,monthlyBreakEvenStandard};
 }
 function computeBreakEven(){
-  if(breakEvenBranchFilter==='__current__') return computeBreakEvenForBranch(BCycles(),S.employees,S.directCosts,S.beVarPctOverride,S.beDaysInMonth,S.branch||'');
+  if(breakEvenBranchFilter==='__current__') return computeBreakEvenForBranch(BCycles(),S.employees,S.directCosts,S.beVarPctOverride,S.beDaysInMonth,S.branch||'',breakEvenDateFrom,breakEvenDateTo);
   if(!crossBranchRawDocs) return null;
   if(breakEvenBranchFilter==='__all__') return Object.entries(crossBranchRawDocs).map(([key,d])=>
-    computeBreakEvenForBranch(d.cycles||[],d.employees||[],d.directCosts||[],d.beVarPctOverride!=null?d.beVarPctOverride:null,d.beDaysInMonth||30,(S.branches[key]||{}).name||key));
+    computeBreakEvenForBranch(d.cycles||[],d.employees||[],d.directCosts||[],d.beVarPctOverride!=null?d.beVarPctOverride:null,d.beDaysInMonth||30,(S.branches[key]||{}).name||key,breakEvenDateFrom,breakEvenDateTo));
   const d=crossBranchRawDocs[breakEvenBranchFilter]||{};
-  return computeBreakEvenForBranch(d.cycles||[],d.employees||[],d.directCosts||[],d.beVarPctOverride!=null?d.beVarPctOverride:null,d.beDaysInMonth||30,(S.branches[breakEvenBranchFilter]||{}).name||breakEvenBranchFilter);
+  return computeBreakEvenForBranch(d.cycles||[],d.employees||[],d.directCosts||[],d.beVarPctOverride!=null?d.beVarPctOverride:null,d.beDaysInMonth||30,(S.branches[breakEvenBranchFilter]||{}).name||breakEvenBranchFilter,breakEvenDateFrom,breakEvenDateTo);
 }
 function renderBreakEvenModule(){
   const el=document.getElementById('breakEvenBody');
@@ -4081,7 +4152,7 @@ function renderBreakEvenModule(){
   if(Array.isArray(result)){
     el.innerHTML=`${reportHeaderBlock({title:'⚖️ نقطة التعادل اليومية — مقارنة بين الفروع'})}
     <div class="tbl-wrap"><table>
-      <thead><tr><th>${t('الفرع')}</th><th>${t('عدد الموظفين')}</th><th>${t('إجمالي التكاليف الثابتة الشهرية')}</th><th>${t('التكلفة الثابتة اليومية')}</th><th>${t('نسبة التكلفة المتغيرة')}</th><th>${t('نقطة التعادل اليومية')}</th><th>${t('نقطة التعادل الشهرية')}</th></tr></thead>
+      <thead><tr><th>${t('الفرع')}</th><th>${t('عدد الموظفين')}</th><th>${t('إجمالي التكاليف الثابتة الشهرية')}</th><th>${t('التكلفة الثابتة اليومية')}</th><th>${t('نسبة التكلفة المتغيرة')}</th><th>${t('نقطة التعادل اليومية')}</th><th>${t('نقطة التعادل الشهرية')}</th><th>${t('نقطة التعادل اليومية القياسية')}</th></tr></thead>
       <tbody>${result.map(r=>`<tr>
         <td class="td-name">${r.label}</td>
         <td style="text-align:center">${r.employees.length}</td>
@@ -4090,6 +4161,7 @@ function renderBreakEvenModule(){
         <td style="font-family:var(--mono)">${r.varPct.toFixed(1)}%</td>
         <td style="font-family:var(--mono);font-weight:700;color:var(--gold)">${fmt(r.dailyBreakEven)}</td>
         <td style="font-family:var(--mono)">${fmt(r.monthlyBreakEven)}</td>
+        <td style="font-family:var(--mono);color:#7a5cff">${fmt(r.dailyBreakEvenStandard)}</td>
       </tr>`).join('')}</tbody>
     </table></div>
     ${reportSignatureBlock(['أُعِدّ بواسطة','رُوجع بواسطة (الإدارة المالية)','اعتُمد بواسطة (الإدارة العليا)'])}`;
@@ -4115,9 +4187,10 @@ function renderBreakEvenModule(){
     <tbody>${dcRows||`<tr><td colspan="2" style="text-align:center;color:var(--muted);padding:16px">لا توجد بنود تكاليف مسجّلة بعد</td></tr>`}</tbody>
   </table></div>
 
+  ${(r.dateFrom||r.dateTo)?`<div style="font-size:11px;color:var(--blue);margin-bottom:10px">📅 نسبة التكلفة المتغيرة أدناه محسوبة من متوسط ${r.cyclesUsed} دورة مقفولة بين ${r.dateFrom||'بداية البيانات'} و${r.dateTo||'اليوم'} فقط.</div>`:''}
   <div class="mod-row" style="align-items:end;margin-bottom:16px">
     <div class="mod-field">
-      <label class="mod-lbl">نسبة التكلفة المتغيرة % (فارغ = تلقائي من متوسط الدورات السابقة: ${r.histVarPct.toFixed(1)}%)</label>
+      <label class="mod-lbl">نسبة التكلفة المتغيرة % (فارغ = تلقائي من متوسط الدورات ${(r.dateFrom||r.dateTo)?'بالفترة المحددة':'السابقة'}: ${r.histVarPct.toFixed(1)}%)</label>
       <input type="number" inputmode="decimal" class="mod-in" min="0" max="100" step="0.1" value="${r.varPctOverrideRaw!=null?r.varPctOverrideRaw:''}" placeholder="${r.histVarPct.toFixed(1)}" ${editable?'':'disabled'} onchange="setBreakEvenSetting('beVarPctOverride',this.value)">
     </div>
     <div class="mod-field">
@@ -4134,6 +4207,13 @@ function renderBreakEvenModule(){
     ${kpi('نقطة التعادل الشهرية (إيراد)',fmt(r.monthlyBreakEven),'#f05050')}
   </div>
   <p style="font-size:11px;color:var(--muted);line-height:1.8">نقطة التعادل = التكلفة الثابتة اليومية ÷ نسبة هامش المساهمة (100% − نسبة التكلفة المتغيرة). يعني ده أقل إيراد يومي لازم الفرع يحققه عشان يغطي كل مصاريفه الثابتة (رواتب + تكاليف مباشرة) من غير ما يخسر.</p>
+
+  <div style="font-weight:700;font-size:13px;margin:16px 0 8px">📐 المعيار الطبيعي (القياسي)</div>
+  <div class="stats" style="margin-bottom:10px">
+    ${kpi(`نقطة التعادل اليومية القياسية (بافتراض تكلفة طعام ${FOOD_COST_TARGET_PCT}%)`,fmt(r.dailyBreakEvenStandard),'#7a5cff')}
+    ${kpi('نقطة التعادل الشهرية القياسية',fmt(r.monthlyBreakEvenStandard),'#7a5cff')}
+  </div>
+  <p style="font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:14px">المعيار الطبيعي بيحسب نقطة التعادل بنفس التكاليف الثابتة لكن بافتراض إن نسبة تكلفة الطعام عند الهدف المعتمد (${FOOD_COST_TARGET_PCT}%) بدل الأداء الفعلي — يعني ده الشكل اللي المفروض يكون عليه الفرع لو حقق هدفه، تقدر تقارنه بنقطة التعادل الفعلية بالأعلى عشان تشوف تأثير الأداء الحالي على المطلوب تحقيقه.</p>
   ${reportSignatureBlock(['أُعِدّ بواسطة (المحاسب)','رُوجع بواسطة (مدير الفرع)','اعتُمد بواسطة (الإدارة المالية)'])}`;
 }
 function exportBreakEvenExcel(){
@@ -4141,8 +4221,8 @@ function exportBreakEvenExcel(){
   if(!result){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
   const wb=XLSX.utils.book_new();
   if(Array.isArray(result)){
-    const out=[['الفرع','عدد الموظفين','إجمالي التكاليف الثابتة الشهرية','التكلفة الثابتة اليومية','نسبة التكلفة المتغيرة %','نقطة التعادل اليومية','نقطة التعادل الشهرية']];
-    result.forEach(r=>out.push([r.label,r.employees.length,+r.totalFixed.toFixed(2),+r.dailyFixed.toFixed(2),+r.varPct.toFixed(2),+r.dailyBreakEven.toFixed(2),+r.monthlyBreakEven.toFixed(2)]));
+    const out=[['الفرع','عدد الموظفين','إجمالي التكاليف الثابتة الشهرية','التكلفة الثابتة اليومية','نسبة التكلفة المتغيرة %','نقطة التعادل اليومية','نقطة التعادل الشهرية','نقطة التعادل اليومية القياسية']];
+    result.forEach(r=>out.push([r.label,r.employees.length,+r.totalFixed.toFixed(2),+r.dailyFixed.toFixed(2),+r.varPct.toFixed(2),+r.dailyBreakEven.toFixed(2),+r.monthlyBreakEven.toFixed(2),+r.dailyBreakEvenStandard.toFixed(2)]));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'مقارنة نقطة التعادل');
   }else{
     const empRows=[['الاسم','الوظيفة','الراتب الشهري']];
@@ -4158,6 +4238,8 @@ function exportBreakEvenExcel(){
       ['نسبة هامش المساهمة %',+result.contributionPct.toFixed(2)],
       ['نقطة التعادل اليومية',+result.dailyBreakEven.toFixed(2)],
       ['نقطة التعادل الشهرية',+result.monthlyBreakEven.toFixed(2)],
+      [`نقطة التعادل اليومية القياسية (بافتراض تكلفة طعام ${FOOD_COST_TARGET_PCT}%)`,+result.dailyBreakEvenStandard.toFixed(2)],
+      ['نقطة التعادل الشهرية القياسية',+result.monthlyBreakEvenStandard.toFixed(2)],
     ];
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sumRows),'ملخص نقطة التعادل');
   }
@@ -4630,6 +4712,7 @@ function renderPosMatchList(){
       <td><input type="text" class="mod-in" style="min-width:150px" value="${(p.odoo||'').replace(/"/g,'&quot;')}" placeholder="${m.n}" oninput="setPosMatchName('${m.id}','odoo',this.value)"></td>
       <td><input type="text" class="mod-in" style="min-width:150px" value="${(p.onyx||'').replace(/"/g,'&quot;')}" placeholder="${m.n}" oninput="setPosMatchName('${m.id}','onyx',this.value)"></td>
       <td><input type="text" class="mod-in" style="min-width:150px" value="${(p.foodics||'').replace(/"/g,'&quot;')}" placeholder="${m.n}" oninput="setPosMatchName('${m.id}','foodics',this.value)"></td>
+      <td><input type="text" class="mod-in" style="min-width:150px" value="${(p.other||'').replace(/"/g,'&quot;')}" placeholder="${m.n}" oninput="setPosMatchName('${m.id}','other',this.value)"></td>
     </tr>`;
   }).join('');
 }
@@ -4653,21 +4736,35 @@ function ingredientOptions(sel,exclude){
 }
 function setMenuRecipeRowRef(ref,pickerId){
   const i=parseInt(pickerId.split('-').pop(),10);
-  if(curRecipeRows[i]) curRecipeRows[i].r=ref;
+  if(curRecipeRows[i]){
+    curRecipeRows[i].r=ref;
+    const it=S.items.find(x=>x.r===ref);
+    curRecipeRows[i].uom=it?it.u:'';
+    renderRecipeRows();
+  }
+}
+function setMenuRecipeRowUom(i,uom){
+  if(curRecipeRows[i]) curRecipeRows[i].uom=uom;
 }
 function renderRecipeRows(){
   const cont=document.getElementById('miRecipeRows');
   if(!curRecipeRows.length){cont.innerHTML='<div style="font-size:11.5px;color:var(--muted)">لا توجد مكوّنات مضافة</div>';return;}
-  cont.innerHTML=curRecipeRows.map((row,i)=>`
+  cont.innerHTML=curRecipeRows.map((row,i)=>{
+    const it=S.items.find(x=>x.r===row.r);
+    const rowUnit=row.uom||(it?it.u:'');
+    const unitOpts=unitsOfSameKind(rowUnit).map(u=>`<option value="${u.name}"${u.name===rowUnit?' selected':''}>${u.name}</option>`).join('');
+    return `
     <div style="display:flex;gap:6px;align-items:center">
-      <div style="flex:1.4">${isearchHtml('mi-recipe-isearch-'+i,row.r,{onSelect:'setMenuRecipeRowRef'})}</div>
-      <input type="number" inputmode="decimal" class="mod-in" style="flex:.7" min="0" step="0.001" value="${row.q||''}" placeholder="الكمية/وحدة" oninput="curRecipeRows[${i}].q=parseFloat(this.value)||0">
+      <div style="flex:1.3">${isearchHtml('mi-recipe-isearch-'+i,row.r,{onSelect:'setMenuRecipeRowRef'})}</div>
+      <input type="number" inputmode="decimal" class="mod-in" style="flex:.6" min="0" step="0.001" value="${row.q||''}" placeholder="الكمية" oninput="curRecipeRows[${i}].q=parseFloat(this.value)||0">
+      <select class="mod-in" style="flex:.5" onchange="setMenuRecipeRowUom(${i},this.value)">${unitOpts}</select>
       <button class="hi-btn del" style="flex:none;padding:8px 10px" onclick="curRecipeRows.splice(${i},1);renderRecipeRows()" title="حذف المكوّن">🗑</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 function addRecipeRow(){
   if(!S.items.length){toast('⚠️ أضف أصناف المخزون أولاً','wrn');return;}
-  curRecipeRows.push({r:S.items[0].r,q:0});
+  curRecipeRows.push({r:S.items[0].r,q:0,uom:S.items[0].u});
   renderRecipeRows();
 }
 function openAddMenuItem(){
@@ -4684,7 +4781,7 @@ function openAddMenuItem(){
 function openEditMenuItem(id){
   if(!canManageMenuUI()){toast('⚠️ إدارة المنيو متاحة للإدارة أو لمن له صلاحية إدارة المنيو بس','wrn');return;}
   const m=S.menu.find(x=>x.id===id);if(!m)return;
-  editingMenuId=id;curRecipeRows=(m.recipe||[]).map(r=>({...r}));
+  editingMenuId=id;curRecipeRows=(m.recipe||[]).map(r=>{const ing=S.items.find(x=>x.r===r.r);return {...r,uom:ing?ing.u:''};});
   document.getElementById('miTitle').textContent='✏️ تعديل: '+m.n;
   document.getElementById('miSaveBtn').textContent='✓ حفظ التعديل';
   document.getElementById('mi-name').value=m.n;
@@ -4698,7 +4795,11 @@ function saveMenuItem(){
   const price=parseFloat(document.getElementById('mi-price').value)||0;
   const e=document.getElementById('mi-name-en').value.trim();
   if(!n){toast('⚠️ أدخل اسم الصنف','wrn');return;}
-  const recipe=curRecipeRows.filter(r=>r.r&&r.q>0);
+  const recipe=curRecipeRows.filter(r=>r.r&&r.q>0).map(row=>{
+    const ing=S.items.find(x=>x.r===row.r);
+    const baseUnit=ing?ing.u:row.uom;
+    return {r:row.r,q:convertQty(row.q,row.uom||baseUnit,baseUnit)};
+  });
   if(editingMenuId){
     const idx=S.menu.findIndex(x=>x.id===editingMenuId);
     S.menu[idx]={...S.menu[idx],n,e,price,recipe};
@@ -4889,8 +4990,8 @@ function renderSalesTab(c,el){
   }
   el.innerHTML=`${cycleToolbar('إضافة صنف للمنيو',"openAddMenuItem()")}
   <div style="display:flex;gap:8px;margin:-4px 0 12px;flex-wrap:wrap">
-    <button class="hbtn" onclick="downloadFoodicsImportTemplate()">📄 قالب فوديكس</button>
-    <button class="hbtn gold" onclick="document.getElementById('foodicsImportFileInput').click()">📥 سحب مبيعات فوديكس (Excel)</button>
+    <button class="hbtn" onclick="downloadSalesImportTemplate()">📄 قالب استيراد المبيعات</button>
+    <button class="hbtn gold" onclick="document.getElementById('salesImportFileInput').click()">📥 استيراد مبيعات من ملف خارجي (فوديكس / أودو / أونكس ...)</button>
   </div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>${t('الصنف')}</th><th>${t('السعر')}</th><th>${t('الكمية المباعة')}</th><th>${t('الإجمالي (نظري)')}</th><th>${t('تكلفة المبيعات (نظري)')}</th><th>${t('المكونات')}</th></tr></thead>
@@ -5751,6 +5852,18 @@ function reopenCycle(){
   toast('🔓 تم إعادة فتح الدورة','wrn');
 }
 
+// break-even info for one closed cycle, using ITS OWN actual cost % (not a
+// historical average) against the branch's current fixed costs — returns
+// null when the branch has no employees/direct-cost data configured yet
+function cycleBreakEvenInfo(c){
+  const r=c.result;if(!r)return null;
+  const be=computeBreakEvenForBranch(BCycles(),S.employees,S.directCosts,r.actualCostPct,S.beDaysInMonth,S.branch||'');
+  if(be.totalFixed<=0) return null;
+  const days=Math.max(1,daysBetween(c.start,c.end)+1);
+  const avgDailyNetSales=r.netSalesAmount/days;
+  const achievementPct=be.dailyBreakEven>0?(avgDailyNetSales/be.dailyBreakEven*100):0;
+  return {...be,days,avgDailyNetSales,achievementPct};
+}
 function renderResultsTab(c,el){
   if(!c.closed||!c.result){
     el.innerHTML=`<div class="tbl-wrap"><div style="padding:30px;text-align:center;color:var(--muted)">
@@ -5760,6 +5873,7 @@ function renderResultsTab(c,el){
   }
   const r=c.result;
   const kpi=(l,v,color)=>`<div class="stat" style="border-color:${color}55"><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>`;
+  const be=cycleBreakEvenInfo(c);
   const groups=groupRowsByCategory(r.rows,'r');
   const bodyRows=groups.map(g=>{
     const catRow=`<tr class="rpt-pro-cat-row"><td colspan="12">📁 ${g.label}</td></tr>`;
@@ -5790,6 +5904,12 @@ function renderResultsTab(c,el){
     ${kpi('نسبة التكلفة النظرية',r.theoCostPct.toFixed(1)+'%','#2ee89a')}
   </div>
   ${companyInfo.vatPct?`<p style="font-size:10.5px;color:var(--muted);margin:-10px 0 12px">إجمالي المبيعات المعروض شامل الضريبة (${companyInfo.vatPct}%) — نسب التكلفة والانحراف بالأعلى محسوبة على صافي المبيعات (${fmt(r.netSalesAmount)}) بعد خصم الضريبة، طبقًا للمعيار المحاسبي المتبع.</p>`:''}
+  ${be?`<div class="stats" style="margin-bottom:16px">
+    ${kpi('⚖️ نقطة التعادل اليومية (إيراد)',fmt(be.dailyBreakEven),'#f05050')}
+    ${kpi('متوسط صافي المبيعات اليومي للدورة',fmt(be.avgDailyNetSales),'#3d8ef0')}
+    ${kpi(be.achievementPct>=100?'✅ نسبة تحقق نقطة التعادل':'⚠️ نسبة تحقق نقطة التعادل',be.achievementPct.toFixed(1)+'%',be.achievementPct>=100?'#2ee89a':'#f05050')}
+  </div>
+  <p style="font-size:10.5px;color:var(--muted);margin:-10px 0 14px;line-height:1.8">نقطة التعادل محسوبة من التكاليف الثابتة الشهرية لهذا الفرع (رواتب الموظفين + بنود التكاليف المباشرة) ونسبة التكلفة الفعلية لهذه الدورة (${r.actualCostPct.toFixed(1)}%). نسبة التحقق = متوسط صافي المبيعات اليومي خلال الدورة ÷ نقطة التعادل اليومية — 100% فأكثر يعني الفرع غطّى مصاريفه الثابتة في المتوسط خلال الفترة دي. عدّل بيانات الموظفين والتكاليف المباشرة من ⚖️ نقطة التعادل اليومية.</p>`:''}
   <div class="dbanner" style="margin-bottom:14px;flex-wrap:wrap;gap:10px">
     <div class="db-l"><div><div class="db-main">إجمالي قيمة الانحراف: ${acctFmt(r.totalVarVal)}</div>
     <div class="db-sub">الفرق بين تكلفة الاستهلاك الفعلي والنظري (بين قوسين = استهلاك أقل من المتوقع، بدون قوسين = زيادة عن المتوقع)</div></div></div>
@@ -5812,7 +5932,14 @@ function exportCycleCSV(cid){
     if(c.result.deliverySalesAmount!=null) csv+=`مبيعات تطبيقات التوصيل,${c.result.deliverySalesAmount}\n`;
     csv+=`تكلفة الاستهلاك الفعلي,${c.result.totalActualCost}\n`;
     csv+=`نسبة التكلفة الفعلية,${c.result.actualCostPct.toFixed(2)}%\n`;
-    csv+=`نسبة التكلفة النظرية,${c.result.theoCostPct.toFixed(2)}%\n\n`;
+    csv+=`نسبة التكلفة النظرية,${c.result.theoCostPct.toFixed(2)}%\n`;
+    const be=cycleBreakEvenInfo(c);
+    if(be){
+      csv+=`نقطة التعادل اليومية (إيراد),${be.dailyBreakEven.toFixed(2)}\n`;
+      csv+=`متوسط صافي المبيعات اليومي للدورة,${be.avgDailyNetSales.toFixed(2)}\n`;
+      csv+=`نسبة تحقق نقطة التعادل,${be.achievementPct.toFixed(2)}%\n`;
+    }
+    csv+='\n';
     csv+='الصنف,افتتاحي,مشتريات,تحويل وارد,هالك,سحب داخلي,تحويل صادر,ختامي,استهلاك فعلي,استهلاك نظري,انحراف كمية,انحراف قيمة\n';
     c.result.rows.forEach(row=>{
       csv+=`"${row.n}",${row.op},${row.pur},${row.trIn},${row.was},${row.wd},${row.trOut},${row.cl},${row.actual},${row.theo},${row.varQty.toFixed(3)},${row.varVal.toFixed(2)}\n`;
@@ -6517,24 +6644,26 @@ function processRecipeImportRows(rows){
 }
 
 // ══════════════════════════════════════════════
-//  FOODICS SALES IMPORT (سحب الكميات المباعة من شيت إكسل مُصدَّر من فوديكس)
+//  EXTERNAL SALES IMPORT (سحب الكميات المباعة من شيت إكسل مُصدَّر من أي
+//  نظام نقطة بيع/ERP خارجي — فوديكس، أودو، أونكس، أو أي برنامج تاني)
 //  Column names are flexible (English/Arabic aliases) since the exact
-//  export layout varies by Foodics report type — adjust FOODICS_IMPORT_ALIASES
-//  if a real export uses different headers than expected here.
+//  export layout varies by system/report type — adjust SALES_IMPORT_ALIASES
+//  if a real export uses different headers than expected here, or rename
+//  the columns in the exported file to match one of the aliases below.
 // ══════════════════════════════════════════════
-const FOODICS_IMPORT_ALIASES={
-  name:['Product Name','Product','Item','Item Name','اسم المنتج','اسم الصنف','الصنف'],
-  qty:['Quantity','Qty','Quantity Sold','Sold Qty','الكمية','الكمية المباعة'],
-  date:['Date','Order Date','Business Date','التاريخ'],
+const SALES_IMPORT_ALIASES={
+  name:['Product Name','Product','Item','Item Name','SKU','Description','اسم المنتج','اسم الصنف','الصنف','المنتج','الوصف'],
+  qty:['Quantity','Qty','Quantity Sold','Sold Qty','Qty Ordered','Qty Delivered','الكمية','الكمية المباعة','العدد'],
+  date:['Date','Order Date','Business Date','تاريخ الطلب','التاريخ'],
 };
-function matchFoodicsColumn(header){
+function matchSalesImportColumn(header){
   const h=String(header||'').trim().toLowerCase();
-  for(const key in FOODICS_IMPORT_ALIASES){
-    if(FOODICS_IMPORT_ALIASES[key].some(a=>a.toLowerCase()===h)) return key;
+  for(const key in SALES_IMPORT_ALIASES){
+    if(SALES_IMPORT_ALIASES[key].some(a=>a.toLowerCase()===h)) return key;
   }
   return null;
 }
-function normalizeFoodicsDate(v){
+function normalizeSalesImportDate(v){
   if(v instanceof Date) return v.toISOString().slice(0,10);
   const s=String(v||'').trim();
   if(!s) return null;
@@ -6542,7 +6671,7 @@ function normalizeFoodicsDate(v){
   const d=new Date(s);
   return isNaN(d.getTime())?null:d.toISOString().slice(0,10);
 }
-function downloadFoodicsImportTemplate(){
+function downloadSalesImportTemplate(){
   const wb=XLSX.utils.book_new();
   const rows=[
     ['Product Name','Quantity','Date'],
@@ -6550,11 +6679,11 @@ function downloadFoodicsImportTemplate(){
   ];
   const ws=XLSX.utils.aoa_to_sheet(rows);
   ws['!cols']=[{wch:30},{wch:14},{wch:16}];
-  XLSX.utils.book_append_sheet(wb,ws,'Foodics Sales');
-  XLSX.writeFile(wb,'قالب_استيراد_مبيعات_فوديكس.xlsx');
-  toast('📄 تم تحميل القالب — عمود التاريخ اختياري (لو الشيت كله ليوم واحد)، ولو مش موجود هيتحسب على الدورة المفتوحة حاليًا','inf');
+  XLSX.utils.book_append_sheet(wb,ws,'Sales Import');
+  XLSX.writeFile(wb,'قالب_استيراد_المبيعات.xlsx');
+  toast('📄 تم تحميل القالب — بيشتغل مع أي تصدير من فوديكس أو أودو أو أي نظام تاني طالما أسماء الأعمدة قريبة من القالب. عمود التاريخ اختياري (لو الشيت كله ليوم واحد)، ولو مش موجود هيتحسب على الدورة المفتوحة حاليًا','inf');
 }
-function handleFoodicsImportFileSelected(e){
+function handleSalesImportFileSelected(e){
   const file=e.target.files[0];
   e.target.value='';
   if(!file) return;
@@ -6565,18 +6694,18 @@ function handleFoodicsImportFileSelected(e){
       const wb=XLSX.read(data,{type:'array',cellDates:true});
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      processFoodicsImportRows(rows);
+      processSalesImportRows(rows);
     }catch(err){ toast('⚠️ تعذر قراءة الملف: '+err.message,'err'); }
   };
   reader.readAsArrayBuffer(file);
 }
-function processFoodicsImportRows(rows){
+function processSalesImportRows(rows){
   if(!rows||!rows.length){toast('⚠️ الملف فارغ','wrn');return;}
   const header=rows[0];
   const colMap={};
-  header.forEach((h,i)=>{const key=matchFoodicsColumn(h);if(key)colMap[key]=i;});
+  header.forEach((h,i)=>{const key=matchSalesImportColumn(h);if(key)colMap[key]=i;});
   if(colMap.name==null||colMap.qty==null){
-    toast('⚠️ الملف لازم يحتوي على عمودي اسم الصنف والكمية على الأقل — حمّل قالب فوديكس من تبويب المبيعات','err');
+    toast('⚠️ الملف لازم يحتوي على عمودي اسم الصنف والكمية على الأقل — حمّل قالب استيراد المبيعات من تبويب المبيعات','err');
     return;
   }
   const qtyByName={};
@@ -6590,7 +6719,7 @@ function processFoodicsImportRows(rows){
     const key=name.toLowerCase();
     qtyByName[key]={n:name,qty:(qtyByName[key]?qtyByName[key].qty:0)+qty};
     if(colMap.date!=null&&row[colMap.date]!==''){
-      const d=normalizeFoodicsDate(row[colMap.date]);
+      const d=normalizeSalesImportDate(row[colMap.date]);
       if(d) datesSeen.add(d);
     }
   }
@@ -6686,7 +6815,7 @@ function resolveUnmatchedImportItem(idx,menuId){
   const m=S.menu.find(x=>x.id===menuId);if(!m)return;
   const c=getCycle(rec.targetCycleId);if(!c){toast('⚠️ الدورة غير موجودة','err');return;}
   if(!m.posNames) m.posNames={};
-  m.posNames.foodics=u.name;
+  m.posNames.other=u.name;
   c.sales[m.id]=(c.sales[m.id]||0)+u.qty;
   rec.matched.push({name:u.name,qty:u.qty,menuId:m.id,menuName:m.n});
   rec.unmatched.splice(idx,1);

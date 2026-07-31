@@ -4659,7 +4659,15 @@ function BCycles(){
 }
 function getCycle(id){return BCycles().find(c=>c.id===id);}
 function sortedCycles(){return [...BCycles()].sort((a,b)=>a.start.localeCompare(b.start));}
-function findCycleForDate(dateStr){return sortedCycles().find(c=>dateStr>=c.start&&dateStr<=c.end);}
+function findCycleForDate(dateStr){
+  const matches=sortedCycles().filter(c=>dateStr>=c.start&&dateStr<=c.end);
+  if(!matches.length) return undefined;
+  // createCycle() blocks overlapping date ranges going forward, but this still
+  // prefers an OPEN cycle over a closed one in case older data has an overlap
+  // from before that check existed — otherwise a stray closed cycle could
+  // shadow the real open one and block recording movements for that date.
+  return matches.find(c=>!c.closed)||matches[0];
+}
 function latestClosedBefore(cycle){
   const arr=sortedCycles().filter(c=>c.closed&&c.id!==cycle.id&&c.start<cycle.start);
   return arr.length?arr[arr.length-1]:null;
@@ -4712,6 +4720,8 @@ function createCycle(){
   const end=document.getElementById('nc-end').value;
   if(!start||!end){toast('⚠️ حدد تاريخ البداية والنهاية','wrn');return;}
   if(end<start){toast('⚠️ تاريخ النهاية قبل البداية','wrn');return;}
+  const overlap=BCycles().find(c=>start<=c.end&&c.start<=end);
+  if(overlap){toast(`⚠️ الفترة دي بتتداخل مع دورة موجودة بالفعل (${overlap.start} ← ${overlap.end}) — عدّل التواريخ أو كمّل على الدورة الموجودة`,'err');return;}
   const c={id:'CYC'+Date.now().toString(36).toUpperCase(),start,end,closed:false,
     sales:{},salesAmount:null,deliverySalesAmount:null,purchases:{},waste:{},withdrawals:{},transfersOut:{},transfersIn:{},openingOverride:{},closing:{},closingSetAt:{},result:null};
   BCycles().push(c);
@@ -4995,17 +5005,19 @@ function branchSelectOptions(selectedName){
 function renderTransferOutTab(c,el){
   if(!c.transfersOut) c.transfersOut={};
   el.innerHTML=`<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-    <div style="flex:1;min-width:240px;max-width:380px">${isearchHtml('ctoAddIsearch','',{placeholder:'🔍 ابحث عن صنف لإضافته للتحويل...',onSelect:'addTransferOutItem'})}</div>
+    ${c.closed?'<div style="font-size:12px;color:var(--muted)">🔒 الدورة مقفولة — أعد فتحها الأول لإضافة أصناف جديدة للتحويل</div>':`<div style="flex:1;min-width:240px;max-width:380px">${isearchHtml('ctoAddIsearch','',{placeholder:'🔍 ابحث عن صنف لإضافته للتحويل...',onSelect:'addTransferOutItem'})}</div>`}
   </div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المحوّلة صادر')}</th><th>${t('الفرع المستلم')}</th><th></th></tr></thead>
     <tbody id="ctRows"></tbody></table></div>
-    <p style="font-size:11px;color:var(--muted);margin-top:8px">كمية خرجت من هذا الفرع لفرع تاني — بتتخصم من الاستهلاك الفعلي زي الهالك. الفرع المستقبِل يسجّلها بنفسه في تبويب "تحويل وارد" عنده. اختر الصنف من البحث بالأعلى لإضافته للتحويل.</p>`;
+    <p style="font-size:11px;color:var(--muted);margin-top:8px">كمية خرجت من هذا الفرع لفرع تاني — بتتخصم من الاستهلاك الفعلي زي الهالك. اختر الصنف من البحث بالأعلى لإضافته للتحويل — الأفضل تستخدم "🔀 تسجيل حركة" عشان يوصل طلب مراجعة واعتماد تلقائي للفرع المستلم.</p>`;
   renderTransferOutRows(c);
 }
 function addTransferOutItem(ref){
   if(!ref) return;
-  const c=getCycle(curCycleId);if(!c||c.closed)return;
+  const c=getCycle(curCycleId);
+  if(!c){toast('⚠️ افتح دورة تسوية الأول','wrn');return;}
+  if(c.closed){toast('⚠️ الدورة مقفولة — أعد فتحها الأول عشان تضيف أصناف للتحويل','wrn');return;}
   if(!c.transfersOut) c.transfersOut={};
   if(!c.transfersOut[ref]) c.transfersOut[ref]={qty:0,reason:''};
   save();
@@ -5045,17 +5057,19 @@ function setCycleTransferOut(cid,r,field,v){
 function renderTransferInTab(c,el){
   if(!c.transfersIn) c.transfersIn={};
   el.innerHTML=`<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-    <div style="flex:1;min-width:240px;max-width:380px">${isearchHtml('ctiAddIsearch','',{placeholder:'🔍 ابحث عن صنف لإضافته للتحويل...',onSelect:'addTransferInItem'})}</div>
+    ${c.closed?'<div style="font-size:12px;color:var(--muted)">🔒 الدورة مقفولة — أعد فتحها الأول لإضافة أصناف جديدة للتحويل</div>':`<div style="flex:1;min-width:240px;max-width:380px">${isearchHtml('ctiAddIsearch','',{placeholder:'🔍 ابحث عن صنف لإضافته للتحويل...',onSelect:'addTransferInItem'})}</div>`}
   </div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المحوّلة وارد')}</th><th>${t('الفرع المرسل')}</th><th></th></tr></thead>
     <tbody id="ctRows"></tbody></table></div>
-    <p style="font-size:11px;color:var(--muted);margin-top:8px">كمية وصلت لهذا الفرع من فرع تاني — بتتضاف للرصيد المتاح زي المشتريات بالظبط. اختر الصنف من البحث بالأعلى لإضافته للتحويل.</p>`;
+    <p style="font-size:11px;color:var(--muted);margin-top:8px">كمية وصلت لهذا الفرع من فرع تاني — بتتضاف للرصيد المتاح زي المشتريات بالظبط. اختر الصنف من البحث بالأعلى لإضافته للتحويل — لو الفرع التاني بعتها من خلال "🔀 تسجيل حركة"، هتلاقيها جاهزة في "📥 مراجعة التحويلات الواردة" بدل التسجيل اليدوي هنا.</p>`;
   renderTransferInRows(c);
 }
 function addTransferInItem(ref){
   if(!ref) return;
-  const c=getCycle(curCycleId);if(!c||c.closed)return;
+  const c=getCycle(curCycleId);
+  if(!c){toast('⚠️ افتح دورة تسوية الأول','wrn');return;}
+  if(c.closed){toast('⚠️ الدورة مقفولة — أعد فتحها الأول عشان تضيف أصناف للتحويل','wrn');return;}
   if(!c.transfersIn) c.transfersIn={};
   if(!c.transfersIn[ref]) c.transfersIn[ref]={qty:0,reason:''};
   save();

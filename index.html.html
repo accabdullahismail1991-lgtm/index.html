@@ -1327,31 +1327,59 @@ td{padding:9px 13px;vertical-align:middle;}
 
 <!-- EMPLOYEES DATA SCREEN (بيانات الموظفين لكل فرع — مستقلة عن تقرير نقطة التعادل) -->
 <div class="overlay" id="employeesModal">
-<div class="modal" style="width:760px">
+<div class="modal" style="width:820px">
   <div class="mod-title" data-i18n="👥 بيانات الموظفين">👥 بيانات الموظفين</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('employeesModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportEmployeesExcel()">📗 Excel</button>
   </div>
-  <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.8">موظفي هذا الفرع ورواتبهم الشهرية — تُستخدم في حساب نقطة التعادل اليومية.</p>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">موظفي كل فرع ورواتبهم الشهرية — تُستخدم في حساب نقطة التعادل اليومية. يمكن نقل الموظف لفرع آخر بحركة مرتبطة بتاريخ.</p>
+  <div class="mod-field" id="employeesBranchFilterWrap" style="display:none;max-width:280px;margin-bottom:14px">
+    <label class="mod-lbl">الفرع</label>
+    <select class="mod-in" id="employees-branch-filter" onchange="setEmployeesBranchFilter(this.value)"></select>
+  </div>
   <div id="employeesBody"></div>
-  <button class="hbtn gold" style="width:100%;justify-content:center;padding:10px;margin-top:14px" onclick="addEmployee()">➕ إضافة موظف</button>
+  <button class="hbtn gold" id="addEmployeeBtn" style="width:100%;justify-content:center;padding:10px;margin-top:14px" onclick="addEmployee()">➕ إضافة موظف</button>
+</div>
+</div>
+
+<!-- EMPLOYEE TRANSFER MODAL (نقل موظف بين الفروع — حركة مرتبطة بتاريخ) -->
+<div class="overlay" id="transferEmployeeModal">
+<div class="modal" style="width:480px">
+  <div class="mod-title" data-i18n="🔀 نقل موظف لفرع آخر">🔀 نقل موظف لفرع آخر</div>
+  <div id="transferEmpInfo" style="font-size:13px;margin-bottom:14px;color:var(--muted)"></div>
+  <div class="mod-field">
+    <label class="mod-lbl">الفرع الجديد *</label>
+    <select class="mod-in" id="te-target-branch"></select>
+  </div>
+  <div class="mod-field">
+    <label class="mod-lbl">تاريخ النقل *</label>
+    <input type="date" class="mod-in" id="te-date">
+  </div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('transferEmployeeModal')" data-i18n="إلغاء">إلغاء</button>
+    <button class="hbtn gold" onclick="confirmTransferEmployee()">✓ تأكيد النقل</button>
+  </div>
 </div>
 </div>
 
 <!-- DIRECT COSTS DATA SCREEN (بنود التكاليف المباشرة لكل فرع — مستقلة عن تقرير نقطة التعادل) -->
 <div class="overlay" id="directCostsModal">
-<div class="modal" style="width:760px">
+<div class="modal" style="width:820px">
   <div class="mod-title" data-i18n="🧾 بنود التكاليف المباشرة">🧾 بنود التكاليف المباشرة</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('directCostsModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportDirectCostsExcel()">📗 Excel</button>
   </div>
-  <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.8">بنود التكاليف المباشرة الشهرية لهذا الفرع (إيجار، كهرباء، تأمين، تسويق...) — تُستخدم في حساب نقطة التعادل اليومية.</p>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">بنود التكاليف المباشرة الشهرية لكل فرع (إيجار، كهرباء، تأمين، تسويق...) — تُستخدم في حساب نقطة التعادل اليومية.</p>
+  <div class="mod-field" id="directCostsBranchFilterWrap" style="display:none;max-width:280px;margin-bottom:14px">
+    <label class="mod-lbl">الفرع</label>
+    <select class="mod-in" id="direct-costs-branch-filter" onchange="setDirectCostsBranchFilter(this.value)"></select>
+  </div>
   <div id="directCostsBody"></div>
-  <button class="hbtn gold" style="width:100%;justify-content:center;padding:10px;margin-top:14px" onclick="addDirectCost()">➕ إضافة بند تكلفة</button>
+  <button class="hbtn gold" id="addDirectCostBtn" style="width:100%;justify-content:center;padding:10px;margin-top:14px" onclick="addDirectCost()">➕ إضافة بند تكلفة</button>
 </div>
 </div>
 
@@ -1429,6 +1457,7 @@ const I18N_EN={
   "📦 تقرير المخزون الختامي": "📦 Closing Stock Report",
   "⚖️ نقطة التعادل اليومية": "⚖️ Daily Break-Even Point",
   "👥 بيانات الموظفين": "👥 Employee Data",
+  "🔀 نقل موظف لفرع آخر": "🔀 Transfer Employee to Another Branch",
   "🧾 بنود التكاليف المباشرة": "🧾 Direct Cost Items",
   "🗑️ تقرير أكثر الأصناف هالكًا": "🗑️ Top Waste Items Report",
   "🔧 سجل الأعطال والصيانة": "🔧 Maintenance & Malfunctions Log",
@@ -3571,97 +3600,230 @@ function setBreakEvenBranchFilter(v){
   document.getElementById('breakEvenBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري تحميل بيانات الفروع...</div>';
   loadCrossBranchDocs().then(renderBreakEvenModule).catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
 }
-function refreshEmployeesAndBreakEven(){renderEmployeesScreen();renderBreakEvenModule();}
-function refreshDirectCostsAndBreakEven(){renderDirectCostsScreen();renderBreakEvenModule();}
+// Resolves a branch-scoped list (employees or directCosts) for a given filter value:
+// '__current__' -> this branch's own live S data (editable);
+// a specific branch key -> that branch's cached data (editable, written directly to its doc);
+// '__all__' -> a combined read-only list across every branch, each item tagged with its branch.
+function branchScopedList(filterVal,field){
+  if(filterVal==='__current__') return {list:S[field]||[],editable:true,branchKey:S.curBranch,label:S.branch||'',isAll:false};
+  if(!crossBranchRawDocs) return null;
+  if(filterVal==='__all__'){
+    const combined=[];
+    Object.entries(crossBranchRawDocs).forEach(([key,d])=>{
+      (d[field]||[]).forEach(item=>combined.push({...item,__branchKey:key,__branchName:(S.branches[key]||{}).name||key}));
+    });
+    return {list:combined,editable:false,branchKey:null,label:'كل الفروع',isAll:true};
+  }
+  const d=crossBranchRawDocs[filterVal]||{};
+  return {list:d[field]||[],editable:true,branchKey:filterVal,label:(S.branches[filterVal]||{}).name||filterVal,isAll:false};
+}
+// Persists a branch-scoped list: current branch goes through the normal S+save debounce flow;
+// any other branch is written directly to its own Firestore doc and the local cache is updated
+// so the UI stays in sync without waiting for a refetch.
+function persistBranchField(branchKey,field,list){
+  if(branchKey===S.curBranch){S[field]=list;save();}
+  if(crossBranchRawDocs){
+    if(!crossBranchRawDocs[branchKey]) crossBranchRawDocs[branchKey]={};
+    crossBranchRawDocs[branchKey][field]=list;
+  }
+  if(branchKey!==S.curBranch){
+    db.collection('branches').doc(branchKey).set({[field]:list},{merge:true}).catch(e=>toast('⚠️ خطأ في الحفظ: '+e.message,'err'));
+  }
+}
+let employeesBranchFilter='__current__';
 function addEmployee(){
-  if(!S.employees) S.employees=[];
-  S.employees.push({id:'EMP'+Date.now().toString(36).toUpperCase(),name:'',role:'',salary:0});
-  save();refreshEmployeesAndBreakEven();
+  const src=branchScopedList(employeesBranchFilter,'employees');
+  if(!src||!src.editable){toast('⚠️ اختر فرع محدد لإضافة موظف','wrn');return;}
+  const list=[...src.list,{id:'EMP'+Date.now().toString(36).toUpperCase(),name:'',role:'',salary:0,transfers:[]}];
+  persistBranchField(src.branchKey,'employees',list);
+  renderEmployeesScreen();renderBreakEvenModule();
 }
 function setEmployeeField(id,field,v){
-  const e=(S.employees||[]).find(x=>x.id===id);if(!e)return;
-  e[field]=field==='salary'?(parseFloat(v)||0):v;
-  save();refreshEmployeesAndBreakEven();
+  const src=branchScopedList(employeesBranchFilter,'employees');
+  if(!src||!src.editable) return;
+  const idx=src.list.findIndex(x=>x.id===id);if(idx<0)return;
+  const list=[...src.list];
+  list[idx]={...list[idx],[field]:field==='salary'?(parseFloat(v)||0):v};
+  persistBranchField(src.branchKey,'employees',list);
+  renderEmployeesScreen();renderBreakEvenModule();
 }
 function deleteEmployee(id){
   if(!confirm('حذف هذا الموظف من القائمة؟'))return;
-  S.employees=(S.employees||[]).filter(x=>x.id!==id);
-  save();refreshEmployeesAndBreakEven();
-}
-function addDirectCost(){
-  if(!S.directCosts) S.directCosts=[];
-  S.directCosts.push({id:'DC'+Date.now().toString(36).toUpperCase(),name:'',amount:0});
-  save();refreshDirectCostsAndBreakEven();
-}
-function setDirectCostField(id,field,v){
-  const dcost=(S.directCosts||[]).find(x=>x.id===id);if(!dcost)return;
-  dcost[field]=field==='amount'?(parseFloat(v)||0):v;
-  save();refreshDirectCostsAndBreakEven();
-}
-function deleteDirectCost(id){
-  if(!confirm('حذف هذا البند؟'))return;
-  S.directCosts=(S.directCosts||[]).filter(x=>x.id!==id);
-  save();refreshDirectCostsAndBreakEven();
+  const src=branchScopedList(employeesBranchFilter,'employees');
+  if(!src||!src.editable) return;
+  const list=src.list.filter(x=>x.id!==id);
+  persistBranchField(src.branchKey,'employees',list);
+  renderEmployeesScreen();renderBreakEvenModule();
 }
 function openEmployeesScreen(){
   if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  employeesBranchFilter='__current__';
+  populateEmployeesBranchFilter();
   renderEmployeesScreen();
   document.getElementById('employeesModal').classList.add('open');
 }
+function populateEmployeesBranchFilter(){
+  const wrap=document.getElementById('employeesBranchFilterWrap');
+  if(!canViewAllReportsUI()||Object.keys(S.branches||{}).length<2){wrap.style.display='none';return;}
+  wrap.style.display='';
+  document.getElementById('employees-branch-filter').innerHTML=branchFilterOptionsHtml(employeesBranchFilter);
+}
+function setEmployeesBranchFilter(v){
+  employeesBranchFilter=v;
+  if(v==='__current__'||crossBranchRawDocs){renderEmployeesScreen();return;}
+  document.getElementById('employeesBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري تحميل بيانات الفروع...</div>';
+  loadCrossBranchDocs().then(renderEmployeesScreen).catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
+}
 function renderEmployeesScreen(){
   const el=document.getElementById('employeesBody');if(!el)return;
-  const list=S.employees||[];
-  if(!list.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted)">لا يوجد موظفين مسجّلين بعد.</div>';return;}
+  const src=branchScopedList(employeesBranchFilter,'employees');
+  const addBtn=document.getElementById('addEmployeeBtn');
+  if(addBtn) addBtn.style.display=(src&&src.editable)?'':'none';
+  if(!src){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري تحميل بيانات الفروع...</div>';return;}
+  const list=src.list;
+  if(!list.length){el.innerHTML=`<div style="text-align:center;padding:24px;color:var(--muted)">لا يوجد موظفين مسجّلين بعد${src.label?' لـ'+src.label:''}.</div>`;return;}
   const total=list.reduce((s,e)=>s+(e.salary||0),0);
-  el.innerHTML=`<div class="dbanner" style="margin-bottom:14px"><div class="db-l"><div><div class="db-main">${list.length} موظف</div><div class="db-sub">إجمالي الرواتب الشهرية: ${fmt(total)}</div></div></div></div>
+  el.innerHTML=`<div class="dbanner" style="margin-bottom:14px"><div class="db-l"><div><div class="db-main">${list.length} موظف${src.label?' — '+src.label:''}</div><div class="db-sub">إجمالي الرواتب الشهرية: ${fmt(total)}</div></div></div></div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>${t('الاسم')}</th><th>${t('الوظيفة')}</th><th>${t('الراتب الشهري')}</th><th></th></tr></thead>
-    <tbody>${list.map(e=>`<tr>
-      <td><input type="text" class="mod-in" style="min-width:140px" value="${(e.name||'').replace(/"/g,'&quot;')}" onchange="setEmployeeField('${e.id}','name',this.value)" placeholder="اسم الموظف"></td>
+    <thead><tr>${src.isAll?`<th>${t('الفرع')}</th>`:''}<th>${t('الاسم')}</th><th>${t('الوظيفة')}</th><th>${t('الراتب الشهري')}</th>${src.editable?'<th></th><th></th>':''}</tr></thead>
+    <tbody>${list.map(e=>{
+      const lastTransfer=e.transfers&&e.transfers.length?e.transfers[e.transfers.length-1]:null;
+      const transferNote=lastTransfer?`<div style="font-size:9.5px;color:var(--muted);margin-top:2px">🔀 من ${lastTransfer.fromBranchName} بتاريخ ${lastTransfer.date}</div>`:'';
+      return src.editable?`<tr>
+      <td><input type="text" class="mod-in" style="min-width:140px" value="${(e.name||'').replace(/"/g,'&quot;')}" onchange="setEmployeeField('${e.id}','name',this.value)" placeholder="اسم الموظف">${transferNote}</td>
       <td><input type="text" class="mod-in" style="min-width:120px" value="${(e.role||'').replace(/"/g,'&quot;')}" onchange="setEmployeeField('${e.id}','role',this.value)" placeholder="الوظيفة"></td>
       <td><input type="number" inputmode="decimal" class="mod-in" style="width:120px" min="0" step="0.01" value="${e.salary||0}" onchange="setEmployeeField('${e.id}','salary',this.value)"></td>
+      <td><button class="hi-btn" style="flex:none;padding:4px 8px" onclick="openTransferEmployeeModal('${e.id}')" title="نقل لفرع آخر">🔀</button></td>
       <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteEmployee('${e.id}')" title="حذف الموظف">🗑</button></td>
-    </tr>`).join('')}</tbody>
+    </tr>`:`<tr>
+      ${src.isAll?`<td>${e.__branchName||'-'}</td>`:''}
+      <td class="td-name">${e.name||'-'}${transferNote}</td><td>${e.role||'-'}</td><td style="font-family:var(--mono)">${fmt(e.salary||0)}</td>
+    </tr>`;
+    }).join('')}</tbody>
   </table></div>`;
 }
 function exportEmployeesExcel(){
-  const list=S.employees||[];
-  if(!list.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
+  const src=branchScopedList(employeesBranchFilter,'employees');
+  if(!src||!src.list.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
   const wb=XLSX.utils.book_new();
-  const out=[['الاسم','الوظيفة','الراتب الشهري']];
-  list.forEach(e=>out.push([e.name||'-',e.role||'-',e.salary||0]));
+  const out=src.isAll?[['الفرع','الاسم','الوظيفة','الراتب الشهري']]:[['الاسم','الوظيفة','الراتب الشهري']];
+  src.list.forEach(e=>out.push(src.isAll?[e.__branchName||'-',e.name||'-',e.role||'-',e.salary||0]:[e.name||'-',e.role||'-',e.salary||0]));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'الموظفين');
-  XLSX.writeFile(wb,`Employees_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
+  XLSX.writeFile(wb,`Employees_${(src.label||'Branch').replace(/\s/g,'_')}.xlsx`);
   toast('📗 تم التصدير','inf');
+}
+let transferEmpEmployeeId=null;
+function openTransferEmployeeModal(employeeId){
+  const src=branchScopedList(employeesBranchFilter,'employees');
+  if(!src||!src.editable){toast('⚠️ اختر فرع محدد الأول','wrn');return;}
+  const emp=src.list.find(x=>x.id===employeeId);if(!emp)return;
+  if(Object.keys(S.branches||{}).length<2){toast('⚠️ محتاج فرع تاني على الأقل عشان تنقل الموظف له','wrn');return;}
+  transferEmpEmployeeId=employeeId;
+  document.getElementById('transferEmpInfo').textContent=`الموظف: ${emp.name||'بدون اسم'} — الفرع الحالي: ${src.label}`;
+  const otherBranches=Object.keys(S.branches).filter(k=>k!==src.branchKey);
+  document.getElementById('te-target-branch').innerHTML=otherBranches.map(k=>`<option value="${k}">${S.branches[k].name||k}</option>`).join('');
+  document.getElementById('te-date').value=today();
+  document.getElementById('transferEmployeeModal').classList.add('open');
+}
+function confirmTransferEmployee(){
+  const src=branchScopedList(employeesBranchFilter,'employees');
+  if(!src||!transferEmpEmployeeId) return;
+  const targetBranch=document.getElementById('te-target-branch').value;
+  const date=document.getElementById('te-date').value;
+  if(!targetBranch||!date){toast('⚠️ اختر الفرع والتاريخ','wrn');return;}
+  const sourceBranchKey=src.branchKey;
+  Promise.all([
+    sourceBranchKey===S.curBranch?Promise.resolve({employees:S.employees||[]}):db.collection('branches').doc(sourceBranchKey).get().then(d=>d.data()||{}),
+    db.collection('branches').doc(targetBranch).get().then(d=>d.data()||{}),
+  ]).then(([srcData,targetData])=>{
+    const srcList=[...(srcData.employees||[])];
+    const idx=srcList.findIndex(e=>e.id===transferEmpEmployeeId);
+    if(idx<0){toast('⚠️ الموظف غير موجود','err');return;}
+    const emp={...srcList[idx]};
+    srcList.splice(idx,1);
+    emp.transfers=[...(emp.transfers||[]),{date,fromBranch:sourceBranchKey,fromBranchName:(S.branches[sourceBranchKey]||{}).name||sourceBranchKey,toBranch:targetBranch,toBranchName:(S.branches[targetBranch]||{}).name||targetBranch}];
+    const targetList=[...(targetData.employees||[]),emp];
+    persistBranchField(sourceBranchKey,'employees',srcList);
+    persistBranchField(targetBranch,'employees',targetList);
+    closeM('transferEmployeeModal');
+    toast(`✅ تم نقل ${emp.name||'الموظف'} إلى فرع ${(S.branches[targetBranch]||{}).name||targetBranch} بتاريخ ${date}`,'suc');
+    renderEmployeesScreen();renderBreakEvenModule();
+  }).catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
+}
+let directCostsBranchFilter='__current__';
+function addDirectCost(){
+  const src=branchScopedList(directCostsBranchFilter,'directCosts');
+  if(!src||!src.editable){toast('⚠️ اختر فرع محدد لإضافة بند تكلفة','wrn');return;}
+  const list=[...src.list,{id:'DC'+Date.now().toString(36).toUpperCase(),name:'',amount:0}];
+  persistBranchField(src.branchKey,'directCosts',list);
+  renderDirectCostsScreen();renderBreakEvenModule();
+}
+function setDirectCostField(id,field,v){
+  const src=branchScopedList(directCostsBranchFilter,'directCosts');
+  if(!src||!src.editable) return;
+  const idx=src.list.findIndex(x=>x.id===id);if(idx<0)return;
+  const list=[...src.list];
+  list[idx]={...list[idx],[field]:field==='amount'?(parseFloat(v)||0):v};
+  persistBranchField(src.branchKey,'directCosts',list);
+  renderDirectCostsScreen();renderBreakEvenModule();
+}
+function deleteDirectCost(id){
+  if(!confirm('حذف هذا البند؟'))return;
+  const src=branchScopedList(directCostsBranchFilter,'directCosts');
+  if(!src||!src.editable) return;
+  const list=src.list.filter(x=>x.id!==id);
+  persistBranchField(src.branchKey,'directCosts',list);
+  renderDirectCostsScreen();renderBreakEvenModule();
 }
 function openDirectCostsScreen(){
   if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  directCostsBranchFilter='__current__';
+  populateDirectCostsBranchFilter();
   renderDirectCostsScreen();
   document.getElementById('directCostsModal').classList.add('open');
 }
+function populateDirectCostsBranchFilter(){
+  const wrap=document.getElementById('directCostsBranchFilterWrap');
+  if(!canViewAllReportsUI()||Object.keys(S.branches||{}).length<2){wrap.style.display='none';return;}
+  wrap.style.display='';
+  document.getElementById('direct-costs-branch-filter').innerHTML=branchFilterOptionsHtml(directCostsBranchFilter);
+}
+function setDirectCostsBranchFilter(v){
+  directCostsBranchFilter=v;
+  if(v==='__current__'||crossBranchRawDocs){renderDirectCostsScreen();return;}
+  document.getElementById('directCostsBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري تحميل بيانات الفروع...</div>';
+  loadCrossBranchDocs().then(renderDirectCostsScreen).catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
+}
 function renderDirectCostsScreen(){
   const el=document.getElementById('directCostsBody');if(!el)return;
-  const list=S.directCosts||[];
-  if(!list.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted)">لا توجد بنود تكاليف مسجّلة بعد.</div>';return;}
+  const src=branchScopedList(directCostsBranchFilter,'directCosts');
+  const addBtn=document.getElementById('addDirectCostBtn');
+  if(addBtn) addBtn.style.display=(src&&src.editable)?'':'none';
+  if(!src){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري تحميل بيانات الفروع...</div>';return;}
+  const list=src.list;
+  if(!list.length){el.innerHTML=`<div style="text-align:center;padding:24px;color:var(--muted)">لا توجد بنود تكاليف مسجّلة بعد${src.label?' لـ'+src.label:''}.</div>`;return;}
   const total=list.reduce((s,d)=>s+(d.amount||0),0);
-  el.innerHTML=`<div class="dbanner" style="margin-bottom:14px"><div class="db-l"><div><div class="db-main">${list.length} بند</div><div class="db-sub">إجمالي التكاليف المباشرة الشهرية: ${fmt(total)}</div></div></div></div>
+  el.innerHTML=`<div class="dbanner" style="margin-bottom:14px"><div class="db-l"><div><div class="db-main">${list.length} بند${src.label?' — '+src.label:''}</div><div class="db-sub">إجمالي التكاليف المباشرة الشهرية: ${fmt(total)}</div></div></div></div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>${t('البند')}</th><th>${t('القيمة الشهرية')}</th><th></th></tr></thead>
-    <tbody>${list.map(dcost=>`<tr>
+    <thead><tr>${src.isAll?`<th>${t('الفرع')}</th>`:''}<th>${t('البند')}</th><th>${t('القيمة الشهرية')}</th>${src.editable?'<th></th>':''}</tr></thead>
+    <tbody>${list.map(dcost=>src.editable?`<tr>
       <td><input type="text" class="mod-in" style="min-width:160px" value="${(dcost.name||'').replace(/"/g,'&quot;')}" onchange="setDirectCostField('${dcost.id}','name',this.value)" placeholder="مثال: إيجار"></td>
       <td><input type="number" inputmode="decimal" class="mod-in" style="width:130px" min="0" step="0.01" value="${dcost.amount||0}" onchange="setDirectCostField('${dcost.id}','amount',this.value)"></td>
       <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteDirectCost('${dcost.id}')" title="حذف البند">🗑</button></td>
+    </tr>`:`<tr>
+      ${src.isAll?`<td>${dcost.__branchName||'-'}</td>`:''}
+      <td class="td-name">${dcost.name||'-'}</td><td style="font-family:var(--mono)">${fmt(dcost.amount||0)}</td>
     </tr>`).join('')}</tbody>
   </table></div>`;
 }
 function exportDirectCostsExcel(){
-  const list=S.directCosts||[];
-  if(!list.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
+  const src=branchScopedList(directCostsBranchFilter,'directCosts');
+  if(!src||!src.list.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
   const wb=XLSX.utils.book_new();
-  const out=[['البند','القيمة الشهرية']];
-  list.forEach(d=>out.push([d.name||'-',d.amount||0]));
+  const out=src.isAll?[['الفرع','البند','القيمة الشهرية']]:[['البند','القيمة الشهرية']];
+  src.list.forEach(d=>out.push(src.isAll?[d.__branchName||'-',d.name||'-',d.amount||0]:[d.name||'-',d.amount||0]));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'التكاليف المباشرة');
-  XLSX.writeFile(wb,`DirectCosts_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
+  XLSX.writeFile(wb,`DirectCosts_${(src.label||'Branch').replace(/\s/g,'_')}.xlsx`);
   toast('📗 تم التصدير','inf');
 }
 function setBreakEvenSetting(field,v){

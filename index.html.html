@@ -2883,6 +2883,41 @@ function isearchGetValue(id){
   const root=document.getElementById(id);
   return root?root.querySelector('.isearch-value').value:'';
 }
+// same idea as isearchHtml/isearchFilter/isearchPick above, but searching
+// S.menu (prepared dishes) instead of S.items (raw inventory) — used
+// wherever a screen needs to pick a finished/sold item rather than a
+// stock item, e.g. recording waste or a staff meal of a ready dish
+function menuIsearchHtml(id,currentId,opts){
+  opts=opts||{};
+  const m=currentId?S.menu.find(x=>x.id===currentId):null;
+  const onsel=opts.onSelect?` data-onselect="${opts.onSelect}"`:'';
+  return `<div class="isearch" id="${id}"${onsel}>
+    <input type="text" class="mod-in isearch-input" placeholder="${opts.placeholder||'🔍 ابحث عن صنف منيو بالاسم...'}"
+      value="${m?m.n.replace(/"/g,'&quot;'):''}"
+      oninput="menuIsearchFilter('${id}')" onfocus="menuIsearchFilter('${id}')" onblur="setTimeout(()=>isearchClose('${id}'),180)">
+    <input type="hidden" class="isearch-value" value="${currentId||''}">
+    <div class="isearch-menu"></div>
+  </div>`;
+}
+function menuIsearchFilter(id){
+  const root=document.getElementById(id);if(!root)return;
+  const term=root.querySelector('.isearch-input').value.trim().toLowerCase();
+  let list=S.menu;
+  if(term) list=list.filter(m=>m.n.toLowerCase().includes(term));
+  const menu=root.querySelector('.isearch-menu');
+  const shown=list.slice(0,60);
+  menu.innerHTML=shown.length?shown.map(m=>`<div class="isearch-opt" onmousedown="menuIsearchPick('${id}','${m.id}')">${m.n}</div>`).join(''):'<div class="isearch-empty">لا توجد نتائج</div>';
+  menu.classList.add('open');
+}
+function menuIsearchPick(id,menuId){
+  const root=document.getElementById(id);if(!root)return;
+  const m=S.menu.find(x=>x.id===menuId);
+  root.querySelector('.isearch-input').value=m?m.n:'';
+  root.querySelector('.isearch-value').value=menuId;
+  root.querySelector('.isearch-menu').classList.remove('open');
+  const cb=root.getAttribute('data-onselect');
+  if(cb&&window[cb]) window[cb](menuId,id);
+}
 
 let curItemRecipeRows=[];
 function setItemRecipeRowRef(ref,pickerId){
@@ -3874,6 +3909,7 @@ function computeWasteReport(){
   const dateFrom=document.getElementById('wr-date-from').value||null;
   const dateTo=document.getElementById('wr-date-to').value||null;
   const agg={};
+  const menuAgg={};
   src.cyclesArrays.forEach(arr=>{
     (arr||[]).forEach(c=>{
       if(dateFrom&&c.end<dateFrom) return;
@@ -3886,22 +3922,32 @@ function computeWasteReport(){
         a.value+=w.qty*(it?effectiveItemCost(it):0);
         a.occurrences++;
       });
+      Object.entries(c.wasteMenu||{}).forEach(([mid,w])=>{
+        if(!w||!w.qty) return;
+        const m=S.menu.find(x=>x.id===mid);
+        const a=menuAgg[mid]||(menuAgg[mid]={id:mid,n:m?m.n:mid,qty:0,value:0,occurrences:0});
+        a.qty+=w.qty;
+        a.value+=w.qty*(m?recipeCost(m.recipe):0);
+        a.occurrences++;
+      });
     });
   });
   const rows=Object.values(agg).sort((a,b)=>b.value-a.value);
-  const totalValue=rows.reduce((s,r)=>s+r.value,0);
+  const menuRows=Object.values(menuAgg).sort((a,b)=>b.value-a.value);
+  const totalValue=rows.reduce((s,r)=>s+r.value,0)+menuRows.reduce((s,r)=>s+r.value,0);
   const totalQty=rows.reduce((s,r)=>s+r.qty,0);
-  return {rows,totalValue,totalQty,label:src.label};
+  return {rows,menuRows,totalValue,totalQty,label:src.label};
 }
 function renderWasteReport(){
   const rep=computeWasteReport();
   const kpi=(l,v,color)=>`<div class="stat" style="border-color:${color}55"><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>`;
-  if(!rep.rows.length){
+  if(!rep.rows.length&&!rep.menuRows.length){
     document.getElementById('wasteReportBody').innerHTML=`${reportHeaderBlock({title:'🗑️ تقرير أكثر الأصناف هالكًا',branchName:rep.label,periodLabel:document.getElementById('wr-date-from').value||document.getElementById('wr-date-to').value?`${document.getElementById('wr-date-from').value||'...'} ← ${document.getElementById('wr-date-to').value||'...'}`:'كل الفترات'})}
     <div style="padding:24px;text-align:center;color:var(--muted)">لا يوجد هالك مسجّل في النطاق المختار.</div>`;
     return;
   }
-  const exceptionTop=[...rep.rows].slice(0,5).map(r=>({n:r.n,varVal:r.value}));
+  const exceptionTop=[...rep.rows,...rep.menuRows.map(r=>({n:r.n,value:r.value}))].sort((a,b)=>b.value-a.value).slice(0,5).map(r=>({n:r.n,varVal:r.value}));
+  const topName=exceptionTop.length?exceptionTop[0].n:'-';
   const groups=groupRowsByCategory(rep.rows,'r');
   const rows=groups.map(g=>{
     const catRow=`<tr class="rpt-pro-cat-row"><td colspan="5">📁 ${g.label}</td></tr>`;
@@ -3912,26 +3958,43 @@ function renderWasteReport(){
     </tr>`).join('');
     return catRow+itemRows;
   }).join('');
+  const menuRowsHtml=rep.menuRows.map(r=>`<tr>
+    <td class="td-name">${r.n}</td>
+    <td style="font-family:var(--mono);text-align:center">${fmt(r.qty)}</td>
+    <td style="font-family:var(--mono);text-align:center;font-weight:700;color:var(--red)">${fmt(r.value)}</td>
+  </tr>`).join('');
   document.getElementById('wasteReportBody').innerHTML=`${reportHeaderBlock({title:'🗑️ تقرير أكثر الأصناف هالكًا',branchName:rep.label,periodLabel:(document.getElementById('wr-date-from').value||document.getElementById('wr-date-to').value)?`${document.getElementById('wr-date-from').value||'...'} ← ${document.getElementById('wr-date-to').value||'...'}`:'كل الفترات'})}
   <div class="stats" style="margin-bottom:16px">
-    ${kpi(t('عدد الأصناف المتأثرة'),rep.rows.length,'#3d8ef0')}
+    ${kpi(t('عدد الأصناف المتأثرة'),rep.rows.length+rep.menuRows.length,'#3d8ef0')}
     ${kpi(t('إجمالي قيمة الهالك'),fmt(rep.totalValue),'#f05050')}
-    ${kpi(t('أعلى صنف هالكًا'),rep.rows[0].n,'#f0c040')}
+    ${kpi(t('أعلى صنف هالكًا'),topName,'#f0c040')}
   </div>
   ${topVarianceHtml(exceptionTop,5,`أعلى ${Math.min(5,exceptionTop.length)} أصناف بأكبر قيمة هالك (Exception Report)`)}
-  <div class="tbl-wrap"><table>
+  ${rows?`<div class="tbl-wrap" style="margin-bottom:${rep.menuRows.length?'18px':'0'}"><table>
     <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('إجمالي الكمية الهالكة')}</th><th>${t('إجمالي القيمة')}</th></tr></thead>
     <tbody>${rows}</tbody>
-  </table></div>
+  </table></div>`:''}
+  ${rep.menuRows.length?`<div style="font-weight:700;font-size:13px;margin-bottom:8px">🍽️ أصناف منيو جاهزة اتهدرت</div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>${t('الصنف')}</th><th>${t('إجمالي الكمية الهالكة')}</th><th>${t('إجمالي القيمة')}</th></tr></thead>
+    <tbody>${menuRowsHtml}</tbody>
+  </table></div>`:''}
   ${reportSignatureBlock(['أُعِدّ بواسطة','رُوجع بواسطة (مدير الفرع)','اعتُمد بواسطة (الإدارة/المالية)'])}`;
 }
 function exportWasteReportExcel(){
   const rep=computeWasteReport();
-  if(!rep.rows.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
+  if(!rep.rows.length&&!rep.menuRows.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
   const wb=XLSX.utils.book_new();
-  const out=[['المرجع','الصنف','الوحدة','إجمالي الكمية الهالكة','إجمالي القيمة']];
-  rep.rows.forEach(r=>out.push([r.r,r.n,r.u,+r.qty.toFixed(3),+r.value.toFixed(2)]));
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'أكثر الأصناف هالكًا');
+  if(rep.rows.length){
+    const out=[['المرجع','الصنف','الوحدة','إجمالي الكمية الهالكة','إجمالي القيمة']];
+    rep.rows.forEach(r=>out.push([r.r,r.n,r.u,+r.qty.toFixed(3),+r.value.toFixed(2)]));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'أكثر الأصناف هالكًا');
+  }
+  if(rep.menuRows.length){
+    const out=[['الصنف','إجمالي الكمية الهالكة','إجمالي القيمة']];
+    rep.menuRows.forEach(r=>out.push([r.n,+r.qty.toFixed(3),+r.value.toFixed(2)]));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'أصناف منيو جاهزة اتهدرت');
+  }
   XLSX.writeFile(wb,`WasteReport_${(rep.label||'Branch').replace(/\s/g,'_')}.xlsx`);
   toast('📗 تم تصدير تقرير الهالك','inf');
 }
@@ -5070,7 +5133,7 @@ function createCycle(){
   const overlap=BCycles().find(c=>start<=c.end&&c.start<=end);
   if(overlap){toast(`⚠️ الفترة دي بتتداخل مع دورة موجودة بالفعل (${overlap.start} ← ${overlap.end}) — عدّل التواريخ أو كمّل على الدورة الموجودة`,'err');return;}
   const c={id:'CYC'+Date.now().toString(36).toUpperCase(),start,end,closed:false,
-    sales:{},salesAmount:null,deliverySalesAmount:null,purchases:{},waste:{},withdrawals:{},transfersOut:{},transfersIn:{},openingOverride:{},closing:{},closingSetAt:{},result:null};
+    sales:{},salesAmount:null,deliverySalesAmount:null,purchases:{},waste:{},wasteMenu:{},withdrawals:{},withdrawMenu:{},transfersOut:{},transfersIn:{},openingOverride:{},closing:{},closingSetAt:{},result:null};
   BCycles().push(c);
   curCycleId=c.id;curCycleTab='sales';
   save();closeM('newCycleModal');renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();
@@ -5153,8 +5216,6 @@ function emptyCycleRow(colspan){
 function renderCycleTabRows(){
   const c=curCycleId?getCycle(curCycleId):null;if(!c)return;
   if(curCycleTab==='sales') return renderSalesRows(c);
-  if(curCycleTab==='waste') return renderWasteRows(c);
-  if(curCycleTab==='withdraw') return renderWithdrawRows(c);
   if(curCycleTab==='transferOut') return renderTransferOutRows(c);
   if(curCycleTab==='transferIn') return renderTransferInRows(c);
 }
@@ -5308,61 +5369,221 @@ function setCyclePurchase(cid,r,field,v){
 }
 
 function renderWasteTab(c,el){
-  el.innerHTML=`${cycleToolbar('إضافة صنف جديد',"openAddItem()")}
+  if(!c.waste) c.waste={};
+  if(!c.wasteMenu) c.wasteMenu={};
+  el.innerHTML=`
+  <div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;background:var(--tint)">
+    <div style="font-weight:700;font-size:13px;margin-bottom:6px">🗑️ إيه فايدة الشاشة دي؟</div>
+    <div style="font-size:11.5px;color:var(--muted);line-height:1.9">سجّل هنا أي كمية اتلفت أو اتكسرت أو انتهت صلاحيتها ومش هتتباع للعميل — سواء خامة من المخزون (زي كيلو لحمة اتعفنت)، أو صنف منيو جاهز كامل (زي طبق وقع وانكسر). التكلفة بتتحسب تلقائيًا ضمن خسائر الهالك في نتائج الدورة، والمكوّنات بتتخصم من الرصيد المتاح — سواء سجّلت الخامة نفسها أو الطبق الجاهز.</div>
+  </div>
+  <div style="font-weight:700;font-size:13px;margin-bottom:8px">📦 هالك خامات من المخزون</div>
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    ${c.closed?'<div style="font-size:12px;color:var(--muted)">🔒 الدورة مقفولة — أعد فتحها الأول لإضافة أصناف جديدة</div>':`<div style="flex:1;min-width:240px;max-width:380px">${isearchHtml('wasteAddIsearch','',{placeholder:'🔍 ابحث عن خامة من المخزون لإضافتها للهالك...',onSelect:'addWasteItem'})}</div>`}
+  </div>
+  <div class="tbl-wrap" style="margin-bottom:22px"><table>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية الهالكة')}</th><th>${t('السبب')}</th><th></th></tr></thead>
+    <tbody id="ctRows"></tbody></table></div>
+
+  <div style="font-weight:700;font-size:13px;margin-bottom:8px">🍽️ هالك أصناف منيو جاهزة (أطباق كاملة)</div>
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    ${c.closed?'':`<div style="flex:1;min-width:240px;max-width:380px">${menuIsearchHtml('wasteMenuAddIsearch','',{placeholder:'🔍 ابحث عن صنف منيو لإضافته للهالك...',onSelect:'addWasteMenuItem'})}</div>`}
+  </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية الهالكة')}</th><th>${t('السبب')}</th></tr></thead>
-    <tbody id="ctRows"></tbody></table></div>`;
+    <thead><tr><th>${t('الصنف')}</th><th>${t('الكمية الهالكة')}</th><th>${t('التكلفة')}</th><th>${t('السبب')}</th><th></th></tr></thead>
+    <tbody id="ctWasteMenuRows"></tbody></table></div>`;
+  renderWasteRows(c);
+  renderWasteMenuRows(c);
+}
+function addWasteItem(ref){
+  if(!ref) return;
+  const c=getCycle(curCycleId);
+  if(!c){toast('⚠️ افتح دورة تسوية الأول','wrn');return;}
+  if(c.closed){toast('⚠️ الدورة مقفولة — أعد فتحها الأول عشان تضيف أصناف للهالك','wrn');return;}
+  if(!c.waste) c.waste={};
+  if(!c.waste[ref]) c.waste[ref]={qty:0,reason:''};
+  save();
+  renderWasteRows(c);
+  const root=document.getElementById('wasteAddIsearch');
+  if(root){root.querySelector('.isearch-input').value='';root.querySelector('.isearch-value').value='';}
+}
+function removeWasteItem(cid,r){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  if(c.waste) delete c.waste[r];
+  save();
   renderWasteRows(c);
 }
 function renderWasteRows(c){
   const dis=c.closed?'disabled':'';
-  const list=cycleFilterList(S.items,it=>it.n,it=>it.r);
-  const rows=list.map(it=>{
-    const w=c.waste[it.r]||{};
+  const refs=Object.keys(c.waste||{});
+  const rows=refs.map(r=>{
+    const it=S.items.find(x=>x.r===r);if(!it)return'';
+    const w=c.waste[r];
     return `<tr>
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
-      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${w.qty||''}" placeholder="0" ${dis} oninput="setCycleWaste('${c.id}','${it.r}','qty',this.value)"></td>
-      <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${w.reason||''}" placeholder="سبب الهالك..." ${dis} oninput="setCycleWaste('${c.id}','${it.r}','reason',this.value)"></td>
+      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${w.qty||''}" placeholder="0" ${dis} oninput="setCycleWaste('${c.id}','${r}','qty',this.value)"></td>
+      <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${w.reason||''}" placeholder="سبب الهالك..." ${dis} oninput="setCycleWaste('${c.id}','${r}','reason',this.value)"></td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeWasteItem('${c.id}','${r}')" title="إزالة">🗑️</button>`}</td>
     </tr>`;
   }).join('');
-  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(5);
+  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(6);
 }
 function setCycleWaste(cid,r,field,v){
   const c=getCycle(cid);if(!c||c.closed)return;
+  if(!c.waste) c.waste={};
   const w=c.waste[r]||(c.waste[r]={qty:0,reason:''});
   w[field]=field==='reason'?v:(v===''?0:(parseFloat(v)||0));
-  if(!w.qty&&!w.reason) delete c.waste[r];
+  save();
+}
+function addWasteMenuItem(menuId){
+  if(!menuId) return;
+  const c=getCycle(curCycleId);
+  if(!c){toast('⚠️ افتح دورة تسوية الأول','wrn');return;}
+  if(c.closed){toast('⚠️ الدورة مقفولة — أعد فتحها الأول عشان تضيف أصناف للهالك','wrn');return;}
+  if(!c.wasteMenu) c.wasteMenu={};
+  if(!c.wasteMenu[menuId]) c.wasteMenu[menuId]={qty:0,reason:''};
+  save();
+  renderWasteMenuRows(c);
+  const root=document.getElementById('wasteMenuAddIsearch');
+  if(root){root.querySelector('.isearch-input').value='';root.querySelector('.isearch-value').value='';}
+}
+function removeWasteMenuItem(cid,mid){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  if(c.wasteMenu) delete c.wasteMenu[mid];
+  save();
+  renderWasteMenuRows(c);
+}
+function renderWasteMenuRows(c){
+  const dis=c.closed?'disabled':'';
+  const ids=Object.keys(c.wasteMenu||{});
+  const rows=ids.map(mid=>{
+    const m=S.menu.find(x=>x.id===mid);if(!m)return'';
+    const w=c.wasteMenu[mid];
+    const cost=(w.qty||0)*recipeCost(m.recipe);
+    return `<tr>
+      <td class="td-name">${m.n}</td>
+      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="1" value="${w.qty||''}" placeholder="0" ${dis} oninput="setCycleWasteMenu('${c.id}','${mid}','qty',this.value)"></td>
+      <td style="font-family:var(--mono);color:var(--red)">${fmt(cost)}</td>
+      <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${w.reason||''}" placeholder="سبب الهالك..." ${dis} oninput="setCycleWasteMenu('${c.id}','${mid}','reason',this.value)"></td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeWasteMenuItem('${c.id}','${mid}')" title="إزالة">🗑️</button>`}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('ctWasteMenuRows').innerHTML=rows||emptyCycleRow(5);
+}
+function setCycleWasteMenu(cid,mid,field,v){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  if(!c.wasteMenu) c.wasteMenu={};
+  const w=c.wasteMenu[mid]||(c.wasteMenu[mid]={qty:0,reason:''});
+  w[field]=field==='reason'?v:(v===''?0:(parseFloat(v)||0));
   save();
 }
 
 function renderWithdrawTab(c,el){
   if(!c.withdrawals) c.withdrawals={};
-  el.innerHTML=`${cycleToolbar('إضافة صنف جديد',"openAddItem()")}
-  <div class="tbl-wrap"><table>
-    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المسحوبة')}</th><th>${t('سبب السحب/الجهة')}</th></tr></thead>
+  if(!c.withdrawMenu) c.withdrawMenu={};
+  el.innerHTML=`
+  <div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;background:var(--tint)">
+    <div style="font-weight:700;font-size:13px;margin-bottom:6px">📤 إيه فايدة الشاشة دي؟</div>
+    <div style="font-size:11.5px;color:var(--muted);line-height:1.9">سجّل هنا أي صنف بيخرج من المخزون من غير ما يتباع للعميل ومن غير ما يكون هالك (تلف) — زي وجبات الموظفين، عيّنات تجريبية، أو نقل يدوي لجهة تانية. الكمية بتتخصم من الاستهلاك الفعلي بالظبط زي الهالك، عشان رصيدك يفضل مطابق للواقع.<br>
+    <b>مهم عن وجبات الموظفين:</b> سجّلها هنا (خامة أو طبق جاهز من المنيو) — مش هتتحسب أبدًا ضمن "الكميات المباعة" في تبويب المبيعات، يعني مفيش خطر إنك تسجّلها مرتين.</div>
+  </div>
+  <div style="font-weight:700;font-size:13px;margin-bottom:8px">📦 سحب خامات من المخزون</div>
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    ${c.closed?'<div style="font-size:12px;color:var(--muted)">🔒 الدورة مقفولة — أعد فتحها الأول لإضافة أصناف جديدة</div>':`<div style="flex:1;min-width:240px;max-width:380px">${isearchHtml('withdrawAddIsearch','',{placeholder:'🔍 ابحث عن خامة من المخزون لإضافتها للسحب...',onSelect:'addWithdrawItem'})}</div>`}
+  </div>
+  <div class="tbl-wrap" style="margin-bottom:22px"><table>
+    <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المسحوبة')}</th><th>${t('سبب السحب/الجهة')}</th><th></th></tr></thead>
     <tbody id="ctRows"></tbody></table></div>
-    <p style="font-size:11px;color:var(--muted);margin-top:8px">سحب/صرف داخلي غير مرتبط بالمبيعات ولا الهالك (زي أكل العاملين، عينات، أو تحويل يدوي) — بيتخصم من الاستهلاك الفعلي زي الهالك بالظبط.</p>`;
+
+  <div style="font-weight:700;font-size:13px;margin-bottom:8px">🍽️ سحب أصناف منيو جاهزة (زي وجبات موظفين من المنيو)</div>
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    ${c.closed?'':`<div style="flex:1;min-width:240px;max-width:380px">${menuIsearchHtml('withdrawMenuAddIsearch','',{placeholder:'🔍 ابحث عن صنف منيو لإضافته للسحب...',onSelect:'addWithdrawMenuItem'})}</div>`}
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>${t('الصنف')}</th><th>${t('الكمية المسحوبة')}</th><th>${t('التكلفة')}</th><th>${t('سبب السحب/الجهة')}</th><th></th></tr></thead>
+    <tbody id="ctWithdrawMenuRows"></tbody></table></div>`;
+  renderWithdrawRows(c);
+  renderWithdrawMenuRows(c);
+}
+function addWithdrawItem(ref){
+  if(!ref) return;
+  const c=getCycle(curCycleId);
+  if(!c){toast('⚠️ افتح دورة تسوية الأول','wrn');return;}
+  if(c.closed){toast('⚠️ الدورة مقفولة — أعد فتحها الأول عشان تضيف أصناف للسحب','wrn');return;}
+  if(!c.withdrawals) c.withdrawals={};
+  if(!c.withdrawals[ref]) c.withdrawals[ref]={qty:0,reason:''};
+  save();
+  renderWithdrawRows(c);
+  const root=document.getElementById('withdrawAddIsearch');
+  if(root){root.querySelector('.isearch-input').value='';root.querySelector('.isearch-value').value='';}
+}
+function removeWithdrawItem(cid,r){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  if(c.withdrawals) delete c.withdrawals[r];
+  save();
   renderWithdrawRows(c);
 }
 function renderWithdrawRows(c){
   const dis=c.closed?'disabled':'';
-  const list=cycleFilterList(S.items,it=>it.n,it=>it.r);
-  const rows=list.map(it=>{
-    const w=c.withdrawals[it.r]||{};
+  const refs=Object.keys(c.withdrawals||{});
+  const rows=refs.map(r=>{
+    const it=S.items.find(x=>x.r===r);if(!it)return'';
+    const w=c.withdrawals[r];
     return `<tr>
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
-      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${w.qty||''}" placeholder="0" ${dis} oninput="setCycleWithdraw('${c.id}','${it.r}','qty',this.value)"></td>
-      <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${w.reason||''}" placeholder="الجهة/الغرض (مثال: أكل عاملين، فرع تاني...)" ${dis} oninput="setCycleWithdraw('${c.id}','${it.r}','reason',this.value)"></td>
+      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${w.qty||''}" placeholder="0" ${dis} oninput="setCycleWithdraw('${c.id}','${r}','qty',this.value)"></td>
+      <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${w.reason||''}" placeholder="الجهة/الغرض (مثال: أكل عاملين، فرع تاني...)" ${dis} oninput="setCycleWithdraw('${c.id}','${r}','reason',this.value)"></td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeWithdrawItem('${c.id}','${r}')" title="إزالة">🗑️</button>`}</td>
     </tr>`;
   }).join('');
-  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(5);
+  document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(6);
 }
 function setCycleWithdraw(cid,r,field,v){
   const c=getCycle(cid);if(!c||c.closed)return;
   if(!c.withdrawals) c.withdrawals={};
   const w=c.withdrawals[r]||(c.withdrawals[r]={qty:0,reason:''});
   w[field]=field==='reason'?v:(v===''?0:(parseFloat(v)||0));
-  if(!w.qty&&!w.reason) delete c.withdrawals[r];
+  save();
+}
+function addWithdrawMenuItem(menuId){
+  if(!menuId) return;
+  const c=getCycle(curCycleId);
+  if(!c){toast('⚠️ افتح دورة تسوية الأول','wrn');return;}
+  if(c.closed){toast('⚠️ الدورة مقفولة — أعد فتحها الأول عشان تضيف أصناف للسحب','wrn');return;}
+  if(!c.withdrawMenu) c.withdrawMenu={};
+  if(!c.withdrawMenu[menuId]) c.withdrawMenu[menuId]={qty:0,reason:''};
+  save();
+  renderWithdrawMenuRows(c);
+  const root=document.getElementById('withdrawMenuAddIsearch');
+  if(root){root.querySelector('.isearch-input').value='';root.querySelector('.isearch-value').value='';}
+}
+function removeWithdrawMenuItem(cid,mid){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  if(c.withdrawMenu) delete c.withdrawMenu[mid];
+  save();
+  renderWithdrawMenuRows(c);
+}
+function renderWithdrawMenuRows(c){
+  const dis=c.closed?'disabled':'';
+  const ids=Object.keys(c.withdrawMenu||{});
+  const rows=ids.map(mid=>{
+    const m=S.menu.find(x=>x.id===mid);if(!m)return'';
+    const w=c.withdrawMenu[mid];
+    const cost=(w.qty||0)*recipeCost(m.recipe);
+    return `<tr>
+      <td class="td-name">${m.n}</td>
+      <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="1" value="${w.qty||''}" placeholder="0" ${dis} oninput="setCycleWithdrawMenu('${c.id}','${mid}','qty',this.value)"></td>
+      <td style="font-family:var(--mono);color:var(--red)">${fmt(cost)}</td>
+      <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${w.reason||''}" placeholder="الجهة/الغرض (مثال: أكل عاملين...)" ${dis} oninput="setCycleWithdrawMenu('${c.id}','${mid}','reason',this.value)"></td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeWithdrawMenuItem('${c.id}','${mid}')" title="إزالة">🗑️</button>`}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('ctWithdrawMenuRows').innerHTML=rows||emptyCycleRow(5);
+}
+function setCycleWithdrawMenu(cid,mid,field,v){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  if(!c.withdrawMenu) c.withdrawMenu={};
+  const w=c.withdrawMenu[mid]||(c.withdrawMenu[mid]={qty:0,reason:''});
+  w[field]=field==='reason'?v:(v===''?0:(parseFloat(v)||0));
   save();
 }
 
@@ -5979,6 +6200,19 @@ function cycleItemSaleTotal(c,m){
   const override=(c.salesValue||{})[m.id];
   return override!=null?override:(c.sales[m.id]||0)*m.price;
 }
+// explodes a {[menuId]:{qty}} map (waste/withdrawal of PREPARED menu items,
+// as opposed to raw items) into raw-item quantities via each menu item's
+// recipe — so "3 burgers wasted" correctly deducts the bun/meat/cheese etc.
+// from stock instead of only tracking the finished dish in isolation
+function cascadeMenuQtyToRaw(menuMap){
+  const raw={};
+  Object.entries(menuMap||{}).forEach(([mid,rec])=>{
+    const qty=(rec&&rec.qty)||0;if(!qty)return;
+    const m=S.menu.find(x=>x.id===mid);if(!m)return;
+    (m.recipe||[]).forEach(ing=>{ raw[ing.r]=(raw[ing.r]||0)+qty*ing.q; });
+  });
+  return raw;
+}
 function computeCycleResults(c){
   const opening=cycleOpening(c);
   const theoretical={};
@@ -5989,13 +6223,15 @@ function computeCycleResults(c){
       theoretical[ing.r]=(theoretical[ing.r]||0)+qty*ing.q;
     });
   });
+  const wasteFromMenu=cascadeMenuQtyToRaw(c.wasteMenu);
+  const withdrawFromMenu=cascadeMenuQtyToRaw(c.withdrawMenu);
   const rows=[];
   S.items.forEach(it=>{
     const op=opening[it.r]||0;
     const pur=(c.purchases[it.r]||{}).qty||0;
     const purCost=(c.purchases[it.r]||{}).cost||0;
-    const was=(c.waste[it.r]||{}).qty||0;
-    const wd=((c.withdrawals||{})[it.r]||{}).qty||0;
+    const was=((c.waste[it.r]||{}).qty||0)+(wasteFromMenu[it.r]||0);
+    const wd=(((c.withdrawals||{})[it.r]||{}).qty||0)+(withdrawFromMenu[it.r]||0);
     const trOut=((c.transfersOut||{})[it.r]||{}).qty||0;
     const trIn=((c.transfersIn||{})[it.r]||{}).qty||0;
     const cl=c.closing[it.r]||0;

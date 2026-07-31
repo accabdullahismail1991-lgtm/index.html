@@ -576,6 +576,7 @@ td{padding:9px 13px;vertical-align:middle;}
     <button class="vn-btn" onclick="toggleDropdown('dd-movements')" data-i18n="🔄 إدخال وحركات ▾">🔄 إدخال وحركات ▾</button>
     <div class="vn-dd-menu">
       <div class="vn-dd-item" onclick="closeDropdowns();openQuickMovement()">➕ تسجيل حركة (تحويل/سحب/استلام)</div>
+      <div class="vn-dd-item" id="ddIncomingTransfersItem" onclick="closeDropdowns();openIncomingTransfersReview()">📥 مراجعة التحويلات الواردة</div>
       <div class="vn-dd-item" id="ddMaintenanceItem" onclick="closeDropdowns();openMaintenanceLog()" data-i18n="🔧 سجل الأعطال والصيانة">🔧 سجل الأعطال والصيانة</div>
       <div class="vn-dd-item" id="ddEmployeesItem" onclick="closeDropdowns();openEmployeesScreen()" data-i18n="👥 بيانات الموظفين">👥 بيانات الموظفين</div>
       <div class="vn-dd-item" id="ddDirectCostsItem" onclick="closeDropdowns();openDirectCostsScreen()" data-i18n="🧾 بنود التكاليف المباشرة">🧾 بنود التكاليف المباشرة</div>
@@ -1122,6 +1123,7 @@ td{padding:9px 13px;vertical-align:middle;}
     <div class="mod-field"><label class="mod-lbl">تاريخ الحركة *</label><input type="date" class="mod-in" id="qm-date" onchange="updateQuickMovementCycleInfo()"></div>
   </div>
   <div class="mod-field"><label class="mod-lbl" id="qm-note-lbl">سبب السحب / اسم الفرع الآخر</label><div id="qm-note-wrap"><input class="mod-in" id="qm-note"></div></div>
+  <div id="qm-transfer-hint" style="display:none;font-size:11px;color:var(--muted);margin:-8px 0 12px">📥 هيوصل طلب للفرع المستلم في شاشة "مراجعة التحويلات الواردة" عنده، ومش هيتحسب عندهم كرصيد إلا لما يعتمدوه.</div>
   <div id="qm-cycle-info" style="font-size:11.5px;color:var(--muted);margin-bottom:10px"></div>
   <div class="mod-field"><label class="mod-lbl">إضافة صنف للحركة</label><div id="qm-item-wrap"></div></div>
   <div class="tbl-wrap" style="margin-bottom:14px"><table>
@@ -1131,6 +1133,18 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('quickMovementModal')">إلغاء</button>
     <button class="hbtn gold" onclick="saveQuickMovement()">✓ تسجيل الحركة</button>
+  </div>
+</div>
+</div>
+
+<!-- INCOMING TRANSFERS REVIEW MODAL (مراجعة واعتماد التحويلات الواردة من الفروع التانية) -->
+<div class="overlay" id="incomingTransfersModal">
+<div class="modal" style="width:820px">
+  <div class="mod-title">📥 مراجعة التحويلات الواردة</div>
+  <p style="font-size:11px;color:var(--muted);margin:-6px 0 14px">التحويلات اللي فروع تانية بعتتها لك — لازم تعتمدها الأول عشان تتحسب كرصيد وارد عندك في دورة التسوية.</p>
+  <div id="incomingTransfersBody"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('incomingTransfersModal')">إغلاق</button>
   </div>
 </div>
 </div>
@@ -1708,6 +1722,7 @@ function reRenderDynamicContentForLang(){
     ['breakEvenModal',renderBreakEvenModule],
     ['employeesModal',renderEmployeesScreen],
     ['directCostsModal',renderDirectCostsScreen],
+    ['incomingTransfersModal',renderIncomingTransfersScreen],
   ];
   openRenders.forEach(([id,fn])=>{
     const el=document.getElementById(id);
@@ -1916,6 +1931,7 @@ let S={
   qty:{}, notes:{},
   reports:[],
   maintenance:[],
+  incomingTransfers:[],
   employees:[], directCosts:[], beVarPctOverride:null, beDaysInMonth:30,
   cats:{...DEFAULT_CATS},
   items:[...DEFAULT_ITEMS],
@@ -2177,6 +2193,7 @@ function startDataSync(){
   document.getElementById('ddTransfersLogItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('ddWasteReportItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('ddMaintenanceItem').style.display=canViewReportsUI()?'':'none';
+  document.getElementById('ddIncomingTransfersItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('ddBreakEvenItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('ddEmployeesItem').style.display=canViewReportsUI()?'':'none';
   document.getElementById('ddDirectCostsItem').style.display=canViewReportsUI()?'':'none';
@@ -2250,6 +2267,12 @@ function switchToBranchDoc(key){
   S.curBranch=key;
   unsubBranch=db.collection('branches').doc(key).onSnapshot(snap=>{
     const d=snap.data();if(!d)return;
+    // incomingTransfers is written by OTHER branches (senders) and by our own
+    // approve/reject decisions — never by scheduleBranchSave — so it's read
+    // and re-rendered unconditionally, outside the self-echo short-circuit below.
+    S.incomingTransfers=d.incomingTransfers||[];
+    renderIncomingTransfersBadge();
+    if(document.getElementById('incomingTransfersModal')&&document.getElementById('incomingTransfersModal').classList.contains('open')) renderIncomingTransfersScreen();
     const incoming=JSON.stringify({name:d.name,manager:d.manager,storekeeper:d.storekeeper,supervisor:d.supervisor,date:d.date,sid:d.sid,qty:d.qty||{},notes:d.notes||{},reports:d.reports||[],cycles:d.cycles||[],maintenance:d.maintenance||[],employees:d.employees||[],directCosts:d.directCosts||[],beVarPctOverride:d.beVarPctOverride!=null?d.beVarPctOverride:null,beDaysInMonth:d.beDaysInMonth||30});
     branchReady=true;
     if(incoming===lastSentBranchJSON){tryBootUI();if(bootedUI)consumePendingOpenAllBranches();return;}
@@ -2275,6 +2298,11 @@ function scheduleBranchSave(){
   clearTimeout(_saveBranchTimer);
   _saveBranchTimer=setTimeout(()=>{
     if(!S.curBranch||!db) return;
+    // incomingTransfers is deliberately NOT included here — it's mutated by
+    // OTHER branches (sending transfers) and by decideTransferRequest() via
+    // its own fresh-read-then-write, never by this periodic full-state save.
+    // Firestore's merge:true leaves omitted fields untouched, so this can't
+    // clobber a transfer another branch just sent us.
     const payload={
       name:S.branch,manager:S.manager,storekeeper:S.storekeeper,supervisor:S.supervisor,
       date:S.date,sid:S.sid,qty:S.qty,notes:S.notes,reports:S.reports,maintenance:S.maintenance||[],
@@ -3350,15 +3378,30 @@ function transfersLogRows(){
     Object.entries(c.transfersOut||{}).forEach(([ref,t])=>{
       if(!t.qty&&!t.reason) return;
       const it=S.items.find(i=>i.r===ref);
-      rows.push({start:c.start,end:c.end,dir:'out',ref,name:it?it.n:ref,uom:it?it.u:'',qty:t.qty||0,other:t.reason||'-',closed:c.closed});
+      rows.push({start:c.start,end:c.end,dir:'out',ref,name:it?it.n:ref,uom:it?it.u:'',qty:t.qty||0,other:t.reason||'-',closed:c.closed,requestId:t.requestId||'',branchKey:t.branchKey||''});
     });
     Object.entries(c.transfersIn||{}).forEach(([ref,t])=>{
       if(!t.qty&&!t.reason) return;
       const it=S.items.find(i=>i.r===ref);
-      rows.push({start:c.start,end:c.end,dir:'in',ref,name:it?it.n:ref,uom:it?it.u:'',qty:t.qty||0,other:t.reason||'-',closed:c.closed});
+      rows.push({start:c.start,end:c.end,dir:'in',ref,name:it?it.n:ref,uom:it?it.u:'',qty:t.qty||0,other:t.reason||'-',closed:c.closed,requestId:'',branchKey:''});
     });
   });
   return rows;
+}
+// resolves the linked-request approval status for an OUTGOING transfer row by
+// cross-referencing the target branch's incomingTransfers (read-only, no
+// write-back) — rows entered manually via the transfer-out tab have no
+// requestId and are shown as unlinked, exactly like before this feature existed
+function transferLinkStatusBadge(row){
+  if(row.dir!=='out'||!row.requestId) return '<span style="color:var(--muted);font-size:11px">— يدوي (غير مرتبط)</span>';
+  let statusVal=null;
+  if(row.branchKey&&crossBranchRawDocs&&crossBranchRawDocs[row.branchKey]){
+    const req=(crossBranchRawDocs[row.branchKey].incomingTransfers||[]).find(r=>r.id===row.requestId);
+    if(req) statusVal=req.status;
+  }
+  if(statusVal==='approved') return '<span style="color:var(--green)">✅ معتمد</span>';
+  if(statusVal==='rejected') return '<span style="color:var(--red)">❌ مرفوض</span>';
+  return '<span style="color:var(--gold)">⏳ قيد المراجعة</span>';
 }
 let menuSalesBranchFilter='__current__';
 function openMenuSalesReport(){
@@ -3469,8 +3512,13 @@ function exportMenuSalesExcel(){
 }
 function openTransfersLog(){
   if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
-  renderTransfersLog();
   document.getElementById('transfersLogModal').classList.add('open');
+  document.getElementById('transfersLogBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري تحميل بيانات الفروع...</div>';
+  // approval/rejection status changes on the OTHER branch at any time, so this
+  // report can't rely on the session-long crossBranchRawDocs cache like the
+  // read-only aggregate reports do — force a fresh fetch every time it opens.
+  crossBranchRawDocs=null;
+  loadCrossBranchDocs().then(renderTransfersLog).catch(()=>renderTransfersLog());
 }
 function renderTransfersLog(){
   const rows=transfersLogRows();
@@ -3479,7 +3527,7 @@ function renderTransfersLog(){
     return;
   }
   document.getElementById('transfersLogBody').innerHTML=`<div class="tbl-wrap"><table>
-    <thead><tr><th>${t('الدورة')}</th><th>${t('الاتجاه')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية')}</th><th>${t('الفرع الآخر')}</th><th>${t('الحالة')}</th></tr></thead>
+    <thead><tr><th>${t('الدورة')}</th><th>${t('الاتجاه')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية')}</th><th>${t('الفرع الآخر')}</th><th>${t('الحالة')}</th><th>حالة الاعتماد</th></tr></thead>
     <tbody>${rows.map(r=>`<tr>
       <td style="font-family:var(--mono);font-size:11px">${r.start} ← ${r.end}</td>
       <td style="color:${r.dir==='out'?'var(--red)':'var(--green)'};font-weight:700">${r.dir==='out'?'🔀 صادر':'🔁 وارد'}</td>
@@ -3488,15 +3536,27 @@ function renderTransfersLog(){
       <td style="font-family:var(--mono)">${fmt(r.qty)}</td>
       <td>${r.other}</td>
       <td style="font-size:11px;color:var(--muted)">${r.closed?'🔒 مغلقة':'🟢 مفتوحة'}</td>
+      <td style="font-size:11px">${transferLinkStatusBadge(r)}</td>
     </tr>`).join('')}</tbody>
   </table></div>`;
+}
+function transferLinkStatusText(row){
+  if(row.dir!=='out'||!row.requestId) return 'يدوي (غير مرتبط)';
+  let statusVal=null;
+  if(row.branchKey&&crossBranchRawDocs&&crossBranchRawDocs[row.branchKey]){
+    const req=(crossBranchRawDocs[row.branchKey].incomingTransfers||[]).find(r=>r.id===row.requestId);
+    if(req) statusVal=req.status;
+  }
+  if(statusVal==='approved') return 'معتمد';
+  if(statusVal==='rejected') return 'مرفوض';
+  return 'قيد المراجعة';
 }
 function exportTransfersLogExcel(){
   const rows=transfersLogRows();
   if(!rows.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
   const wb=XLSX.utils.book_new();
-  const out=[['الدورة من','الدورة إلى','الاتجاه','المرجع','الصنف','الوحدة','الكمية','الفرع الآخر','الحالة']];
-  rows.forEach(r=>out.push([r.start,r.end,r.dir==='out'?'صادر':'وارد',r.ref,r.name,r.uom,r.qty,r.other,r.closed?'مغلقة':'مفتوحة']));
+  const out=[['الدورة من','الدورة إلى','الاتجاه','المرجع','الصنف','الوحدة','الكمية','الفرع الآخر','الحالة','حالة الاعتماد']];
+  rows.forEach(r=>out.push([r.start,r.end,r.dir==='out'?'صادر':'وارد',r.ref,r.name,r.uom,r.qty,r.other,r.closed?'مغلقة':'مفتوحة',transferLinkStatusText(r)]));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'سجل التحويلات');
   XLSX.writeFile(wb,`TransfersLog_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
   toast('📗 تم تصدير سجل التحويلات','inf');
@@ -5079,14 +5139,16 @@ function renderQmRows(){
 }
 function updateQuickMovementFields(){
   const type=document.getElementById('qm-type').value;
-  const labels={transferOut:'اسم الفرع المستلم',transferIn:'اسم الفرع المرسل',withdraw:'سبب السحب/الجهة',purchase:'ملاحظة (اختياري)'};
+  const labels={transferOut:'اسم الفرع المستلم',transferIn:'اسم الفرع المرسل (تسجيل يدوي)',withdraw:'سبب السحب/الجهة',purchase:'ملاحظة (اختياري)'};
   document.getElementById('qm-note-lbl').textContent=labels[type];
   const wrap=document.getElementById('qm-note-wrap');
   if(type==='transferOut'||type==='transferIn'){
-    wrap.innerHTML=`<select class="mod-in" id="qm-note">${branchSelectOptions('')}</select>`;
+    wrap.innerHTML=`<select class="mod-in" id="qm-note">${branchSelectOptionsByKey('')}</select>`;
   }else{
     wrap.innerHTML=`<input class="mod-in" id="qm-note">`;
   }
+  const hintEl=document.getElementById('qm-transfer-hint');
+  if(hintEl) hintEl.style.display=type==='transferOut'?'':'none';
   updateQuickMovementCycleInfo();
   renderQmRows();
 }
@@ -5102,8 +5164,12 @@ function updateQuickMovementCycleInfo(){
 function saveQuickMovement(){
   const date=document.getElementById('qm-date').value;
   const type=document.getElementById('qm-type').value;
-  const note=document.getElementById('qm-note').value.trim();
+  const isTransferType=type==='transferOut'||type==='transferIn';
+  const noteRaw=document.getElementById('qm-note').value.trim();
+  const targetBranchKey=isTransferType?noteRaw:'';
+  const note=isTransferType?((S.branches[noteRaw]||{}).name||noteRaw):noteRaw;
   if(!date){toast('⚠️ اختر تاريخ الحركة','wrn');return;}
+  if(isTransferType&&!targetBranchKey){toast('⚠️ اختر الفرع الآخر','wrn');return;}
   const validRows=qmRows.filter(r=>r.qty>0);
   if(!validRows.length){toast('⚠️ أضف صنف واحد على الأقل بكمية صحيحة','wrn');return;}
   const c=findCycleForDate(date);
@@ -5113,7 +5179,7 @@ function saveQuickMovement(){
     if(type==='transferOut'){
       if(!c.transfersOut) c.transfersOut={};
       const t=c.transfersOut[ref]||{qty:0,reason:''};
-      c.transfersOut[ref]={qty:(t.qty||0)+qty,reason:note||t.reason||''};
+      c.transfersOut[ref]={qty:(t.qty||0)+qty,reason:note||t.reason||'',branchKey:targetBranchKey||t.branchKey||''};
     }else if(type==='transferIn'){
       if(!c.transfersIn) c.transfersIn={};
       const t=c.transfersIn[ref]||{qty:0,reason:''};
@@ -5129,8 +5195,154 @@ function saveQuickMovement(){
   });
   save();
   closeM('quickMovementModal');
-  toast(`✅ تم تسجيل الحركة (${validRows.length} صنف) في دورة ${c.start} ← ${c.end}`,'suc');
+  if(type==='transferOut'&&targetBranchKey){
+    sendTransferRequest(targetBranchKey,date,validRows,c);
+    toast(`📤 تم تسجيل التحويل (${validRows.length} صنف) وإرساله لفرع ${note} — في انتظار مراجعته واعتماده`,'suc');
+  }else{
+    toast(`✅ تم تسجيل الحركة (${validRows.length} صنف) في دورة ${c.start} ← ${c.end}`,'suc');
+  }
   if(curCycleId===c.id){renderCycleTabs();renderCycleBody();}
+}
+
+// ══════════════════════════════════════════════
+//  LINKED TRANSFER REQUESTS (تحويل صادر ↔ وارد مربوطين بمراجعة واعتماد)
+//  Sending branch always keeps its own transfersOut entry (stock already
+//  physically left), but the RECEIVING branch's transfersIn only gets
+//  populated once they explicitly approve — until then it's a pending
+//  request sitting on the target branch's own document. Decisions never
+//  write back into the sender's cycle data (too large/actively-edited a
+//  structure to risk a cross-branch overwrite race) — the sender sees the
+//  linked status via the Transfers Log report instead.
+// ══════════════════════════════════════════════
+function genTransferReqId(){return 'TR'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,6).toUpperCase();}
+function branchSelectOptionsByKey(selectedKey){
+  const cur=S.curBranch;
+  const keys=Object.keys(S.branches||{}).filter(k=>k!==cur);
+  let html='<option value="">-- اختر الفرع --</option>';
+  keys.forEach(k=>{
+    html+=`<option value="${k}" ${k===selectedKey?'selected':''}>${(S.branches[k]||{}).name||k}</option>`;
+  });
+  return html;
+}
+function sendTransferRequest(targetBranchKey,date,items,sourceCycle){
+  if(!targetBranchKey||targetBranchKey===S.curBranch||!db) return;
+  const reqId=genTransferReqId();
+  const req={
+    id:reqId,
+    fromBranch:S.curBranch,fromBranchName:S.branch,
+    toBranch:targetBranchKey,toBranchName:(S.branches[targetBranchKey]||{}).name||targetBranchKey,
+    date,
+    items:items.map(({ref,qty})=>{
+      const it=S.items.find(i=>i.r===ref);
+      return {ref,name:it?it.n:ref,uom:it?it.u:'',qtySent:qty,qtyReceived:null};
+    }),
+    status:'pending',
+    createdAt:new Date().toISOString(),
+    createdBy:(curUser&&curUser.email)||'',
+    decidedAt:null,decidedBy:null,rejectReason:''
+  };
+  if(sourceCycle){
+    items.forEach(({ref})=>{
+      if(sourceCycle.transfersOut&&sourceCycle.transfersOut[ref]) sourceCycle.transfersOut[ref].requestId=reqId;
+    });
+    save();
+  }
+  db.collection('branches').doc(targetBranchKey).get().then(d=>{
+    const data=d.data()||{};
+    const list=[...(data.incomingTransfers||[]),req];
+    return db.collection('branches').doc(targetBranchKey).set({incomingTransfers:list},{merge:true});
+  }).catch(e=>toast('⚠️ اتسجّل التحويل عندك بس تعذّر إرساله لفرع '+req.toBranchName+': '+e.message,'err'));
+}
+function renderIncomingTransfersBadge(){
+  const el=document.getElementById('ddIncomingTransfersItem');
+  if(!el) return;
+  const pending=(S.incomingTransfers||[]).filter(r=>r.status==='pending').length;
+  el.innerHTML=`📥 مراجعة التحويلات الواردة${pending?` <span style="background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-right:6px">${pending}</span>`:''}`;
+}
+function openIncomingTransfersReview(){
+  renderIncomingTransfersScreen();
+  document.getElementById('incomingTransfersModal').classList.add('open');
+}
+function renderIncomingTransfersScreen(){
+  const el=document.getElementById('incomingTransfersBody');if(!el)return;
+  const list=[...(S.incomingTransfers||[])].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  const pending=list.filter(r=>r.status==='pending');
+  const decided=list.filter(r=>r.status!=='pending').slice(0,20);
+  if(!list.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted)">لا توجد تحويلات واردة مسجّلة بعد.</div>';return;}
+  const pendingHtml=pending.length?pending.map(req=>{
+    const c=findCycleForDate(req.date);
+    const cycleWarn=!c?'<div style="color:var(--red);font-size:11px;margin-bottom:8px">⚠️ لا توجد دورة تسوية تغطي هذا التاريخ عندك — افتح دورة تشمله قبل الاعتماد</div>':(c.closed?'<div style="color:var(--red);font-size:11px;margin-bottom:8px">⚠️ الدورة المطابقة لهذا التاريخ مقفولة — أعد فتحها قبل الاعتماد</div>':'');
+    return `<div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <div><b>من فرع:</b> ${req.fromBranchName}</div>
+        <div style="font-family:var(--mono);color:var(--muted)">${req.date}</div>
+      </div>
+      ${cycleWarn}
+      <table style="width:100%;margin-bottom:10px"><thead><tr><th style="text-align:right">${t('الصنف')}</th><th style="text-align:right">${t('الوحدة')}</th><th style="text-align:right">الكمية المُرسلة</th><th style="text-align:right">الكمية المُستلمة فعليًا</th></tr></thead>
+      <tbody>${req.items.map((it,i)=>`<tr>
+        <td class="td-name">${it.name}</td><td><span class="uom-pill">${it.uom||''}</span></td>
+        <td style="font-family:var(--mono)">${fmt(it.qtySent)}</td>
+        <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${it.qtySent}" id="itr-qty-${req.id}-${i}"></td>
+      </tr>`).join('')}</tbody></table>
+      <input class="mod-in" style="margin-bottom:10px" placeholder="سبب الرفض (لو هترفض)" id="itr-reject-reason-${req.id}">
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="hbtn" onclick="rejectTransferRequest('${req.id}')">❌ رفض</button>
+        <button class="hbtn gold" onclick="approveTransferRequest('${req.id}')">✅ اعتماد</button>
+      </div>
+    </div>`;
+  }).join(''):'<div style="text-align:center;padding:16px;color:var(--muted)">لا توجد تحويلات قيد المراجعة حاليًا.</div>';
+  const decidedHtml=decided.length?`<div class="tbl-wrap"><table>
+    <thead><tr><th>${t('التاريخ')}</th><th>من فرع</th><th>الأصناف</th><th>${t('الحالة')}</th></tr></thead>
+    <tbody>${decided.map(req=>`<tr>
+      <td style="font-family:var(--mono);font-size:11px">${req.date}</td>
+      <td>${req.fromBranchName}</td>
+      <td style="font-size:11.5px">${req.items.map(it=>it.name).join('، ')}</td>
+      <td>${req.status==='approved'?'<span style="color:var(--green)">✅ معتمد</span>':`<span style="color:var(--red)">❌ مرفوض${req.rejectReason?' — '+req.rejectReason:''}</span>`}</td>
+    </tr>`).join('')}</tbody></table></div>`:'';
+  el.innerHTML=`<div class="tbl-head"><div class="tbl-title">قيد المراجعة (${pending.length})</div></div>${pendingHtml}`+
+    (decided.length?`<div class="tbl-head" style="margin-top:18px"><div class="tbl-title">آخر القرارات</div></div>${decidedHtml}`:'');
+}
+function approveTransferRequest(reqId){
+  const req=(S.incomingTransfers||[]).find(r=>r.id===reqId);if(!req||req.status!=='pending')return;
+  const c=findCycleForDate(req.date);
+  if(!c){toast('⚠️ لا توجد دورة تسوية تغطي هذا التاريخ عندك — افتح دورة تشمله الأول','err');return;}
+  if(c.closed){toast('⚠️ الدورة مقفولة — أعد فتحها الأول','err');return;}
+  const receivedItems=req.items.map((it,i)=>{
+    const input=document.getElementById(`itr-qty-${req.id}-${i}`);
+    const qty=input?(parseFloat(input.value)||0):it.qtySent;
+    return {...it,qtyReceived:qty};
+  });
+  receivedItems.forEach(({ref,qtyReceived})=>{
+    if(!qtyReceived||qtyReceived<=0) return;
+    if(!c.transfersIn) c.transfersIn={};
+    const t=c.transfersIn[ref]||{qty:0,reason:''};
+    c.transfersIn[ref]={qty:(t.qty||0)+qtyReceived,reason:req.fromBranchName};
+  });
+  save();
+  persistIncomingTransferDecision(reqId,'approved',receivedItems,'');
+  toast(`✅ تم اعتماد التحويل من فرع ${req.fromBranchName} في دورة ${c.start} ← ${c.end}`,'suc');
+  if(curCycleId===c.id){renderCycleTabs();renderCycleBody();}
+}
+function rejectTransferRequest(reqId){
+  const req=(S.incomingTransfers||[]).find(r=>r.id===reqId);if(!req||req.status!=='pending')return;
+  const reasonEl=document.getElementById(`itr-reject-reason-${reqId}`);
+  const reason=reasonEl?reasonEl.value.trim():'';
+  persistIncomingTransferDecision(reqId,'rejected',req.items,reason);
+  toast(`❌ تم رفض التحويل من فرع ${req.fromBranchName}`,'wrn');
+}
+function persistIncomingTransferDecision(reqId,status,items,rejectReason){
+  if(!db||!S.curBranch) return;
+  db.collection('branches').doc(S.curBranch).get().then(d=>{
+    const data=d.data()||{};
+    const decidedAt=new Date().toISOString();
+    const decidedBy=(curUser&&curUser.email)||'';
+    const list=(data.incomingTransfers||[]).map(r=>r.id===reqId?{...r,status,items,decidedAt,decidedBy,rejectReason}:r);
+    return db.collection('branches').doc(S.curBranch).set({incomingTransfers:list},{merge:true}).then(()=>({decidedAt,decidedBy}));
+  }).then(({decidedAt,decidedBy})=>{
+    S.incomingTransfers=(S.incomingTransfers||[]).map(r=>r.id===reqId?{...r,status,items,decidedAt,decidedBy,rejectReason}:r);
+    renderIncomingTransfersBadge();
+    renderIncomingTransfersScreen();
+  }).catch(e=>toast('⚠️ خطأ في حفظ قرار التحويل: '+e.message,'err'));
 }
 
 function renderStockTab(c,el){

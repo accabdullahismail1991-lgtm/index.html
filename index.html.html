@@ -5334,12 +5334,15 @@ function renderIncomingTransfersScreen(){
   const decided=list.filter(r=>r.status!=='pending').slice(0,20);
   if(!list.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted)">لا توجد تحويلات واردة مسجّلة بعد.</div>';return;}
   const pendingHtml=pending.length?pending.map(req=>{
-    const c=findCycleForDate(req.date);
-    const cycleWarn=!c?'<div style="color:var(--red);font-size:11px;margin-bottom:8px">⚠️ لا توجد دورة تسوية تغطي هذا التاريخ عندك — افتح دورة تشمله قبل الاعتماد</div>':(c.closed?'<div style="color:var(--red);font-size:11px;margin-bottom:8px">⚠️ الدورة المطابقة لهذا التاريخ مقفولة — أعد فتحها قبل الاعتماد</div>':'');
+    // received goods are always logged into TODAY's open cycle — the day
+    // they're actually counted in — not whichever date the sender happened
+    // to type on their movement, which may not even have a cycle here.
+    const c=findCycleForDate(today());
+    const cycleWarn=!c?'<div style="color:var(--red);font-size:11px;margin-bottom:8px">⚠️ لا توجد دورة تسوية مفتوحة تغطي اليوم عندك — افتح دورة تشمل تاريخ اليوم قبل الاعتماد</div>':(c.closed?'<div style="color:var(--red);font-size:11px;margin-bottom:8px">⚠️ دورة اليوم مقفولة — أعد فتحها قبل الاعتماد</div>':'');
     return `<div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
         <div><b>من فرع:</b> ${req.fromBranchName}</div>
-        <div style="font-family:var(--mono);color:var(--muted)">${req.date}</div>
+        <div style="font-family:var(--mono);color:var(--muted)" title="تاريخ إرسال الفرع الآخر للحركة">تاريخ الإرسال: ${req.date}</div>
       </div>
       ${cycleWarn}
       <table style="width:100%;margin-bottom:10px"><thead><tr><th style="text-align:right">${t('الصنف')}</th><th style="text-align:right">${t('الوحدة')}</th><th style="text-align:right">الكمية المُرسلة</th><th style="text-align:right">الكمية المُستلمة فعليًا</th></tr></thead>
@@ -5356,7 +5359,7 @@ function renderIncomingTransfersScreen(){
     </div>`;
   }).join(''):'<div style="text-align:center;padding:16px;color:var(--muted)">لا توجد تحويلات قيد المراجعة حاليًا.</div>';
   const decidedHtml=decided.length?`<div class="tbl-wrap"><table>
-    <thead><tr><th>${t('التاريخ')}</th><th>من فرع</th><th>الأصناف</th><th>${t('الحالة')}</th></tr></thead>
+    <thead><tr><th>تاريخ الإرسال</th><th>من فرع</th><th>الأصناف</th><th>${t('الحالة')}</th></tr></thead>
     <tbody>${decided.map(req=>`<tr>
       <td style="font-family:var(--mono);font-size:11px">${req.date}</td>
       <td>${req.fromBranchName}</td>
@@ -5368,9 +5371,11 @@ function renderIncomingTransfersScreen(){
 }
 function approveTransferRequest(reqId){
   const req=(S.incomingTransfers||[]).find(r=>r.id===reqId);if(!req||req.status!=='pending')return;
-  const c=findCycleForDate(req.date);
-  if(!c){toast('⚠️ لا توجد دورة تسوية تغطي هذا التاريخ عندك — افتح دورة تشمله الأول','err');return;}
-  if(c.closed){toast('⚠️ الدورة مقفولة — أعد فتحها الأول','err');return;}
+  // apply into TODAY's open cycle (the day the goods are actually received
+  // and counted), regardless of the date the sender put on their movement
+  const c=findCycleForDate(today());
+  if(!c){toast('⚠️ لا توجد دورة تسوية مفتوحة تغطي اليوم عندك — افتح دورة تشمل تاريخ اليوم الأول','err');return;}
+  if(c.closed){toast('⚠️ دورة اليوم مقفولة — أعد فتحها الأول','err');return;}
   const receivedItems=req.items.map((it,i)=>{
     const input=document.getElementById(`itr-qty-${req.id}-${i}`);
     const qty=input?(parseFloat(input.value)||0):it.qtySent;

@@ -1090,6 +1090,11 @@ td{padding:9px 13px;vertical-align:middle;}
     </div>
     <div class="mod-hint">صورة صغيرة (أقل من 400KB) — بتظهر في الهيدر وفي رأس تقارير PDF</div>
   </div>
+  <div class="mod-field">
+    <label class="mod-lbl">نسبة ضريبة القيمة المضافة % (اختياري)</label>
+    <input type="number" inputmode="decimal" class="mod-in" id="co-vat" min="0" max="100" step="0.1" placeholder="مثال: 14">
+    <div class="mod-hint">سعر بيع أصناف المنيو المُدخل في النظام يُعتبر شامل الضريبة. نسبة تكلفة المبيعات (Food Cost %) في كل التقارير بتتحسب على صافي المبيعات بعد خصم الضريبة دي، مطابقةً للمعيار المحاسبي المتبع في تقارير المطاعم. سيبها فاضية أو صفر لو مفيش ضريبة على مبيعاتك.</div>
+  </div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('companyModal')" data-i18n="إلغاء">إلغاء</button>
     <button class="hbtn gold" onclick="saveCompanyInfo()" data-i18n="✓ حفظ">✓ حفظ</button>
@@ -3313,6 +3318,14 @@ function createUserDirectly(){
 // ══════════════════════════════════════════════
 let companyInfo={};
 let pendingLogoDataUrl=undefined;
+// menu item prices are entered VAT-inclusive (what the customer actually
+// pays); food-cost-% calculations must divide by the NET (ex-VAT) amount,
+// per standard F&B accounting practice — otherwise the tax collected on
+// the government's behalf is counted as if it were real revenue.
+function netOfVat(gross){
+  const v=companyInfo.vatPct||0;
+  return v>0?gross/(1+v/100):gross;
+}
 function updateCompanyBranding(){
   const nameEl=document.getElementById('companyNameOrDefault');
   const logoImg=document.getElementById('companyLogoImg');
@@ -3331,6 +3344,7 @@ function openCompanyMgr(){
   document.getElementById('co-name').value=companyInfo.name||'';
   document.getElementById('co-phone').value=companyInfo.phone||'';
   document.getElementById('co-address').value=companyInfo.address||'';
+  document.getElementById('co-vat').value=companyInfo.vatPct!=null?companyInfo.vatPct:'';
   pendingLogoDataUrl=undefined;
   const prev=document.getElementById('co-logo-preview');
   if(companyInfo.logo){prev.src=companyInfo.logo;prev.style.display='';}else{prev.style.display='none';}
@@ -3355,10 +3369,12 @@ function clearCompanyLogo(){
   document.getElementById('co-logo-file').value='';
 }
 function saveCompanyInfo(){
+  const vatRaw=document.getElementById('co-vat').value;
   const payload={
     name:document.getElementById('co-name').value.trim(),
     phone:document.getElementById('co-phone').value.trim(),
     address:document.getElementById('co-address').value.trim(),
+    vatPct:vatRaw===''?0:(parseFloat(vatRaw)||0),
   };
   if(pendingLogoDataUrl!==undefined) payload.logo=pendingLogoDataUrl||'';
   else payload.logo=companyInfo.logo||'';
@@ -4210,21 +4226,23 @@ function computeAndRenderAllBranches(){
     });
     branchesWithData++;
     totalSales+=sSales;totalActual+=sActual;totalTheo+=sTheo;
+    const sNetSales=netOfVat(sSales);
     allBranchesRows.push({
       key,name:d.name||key,manager:d.manager||'-',
       cyclesClosed:cycles.length,
       periodStart:cycles[0].start,periodEnd:cycles[cycles.length-1].end,
       salesAmount:sSales,
-      actualCostPct:sSales>0?(sActual/sSales*100):0,
-      theoCostPct:sSales>0?(sTheo/sSales*100):0,
+      actualCostPct:sNetSales>0?(sActual/sNetSales*100):0,
+      theoCostPct:sNetSales>0?(sTheo/sNetSales*100):0,
       varVal:sActual-sTheo,
     });
   });
   allBranchesItemRows=Object.values(itemAgg).sort((a,b)=>Math.abs(b.varVal)-Math.abs(a.varVal));
+  const totalNetSales=netOfVat(totalSales);
   allBranchesTotals=branchesWithData?{
     branchesWithData,totalSales,totalActual,totalTheo,
-    actualPct:totalSales>0?(totalActual/totalSales*100):0,
-    theoPct:totalSales>0?(totalTheo/totalSales*100):0,
+    actualPct:totalNetSales>0?(totalActual/totalNetSales*100):0,
+    theoPct:totalNetSales>0?(totalTheo/totalNetSales*100):0,
     varVal:totalActual-totalTheo,
   }:null;
   renderAllBranchesReport();
@@ -4246,7 +4264,8 @@ function renderAllBranchesReport(){
       ${dashKpi('نسبة التكلفة النظرية الموحّدة',tot.theoPct.toFixed(1)+'%','#2ee89a')}
       ${dashKpi('إجمالي قيمة الانحراف',acctFmt(tot.varVal),tot.varVal>0?'#f05050':'#2ee89a')}
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">${targetBadge(tot.actualPct)}${varianceBadge(tot.totalSales>0?(tot.varVal/tot.totalSales*100):0)}</div>`:'';
+    ${companyInfo.vatPct?`<p style="font-size:10.5px;color:var(--muted);margin:-8px 0 12px">إجمالي المبيعات شامل الضريبة (${companyInfo.vatPct}%) — نسب التكلفة محسوبة على صافي المبيعات بعد خصم الضريبة.</p>`:''}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">${targetBadge(tot.actualPct)}${varianceBadge(netOfVat(tot.totalSales)>0?(tot.varVal/netOfVat(tot.totalSales)*100):0)}</div>`:'';
   const exceptionHtml=topVarianceHtml(allBranchesItemRows,5);
   const itemGroups=groupRowsByCategory(allBranchesItemRows,'r');
   const itemTable=allBranchesItemRows.length?`
@@ -4584,11 +4603,11 @@ function renderMenuList(){
   if(!S.menu.length){cont.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted)">لا توجد أصناف مباعة بعد.<br>أضف أول صنف من المنيو مع وصفته لبدء حساب الاستهلاك النظري.</div>';return;}
   cont.innerHTML=S.menu.map(m=>{
     const cost=recipeCost(m.recipe);
-    const pct=m.price>0?Math.round(cost/m.price*100):0;
+    const pct=m.price>0?Math.round(cost/netOfVat(m.price)*100):0;
     return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px">
       <div style="flex:1">
         <div style="font-weight:700;font-size:13.5px">${m.n}${m.e?`<span style="font-size:11px;color:var(--muted);margin-right:6px">${m.e}</span>`:''}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:3px">السعر: ${fmt(m.price)} · تكلفة الوصفة: ${fmt(cost)} (${pct}%) · ${(m.recipe||[]).length} مكوّن</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">السعر: ${fmt(m.price)} (شامل الضريبة) · تكلفة الوصفة: ${fmt(cost)} (${pct}% من صافي السعر) · ${(m.recipe||[]).length} مكوّن</div>
       </div>
       <button class="hi-btn" style="flex:none;padding:5px 10px" onclick="openEditMenuItem('${m.id}')" title="تعديل الصنف">✏</button>
       <button class="hi-btn del" style="flex:none;padding:5px 10px" onclick="deleteMenuItem('${m.id}')" title="حذف الصنف">🗑</button>
@@ -5703,12 +5722,15 @@ function computeCycleResults(c){
   const totalWithdrawCost=rows.reduce((s,r)=>s+r.wd*r.unitCost,0);
   const totalTransferOutCost=rows.reduce((s,r)=>s+r.trOut*r.unitCost,0);
   const totalTransferInCost=rows.reduce((s,r)=>s+r.trIn*r.unitCost,0);
+  // totalSalesAmount stays VAT-inclusive (what customers actually paid);
+  // cost-% ratios are computed against the net (ex-VAT) sales figure
+  const netSalesAmount=netOfVat(totalSalesAmount);
   return {
-    rows,totalSalesAmount,totalSalesComputed,totalActualCost,totalTheoCost,totalWasteCost,totalWithdrawCost,totalTransferOutCost,totalTransferInCost,
+    rows,totalSalesAmount,totalSalesComputed,netSalesAmount,totalActualCost,totalTheoCost,totalWasteCost,totalWithdrawCost,totalTransferOutCost,totalTransferInCost,
     deliverySalesAmount:c.deliverySalesAmount!=null?c.deliverySalesAmount:null,
     totalVarVal:totalActualCost-totalTheoCost,
-    actualCostPct:totalSalesAmount>0?(totalActualCost/totalSalesAmount*100):0,
-    theoCostPct:totalSalesAmount>0?(totalTheoCost/totalSalesAmount*100):0,
+    actualCostPct:netSalesAmount>0?(totalActualCost/netSalesAmount*100):0,
+    theoCostPct:netSalesAmount>0?(totalTheoCost/netSalesAmount*100):0,
     computedAt:new Date().toLocaleString('ar-SA'),
   };
 }
@@ -5767,10 +5789,11 @@ function renderResultsTab(c,el){
     ${kpi('نسبة التكلفة الفعلية',r.actualCostPct.toFixed(1)+'%','#f0c040')}
     ${kpi('نسبة التكلفة النظرية',r.theoCostPct.toFixed(1)+'%','#2ee89a')}
   </div>
+  ${companyInfo.vatPct?`<p style="font-size:10.5px;color:var(--muted);margin:-10px 0 12px">إجمالي المبيعات المعروض شامل الضريبة (${companyInfo.vatPct}%) — نسب التكلفة والانحراف بالأعلى محسوبة على صافي المبيعات (${fmt(r.netSalesAmount)}) بعد خصم الضريبة، طبقًا للمعيار المحاسبي المتبع.</p>`:''}
   <div class="dbanner" style="margin-bottom:14px;flex-wrap:wrap;gap:10px">
     <div class="db-l"><div><div class="db-main">إجمالي قيمة الانحراف: ${acctFmt(r.totalVarVal)}</div>
     <div class="db-sub">الفرق بين تكلفة الاستهلاك الفعلي والنظري (بين قوسين = استهلاك أقل من المتوقع، بدون قوسين = زيادة عن المتوقع)</div></div></div>
-    <div class="db-r" style="gap:10px">${targetBadge(r.actualCostPct)}${varianceBadge(r.totalSalesAmount>0?(r.totalVarVal/r.totalSalesAmount*100):0)}</div>
+    <div class="db-r" style="gap:10px">${targetBadge(r.actualCostPct)}${varianceBadge(r.netSalesAmount>0?(r.totalVarVal/r.netSalesAmount*100):0)}</div>
   </div>
   ${topVarianceHtml(r.rows,5)}
   <div class="tbl-wrap"><table>
@@ -5827,7 +5850,7 @@ function exportCyclePDF(cid){
   const col=W/4;
   [`الفرع: ${S.branch}`,`الفترة: من ${c.start} إلى ${c.end}`,`تاريخ الحساب: ${r.computedAt}`,`الهدف: تكلفة طعام ≤ ${FOOD_COST_TARGET_PCT}%`].forEach((tx,i)=>doc.text(tx,14+i*col,28));
 
-  const varPct=r.totalSalesAmount>0?(r.totalVarVal/r.totalSalesAmount*100):0;
+  const varPct=r.netSalesAmount>0?(r.totalVarVal/r.netSalesAmount*100):0;
   const withinTarget=r.actualCostPct<=FOOD_COST_TARGET_PCT;
   const withinVariance=Math.abs(varPct)<=VARIANCE_TARGET_PCT;
 

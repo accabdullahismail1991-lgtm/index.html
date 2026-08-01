@@ -456,18 +456,30 @@ td{padding:9px 13px;vertical-align:middle;}
   header{height:auto;min-height:60px;padding:10px 14px;flex-wrap:wrap;row-gap:8px;}
   .logo-name{font-size:15px;}
   .hright{gap:6px;width:100%;justify-content:flex-start;}
-  .hbtn{padding:7px 11px;font-size:12px;}
+  /* icon+label header buttons collapse to icon-only on mobile — the label is
+     still available via title= — so the header packs into two clean rows
+     instead of wrapping into a cramped third row with an orphaned button */
+  .hright .hbtn-txt{display:none;}
+  .hbtn{padding:8px 12px;font-size:12px;min-height:38px;min-width:38px;justify-content:center;}
   .bchip{padding:6px 10px;font-size:12px;}
+  #branchSwitch{min-height:38px;}
 
   .viewnav{padding:8px 12px;height:auto;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;top:auto;position:sticky;}
-  .vn-btn{white-space:nowrap;font-size:12px;padding:7px 12px;flex-shrink:0;}
+  .vn-btn{white-space:nowrap;font-size:12px;padding:8px 12px;min-height:38px;flex-shrink:0;}
   .vn-dd{flex-shrink:0;}
   .vn-dd-menu{position:fixed;left:12px;right:12px;top:auto;width:auto;min-width:0;max-height:70vh;overflow-y:auto;}
+  .vn-dd-item{white-space:normal;min-height:40px;}
 
   main{padding:14px;}
   .stats{grid-template-columns:repeat(2,1fr);gap:8px;}
   .stat{padding:12px 14px;}
   .stat-val{font-size:22px;}
+
+  /* the cycle/day banner packs a title + a whole row of action buttons on
+     one line with no wrap, which overlaps badly on a phone-width screen —
+     let it stack into two rows instead */
+  .dbanner{flex-wrap:wrap;gap:10px;}
+  .db-r{flex-wrap:wrap;}
 
   .sidebarToggleBtn{display:flex;}
   .layout{min-height:calc(100vh - 108px);}
@@ -476,15 +488,28 @@ td{padding:9px 13px;vertical-align:middle;}
     z-index:400;transition:right .25s ease;box-shadow:-10px 0 30px rgba(20,30,50,.18);
   }
   .sidebar.mobile-open{right:0;}
+  .sb-item{min-height:42px;}
 
   .toolbar{gap:7px;}
   .sw{min-width:0;flex:1 1 100%;}
 
-  table{font-size:12px;}
-  thead th,td{padding:7px 9px;}
-  .qin{width:70px;}
-  .note-in{width:80px;}
+  /* wide data tables no longer squish into unreadable multi-line cells —
+     they keep a readable natural width and scroll horizontally within
+     .tbl-wrap (which already had overflow-x:auto, just neutralized by the
+     table's own width:100% forcing everything to shrink to fit). Only
+     headers and the name column are forced single-line — other columns are
+     already short pills/inputs that don't wrap, and free-text columns
+     (e.g. maintenance/report notes) are left free to wrap for readability. */
+  table{font-size:12px;width:auto;min-width:100%;}
+  thead th{padding:9px 10px;white-space:nowrap;}
+  td{padding:9px 10px;}
+  .td-name{white-space:nowrap;}
+  .qin{width:70px;min-height:34px;}
+  .qbtn{width:30px;height:30px;}
+  .row-del{width:34px;height:34px;}
+  .note-in{width:80px;min-height:34px;}
   .note-in:focus{width:110px;}
+  .hi-btn{min-height:34px;min-width:34px;}
 
   .mod-row{grid-template-columns:1fr;gap:0;}
   .modal{padding:60px 16px 30px;}
@@ -558,9 +583,9 @@ td{padding:9px 13px;vertical-align:middle;}
       <div><div class="bc-lbl" data-i18n="الفرع">الفرع</div><div class="bc-val" id="branchLbl">—</div></div>
     </div>
     <select id="branchSwitch" style="max-width:150px;font-size:12.5px;padding:8px 10px" onchange="switchBranch(this.value)"></select>
-    <button class="hbtn org" onclick="openAddItem()" data-i18n="➕ إضافة صنف">➕ إضافة صنف</button>
-    <button class="hbtn grn" onclick="saveAndExport()" id="saveBtn" data-i18n="💾 حفظ وتصدير">💾 حفظ وتصدير</button>
-    <button class="hbtn gold" onclick="openNewDay()" data-i18n="📅 يوم جديد">📅 يوم جديد</button>
+    <button class="hbtn org" onclick="openAddItem()" title="إضافة صنف" data-i18n-title="إضافة صنف"><span>➕</span><span class="hbtn-txt" data-i18n="إضافة صنف">إضافة صنف</span></button>
+    <button class="hbtn grn" onclick="saveAndExport()" id="saveBtn" title="حفظ وتصدير" data-i18n-title="حفظ وتصدير"><span>💾</span><span class="hbtn-txt" data-i18n="حفظ وتصدير">حفظ وتصدير</span></button>
+    <button class="hbtn gold" onclick="openNewDay()" title="يوم جديد" data-i18n-title="يوم جديد"><span>📅</span><span class="hbtn-txt" data-i18n="يوم جديد">يوم جديد</span></button>
     <button class="hbtn" onclick="doLogout()" title="خروج" data-i18n-title="خروج">🚪</button>
   </div>
 </header>
@@ -1639,6 +1664,9 @@ const I18N_EN={
   "👤 المستخدمين والصلاحيات": "👤 Users & Permissions",
   "💽 حفظ نسخة احتياطية (JSON)": "💽 Save Backup (JSON)",
   "💾 حفظ وتصدير": "💾 Save & Export",
+  "حفظ وتصدير": "Save & Export",
+  "إضافة صنف": "Add Item",
+  "يوم جديد": "New Day",
   "📄 قالب استيراد أصناف المنيو (بالشرح)": "📄 Menu Import Template (with instructions)",
   "📄 قالب أصناف منيو فقط (بدون مكوّنات)": "📄 Menu Items Only Template (no recipe)",
   "📄 قالب الاستيراد": "📄 Import Template",

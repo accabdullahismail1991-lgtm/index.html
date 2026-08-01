@@ -1845,6 +1845,16 @@ const I18N_EN={
   "نسبة التكلفة النظرية": "Theoretical Cost %",
   "متوسط صافي المبيعات اليومي للدورة": "Average Daily Net Sales for the Cycle",
   "إجمالي الأصناف": "Total Items",
+  "لوحة التحكم التفاعلية": "Interactive Dashboard",
+  "تقرير مبيعات المنيو": "Menu Sales Report",
+  "تخطيط الاحتياج": "Requirement Planning",
+  "سجل التحويلات": "Transfers Log",
+  "تقرير الهالك": "Waste Report",
+  "سجل الصيانة": "Maintenance Log",
+  "مراجعة التحويلات الواردة": "Review Incoming Transfers",
+  "المخزون الختامي": "Closing Stock",
+  "بيانات الموظفين (رواتب)": "Employee Data (Salaries)",
+  "التكاليف المباشرة": "Direct Costs",
   "تم جردها": "Counted",
   "صفرية": "Zero Balance",
   "نسبة الإنجاز": "Completion %",
@@ -2247,6 +2257,24 @@ function canViewAllReportsUI(){return curRole==='admin'||!!curPerms.manageBranch
 function canManageCompanyUI(){return curRole==='admin'||!!curPerms.manageCompany;}
 function canViewRecipesUI(){return curRole==='admin'||curPerms.viewRecipes!==false;}
 function canViewReportsUI(){return curRole==='admin'||curPerms.viewReports!==false;}
+// per-screen visibility — each one independently shows/hides its own nav
+// item and blocks its own screen, instead of every report screen sharing
+// the single canViewReportsUI() gate above. All default ON so splitting
+// them out doesn't silently take access away from anyone who already had
+// it — admins can then switch specific ones off per user (particularly
+// useful for the sensitive financial screens: employees' salaries and
+// direct costs).
+function canViewDashboardUI(){return curRole==='admin'||curPerms.viewDashboard!==false;}
+function canViewMenuSalesUI(){return curRole==='admin'||curPerms.viewMenuSales!==false;}
+function canViewPlannerUI(){return curRole==='admin'||curPerms.viewPlanner!==false;}
+function canViewTransfersLogUI(){return curRole==='admin'||curPerms.viewTransfersLog!==false;}
+function canViewWasteReportUI(){return curRole==='admin'||curPerms.viewWasteReport!==false;}
+function canViewMaintenanceUI(){return curRole==='admin'||curPerms.viewMaintenance!==false;}
+function canViewIncomingTransfersUI(){return curRole==='admin'||curPerms.viewIncomingTransfers!==false;}
+function canViewBreakEvenUI(){return curRole==='admin'||curPerms.viewBreakEven!==false;}
+function canViewClosingStockUI(){return curRole==='admin'||curPerms.viewClosingStock!==false;}
+function canViewEmployeesUI(){return curRole==='admin'||curPerms.viewEmployees!==false;}
+function canViewDirectCostsUI(){return curRole==='admin'||curPerms.viewDirectCosts!==false;}
 const PERMISSION_DEFS=[
   {key:'manageBranches',label:'إدارة الفروع'},
   {key:'manageUsers',label:'إدارة المستخدمين'},
@@ -2256,6 +2284,17 @@ const PERMISSION_DEFS=[
   {key:'manageCompany',label:'بيانات الشركة'},
   {key:'viewRecipes',label:'عرض مكونات الأصناف',defaultOn:true},
   {key:'viewReports',label:'عرض تقارير الفرع',defaultOn:true},
+  {key:'viewDashboard',label:'لوحة التحكم التفاعلية',defaultOn:true},
+  {key:'viewMenuSales',label:'تقرير مبيعات المنيو',defaultOn:true},
+  {key:'viewPlanner',label:'تخطيط الاحتياج',defaultOn:true},
+  {key:'viewTransfersLog',label:'سجل التحويلات',defaultOn:true},
+  {key:'viewWasteReport',label:'تقرير الهالك',defaultOn:true},
+  {key:'viewMaintenance',label:'سجل الصيانة',defaultOn:true},
+  {key:'viewIncomingTransfers',label:'مراجعة التحويلات الواردة',defaultOn:true},
+  {key:'viewBreakEven',label:'نقطة التعادل اليومية',defaultOn:true},
+  {key:'viewClosingStock',label:'المخزون الختامي',defaultOn:true},
+  {key:'viewEmployees',label:'بيانات الموظفين (رواتب)',defaultOn:true},
+  {key:'viewDirectCosts',label:'التكاليف المباشرة',defaultOn:true},
 ];
 let unsubCatalog=null, unsubBranch=null, unsubUsers=null, unsubBranchesList=null;
 let catalogReady=false, branchReady=false, bootedUI=false;
@@ -2402,16 +2441,16 @@ function startDataSync(){
   document.getElementById('ddUsersItem').style.display=canManageUsersUI()?'':'none';
   document.getElementById('ddCompanyItem').style.display=canManageCompanyUI()?'':'none';
   document.getElementById('ddAllBranchReports').style.display=canViewAllReportsUI()?'':'none';
-  document.getElementById('ddDashboardItem').style.display=canViewReportsUI()?'':'none';
-  document.getElementById('ddMenuSalesItem').style.display=canViewReportsUI()?'':'none';
-  document.getElementById('ddPlannerItem').style.display=canViewReportsUI()?'':'none';
-  document.getElementById('ddTransfersLogItem').style.display=canViewReportsUI()?'':'none';
-  document.getElementById('ddWasteReportItem').style.display=canViewReportsUI()?'':'none';
-  document.getElementById('ddMaintenanceItem').style.display=canViewReportsUI()?'':'none';
-  document.getElementById('ddIncomingTransfersItem').style.display=canViewReportsUI()?'':'none';
-  document.getElementById('ddBreakEvenItem').style.display=canViewReportsUI()?'':'none';
-  document.getElementById('ddEmployeesItem').style.display=canViewReportsUI()?'':'none';
-  document.getElementById('ddDirectCostsItem').style.display=canViewReportsUI()?'':'none';
+  document.getElementById('ddDashboardItem').style.display=canViewDashboardUI()?'':'none';
+  document.getElementById('ddMenuSalesItem').style.display=canViewMenuSalesUI()?'':'none';
+  document.getElementById('ddPlannerItem').style.display=canViewPlannerUI()?'':'none';
+  document.getElementById('ddTransfersLogItem').style.display=canViewTransfersLogUI()?'':'none';
+  document.getElementById('ddWasteReportItem').style.display=canViewWasteReportUI()?'':'none';
+  document.getElementById('ddMaintenanceItem').style.display=canViewMaintenanceUI()?'':'none';
+  document.getElementById('ddIncomingTransfersItem').style.display=canViewIncomingTransfersUI()?'':'none';
+  document.getElementById('ddBreakEvenItem').style.display=canViewBreakEvenUI()?'':'none';
+  document.getElementById('ddEmployeesItem').style.display=canViewEmployeesUI()?'':'none';
+  document.getElementById('ddDirectCostsItem').style.display=canViewDirectCostsUI()?'':'none';
   document.getElementById('branchSwitch').disabled=!canManageBranchesUI();
 
   if(!unsubCompany){
@@ -3722,7 +3761,7 @@ function transferLinkStatusBadge(row){
 }
 let menuSalesBranchFilter='__current__';
 function openMenuSalesReport(){
-  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  if(!canViewMenuSalesUI()){toast('⚠️ عرض تقرير مبيعات المنيو غير متاح لحسابك — راجع الإدارة','wrn');return;}
   menuSalesBranchFilter='__current__';
   document.getElementById('menuSalesDateFrom').value='';
   document.getElementById('menuSalesDateTo').value='';
@@ -3828,7 +3867,7 @@ function exportMenuSalesExcel(){
   toast('📗 تم التصدير','inf');
 }
 function openTransfersLog(){
-  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  if(!canViewTransfersLogUI()){toast('⚠️ عرض سجل التحويلات غير متاح لحسابك — راجع الإدارة','wrn');return;}
   document.getElementById('transfersLogModal').classList.add('open');
   document.getElementById('transfersLogBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري تحميل بيانات الفروع...</div>';
   // approval/rejection status changes on the OTHER branch at any time, so this
@@ -3884,7 +3923,7 @@ function exportTransfersLogExcel(){
 // ══════════════════════════════════════════════
 let wasteReportBranchFilter='__current__';
 function openWasteReport(){
-  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  if(!canViewWasteReportUI()){toast('⚠️ عرض تقرير الهالك غير متاح لحسابك — راجع الإدارة','wrn');return;}
   wasteReportBranchFilter='__current__';
   document.getElementById('wr-date-from').value='';
   document.getElementById('wr-date-to').value='';
@@ -4004,7 +4043,7 @@ function exportWasteReportExcel(){
 // ══════════════════════════════════════════════
 const MAINT_STATUS_LABELS={pending:'⏳ بانتظار',inprogress:'🔧 جاري الإصلاح',resolved:'✅ تم الحل'};
 function openMaintenanceLog(){
-  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  if(!canViewMaintenanceUI()){toast('⚠️ عرض سجل الصيانة غير متاح لحسابك — راجع الإدارة','wrn');return;}
   document.getElementById('mnt-date').value=today();
   document.getElementById('mnt-equipment').value='';
   document.getElementById('mnt-desc').value='';
@@ -4081,7 +4120,7 @@ function exportMaintenanceExcel(){
 // ══════════════════════════════════════════════
 let breakEvenBranchFilter='__current__';
 function openBreakEvenModule(){
-  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  if(!canViewBreakEvenUI()){toast('⚠️ عرض نقطة التعادل اليومية غير متاح لحسابك — راجع الإدارة','wrn');return;}
   breakEvenBranchFilter='__current__';
   breakEvenDateFrom=null;breakEvenDateTo=null;
   document.getElementById('be-date-from').value='';
@@ -4158,7 +4197,7 @@ function deleteEmployee(id){
   renderEmployeesScreen();renderBreakEvenModule();
 }
 function openEmployeesScreen(){
-  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  if(!canViewEmployeesUI()){toast('⚠️ عرض بيانات الموظفين غير متاح لحسابك — راجع الإدارة','wrn');return;}
   employeesBranchFilter='__current__';
   populateEmployeesBranchFilter();
   renderEmployeesScreen();
@@ -4278,7 +4317,7 @@ function deleteDirectCost(id){
   renderDirectCostsScreen();renderBreakEvenModule();
 }
 function openDirectCostsScreen(){
-  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  if(!canViewDirectCostsUI()){toast('⚠️ عرض التكاليف المباشرة غير متاح لحسابك — راجع الإدارة','wrn');return;}
   directCostsBranchFilter='__current__';
   populateDirectCostsBranchFilter();
   renderDirectCostsScreen();
@@ -4700,7 +4739,7 @@ function svgBarChart(items,opts){
   return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">${bars}</svg>`;
 }
 function openDashboard(){
-  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  if(!canViewDashboardUI()){toast('⚠️ عرض لوحة التحكم التفاعلية غير متاح لحسابك — راجع الإدارة','wrn');return;}
   document.getElementById('dashboardModal').classList.add('open');
   renderDashboard();
 }
@@ -5873,6 +5912,7 @@ function renderIncomingTransfersBadge(){
   el.innerHTML=`${t('📥 مراجعة التحويلات الواردة')}${pending?` <span style="background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-right:6px">${pending}</span>`:''}`;
 }
 function openIncomingTransfersReview(){
+  if(!canViewIncomingTransfersUI()){toast('⚠️ مراجعة التحويلات الواردة غير متاحة لحسابك — راجع الإدارة','wrn');return;}
   renderIncomingTransfersScreen();
   document.getElementById('incomingTransfersModal').classList.add('open');
 }
@@ -6134,7 +6174,7 @@ function computeClosingStockReport(c){
   return {rows,dailyReport,cycleEnd:c.end,mismatchCount:rows.filter(r=>r.mismatch).length,totalValue};
 }
 function openClosingStockReport(cid){
-  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  if(!canViewClosingStockUI()){toast('⚠️ عرض تقرير المخزون الختامي غير متاح لحسابك — راجع الإدارة','wrn');return;}
   const c=getCycle(cid);if(!c)return;
   curClosingStockCycleId=cid;
   renderClosingStockReport();
@@ -6603,7 +6643,7 @@ function computeHistoricalAverages(){
 
 let planDays=14,planMenuQty={},planBranchFilter='__current__';
 function openRequirementPlanner(){
-  if(!canViewReportsUI()){toast('⚠️ عرض تقارير الفرع غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  if(!canViewPlannerUI()){toast('⚠️ عرض تخطيط الاحتياج غير متاح لحسابك — راجع الإدارة','wrn');return;}
   if(!S.curBranch){toast('⚠️ اختار/أنشئ فرع أولاً','wrn');return;}
   planBranchFilter='__current__';
   populatePlanBranchFilter();

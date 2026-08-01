@@ -11,6 +11,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 <style>
 :root{
   --bg:#f2f3f8;--surface:#f8f9fc;--card:#ffffff;--card2:#f5f6fa;
@@ -551,6 +552,7 @@ td{padding:9px 13px;vertical-align:middle;}
   <div class="hright">
     <button class="hbtn sidebarToggleBtn" id="sidebarToggleBtn" onclick="toggleMobileSidebar()" title="القوائم">☰</button>
     <button class="hbtn" id="langToggleBtn" onclick="toggleLang()" title="Language / اللغة" style="font-family:var(--mono)">EN</button>
+    <button class="hbtn" id="notificationsBtn" onclick="openNotificationsCenter()" title="الإشعارات" data-i18n-title="الإشعارات" style="position:relative">🔔<span id="notifBadge" style="display:none;position:absolute;top:-4px;left:-4px;background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-family:var(--mono)"></span></button>
     <div class="bchip" onclick="openBranchMgr()" style="cursor:pointer" title="إدارة الفروع" data-i18n-title="إدارة الفروع">
       <div class="bc-dot"></div>
       <div><div class="bc-lbl" data-i18n="الفرع">الفرع</div><div class="bc-val" id="branchLbl">—</div></div>
@@ -1169,6 +1171,18 @@ td{padding:9px 13px;vertical-align:middle;}
 </div>
 </div>
 
+<!-- NOTIFICATIONS CENTER MODAL (كل الإشعارات: تحويلات واردة معلّقة + أعطال صيانة مفتوحة) -->
+<div class="overlay" id="notificationsModal">
+<div class="modal" style="width:760px">
+  <div class="mod-title" data-i18n="🔔 مركز الإشعارات">🔔 مركز الإشعارات</div>
+  <p style="font-size:11px;color:var(--muted);margin:-6px 0 14px">كل التنبيهات اللي محتاجة انتباهك دلوقتي: تحويلات واردة لسه معلّقة، وأعطال صيانة لسه مفتوحة.</p>
+  <div id="notificationsBody"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('notificationsModal')" data-i18n="إغلاق">إغلاق</button>
+  </div>
+</div>
+</div>
+
 <!-- INCOMING TRANSFERS REVIEW MODAL (مراجعة واعتماد التحويلات الواردة من الفروع التانية) -->
 <div class="overlay" id="incomingTransfersModal">
 <div class="modal" style="width:820px">
@@ -1346,6 +1360,7 @@ td{padding:9px 13px;vertical-align:middle;}
       <div class="mod-field"><label class="mod-lbl" data-i18n="المُبلّغ">المُبلّغ</label><input type="text" class="mod-in" id="mnt-reporter" placeholder="اسم الموظف..."></div>
       <div class="mod-field"><label class="mod-lbl" data-i18n="تكلفة الإصلاح المتوقعة (اختياري)">تكلفة الإصلاح المتوقعة (اختياري)</label><input type="number" inputmode="decimal" class="mod-in" id="mnt-cost" min="0" step="0.01"></div>
     </div>
+    <div class="mod-field"><label class="mod-lbl" data-i18n="صورة توضيحية للمشكلة (اختياري)">صورة توضيحية للمشكلة (اختياري)</label><input type="file" accept="image/*" class="mod-in" id="mnt-photo"></div>
     <button class="hbtn gold" style="width:100%;justify-content:center;padding:10px" onclick="addMaintenanceEntry()" data-i18n="➕ تسجيل عطل جديد">➕ تسجيل عطل جديد</button>
   </div>
   <div id="maintenanceList"></div>
@@ -1912,6 +1927,7 @@ function reRenderDynamicContentForLang(){
   if(!bootedUI) return;
   if(typeof renderTbl==='function') renderTbl();
   if(typeof renderIncomingTransfersBadge==='function') renderIncomingTransfersBadge();
+  if(typeof updateNotificationsBadge==='function') updateNotificationsBadge();
   if(curView==='cycle'){renderCycleTabs();renderCycleBody();}
   const openRenders=[
     ['usersModal',renderUsersList],
@@ -1931,6 +1947,7 @@ function reRenderDynamicContentForLang(){
     ['directCostsModal',renderDirectCostsScreen],
     ['incomingTransfersModal',renderIncomingTransfersScreen],
     ['uomModal',renderUomList],
+    ['notificationsModal',renderNotificationsCenter],
     ['menuModal',renderMenuList],
   ];
   openRenders.forEach(([id,fn])=>{
@@ -2247,7 +2264,7 @@ function groupRowsByCategory(rows,refField){
 //  FIREBASE: AUTH + REAL-TIME DATA SYNC
 //  (replaces the old localStorage-only load()/save())
 // ══════════════════════════════════════════════
-let auth, db;
+let auth, db, storage;
 let curUser=null, curRole=null, curUserBranch=null, curPerms={};
 function canManageBranchesUI(){return curRole==='admin'||!!curPerms.manageBranches;}
 function canManageUsersUI(){return curRole==='admin'||!!curPerms.manageUsers;}
@@ -2275,6 +2292,10 @@ function canViewBreakEvenUI(){return curRole==='admin'||curPerms.viewBreakEven!=
 function canViewClosingStockUI(){return curRole==='admin'||curPerms.viewClosingStock!==false;}
 function canViewEmployeesUI(){return curRole==='admin'||curPerms.viewEmployees!==false;}
 function canViewDirectCostsUI(){return curRole==='admin'||curPerms.viewDirectCosts!==false;}
+// notifications center just surfaces items from the two screens above, so it
+// has no permission flag of its own — it's visible to anyone who can already
+// see at least one of the two notice types it aggregates.
+function canViewNotificationsUI(){return curRole==='admin'||canViewIncomingTransfersUI()||canViewMaintenanceUI();}
 const PERMISSION_DEFS=[
   {key:'manageBranches',label:'إدارة الفروع'},
   {key:'manageUsers',label:'إدارة المستخدمين'},
@@ -2314,6 +2335,7 @@ function initFirebase(){
   firebase.initializeApp(firebaseConfig);
   auth=firebase.auth();
   db=firebase.firestore();
+  storage=firebase.storage?firebase.storage():null;
   auth.onAuthStateChanged(onAuthChange);
 }
 // A second, independently-named Firebase app instance so an admin creating
@@ -2451,6 +2473,8 @@ function startDataSync(){
   document.getElementById('ddBreakEvenItem').style.display=canViewBreakEvenUI()?'':'none';
   document.getElementById('ddEmployeesItem').style.display=canViewEmployeesUI()?'':'none';
   document.getElementById('ddDirectCostsItem').style.display=canViewDirectCostsUI()?'':'none';
+  document.getElementById('notificationsBtn').style.display=canViewNotificationsUI()?'':'none';
+  updateNotificationsBadge();
   document.getElementById('branchSwitch').disabled=!canManageBranchesUI();
 
   if(!unsubCompany){
@@ -2526,12 +2550,14 @@ function switchToBranchDoc(key){
     // and re-rendered unconditionally, outside the self-echo short-circuit below.
     S.incomingTransfers=d.incomingTransfers||[];
     renderIncomingTransfersBadge();
+    updateNotificationsBadge();
     if(document.getElementById('incomingTransfersModal')&&document.getElementById('incomingTransfersModal').classList.contains('open')) renderIncomingTransfersScreen();
     const incoming=JSON.stringify({name:d.name,manager:d.manager,storekeeper:d.storekeeper,supervisor:d.supervisor,date:d.date,sid:d.sid,qty:d.qty||{},notes:d.notes||{},reports:d.reports||[],cycles:d.cycles||[],maintenance:d.maintenance||[],employees:d.employees||[],directCosts:d.directCosts||[],beVarPctOverride:d.beVarPctOverride!=null?d.beVarPctOverride:null,beDaysInMonth:d.beDaysInMonth||30});
     branchReady=true;
     if(incoming===lastSentBranchJSON){tryBootUI();if(bootedUI)consumePendingOpenAllBranches();return;}
     S.date=d.date||today();S.sid=d.sid||genSid();
     S.qty=d.qty||{};S.notes=d.notes||{};S.reports=d.reports||[];S.maintenance=d.maintenance||[];
+    updateNotificationsBadge();
     S.employees=d.employees||[];S.directCosts=d.directCosts||[];S.beVarPctOverride=d.beVarPctOverride!=null?d.beVarPctOverride:null;S.beDaysInMonth=d.beDaysInMonth||30;
     S.branch=d.name||'';S.manager=d.manager||'';S.storekeeper=d.storekeeper||'';S.supervisor=d.supervisor||'';
     if(!S.branches) S.branches={};
@@ -4060,24 +4086,45 @@ function addMaintenanceEntry(){
   const cost=parseFloat(document.getElementById('mnt-cost').value)||0;
   if(!equipment||!desc){toast('⚠️ أدخل المعدة/الموقع ووصف العطل','wrn');return;}
   if(!S.maintenance) S.maintenance=[];
-  S.maintenance.unshift({id:'MNT'+Date.now().toString(36).toUpperCase(),date,equipment,desc,reporter,cost,status:'pending',createdAt:new Date().toISOString()});
+  const id='MNT'+Date.now().toString(36).toUpperCase();
+  S.maintenance.unshift({id,date,equipment,desc,reporter,cost,status:'pending',createdAt:new Date().toISOString(),photoUrl:null});
   save();
+  const photoInput=document.getElementById('mnt-photo');
+  const file=photoInput&&photoInput.files&&photoInput.files[0];
   document.getElementById('mnt-equipment').value='';
   document.getElementById('mnt-desc').value='';
   document.getElementById('mnt-cost').value='';
+  if(photoInput) photoInput.value='';
   renderMaintenanceList();
+  updateNotificationsBadge();
   toast('✅ تم تسجيل العطل','suc');
+  if(file) uploadMaintenancePhoto(id,file);
+}
+function uploadMaintenancePhoto(id,file){
+  if(!storage){toast('⚠️ رفع الصور غير متاح دلوقتي — جرّب تاني بعدين','wrn');return;}
+  const path=`maintenance/${S.curBranch}/${id}_${Date.now()}_${file.name}`;
+  toast('⏳ جاري رفع الصورة...','inf');
+  storage.ref(path).put(file).then(snap=>snap.ref.getDownloadURL()).then(url=>{
+    const e=(S.maintenance||[]).find(x=>x.id===id);
+    if(e){ e.photoUrl=url; save(); renderMaintenanceList(); }
+    toast('✅ تم رفع الصورة','suc');
+  }).catch(err=>toast('⚠️ فشل رفع الصورة: '+err.message,'err'));
+}
+function removeMaintenancePhoto(id){
+  const e=(S.maintenance||[]).find(x=>x.id===id);if(!e)return;
+  e.photoUrl=null;
+  save();renderMaintenanceList();
 }
 function setMaintenanceStatus(id,status){
   const e=(S.maintenance||[]).find(x=>x.id===id);if(!e)return;
   e.status=status;
   if(status==='resolved') e.resolvedAt=new Date().toISOString(); else delete e.resolvedAt;
-  save();renderMaintenanceList();
+  save();renderMaintenanceList();updateNotificationsBadge();
 }
 function deleteMaintenanceEntry(id){
   if(!confirm('حذف هذا السجل نهائياً؟'))return;
   S.maintenance=(S.maintenance||[]).filter(x=>x.id!==id);
-  save();renderMaintenanceList();
+  save();renderMaintenanceList();updateNotificationsBadge();
 }
 function renderMaintenanceList(){
   const list=[...(S.maintenance||[])].sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||'').localeCompare(a.createdAt||''));
@@ -4089,11 +4136,12 @@ function renderMaintenanceList(){
     <div class="db-sub">إجمالي تكلفة الإصلاحات: ${fmt(list.reduce((s,x)=>s+(x.cost||0),0))}</div></div></div>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>${t('التاريخ')}</th><th>${t('المعدة/الموقع')}</th><th>${t('وصف العطل')}</th><th>${t('المُبلّغ')}</th><th>${t('التكلفة')}</th><th>${t('الحالة')}</th><th></th></tr></thead>
+    <thead><tr><th>${t('التاريخ')}</th><th>${t('المعدة/الموقع')}</th><th>${t('وصف العطل')}</th><th>${t('صورة')}</th><th>${t('المُبلّغ')}</th><th>${t('التكلفة')}</th><th>${t('الحالة')}</th><th></th></tr></thead>
     <tbody>${list.map(e=>`<tr>
       <td style="font-family:var(--mono);font-size:11px">${e.date}</td>
       <td class="td-name">${e.equipment}</td>
       <td style="font-size:12px;max-width:240px">${e.desc}</td>
+      <td>${e.photoUrl?`<a href="${e.photoUrl}" target="_blank" rel="noopener"><img src="${e.photoUrl}" style="width:38px;height:38px;object-fit:cover;border-radius:6px;border:1px solid var(--border)" title="فتح الصورة كاملة"></a> <button class="hi-btn del" style="flex:none;padding:2px 6px;font-size:10px" onclick="removeMaintenancePhoto('${e.id}')" title="حذف الصورة">🗑</button>`:'-'}</td>
       <td style="font-size:11px;color:var(--muted)">${e.reporter||'-'}</td>
       <td style="font-family:var(--mono)">${e.cost?fmt(e.cost):'-'}</td>
       <td><select class="mod-in" style="width:auto;padding:5px 8px;font-size:11px" onchange="setMaintenanceStatus('${e.id}',this.value)">
@@ -5911,6 +5959,60 @@ function renderIncomingTransfersBadge(){
   const pending=(S.incomingTransfers||[]).filter(r=>r.status==='pending').length;
   el.innerHTML=`${t('📥 مراجعة التحويلات الواردة')}${pending?` <span style="background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-right:6px">${pending}</span>`:''}`;
 }
+// aggregates the two operational notice types this business actually needs
+// surfaced proactively — pending incoming-transfer approvals and maintenance
+// issues still open — rather than a full audit log of every field edit.
+function computeNotifications(){
+  const pendingTransfers=canViewIncomingTransfersUI()?(S.incomingTransfers||[]).filter(r=>r.status==='pending'):[];
+  const openMaintenance=canViewMaintenanceUI()?(S.maintenance||[]).filter(x=>x.status!=='resolved'):[];
+  return {pendingTransfers,openMaintenance};
+}
+function updateNotificationsBadge(){
+  const badge=document.getElementById('notifBadge');
+  if(!badge) return;
+  if(!canViewNotificationsUI()){badge.style.display='none';return;}
+  const n=computeNotifications();
+  const total=n.pendingTransfers.length+n.openMaintenance.length;
+  if(total>0){badge.style.display='';badge.textContent=total;} else {badge.style.display='none';}
+}
+function openNotificationsCenter(){
+  if(!canViewNotificationsUI()){toast('⚠️ مركز الإشعارات غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  renderNotificationsCenter();
+  document.getElementById('notificationsModal').classList.add('open');
+}
+function renderNotificationsCenter(){
+  const el=document.getElementById('notificationsBody');if(!el)return;
+  const n=computeNotifications();
+  if(!n.pendingTransfers.length&&!n.openMaintenance.length){
+    el.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted)">مفيش إشعارات دلوقتي — كل حاجة تمام 👍</div>';
+    return;
+  }
+  let html='';
+  if(n.pendingTransfers.length){
+    html+=`<div style="margin-bottom:18px">
+      <div style="font-weight:700;margin-bottom:8px">📥 تحويلات واردة معلّقة (${n.pendingTransfers.length})</div>
+      ${n.pendingTransfers.map(r=>`<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div><b>من فرع:</b> ${r.fromBranchName} <span style="color:var(--muted);font-size:11px">— ${(r.items||[]).length} صنف — ${r.date}</span></div>
+        <button class="hbtn gold" style="padding:5px 10px;font-size:11px" onclick="closeM('notificationsModal');openIncomingTransfersReview()">مراجعة</button>
+      </div>`).join('')}
+    </div>`;
+  }
+  if(n.openMaintenance.length){
+    html+=`<div>
+      <div style="font-weight:700;margin-bottom:8px">🔧 أعطال صيانة مفتوحة (${n.openMaintenance.length})</div>
+      ${n.openMaintenance.map(m=>`<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div><b>${m.equipment}</b> <span style="color:var(--muted);font-size:11px">— ${m.date}</span></div>
+          <span style="font-size:11px">${MAINT_STATUS_LABELS[m.status]||m.status}</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">${m.desc}</div>
+        ${m.photoUrl?`<a href="${m.photoUrl}" target="_blank" rel="noopener"><img src="${m.photoUrl}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;margin-top:6px;border:1px solid var(--border)"></a>`:''}
+      </div>`).join('')}
+      <button class="hbtn" style="margin-top:4px" onclick="closeM('notificationsModal');openMaintenanceLog()">فتح شاشة الصيانة</button>
+    </div>`;
+  }
+  el.innerHTML=html;
+}
 function openIncomingTransfersReview(){
   if(!canViewIncomingTransfersUI()){toast('⚠️ مراجعة التحويلات الواردة غير متاحة لحسابك — راجع الإدارة','wrn');return;}
   renderIncomingTransfersScreen();
@@ -6004,6 +6106,7 @@ function persistIncomingTransferDecision(reqId,status,items,rejectReason){
   }).then(({decidedAt,decidedBy})=>{
     S.incomingTransfers=(S.incomingTransfers||[]).map(r=>r.id===reqId?{...r,status,items,decidedAt,decidedBy,rejectReason}:r);
     renderIncomingTransfersBadge();
+    updateNotificationsBadge();
     renderIncomingTransfersScreen();
   }).catch(e=>toast('⚠️ خطأ في حفظ قرار التحويل: '+e.message,'err'));
 }

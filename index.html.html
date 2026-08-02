@@ -1155,6 +1155,8 @@ td{padding:10px 13px;vertical-align:middle;}
       <div class="vn-dd-item" id="ddTransfersLogItem" onclick="closeDropdowns();openTransfersLog()" data-i18n="🔀 سجل التحويلات">🔀 سجل التحويلات</div>
       <div class="vn-dd-item" id="ddWasteReportItem" onclick="closeDropdowns();openWasteReport()" data-i18n="🗑️ تقرير أكثر الأصناف هالكًا">🗑️ تقرير أكثر الأصناف هالكًا</div>
       <div class="vn-dd-item" id="ddBreakEvenItem" onclick="closeDropdowns();openBreakEvenModule()" data-i18n="⚖️ نقطة التعادل اليومية">⚖️ نقطة التعادل اليومية</div>
+      <div class="vn-dd-item" id="ddStockBalanceItem" onclick="closeDropdowns();openStockBalanceReport()" data-i18n="📦 رصيد المخزون الحالي">📦 رصيد المخزون الحالي</div>
+      <div class="vn-dd-item" id="ddShortageAlertItem" onclick="closeDropdowns();openShortageAlertReport()" data-i18n="⚠️ تنبيه النواقص">⚠️ تنبيه النواقص</div>
       <div class="vn-dd-item" id="ddAllBranchReports" style="display:none" onclick="closeDropdowns();openAllBranchesReport()" data-i18n="🌐 تقرير كل الفروع">🌐 تقرير كل الفروع</div>
       <div class="vn-dd-div"></div>
       <div class="vn-dd-item" onclick="closeDropdowns();exportFullDataExcel()" data-i18n="📗 تفريغ كل البيانات (Excel)">📗 تفريغ كل البيانات (Excel)</div>
@@ -1271,6 +1273,11 @@ td{padding:10px 13px;vertical-align:middle;}
       <label class="mod-lbl" data-i18n="تكلفة الوحدة (اختياري)">تكلفة الوحدة (اختياري)</label>
       <input type="number" inputmode="decimal" class="mod-in" id="ai-cost" placeholder="0.00" min="0" step="0.01">
     </div>
+  </div>
+  <div class="mod-field">
+    <label class="mod-lbl" data-i18n="الحد الأدنى للمخزون (اختياري)">الحد الأدنى للمخزون (اختياري)</label>
+    <input type="number" inputmode="decimal" class="mod-in" id="ai-minstock" placeholder="0" min="0" step="0.001">
+    <div class="mod-hint">لو الرصيد الحالي وصل للرقم ده أو أقل، الصنف هيظهر في تقرير تنبيه النواقص</div>
   </div>
   <div class="mod-hint" style="margin:-10px 0 14px">تكلفة الوحدة تُستخدم لحساب قيمة الانحراف ونسبة التكلفة — لو الصنف نصف مصنّع وله مكوّنات تحتها، هيتحسب سعره تلقائياً من مكوناته بدل الرقم ده</div>
   <div class="mod-field">
@@ -1787,6 +1794,46 @@ td{padding:10px 13px;vertical-align:middle;}
     <button class="hbtn" onclick="closeM('closingStockModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportClosingStockExcel()">📗 Excel</button>
+  </div>
+</div>
+</div>
+
+<!-- CURRENT STOCK BALANCE MODAL (رصيد المخزون الحالي — بالفرع أو مجمّع لكل الفروع) -->
+<div class="overlay" id="stockBalanceModal">
+<div class="modal" style="width:940px">
+  <div class="mod-title" data-i18n="📦 رصيد المخزون الحالي">📦 رصيد المخزون الحالي</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('stockBalanceModal')" data-i18n="إغلاق">إغلاق</button>
+    <select id="sbr-branch-filter" style="width:auto" onchange="setStockBalanceBranchFilter(this.value)"></select>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportStockBalanceExcel()">📗 Excel</button>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">رصيد كل صنف حسب آخر كمية مُدخلة في الجرد اليومي (مش رصيد دورة تسوية) — اختار فرع معيّن لتفاصيله، أو "كل الفروع (مجمّع)" لملخص قيمة المخزون في كل فرع.</p>
+  <div id="stockBalanceBody"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('stockBalanceModal')" data-i18n="إغلاق">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportStockBalanceExcel()">📗 Excel</button>
+  </div>
+</div>
+</div>
+
+<!-- SHORTAGE ALERT MODAL (تنبيه النواقص — الأصناف اللي وصلت للحد الأدنى) -->
+<div class="overlay" id="shortageAlertModal">
+<div class="modal" style="width:940px">
+  <div class="mod-title" data-i18n="⚠️ تنبيه النواقص">⚠️ تنبيه النواقص</div>
+  <div class="mod-top-actions">
+    <button class="hbtn" onclick="closeM('shortageAlertModal')" data-i18n="إغلاق">إغلاق</button>
+    <select id="sar-branch-filter" style="width:auto" onchange="setShortageAlertBranchFilter(this.value)"></select>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportShortageAlertExcel()">📗 Excel</button>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">الأصناف اللي رصيدها الحالي وصل لحدّها الأدنى أو أقل منه — بناءً على "الحد الأدنى للمخزون" المحدّد لكل صنف من شاشة تعديل الصنف.</p>
+  <div id="shortageAlertBody"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('shortageAlertModal')" data-i18n="إغلاق">إغلاق</button>
+    <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+    <button class="hbtn" onclick="exportShortageAlertExcel()">📗 Excel</button>
   </div>
 </div>
 </div>
@@ -2422,6 +2469,8 @@ function reRenderDynamicContentForLang(){
     ['menuSalesModal',renderMenuSalesReport],
     ['posMatchModal',renderPosMatchList],
     ['closingStockModal',renderClosingStockReport],
+    ['stockBalanceModal',renderStockBalanceReport],
+    ['shortageAlertModal',renderShortageAlertReport],
     ['wasteReportModal',renderWasteReport],
     ['maintenanceModal',renderMaintenanceList],
     ['importReconcileModal',renderImportReconcile],
@@ -2787,6 +2836,7 @@ function canViewMaintenanceUI(){return curRole==='admin'||curPerms.viewMaintenan
 function canViewIncomingTransfersUI(){return curRole==='admin'||curPerms.viewIncomingTransfers!==false;}
 function canViewBreakEvenUI(){return curRole==='admin'||curPerms.viewBreakEven!==false;}
 function canViewClosingStockUI(){return curRole==='admin'||curPerms.viewClosingStock!==false;}
+function canViewStockBalanceUI(){return curRole==='admin'||curPerms.viewStockBalance!==false;}
 function canViewEmployeesUI(){return curRole==='admin'||curPerms.viewEmployees!==false;}
 function canViewDirectCostsUI(){return curRole==='admin'||curPerms.viewDirectCosts!==false;}
 // notifications center just surfaces items from the two screens above, so it
@@ -2811,6 +2861,7 @@ const PERMISSION_DEFS=[
   {key:'viewIncomingTransfers',label:'مراجعة التحويلات الواردة',defaultOn:true},
   {key:'viewBreakEven',label:'نقطة التعادل اليومية',defaultOn:true},
   {key:'viewClosingStock',label:'المخزون الختامي',defaultOn:true},
+  {key:'viewStockBalance',label:'أرصدة المخزون الحالي وتنبيه النواقص',defaultOn:true},
   {key:'viewEmployees',label:'بيانات الموظفين (رواتب)',defaultOn:true},
   {key:'viewDirectCosts',label:'التكاليف المباشرة',defaultOn:true},
 ];
@@ -2968,6 +3019,8 @@ function startDataSync(){
   document.getElementById('ddMaintenanceItem').style.display=canViewMaintenanceUI()?'':'none';
   document.getElementById('ddIncomingTransfersItem').style.display=canViewIncomingTransfersUI()?'':'none';
   document.getElementById('ddBreakEvenItem').style.display=canViewBreakEvenUI()?'':'none';
+  document.getElementById('ddStockBalanceItem').style.display=canViewStockBalanceUI()?'':'none';
+  document.getElementById('ddShortageAlertItem').style.display=canViewStockBalanceUI()?'':'none';
   document.getElementById('ddEmployeesItem').style.display=canViewEmployeesUI()?'':'none';
   document.getElementById('ddDirectCostsItem').style.display=canViewDirectCostsUI()?'':'none';
   // notificationsBtn/branchSwitch are now rendered by the React header — it
@@ -3312,6 +3365,7 @@ function openAddItem(){
   document.getElementById('ai-name-en').value='';
   document.getElementById('ai-qty').value='';
   document.getElementById('ai-cost').value='';
+  document.getElementById('ai-minstock').value='';
   document.getElementById('ai-type').value='raw';
   document.getElementById('ai-ref').readOnly=false;
   curItemRecipeRows=[];
@@ -3336,6 +3390,7 @@ function openEditItem(ref){
   document.getElementById('ai-uom').value=it.u;
   document.getElementById('ai-qty').value=S.qty[it.r]||'';
   document.getElementById('ai-cost').value=it.cost||'';
+  document.getElementById('ai-minstock').value=it.minStock!=null?it.minStock:'';
   document.getElementById('ai-type').value=it.type||'raw';
   curItemRecipeRows=(it.recipe||[]).map(r=>{const ing=S.items.find(x=>x.r===r.r);return {...r,uom:ing?ing.u:''};});
   renderItemRecipeRows();
@@ -3487,6 +3542,8 @@ function saveItem(){
   const uom=document.getElementById('ai-uom').value;
   const qty=document.getElementById('ai-qty').value;
   const cost=parseFloat(document.getElementById('ai-cost').value)||0;
+  const minStockRaw=document.getElementById('ai-minstock').value;
+  const minStock=minStockRaw===''?null:(parseFloat(minStockRaw)||0);
   const type=document.getElementById('ai-type').value||'raw';
 
   // Validate
@@ -3506,11 +3563,11 @@ function saveItem(){
   if(editingItem){
     const idx=S.items.findIndex(i=>i.r===editingItem);
     if(idx>=0){
-      S.items[idx]={...S.items[idx],n:nameAr,e:nameEn,c:cat,u:uom,cost,type,recipe,custom:true};
+      S.items[idx]={...S.items[idx],n:nameAr,e:nameEn,c:cat,u:uom,cost,minStock,type,recipe,custom:true};
     }
     toast('✅ تم تعديل الصنف: '+nameAr,'suc');
   } else {
-    S.items.push({r:ref,n:nameAr,e:nameEn,c:cat,u:uom,cost,type,recipe,custom:true});
+    S.items.push({r:ref,n:nameAr,e:nameEn,c:cat,u:uom,cost,minStock,type,recipe,custom:true});
     if(qty) S.qty[ref]=parseFloat(qty)||0;
     toast('✅ تم إضافة الصنف: '+nameAr,'suc');
   }
@@ -7123,6 +7180,199 @@ function crossBranchDataSource(filterValue){
   if(filterValue==='__all__') return {cyclesArrays:Object.values(crossBranchRawDocs).map(d=>d.cycles||[]),qtyMaps:Object.values(crossBranchRawDocs).map(d=>d.qty||{}),label:'كل الفروع (مجمّع)'};
   const d=crossBranchRawDocs[filterValue]||{};
   return {cyclesArrays:[d.cycles||[]],qtyMaps:[d.qty||{}],label:(S.branches[filterValue]||{}).name||filterValue};
+}
+
+// ══════════════════════════════════════════════
+//  CURRENT STOCK BALANCE + SHORTAGE ALERT (رصيد المخزون الحالي بكل فرع،
+//  تقرير مجمّع لكل الفروع، وتنبيه بالأصناف اللي وصلت لحدها الأدنى) — uses
+//  the LIVE daily-count quantity (S.qty per branch, via crossBranchDataSource
+//  — the same source the requirement planner already uses), not a periodic
+//  cycle snapshot, since "current" should mean what's on the shelf right
+//  now. The item catalog (name/cost/category/minStock) is shared across
+//  branches, so it's always read from the current S.items.
+// ══════════════════════════════════════════════
+let stockBalanceBranchFilter='__current__';
+function openStockBalanceReport(){
+  if(!canViewStockBalanceUI()){toast('⚠️ عرض أرصدة المخزون غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  // defaults to the current branch, same convention as the requirement
+  // planner (openRequirementPlanner) — the consolidated view is one
+  // explicit selection away via the branch filter, not the surprise default
+  stockBalanceBranchFilter='__current__';
+  document.getElementById('stockBalanceModal').classList.add('open');
+  if(stockBalanceBranchFilter==='__all__'&&!crossBranchRawDocs){
+    document.getElementById('stockBalanceBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري التحميل...</div>';
+    loadCrossBranchDocs().then(renderStockBalanceReport).catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
+  } else {
+    renderStockBalanceReport();
+  }
+}
+function setStockBalanceBranchFilter(v){
+  stockBalanceBranchFilter=v;
+  if(v==='__all__'&&!crossBranchRawDocs){
+    document.getElementById('stockBalanceBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري التحميل...</div>';
+    loadCrossBranchDocs().then(renderStockBalanceReport).catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
+    return;
+  }
+  renderStockBalanceReport();
+}
+function computeStockBalanceForQtyMap(qtyMap){
+  return S.items.map(it=>{
+    const v=qtyMap[it.r];
+    const qty=v!=null&&v!==''?parseFloat(v):null;
+    if(qty==null||isNaN(qty)) return null;
+    const unitCost=effectiveItemCost(it);
+    return {r:it.r,n:it.n,u:it.u,qty,unitCost,value:qty*unitCost,minStock:it.minStock!=null?it.minStock:null,short:it.minStock!=null&&qty<=it.minStock};
+  }).filter(Boolean);
+}
+function computeStockBalancePerBranch(filterValue){
+  const src=crossBranchDataSource(filterValue);
+  const rows=computeStockBalanceForQtyMap(src.qtyMaps[0]||{});
+  return {rows,totalValue:rows.reduce((s,r)=>s+r.value,0),shortCount:rows.filter(r=>r.short).length,label:src.label};
+}
+function computeStockBalanceAllBranches(){
+  if(!crossBranchRawDocs) return [];
+  return Object.entries(crossBranchRawDocs).map(([key,d])=>{
+    const rows=computeStockBalanceForQtyMap(d.qty||{});
+    return {key,name:(S.branches[key]||{}).name||d.name||key,itemCount:rows.length,totalValue:rows.reduce((s,r)=>s+r.value,0),shortCount:rows.filter(r=>r.short).length};
+  });
+}
+function renderStockBalanceReport(){
+  const el=document.getElementById('stockBalanceBody');
+  document.getElementById('sbr-branch-filter').innerHTML=branchFilterOptionsHtml(stockBalanceBranchFilter);
+  const kpi=(l,v,color)=>`<div class="stat" style="border-color:${color}55"><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>`;
+  if(stockBalanceBranchFilter==='__all__'){
+    const branchRows=computeStockBalanceAllBranches();
+    const totalValue=branchRows.reduce((s,r)=>s+r.totalValue,0);
+    const totalShort=branchRows.reduce((s,r)=>s+r.shortCount,0);
+    el.innerHTML=`${reportHeaderBlock({title:'📦 تقرير مجمّع — أرصدة المخزون بكل الفروع (Consolidated Stock Report)'})}
+    <div class="stats" style="margin-bottom:16px">
+      ${kpi(t('إجمالي قيمة المخزون بكل الفروع'),fmt(totalValue),'#3d8ef0')}
+      ${kpi(t('عدد الفروع'),branchRows.length,'#2ee89a')}
+      ${kpi(t('إجمالي الأصناف الناقصة'),totalShort,totalShort?'#f05050':'#2ee89a')}
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>${t('الفرع')}</th><th>${t('عدد الأصناف المجرودة')}</th><th>${t('إجمالي القيمة')}</th><th>${t('أصناف ناقصة')}</th></tr></thead>
+      <tbody>${branchRows.map(b=>`<tr>
+        <td class="td-name">${b.name}</td>
+        <td style="font-family:var(--mono);text-align:center">${b.itemCount}</td>
+        <td style="font-family:var(--mono);text-align:center;font-weight:700">${fmt(b.totalValue)}</td>
+        <td style="text-align:center">${b.shortCount?`<span style="color:var(--red);font-weight:700">${b.shortCount} ⚠️</span>`:'✅'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+    ${reportSignatureBlock()}`;
+    return;
+  }
+  const rep=computeStockBalancePerBranch(stockBalanceBranchFilter);
+  const groups=groupRowsByCategory(rep.rows,'r');
+  const bodyRows=groups.map(g=>{
+    const catRow=`<tr class="rpt-pro-cat-row"><td colspan="6">📁 ${g.label}</td></tr>`;
+    const itemRows=g.rows.map(r=>`<tr${r.short?' style="background:rgba(240,80,80,.06)"':''}>
+      <td class="td-ref">${r.r}</td><td class="td-name">${r.n}</td><td><span class="uom-pill">${r.u}</span></td>
+      <td style="font-family:var(--mono);text-align:center;${r.short?'color:var(--red);font-weight:700':''}">${fmt(r.qty)}</td>
+      <td style="font-family:var(--mono);text-align:center">${fmt(r.value)}</td>
+      <td style="text-align:center">${r.short?`<span style="color:var(--red);font-size:11px;font-weight:700">⚠️ ناقص (حد أدنى ${fmt(r.minStock)})</span>`:''}</td>
+    </tr>`).join('');
+    const subValue=g.rows.reduce((s,x)=>s+x.value,0);
+    const subRow=`<tr class="rpt-pro-sub-row"><td colspan="4">إجمالي قيمة ${g.label}</td><td style="font-family:var(--mono);text-align:center">${fmt(subValue)}</td><td></td></tr>`;
+    return catRow+itemRows+subRow;
+  }).join('');
+  el.innerHTML=`${reportHeaderBlock({title:'📦 تقرير رصيد المخزون الحالي (Current Stock Balance)',branchName:rep.label})}
+  <div class="stats" style="margin-bottom:16px">
+    ${kpi(t('إجمالي قيمة المخزون'),fmt(rep.totalValue),'#3d8ef0')}
+    ${kpi(t('عدد الأصناف المجرودة'),rep.rows.length,'#2ee89a')}
+    ${kpi(t('أصناف ناقصة'),rep.shortCount,rep.shortCount?'#f05050':'#2ee89a')}
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>${t('رقم المرجع')}</th><th>${t('اسم الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية')}</th><th>${t('القيمة')}</th><th>${t('الحالة')}</th></tr></thead>
+    <tbody>${bodyRows}</tbody>
+  </table></div>
+  ${reportSignatureBlock(['أُعِدّ بواسطة (أمين المخزن)','رُوجع بواسطة (مدير الفرع)'])}`;
+}
+function exportStockBalanceExcel(){
+  const wb=XLSX.utils.book_new();
+  if(stockBalanceBranchFilter==='__all__'){
+    const branchRows=computeStockBalanceAllBranches();
+    const out=[['الفرع','عدد الأصناف المجرودة','إجمالي القيمة','أصناف ناقصة']];
+    branchRows.forEach(b=>out.push([b.name,b.itemCount,+b.totalValue.toFixed(2),b.shortCount]));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'أرصدة كل الفروع');
+  } else {
+    const rep=computeStockBalancePerBranch(stockBalanceBranchFilter);
+    const out=[['رقم المرجع','اسم الصنف','الوحدة','الكمية','القيمة','ناقص؟']];
+    rep.rows.forEach(r=>out.push([r.r,r.n,r.u,r.qty,+r.value.toFixed(2),r.short?'نعم':'لا']));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'رصيد المخزون');
+  }
+  XLSX.writeFile(wb,`رصيد_المخزون_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
+}
+
+let shortageAlertBranchFilter='__current__';
+function openShortageAlertReport(){
+  if(!canViewStockBalanceUI()){toast('⚠️ عرض تنبيه النواقص غير متاح لحسابك — راجع الإدارة','wrn');return;}
+  // same convention as the requirement planner and stock balance report —
+  // defaults to the current branch, "كل الفروع" is one explicit selection away
+  shortageAlertBranchFilter='__current__';
+  document.getElementById('shortageAlertModal').classList.add('open');
+  if(shortageAlertBranchFilter==='__all__'&&!crossBranchRawDocs){
+    document.getElementById('shortageAlertBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري التحميل...</div>';
+    loadCrossBranchDocs().then(renderShortageAlertReport).catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
+  } else {
+    renderShortageAlertReport();
+  }
+}
+function setShortageAlertBranchFilter(v){
+  shortageAlertBranchFilter=v;
+  if(v==='__all__'&&!crossBranchRawDocs){
+    document.getElementById('shortageAlertBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري التحميل...</div>';
+    loadCrossBranchDocs().then(renderShortageAlertReport).catch(e=>toast('⚠️ خطأ: '+e.message,'err'));
+    return;
+  }
+  renderShortageAlertReport();
+}
+function computeShortageAlertRows(filterValue){
+  if(filterValue==='__all__'){
+    if(!crossBranchRawDocs) return [];
+    const rows=[];
+    Object.entries(crossBranchRawDocs).forEach(([key,d])=>{
+      const branchName=(S.branches[key]||{}).name||d.name||key;
+      computeStockBalanceForQtyMap(d.qty||{}).filter(r=>r.short).forEach(r=>rows.push({...r,branch:branchName}));
+    });
+    return rows.sort((a,b)=>(a.qty-a.minStock)-(b.qty-b.minStock));
+  }
+  const src=crossBranchDataSource(filterValue);
+  return computeStockBalanceForQtyMap(src.qtyMaps[0]||{}).filter(r=>r.short).map(r=>({...r,branch:src.label})).sort((a,b)=>(a.qty-a.minStock)-(b.qty-b.minStock));
+}
+function renderShortageAlertReport(){
+  const el=document.getElementById('shortageAlertBody');
+  document.getElementById('sar-branch-filter').innerHTML=branchFilterOptionsHtml(shortageAlertBranchFilter);
+  const rows=computeShortageAlertRows(shortageAlertBranchFilter);
+  const showBranchCol=shortageAlertBranchFilter==='__all__';
+  const noSetupHint=S.items.every(it=>it.minStock==null)?`<div class="dbanner" style="margin-bottom:14px"><div class="db-l"><span style="font-size:20px">ℹ️</span><div><div class="db-main">مفيش أصناف عليها حد أدنى للمخزون لسه</div><div class="db-sub">حدّد "الحد الأدنى للمخزون" من شاشة تعديل كل صنف عشان يظهر هنا لو رصيده وصل للحد ده</div></div></div></div>`:'';
+  const kpi=(l,v,color)=>`<div class="stat" style="border-color:${color}55"><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>`;
+  el.innerHTML=`${reportHeaderBlock({title:'⚠️ تقرير تنبيه النواقص (Low Stock Alert)'})}
+  ${noSetupHint}
+  <div class="stats" style="margin-bottom:16px">
+    ${kpi(t('أصناف تحت الحد الأدنى'),rows.length,rows.length?'#f05050':'#2ee89a')}
+  </div>
+  ${rows.length?`<div class="tbl-wrap"><table>
+    <thead><tr>${showBranchCol?`<th>${t('الفرع')}</th>`:''}<th>${t('رقم المرجع')}</th><th>${t('اسم الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الرصيد الحالي')}</th><th>${t('الحد الأدنى')}</th><th>${t('الكمية المطلوبة')}</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      ${showBranchCol?`<td class="td-name">${r.branch}</td>`:''}
+      <td class="td-ref">${r.r}</td><td class="td-name">${r.n}</td><td><span class="uom-pill">${r.u}</span></td>
+      <td style="font-family:var(--mono);text-align:center;color:var(--red);font-weight:700">${fmt(r.qty)}</td>
+      <td style="font-family:var(--mono);text-align:center">${fmt(r.minStock)}</td>
+      <td style="font-family:var(--mono);text-align:center;font-weight:700">${fmt(Math.max(0,r.minStock-r.qty))}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`:`<div style="text-align:center;padding:30px;color:var(--green);font-weight:700">✅ مفيش أصناف ناقصة دلوقتي</div>`}
+  ${reportSignatureBlock(['أُعِدّ بواسطة (أمين المخزن)','رُوجع بواسطة (مدير الفرع)'])}`;
+}
+function exportShortageAlertExcel(){
+  const rows=computeShortageAlertRows(shortageAlertBranchFilter);
+  if(!rows.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
+  const wb=XLSX.utils.book_new();
+  const showBranchCol=shortageAlertBranchFilter==='__all__';
+  const out=[[...(showBranchCol?['الفرع']:[]),'رقم المرجع','اسم الصنف','الوحدة','الرصيد الحالي','الحد الأدنى','الكمية المطلوبة']];
+  rows.forEach(r=>out.push([...(showBranchCol?[r.branch]:[]),r.r,r.n,r.u,r.qty,r.minStock,Math.max(0,r.minStock-r.qty)]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'تنبيه النواقص');
+  XLSX.writeFile(wb,'تنبيه_النواقص.xlsx');
 }
 
 // ══════════════════════════════════════════════

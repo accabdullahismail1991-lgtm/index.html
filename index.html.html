@@ -2177,6 +2177,8 @@ const I18N_EN={
   "عدد الدورات المطابقة": "Matching Cycles",
   "الفترة المشمولة": "Period Covered",
   "إجمالي المبيعات": "Total Sales",
+  "إجمالي المبيعات (شامل الضريبة)": "Total Sales (VAT-inclusive)",
+  "صافي المبيعات (بدون ضريبة)": "Net Sales (VAT-excluded)",
   "تكلفة فعلية %": "Actual Cost %",
   "تكلفة نظرية %": "Theoretical Cost %",
   "المكوّن": "Component",
@@ -6881,13 +6883,14 @@ function renderResultsTab(c,el){
   el.innerHTML=`
   ${reportHeaderBlock({title:'📊 تقرير نتائج التسوية (Cost of Sales Report)',branchName:S.branch,periodLabel:`${c.start} ← ${c.end}`})}
   <div class="stats" style="margin-bottom:16px">
-    ${kpi(t('إجمالي المبيعات'),fmt(r.totalSalesAmount),'#3d8ef0')}
+    ${kpi(t('إجمالي المبيعات (شامل الضريبة)'),fmt(r.totalSalesAmount),'#3d8ef0')}
+    ${companyInfo.vatPct?kpi(t('صافي المبيعات (بدون ضريبة)'),fmt(r.netSalesAmount),'#8456d0'):''}
     ${r.deliverySalesAmount!=null?kpi(t('🛵 مبيعات تطبيقات التوصيل'),fmt(r.deliverySalesAmount),'#3d8ef0'):''}
     ${kpi(t('تكلفة الاستهلاك الفعلي'),fmt(r.totalActualCost),'#f05050')}
     ${kpi(t('نسبة التكلفة الفعلية'),r.actualCostPct.toFixed(1)+'%','#f0c040')}
     ${kpi(t('نسبة التكلفة النظرية'),r.theoCostPct.toFixed(1)+'%','#2ee89a')}
   </div>
-  ${companyInfo.vatPct?`<p style="font-size:10.5px;color:var(--muted);margin:-10px 0 12px">إجمالي المبيعات المعروض شامل الضريبة (${companyInfo.vatPct}%) — نسب التكلفة والانحراف بالأعلى محسوبة على صافي المبيعات (${fmt(r.netSalesAmount)}) بعد خصم الضريبة، طبقًا للمعيار المحاسبي المتبع.</p>`:''}
+  ${companyInfo.vatPct?`<p style="font-size:10.5px;color:var(--muted);margin:-10px 0 12px">⚠️ ملاحظة: "إجمالي المبيعات" شامل الضريبة (${companyInfo.vatPct}%) وهو المبلغ اللي دخل فعليًا من العملاء — أما "صافي المبيعات" فهو نفس المبلغ بعد خصم الضريبة (الضريبة دي محصّلة لصالح الجهات الحكومية مش إيراد فعلي للمطعم). نسب التكلفة والانحراف بالأعلى محسوبة على صافي المبيعات، طبقًا للمعيار المحاسبي المتبع.</p>`:''}
   ${be?`<div class="stats" style="margin-bottom:16px">
     ${kpi(t('⚖️ نقطة التعادل اليومية (إيراد)'),fmt(be.dailyBreakEven),'#f05050')}
     ${kpi(t('متوسط صافي المبيعات اليومي للدورة'),fmt(be.avgDailyNetSales),'#3d8ef0')}
@@ -6912,7 +6915,8 @@ function exportCycleCSV(cid){
   let csv='﻿';
   if(c.closed&&c.result){
     csv+=`تقرير دورة تسوية,${c.start},${c.end},${S.branch}\n`;
-    csv+=`إجمالي المبيعات,${c.result.totalSalesAmount}\n`;
+    csv+=`إجمالي المبيعات (شامل الضريبة),${c.result.totalSalesAmount}\n`;
+    if(companyInfo.vatPct) csv+=`صافي المبيعات (بدون ضريبة),${c.result.netSalesAmount}\n`;
     if(c.result.deliverySalesAmount!=null) csv+=`مبيعات تطبيقات التوصيل,${c.result.deliverySalesAmount}\n`;
     csv+=`تكلفة الاستهلاك الفعلي,${c.result.totalActualCost}\n`;
     csv+=`نسبة التكلفة الفعلية,${c.result.actualCostPct.toFixed(2)}%\n`;
@@ -6966,8 +6970,9 @@ function exportCyclePDF(cid){
   const withinVariance=Math.abs(varPct)<=VARIANCE_TARGET_PCT;
 
   const kpis=[
-    {l:'إجمالي المبيعات',v:fmt(r.totalSalesAmount),rgb:BLUE},
+    {l:'إجمالي المبيعات (شامل الضريبة)',v:fmt(r.totalSalesAmount),rgb:BLUE},
   ];
+  if(companyInfo.vatPct) kpis.push({l:'صافي المبيعات (بدون ضريبة)',v:fmt(r.netSalesAmount),rgb:[132,86,208]});
   if(r.deliverySalesAmount!=null) kpis.push({l:'مبيعات تطبيقات التوصيل',v:fmt(r.deliverySalesAmount),rgb:BLUE});
   kpis.push(
     {l:'تكلفة الاستهلاك الفعلي',v:fmt(r.totalActualCost),rgb:RED},

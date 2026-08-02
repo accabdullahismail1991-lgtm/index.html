@@ -23,7 +23,7 @@
 :root{
   --bg:#f2f3f8;--surface:#f8f9fc;--card:#ffffff;--card2:#f5f6fa;
   --border:#e3e6ee;--border2:#d2d7e2;
-  --gold:#c99a1f;--gold2:#a67c15;
+  --gold:#7a2331;--gold2:#5c1a25;
   --blue:#2f6fd1;--green:#1f9d68;--red:#d0453f;--purple:#8456d0;--orange:#d1701f;
   --text:#1a2030;--muted:#68748a;--muted2:#98a3b5;
   --tint:rgba(26,32,48,.035);--tint2:rgba(26,32,48,.06);
@@ -34,7 +34,7 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
   background-color:var(--bg);
-  background-image:radial-gradient(circle at 12% -10%,rgba(201,154,31,.05),transparent 38%),
+  background-image:radial-gradient(circle at 12% -10%,rgba(122,35,49,.05),transparent 38%),
     radial-gradient(circle at 100% 10%,rgba(47,111,209,.045),transparent 42%),
     radial-gradient(circle at 50% 100%,rgba(132,86,208,.03),transparent 45%);
   background-attachment:fixed;background-repeat:no-repeat;
@@ -54,7 +54,7 @@ header{
   width:44px;height:44px;
   background:linear-gradient(135deg,var(--gold),var(--gold2));
   border-radius:12px;display:flex;align-items:center;justify-content:center;
-  font-size:22px;box-shadow:0 4px 15px rgba(240,192,64,.3);
+  font-size:22px;box-shadow:0 4px 15px rgba(122,35,49,.3);
   position:relative;overflow:hidden;
 }
 .logo-icon::after{
@@ -73,8 +73,8 @@ header{
   font-size:13px;cursor:pointer;transition:all .15s;white-space:nowrap;
 }
 .hbtn:hover{border-color:var(--gold);color:var(--gold);}
-.hbtn.gold{background:var(--gold);border-color:var(--gold);color:#1a1000;font-weight:700;}
-.hbtn.gold:hover{background:#f5d060;}
+.hbtn.gold{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:700;}
+.hbtn.gold:hover{background:#9c3a4a;}
 .hbtn.grn{background:rgba(46,232,154,.12);border-color:rgba(46,232,154,.3);color:var(--green);}
 .hbtn.grn:hover{background:rgba(46,232,154,.2);}
 .hbtn.org{background:rgba(240,120,48,.12);border-color:rgba(240,120,48,.3);color:var(--orange);}
@@ -113,14 +113,14 @@ header{
   transition:all .15s;font-size:13.5px;font-weight:600;color:var(--muted);
 }
 .mn-view-btn:hover{background:var(--tint);color:var(--text);}
-.mn-view-btn.active{background:rgba(240,192,64,.07);color:var(--gold);border-right-color:var(--gold);}
+.mn-view-btn.active{background:rgba(122,35,49,.07);color:var(--gold);border-right-color:var(--gold);}
 .mn-group-head{
   display:flex;align-items:center;gap:10px;padding:11px 16px;
   cursor:pointer;border-right:3px solid transparent;
   transition:all .15s;font-size:13.5px;font-weight:600;color:var(--muted);
 }
 .mn-group-head:hover{background:var(--tint);color:var(--text);}
-.mn-group-head.open{background:rgba(240,192,64,.07);color:var(--gold);border-right-color:var(--gold);}
+.mn-group-head.open{background:rgba(122,35,49,.07);color:var(--gold);border-right-color:var(--gold);}
 .mn-chevron{margin-right:auto;font-size:11px;transition:transform .2s ease;display:inline-block;}
 .mn-group-head.open .mn-chevron{transform:rotate(180deg);}
 .mn-group-body{display:flex;flex-direction:column;padding-bottom:4px;}
@@ -147,16 +147,16 @@ header{
   transition:all .15s;font-size:13px;color:var(--muted);
 }
 .sb-item:hover{background:var(--tint);color:var(--text);}
-.sb-item.active{background:rgba(240,192,64,.07);color:var(--gold);border-right-color:var(--gold);}
+.sb-item.active{background:rgba(122,35,49,.07);color:var(--gold);border-right-color:var(--gold);}
 .sb-ico{font-size:14px;flex-shrink:0;}
 .sb-badge{
   margin-right:auto;background:var(--card);border:1px solid var(--border);
   border-radius:4px;padding:1px 7px;font-size:10.5px;font-family:var(--mono);color:var(--muted);
 }
-.sb-item.active .sb-badge{color:var(--gold);border-color:rgba(240,192,64,.3);}
+.sb-item.active .sb-badge{color:var(--gold);border-color:rgba(122,35,49,.3);}
 .sb-div{height:1px;background:var(--border);margin:8px 16px;}
 .sb-item-pinned{color:var(--gold);font-weight:700;}
-.sb-item-pinned:hover{background:rgba(240,192,64,.1);}
+.sb-item-pinned:hover{background:rgba(122,35,49,.1);}
 .sb-scroll{flex:1;overflow-y:auto;min-height:0;}
 
 /* CATEGORY MANAGE SIDEBAR ITEMS */
@@ -167,7 +167,7 @@ header{
   transition:all .12s;cursor:pointer;
 }
 .sb-cat-item:hover{background:var(--tint);color:var(--text);}
-.sb-cat-item.active{background:rgba(240,192,64,.06);color:var(--gold);border-right-color:var(--gold);}
+.sb-cat-item.active{background:rgba(122,35,49,.06);color:var(--gold);border-right-color:var(--gold);}
 .sb-cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .sb-cat-edit{
   margin-right:auto;opacity:0;font-size:11px;
@@ -175,7 +175,7 @@ header{
   transition:opacity .12s;padding:2px 5px;border-radius:4px;
 }
 .sb-cat-item:hover .sb-cat-edit{opacity:1;}
-.sb-cat-edit:hover{color:var(--gold);background:rgba(240,192,64,.1);}
+.sb-cat-edit:hover{color:var(--gold);background:rgba(122,35,49,.1);}
 
 /* HISTORY */
 .hist-wrap{padding:0 10px;margin-top:auto;padding-top:8px;}
@@ -185,7 +185,7 @@ header{
   border-radius:8px;padding:9px 11px;margin-bottom:5px;cursor:pointer;transition:all .13s;
 }
 .hist-item:hover{border-color:var(--border2);}
-.hist-item.cur{border-color:var(--gold);background:rgba(240,192,64,.05);}
+.hist-item.cur{border-color:var(--gold);background:rgba(122,35,49,.05);}
 .hi-date{font-family:var(--mono);font-size:11px;color:var(--gold);}
 .hi-meta{font-size:11px;color:var(--muted);margin-top:1px;}
 .hi-acts{display:flex;gap:4px;margin-top:6px;}
@@ -222,8 +222,8 @@ main{flex:1;padding:22px;overflow:auto;min-width:0;}
 
 /* DATE BANNER */
 .dbanner{
-  background:linear-gradient(135deg,rgba(240,192,64,.07),rgba(61,142,240,.04));
-  border:1px solid rgba(240,192,64,.18);border-radius:10px;
+  background:linear-gradient(135deg,rgba(122,35,49,.07),rgba(61,142,240,.04));
+  border:1px solid rgba(122,35,49,.18);border-radius:10px;
   padding:11px 17px;margin-bottom:16px;
   display:flex;align-items:center;justify-content:space-between;
 }
@@ -253,8 +253,8 @@ main{flex:1;padding:22px;overflow:auto;min-width:0;}
 .rpt-pro-exception-tbl td{padding:3px 0;border-bottom:1px dashed var(--border);}
 .rpt-pro-exception-tbl tr:last-child td{border-bottom:none;}
 .rpt-pro-cat-row td{background:var(--card2);font-weight:700;font-size:11.5px;color:var(--gold);padding:6px 13px;}
-.rpt-pro-sub-row td{background:rgba(201,154,31,.12);font-weight:700;font-size:11.5px;border-top:1px solid var(--border);}
-.tbl-total-row td{background:rgba(201,154,31,.12);font-weight:700;font-size:12px;border-top:2px solid var(--gold2);}
+.rpt-pro-sub-row td{background:rgba(122,35,49,.12);font-weight:700;font-size:11.5px;border-top:1px solid var(--border);}
+.tbl-total-row td{background:rgba(122,35,49,.12);font-weight:700;font-size:12px;border-top:2px solid var(--gold2);}
 .rpt-pro-sign{display:flex;gap:24px;margin-top:32px;padding-top:8px;flex-wrap:wrap;}
 .rpt-pro-sign-cell{flex:1;min-width:160px;}
 .rpt-pro-sign-line{border-bottom:1px solid var(--muted2);height:34px;}
@@ -296,7 +296,7 @@ thead th{
   text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;
 }
 tbody tr{border-bottom:1px solid var(--border);border-right:2px solid transparent;transition:background .12s,border-color .12s;}
-tbody tr:hover{background:var(--card2);border-right-color:rgba(240,192,64,.35);}
+tbody tr:hover{background:var(--card2);border-right-color:rgba(122,35,49,.35);}
 tbody tr:last-child{border-bottom:none;}
 tbody tr.custom-row{border-right:2px solid var(--orange);}
 td{padding:10px 13px;vertical-align:middle;}
@@ -326,7 +326,7 @@ td{padding:10px 13px;vertical-align:middle;}
   cursor:pointer;display:flex;align-items:center;justify-content:center;
   transition:all .12s;flex-shrink:0;
 }
-.qbtn:hover{border-color:var(--gold);color:var(--gold);background:rgba(240,192,64,.08);}
+.qbtn:hover{border-color:var(--gold);color:var(--gold);background:rgba(122,35,49,.08);}
 .qin{
   width:82px;background:var(--tint2);border:1px solid var(--border);
   border-radius:6px;padding:6px 9px;color:var(--text);
@@ -405,7 +405,7 @@ td{padding:10px 13px;vertical-align:middle;}
 .isearch-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;left:0;max-height:220px;overflow-y:auto;background:var(--card);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 20px rgba(20,30,50,.15);z-index:60;}
 .isearch-menu.open{display:block;}
 .isearch-opt{padding:8px 12px;font-size:12.5px;cursor:pointer;}
-.isearch-opt:hover{background:rgba(201,154,31,.12);}
+.isearch-opt:hover{background:rgba(122,35,49,.12);}
 .isearch-empty{padding:10px 12px;font-size:12px;color:var(--muted);text-align:center;}
 .mod-in.err{border-color:var(--red);}
 .mod-hint{font-size:11px;color:var(--muted);margin-top:4px;}
@@ -423,8 +423,8 @@ td{padding:10px 13px;vertical-align:middle;}
 /* REPORT MODAL */
 .rmod{width:680px;}
 .rmod-hdr{
-  background:linear-gradient(135deg,rgba(240,192,64,.1),rgba(61,142,240,.05));
-  border:1px solid rgba(240,192,64,.2);border-radius:11px;padding:16px;margin-bottom:16px;
+  background:linear-gradient(135deg,rgba(122,35,49,.1),rgba(61,142,240,.05));
+  border:1px solid rgba(122,35,49,.2);border-radius:11px;padding:16px;margin-bottom:16px;
 }
 .rmod-meta{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px;}
 .rm{font-size:11.5px;color:var(--muted);}
@@ -445,7 +445,7 @@ td{padding:10px 13px;vertical-align:middle;}
 /* AUTH SCREEN */
 .auth-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;
   background-color:var(--bg);
-  background-image:radial-gradient(circle at 0% 0%,rgba(201,154,31,.05),transparent 32%),radial-gradient(circle at 100% 100%,rgba(47,111,209,.05),transparent 35%);
+  background-image:radial-gradient(circle at 0% 0%,rgba(122,35,49,.05),transparent 32%),radial-gradient(circle at 100% 100%,rgba(47,111,209,.05),transparent 35%);
 }
 .auth-card{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:32px;width:380px;max-width:100%;box-shadow:var(--shadow-md);}
 
@@ -461,7 +461,7 @@ td{padding:10px 13px;vertical-align:middle;}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
 .toast.suc{border-color:rgba(31,157,104,.4);color:var(--green);}
 .toast.inf{border-color:rgba(47,111,209,.4);color:var(--blue);}
-.toast.wrn{border-color:rgba(201,154,31,.4);color:var(--gold);}
+.toast.wrn{border-color:rgba(122,35,49,.4);color:var(--gold);}
 .toast.err{border-color:rgba(208,69,63,.4);color:var(--red);}
 
 ::-webkit-scrollbar{width:4px;height:4px;}
@@ -794,6 +794,11 @@ td{padding:10px 13px;vertical-align:middle;}
 .bg-amber-50 {
   --tw-bg-opacity: 1;
   background-color: rgb(255 251 235 / var(--tw-bg-opacity, 1))
+}
+
+.bg-maroon-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(250 234 237 / var(--tw-bg-opacity, 1))
 }
 
 .bg-blue-50 {
@@ -1319,7 +1324,7 @@ td{padding:10px 13px;vertical-align:middle;}
   <div class="mod-field">
     <label class="mod-lbl" data-i18n="لون القسم">لون القسم</label>
     <div class="color-grid" id="colorGrid"></div>
-    <input type="color" class="mod-in" id="ac-color" value="#f0c040" style="height:40px;padding:4px 8px;margin-top:8px">
+    <input type="color" class="mod-in" id="ac-color" value="#7a2331" style="height:40px;padding:4px 8px;margin-top:8px">
   </div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('addCatModal')" data-i18n="إلغاء">إلغاء</button>
@@ -2600,7 +2605,7 @@ function packagingSuggestionText(it,qty){
 //  DEFAULT CATEGORIES
 // ══════════════════════════════════════════════
 const DEFAULT_CATS = {
-  RMF:{l:'مواد غذائية',  i:'🍞',c:'#f0c040',seq:'02'},
+  RMF:{l:'مواد غذائية',  i:'🍞',c:'#7a2331',seq:'02'},
   RMM:{l:'مواد لحوم',   i:'🥩',c:'#f05050',seq:'01'},
   RMP:{l:'مواد تغليف',  i:'📫',c:'#3d8ef0',seq:'05'},
   RMS:{l:'توابل',        i:'🌿',c:'#9d6cf5',seq:'04'},
@@ -2720,7 +2725,7 @@ const DEFAULT_ITEMS = [
   {r:'SMM06011',n:'جبن حلوم 24 كجم',e:'Sweet Cheese 24kg',c:'SMM',u:'kg',custom:false},
 ];
 
-const PALETTE=['#f0c040','#3d8ef0','#2ee89a','#f05050','#9d6cf5','#f07830','#f0e040','#3dc8f0','#e840a0','#40c8a0','#a0b040','#c07030'];
+const PALETTE=['#7a2331','#3d8ef0','#2ee89a','#f05050','#9d6cf5','#f07830','#f0e040','#3dc8f0','#e840a0','#40c8a0','#a0b040','#c07030'];
 
 // Bump this string whenever a change is pushed, so a glance at the header
 // confirms which build is actually live (GitHub Pages can take a minute to update).
@@ -2728,7 +2733,7 @@ const BUILD_STAMP='تحديث 2026-07-30';
 document.addEventListener('DOMContentLoaded',()=>{const el=document.getElementById('buildStamp');if(el)el.textContent=BUILD_STAMP;});
 applyTranslations();
 if(document.readyState!=='loading'){const el=document.getElementById('buildStamp');if(el)el.textContent=BUILD_STAMP;}
-let selColor='#f0c040', selIcoVal='📦', editingCat=null, editingItem=null;
+let selColor='#7a2331', selIcoVal='📦', editingCat=null, editingItem=null;
 
 // ══════════════════════════════════════════════
 //  STATE
@@ -3625,8 +3630,8 @@ function openAddCat(){
   document.getElementById('ac-num').value='';
   document.getElementById('ac-name').value='';
   document.getElementById('ac-ico').value='';
-  document.getElementById('ac-color').value='#f0c040';
-  selColor='#f0c040';selIcoVal='📦';
+  document.getElementById('ac-color').value='#7a2331';
+  selColor='#7a2331';selIcoVal='📦';
   buildColorGrid();
   document.getElementById('addCatModal').classList.add('open');
 }
@@ -3642,8 +3647,8 @@ function openEditCat(key){
   document.getElementById('ac-num').value=v.seq||'';
   document.getElementById('ac-name').value=v.l;
   document.getElementById('ac-ico').value=v.i||'';
-  document.getElementById('ac-color').value=v.c||'#f0c040';
-  selColor=v.c||'#f0c040';selIcoVal=v.i||'📦';
+  document.getElementById('ac-color').value=v.c||'#7a2331';
+  selColor=v.c||'#7a2331';selIcoVal=v.i||'📦';
   buildColorGrid();
   document.getElementById('addCatModal').classList.add('open');
 }
@@ -3981,7 +3986,7 @@ function renderBranchMgrList(){
   const cont=document.getElementById('branchMgrList');
   const canManage=canManageBranchesUI();
   cont.innerHTML=Object.entries(S.branches).map(([k,b])=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid ${k===S.curBranch?'var(--gold)':'var(--border)'};border-radius:9px;margin-bottom:8px;${k===S.curBranch?'background:rgba(240,192,64,.06)':''}">
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid ${k===S.curBranch?'var(--gold)':'var(--border)'};border-radius:9px;margin-bottom:8px;${k===S.curBranch?'background:rgba(122,35,49,.06)':''}">
       <div style="flex:1">
         <div style="font-weight:700;font-size:13px">${b.name}${k===S.curBranch?' <span style="color:var(--gold);font-size:10px">(الحالي)</span>':''}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">مدير: ${b.manager||'-'}</div>
@@ -4352,7 +4357,7 @@ function renderMenuSalesReport(){
     <div class="dash-kpis" style="margin-bottom:16px">
       ${dashKpi('إجمالي الكمية المباعة',fmt(totalQty),'#3d8ef0')}
       ${dashKpi('إجمالي الإيراد (نظري)',fmt(totalRev),'#2ee89a')}
-      ${rows.actualTotal!=null?dashKpi('إجمالي المبيعات الفعلي',fmt(rows.actualTotal),'#f0c040'):''}
+      ${rows.actualTotal!=null?dashKpi('إجمالي المبيعات الفعلي',fmt(rows.actualTotal),'#7a2331'):''}
       ${dashKpi('🛵 مبيعات تطبيقات التوصيل',fmt(rows.deliveryTotal),'#3d8ef0')}
     </div>
     <div style="font-weight:700;font-size:13px;margin-bottom:8px">📦 ملخص حسب الصنف</div>
@@ -4531,7 +4536,7 @@ function renderWasteReport(){
   <div class="stats" style="margin-bottom:16px">
     ${kpi(t('عدد الأصناف المتأثرة'),rep.rows.length+rep.menuRows.length,'#3d8ef0')}
     ${kpi(t('إجمالي قيمة الهالك'),fmt(rep.totalValue),'#f05050')}
-    ${kpi(t('أعلى صنف هالكًا'),topName,'#f0c040')}
+    ${kpi(t('أعلى صنف هالكًا'),topName,'#7a2331')}
   </div>
   ${topVarianceHtml(exceptionTop,5,`أعلى ${Math.min(5,exceptionTop.length)} أصناف بأكبر قيمة هالك (Exception Report)`)}
   ${rows?`<div class="tbl-wrap" style="margin-bottom:${rep.menuRows.length?'18px':'0'}"><table>
@@ -5026,7 +5031,7 @@ function renderBreakEvenModule(){
 
   <div class="stats" style="margin-bottom:16px">
     ${kpi(t('إجمالي التكاليف الثابتة الشهرية'),fmt(r.totalFixed),'#3d8ef0')}
-    ${kpi(t('التكلفة الثابتة اليومية'),fmt(r.dailyFixed),'#f0c040')}
+    ${kpi(t('التكلفة الثابتة اليومية'),fmt(r.dailyFixed),'#7a2331')}
     ${kpi(t('نسبة هامش المساهمة'),r.contributionPct.toFixed(1)+'%','#2ee89a')}
     ${kpi(t('⚖️ نقطة التعادل اليومية (إيراد)'),fmt(r.dailyBreakEven),'#f05050')}
     ${kpi(t('نقطة التعادل الشهرية (إيراد)'),fmt(r.monthlyBreakEven),'#f05050')}
@@ -5167,7 +5172,7 @@ function renderAllBranchesReport(){
       ${dashKpi('عدد الفروع اللي ليها بيانات',tot.branchesWithData,'#3d8ef0')}
       ${dashKpi('إجمالي المبيعات',fmt(tot.totalSales),'#3d8ef0')}
       ${dashKpi('إجمالي تكلفة الاستهلاك الفعلي',fmt(tot.totalActual),'#f05050')}
-      ${dashKpi('نسبة التكلفة الفعلية الموحّدة',tot.actualPct.toFixed(1)+'%','#f0c040')}
+      ${dashKpi('نسبة التكلفة الفعلية الموحّدة',tot.actualPct.toFixed(1)+'%','#7a2331')}
       ${dashKpi('نسبة التكلفة النظرية الموحّدة',tot.theoPct.toFixed(1)+'%','#2ee89a')}
       ${dashKpi('إجمالي قيمة الانحراف',acctFmt(tot.varVal),tot.varVal>0?'#f05050':'#2ee89a')}
     </div>
@@ -5280,7 +5285,7 @@ function svgBarChart(items,opts){
     const bw=Math.max(2,Math.abs(it.value)/maxV*(w-leftW-70));
     const label=(it.label.length>22?it.label.slice(0,21)+'…':it.label);
     return `<text x="${leftW-8}" y="${(y+barH*0.68).toFixed(1)}" font-size="11" fill="#e8ecf5" text-anchor="end">${label}</text>
-      <rect x="${leftW}" y="${y}" width="${bw.toFixed(1)}" height="${barH}" rx="4" fill="${it.color||'#f0c040'}"/>
+      <rect x="${leftW}" y="${y}" width="${bw.toFixed(1)}" height="${barH}" rx="4" fill="${it.color||'#7a2331'}"/>
       <text x="${(leftW+bw+8).toFixed(1)}" y="${(y+barH*0.68).toFixed(1)}" font-size="11" fill="#7888a8">${it.valueLabel!=null?it.valueLabel:it.value.toFixed(1)}</text>`;
   }).join('');
   return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">${bars}</svg>`;
@@ -5314,7 +5319,7 @@ function renderDashboard(){
 
   body.innerHTML=`
     <div class="dash-kpis">
-      ${dashKpi('تكلفة فعلية % (آخر دورة)',last.result.actualCostPct.toFixed(1)+'%','#f0c040')}
+      ${dashKpi('تكلفة فعلية % (آخر دورة)',last.result.actualCostPct.toFixed(1)+'%','#7a2331')}
       ${dashKpi('تكلفة نظرية % (آخر دورة)',last.result.theoCostPct.toFixed(1)+'%','#2ee89a')}
       ${dashKpi('قيمة الانحراف (آخر دورة)',fmt(last.result.totalVarVal),last.result.totalVarVal>0?'#f05050':'#2ee89a')}
       ${dashKpi('مبيعات آخر دورة',fmt(last.result.totalSalesAmount),'#3d8ef0')}
@@ -5345,7 +5350,7 @@ function loadDashboardBranchCompare(){
       const d=doc.data()||{};
       const cyc=(d.cycles||[]).filter(c=>c.closed&&c.result).sort((a,b)=>a.start.localeCompare(b.start));
       const lastC=cyc.length?cyc[cyc.length-1]:null;
-      if(lastC) items.push({label:d.name||doc.id,value:lastC.result.actualCostPct,valueLabel:lastC.result.actualCostPct.toFixed(1)+'%',color:'#f0c040'});
+      if(lastC) items.push({label:d.name||doc.id,value:lastC.result.actualCostPct,valueLabel:lastC.result.actualCostPct.toFixed(1)+'%',color:'#7a2331'});
     });
     const el=document.getElementById('dashBranchCompare');
     if(!el) return;
@@ -6783,7 +6788,7 @@ function renderClosingStockReport(){
   el.innerHTML=`${reportHeaderBlock({title:'📦 تقرير المخزون الختامي (Closing Inventory Report)',branchName:S.branch,periodLabel:`${c.start} ← ${c.end}`})}
   <div class="stats" style="margin-bottom:16px">
     ${kpi(t('عدد الأصناف المجرودة'),rep.rows.length,'#3d8ef0')}
-    ${kpi(t('إجمالي قيمة المخزون الختامي'),fmt(rep.totalValue),'#f0c040')}
+    ${kpi(t('إجمالي قيمة المخزون الختامي'),fmt(rep.totalValue),'#7a2331')}
     ${kpi(t('أصناف فيها تعارض مصادر'),rep.mismatchCount,rep.mismatchCount?'#f05050':'#2ee89a')}
   </div>
   ${banner}
@@ -6943,7 +6948,7 @@ function renderResultsTab(c,el){
     ${companyInfo.vatPct?kpi(t('صافي المبيعات (بدون ضريبة)'),fmt(r.netSalesAmount),'#8456d0'):''}
     ${r.deliverySalesAmount!=null?kpi(t('🛵 مبيعات تطبيقات التوصيل'),fmt(r.deliverySalesAmount),'#3d8ef0'):''}
     ${kpi(t('تكلفة الاستهلاك الفعلي'),fmt(r.totalActualCost),'#f05050')}
-    ${kpi(t('نسبة التكلفة الفعلية'),r.actualCostPct.toFixed(1)+'%','#f0c040')}
+    ${kpi(t('نسبة التكلفة الفعلية'),r.actualCostPct.toFixed(1)+'%','#7a2331')}
     ${kpi(t('نسبة التكلفة النظرية'),r.theoCostPct.toFixed(1)+'%','#2ee89a')}
   </div>
   ${companyInfo.vatPct?`<p style="font-size:10.5px;color:var(--muted);margin:-10px 0 12px">⚠️ ملاحظة: "إجمالي المبيعات" شامل الضريبة (${companyInfo.vatPct}%) وهو المبلغ اللي دخل فعليًا من العملاء — أما "صافي المبيعات" فهو نفس المبلغ بعد خصم الضريبة (الضريبة دي محصّلة لصالح الجهات الحكومية مش إيراد فعلي للمطعم). نسب التكلفة والانحراف بالأعلى محسوبة على صافي المبيعات، طبقًا للمعيار المحاسبي المتبع.</p>`:''}
@@ -8527,7 +8532,7 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
     const zer=S.items.filter(it=>S.qty[it.r]!=null&&parseFloat(S.qty[it.r])===0).length;
     const pct=Math.round((ent/S.items.length)*100)||0;
     const cards=[
-      {id:'st-tot',icon:'📦',val:S.items.length,lbl:t('إجمالي الأصناف'),accent:'var(--gold)',bg:'bg-amber-50'},
+      {id:'st-tot',icon:'📦',val:S.items.length,lbl:t('إجمالي الأصناف'),accent:'var(--gold)',bg:'bg-maroon-50'},
       {id:'st-ent',icon:'✅',val:ent,lbl:t('تم جردها'),accent:'var(--green)',bg:'bg-emerald-50'},
       {id:'st-zer',icon:'⚠️',val:zer,lbl:t('صفرية'),accent:'var(--red)',bg:'bg-rose-50'},
       {id:'st-pct',icon:'📈',val:pct+'%',lbl:t('نسبة الإنجاز'),accent:'var(--blue)',bg:'bg-blue-50'},

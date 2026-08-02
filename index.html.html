@@ -72,7 +72,7 @@ header{
 .hbtn.grn:hover{background:rgba(46,232,154,.2);}
 .hbtn.org{background:rgba(240,120,48,.12);border-color:rgba(240,120,48,.3);color:var(--orange);}
 .hbtn.org:hover{background:rgba(240,120,48,.2);}
-.bchip{
+.bchip,.user-chip{
   background:var(--card);border:1px solid var(--border2);
   border-radius:8px;padding:7px 14px;font-size:13px;
   display:flex;align-items:center;gap:8px;
@@ -80,6 +80,8 @@ header{
 .bc-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
 .bc-lbl{color:var(--muted);font-size:11px;}
 .bc-val{font-weight:600;color:var(--gold);}
+.user-chip-val{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:right;}
+#branchLbl{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom;}
 
 /* VIEW NAV */
 .viewnav{
@@ -187,8 +189,8 @@ header{
 main{flex:1;padding:22px;overflow:auto;min-width:0;}
 
 /* STATS */
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
-.stat{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:16px 18px;position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s;box-shadow:var(--shadow-sm);}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:18px 20px;position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s;box-shadow:var(--shadow-sm);}
 .stat:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
 .stat::before{content:'';position:absolute;top:-18px;left:-18px;width:80px;height:80px;border-radius:50%;opacity:.08;}
 .s1::before{background:var(--gold);}
@@ -280,11 +282,11 @@ thead th{
   color:var(--text);font-weight:700;font-size:10.5px;font-family:var(--mono);
   text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;
 }
-tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
-tbody tr:hover{background:var(--card2);}
+tbody tr{border-bottom:1px solid var(--border);border-right:2px solid transparent;transition:background .12s,border-color .12s;}
+tbody tr:hover{background:var(--card2);border-right-color:rgba(240,192,64,.35);}
 tbody tr:last-child{border-bottom:none;}
 tbody tr.custom-row{border-right:2px solid var(--orange);}
-td{padding:9px 13px;vertical-align:middle;}
+td{padding:10px 13px;vertical-align:middle;}
 .td-num{font-family:var(--mono);font-size:10.5px;color:var(--muted2);}
 .td-ref{font-family:var(--mono);font-size:11px;color:var(--muted);}
 .td-name{font-weight:500;}
@@ -306,15 +308,15 @@ td{padding:9px 13px;vertical-align:middle;}
 }
 .qty-wrap{display:flex;align-items:center;gap:5px;}
 .qbtn{
-  width:22px;height:22px;border-radius:4px;border:1px solid var(--border);
+  width:25px;height:25px;border-radius:5px;border:1px solid var(--border);
   background:var(--card2);color:var(--muted);font-size:13px;
   cursor:pointer;display:flex;align-items:center;justify-content:center;
   transition:all .12s;flex-shrink:0;
 }
-.qbtn:hover{border-color:var(--gold);color:var(--gold);}
+.qbtn:hover{border-color:var(--gold);color:var(--gold);background:rgba(240,192,64,.08);}
 .qin{
   width:82px;background:var(--tint2);border:1px solid var(--border);
-  border-radius:6px;padding:4px 9px;color:var(--text);
+  border-radius:6px;padding:6px 9px;color:var(--text);
   font-family:var(--mono);font-size:12.5px;text-align:center;outline:none;transition:all .15s;
 }
 .qin:focus{border-color:var(--green);background:rgba(46,232,154,.05);}
@@ -329,7 +331,7 @@ td{padding:9px 13px;vertical-align:middle;}
 .note-in:focus{border-color:var(--border2);background:var(--tint);color:var(--text);width:150px;}
 .note-in::placeholder{color:rgba(120,136,168,.3);}
 .row-del{
-  width:24px;height:24px;border-radius:5px;border:1px solid transparent;
+  width:28px;height:28px;border-radius:6px;border:1px solid transparent;
   background:transparent;color:var(--muted2);font-size:13px;
   cursor:pointer;display:flex;align-items:center;justify-content:center;
   transition:all .12s;
@@ -461,7 +463,9 @@ td{padding:9px 13px;vertical-align:middle;}
      instead of wrapping into a cramped third row with an orphaned button */
   .hright .hbtn-txt{display:none;}
   .hbtn{padding:8px 12px;font-size:12px;min-height:38px;min-width:38px;justify-content:center;}
-  .bchip{padding:6px 10px;font-size:12px;}
+  .bchip,.user-chip{padding:6px 10px;font-size:12px;}
+  .user-chip .bc-lbl{display:none;}
+  .user-chip .user-chip-val{max-width:70px;}
   #branchSwitch{min-height:38px;}
 
   .viewnav{padding:8px 12px;height:auto;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;top:auto;position:sticky;}
@@ -575,18 +579,22 @@ td{padding:9px 13px;vertical-align:middle;}
     </div>
   </div>
   <div class="hright">
-    <button class="hbtn sidebarToggleBtn" id="sidebarToggleBtn" onclick="toggleMobileSidebar()" title="القوائم">☰</button>
-    <button class="hbtn" id="langToggleBtn" onclick="toggleLang()" title="Language / اللغة" style="font-family:var(--mono)">EN</button>
-    <button class="hbtn" id="notificationsBtn" onclick="openNotificationsCenter()" title="الإشعارات" data-i18n-title="الإشعارات" style="position:relative">🔔<span id="notifBadge" style="display:none;position:absolute;top:-4px;left:-4px;background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-family:var(--mono)"></span></button>
-    <div class="bchip" onclick="openBranchMgr()" style="cursor:pointer" title="إدارة الفروع" data-i18n-title="إدارة الفروع">
+    <button class="hbtn sidebarToggleBtn" id="sidebarToggleBtn" onclick="toggleMobileSidebar()" title="القوائم" aria-label="فتح القوائم">☰</button>
+    <button class="hbtn" id="langToggleBtn" onclick="toggleLang()" title="Language / اللغة" aria-label="تبديل اللغة" style="font-family:var(--mono)">EN</button>
+    <button class="hbtn" id="notificationsBtn" onclick="openNotificationsCenter()" title="الإشعارات" data-i18n-title="الإشعارات" aria-label="الإشعارات" style="position:relative">🔔<span id="notifBadge" style="display:none;position:absolute;top:-4px;left:-4px;background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-family:var(--mono)"></span></button>
+    <div class="user-chip" id="userChip" title="" style="display:none">
+      <div class="bc-dot" style="background:var(--blue);box-shadow:0 0 6px var(--blue)"></div>
+      <div><div class="bc-lbl" data-i18n="المستخدم">المستخدم</div><div class="bc-val user-chip-val" id="userEmailLbl" style="color:var(--blue)">—</div></div>
+    </div>
+    <div class="bchip" onclick="openBranchMgr()" onkeydown="if(event.key==='Enter')openBranchMgr()" style="cursor:pointer" title="إدارة الفروع" data-i18n-title="إدارة الفروع" role="button" tabindex="0" aria-label="إدارة الفروع">
       <div class="bc-dot"></div>
       <div><div class="bc-lbl" data-i18n="الفرع">الفرع</div><div class="bc-val" id="branchLbl">—</div></div>
     </div>
     <select id="branchSwitch" style="max-width:150px;font-size:12.5px;padding:8px 10px" onchange="switchBranch(this.value)"></select>
-    <button class="hbtn org" onclick="openAddItem()" title="إضافة صنف" data-i18n-title="إضافة صنف"><span>➕</span><span class="hbtn-txt" data-i18n="إضافة صنف">إضافة صنف</span></button>
-    <button class="hbtn grn" onclick="saveAndExport()" id="saveBtn" title="حفظ وتصدير" data-i18n-title="حفظ وتصدير"><span>💾</span><span class="hbtn-txt" data-i18n="حفظ وتصدير">حفظ وتصدير</span></button>
-    <button class="hbtn gold" onclick="openNewDay()" title="يوم جديد" data-i18n-title="يوم جديد"><span>📅</span><span class="hbtn-txt" data-i18n="يوم جديد">يوم جديد</span></button>
-    <button class="hbtn" onclick="doLogout()" title="خروج" data-i18n-title="خروج">🚪</button>
+    <button class="hbtn org" onclick="openAddItem()" title="إضافة صنف" data-i18n-title="إضافة صنف" aria-label="إضافة صنف"><span>➕</span><span class="hbtn-txt" data-i18n="إضافة صنف">إضافة صنف</span></button>
+    <button class="hbtn grn" onclick="saveAndExport()" id="saveBtn" title="حفظ وتصدير" data-i18n-title="حفظ وتصدير" aria-label="حفظ وتصدير"><span>💾</span><span class="hbtn-txt" data-i18n="حفظ وتصدير">حفظ وتصدير</span></button>
+    <button class="hbtn gold" onclick="openNewDay()" title="يوم جديد" data-i18n-title="يوم جديد" aria-label="يوم جديد"><span>📅</span><span class="hbtn-txt" data-i18n="يوم جديد">يوم جديد</span></button>
+    <button class="hbtn" onclick="doLogout()" title="خروج" data-i18n-title="خروج" aria-label="تسجيل الخروج">🚪</button>
   </div>
 </header>
 
@@ -2646,7 +2654,18 @@ function save(){
 // ══════════════════════════════════════════════
 initFirebase();
 
-function updateHeader(){document.getElementById('branchLbl').textContent=S.branch||'—';}
+function updateHeader(){
+  document.getElementById('branchLbl').textContent=S.branch||'—';
+  const email=curUser&&curUser.email;
+  const chip=document.getElementById('userChip');
+  if(email){
+    document.getElementById('userEmailLbl').textContent=email;
+    chip.title=email;
+    chip.style.display='';
+  } else {
+    chip.style.display='none';
+  }
+}
 function updateBanner(){
   const d=new Date(S.date+'T00:00:00');
   const ar=d.toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});

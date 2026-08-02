@@ -7748,17 +7748,75 @@ function processSimpleMenuImportRows(rows){
 //  export layout varies by system/report type — adjust SALES_IMPORT_ALIASES
 //  if a real export uses different headers than expected here, or rename
 //  the columns in the exported file to match one of the aliases below.
+//  Within each key, aliases are ordered by PRIORITY (most preferred first)
+//  — this matters for "value", where several columns can plausibly match
+//  in the same export (e.g. Foodics' own "Sales by Product" report has
+//  both "إجمالي المبيعات" and "صافي المبيعات" on the same row) and picking
+//  the wrong one silently skews the cost-% math, not just cosmetically.
 // ══════════════════════════════════════════════
 const SALES_IMPORT_ALIASES={
   name:['Product Name','Product','Item','Item Name','SKU','Description','اسم المنتج','اسم الصنف','الصنف','المنتج','الوصف'],
-  qty:['Quantity','Qty','Quantity Sold','Sold Qty','Qty Ordered','Qty Delivered','الكمية','الكمية المباعة','العدد'],
-  value:['Total','Net Amount','Total Amount','Sales Value','Net Sales','Amount','الإجمالي','قيمة المبيعات','إجمالي المبيعات','صافي المبيعات'],
+  qty:['Quantity','Qty','Quantity Sold','Sold Qty','Qty Ordered','Qty Delivered','الكمية','الكمية المباعة','العدد','صافي الكمية'],
+  // the app stores/expects the VAT-inclusive amount actually collected from
+  // the customer (net of discounts, with tax) — it divides by (1+VAT%)
+  // itself later to get the net figure used in cost-% ratios. Foodics'
+  // "صافي المبيعات مع الضريبة" (net of discount, with tax) is exactly that,
+  // so it's listed first. Generic "net sales" labels are listed last and
+  // used only as a fallback, since in many systems that means net-of-VAT —
+  // feeding that in would remove VAT twice and understate the real cost %.
+  value:['صافي المبيعات مع الضريبة','Total','Total Amount','Sales Value','الإجمالي','قيمة المبيعات','إجمالي المبيعات','Amount','Net Amount','Net Sales','صافي المبيعات'],
   date:['Date','Order Date','Business Date','تاريخ الطلب','التاريخ'],
 };
+// returns {key, priority} — priority is the alias's index within its list
+// (lower = more preferred), or null if the header doesn't match anything
 function matchSalesImportColumn(header){
   const h=String(header||'').trim().toLowerCase();
   for(const key in SALES_IMPORT_ALIASES){
-    if(SALES_IMPORT_ALIASES[key].some(a=>a.toLowerCase()===h)) return key;
+    const priority=SALES_IMPORT_ALIASES[key].findIndex(a=>a.toLowerCase()===h);
+    if(priority!==-1) return {key,priority};
+  }
+  return null;
+}
+// builds {name:colIdx, qty:colIdx, ...} from one header row, preferring the
+// highest-priority (lowest index) alias when more than one column matches
+// the same key
+function buildSalesImportColMap(row){
+  const colMap={},pri={};
+  (row||[]).forEach((h,i)=>{
+    const m=matchSalesImportColumn(h);
+    if(!m) return;
+    if(colMap[m.key]==null||m.priority<pri[m.key]){ colMap[m.key]=i; pri[m.key]=m.priority; }
+  });
+  return colMap;
+}
+// exports like Foodics' native reports have several metadata rows (report
+// title, date range, branch) before the real column header row — scan for
+// the row that actually yields both a name and a qty column instead of
+// assuming it's always the first row, so the file can be imported exactly
+// as exported, with no manual edits.
+function findSalesImportHeaderRow(rows){
+  const scanLimit=Math.min(rows.length,25);
+  for(let i=0;i<scanLimit;i++){
+    const colMap=buildSalesImportColMap(rows[i]);
+    if(colMap.name!=null&&colMap.qty!=null) return {headerRowIndex:i,colMap};
+  }
+  return null;
+}
+// if there's no per-row date column, look above the header for a
+// "Title/Value"-style metadata row whose label is a date-range field (e.g.
+// Foodics' "النطاق الزمني: 2026-07-01 - 2026-07-01") and use its start date
+const SALES_IMPORT_DATE_LABEL_RE=/النطاق الزمني|نطاق التاريخ|تاريخ التقرير|^التاريخ$|date range|business date/i;
+function extractSalesImportMetaDate(rows,headerRowIndex){
+  for(let i=0;i<headerRowIndex;i++){
+    const row=rows[i]||[];
+    if(!SALES_IMPORT_DATE_LABEL_RE.test(String(row[0]||'').trim())) continue;
+    const val=String(row[1]||'').trim();
+    if(!val) continue;
+    // split only on a hyphen surrounded by actual whitespace (the range
+    // separator, e.g. "2026-07-01 - 2026-07-01") — a bare \s*-\s* would
+    // also split inside each date's own dashes and mangle it
+    const d=normalizeSalesImportDate(val.split(/\s+-\s+/)[0]);
+    if(d) return d;
   }
   return null;
 }
@@ -7800,18 +7858,23 @@ function handleSalesImportFileSelected(e){
 }
 function processSalesImportRows(rows){
   if(!rows||!rows.length){toast('⚠️ الملف فارغ','wrn');return;}
-  const header=rows[0];
-  const colMap={};
-  header.forEach((h,i)=>{const key=matchSalesImportColumn(h);if(key)colMap[key]=i;});
-  if(colMap.name==null||colMap.qty==null){
+  const found=findSalesImportHeaderRow(rows);
+  if(!found){
     toast('⚠️ الملف لازم يحتوي على عمودي اسم الصنف والكمية على الأقل — حمّل قالب استيراد المبيعات من تبويب المبيعات','err');
     return;
   }
+  const {headerRowIndex,colMap}=found;
   const hasValueCol=colMap.value!=null;
   const qtyByName={};
   const valueByName={};
   const datesSeen=new Set();
-  for(let i=1;i<rows.length;i++){
+  // no per-row date column (e.g. Foodics' own report puts the date range in
+  // a metadata row instead) — fall back to extracting it from there
+  if(colMap.date==null){
+    const metaDate=extractSalesImportMetaDate(rows,headerRowIndex);
+    if(metaDate) datesSeen.add(metaDate);
+  }
+  for(let i=headerRowIndex+1;i<rows.length;i++){
     const row=rows[i];
     if(!row||!row.length) continue;
     const name=String(row[colMap.name]||'').trim();

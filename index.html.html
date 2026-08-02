@@ -372,6 +372,11 @@ td{padding:10px 13px;vertical-align:middle;}
 .mod-title{font-size:18px;font-weight:800;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
 .mod-top-actions{display:flex;gap:8px;flex-wrap:wrap;margin:-12px 0 18px;}
 .mod-top-actions .hbtn{padding:7px 13px;font-size:12px;}
+/* keeps the title + top action buttons (close/print/export) pinned in view
+   while a long report/table scrolls beneath them, instead of scrolling
+   away with the rest of the modal — padding-bottom:1px stops the title's
+   own margin-bottom from collapsing through this wrapper */
+.mod-sticky-head{position:sticky;top:0;z-index:15;background:var(--card);padding-bottom:1px;}
 .dash-card{background:var(--card2);border:1px solid var(--border);border-radius:13px;padding:16px 18px;margin-bottom:16px;}
 .dash-card-title{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text);}
 .dash-legend{margin-bottom:8px;font-size:11.5px;color:var(--muted);}
@@ -1229,7 +1234,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- ADD ITEM MODAL -->
 <div class="overlay" id="addItemModal">
 <div class="modal">
+  <div class="mod-sticky-head">
   <div class="mod-title" id="addItemTitle">➕ إضافة صنف جديد</div>
+  </div>
   <div class="mod-row">
     <div class="mod-field">
       <label class="mod-lbl" data-i18n="رقم المرجع *">رقم المرجع *</label>
@@ -1295,7 +1302,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- UNITS OF MEASURE MODAL -->
 <div class="overlay" id="uomModal">
 <div class="modal" style="width:940px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="📏 وحدات القياس">📏 وحدات القياس</div>
+  </div>
   <div class="mod-field">
     <input class="mod-in" id="uom-new" placeholder="اسم وحدة جديدة (مثال: كرتونة، شيكارة)">
   </div>
@@ -1325,7 +1334,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- ADD CATEGORY MODAL -->
 <div class="overlay" id="addCatModal">
 <div class="modal" style="width:420px">
+  <div class="mod-sticky-head">
   <div class="mod-title" id="addCatTitle">🗂️ إضافة قسم جديد</div>
+  </div>
   <div class="mod-row">
     <div class="mod-field">
       <label class="mod-lbl" data-i18n="رمز القسم *">رمز القسم *</label>
@@ -1374,7 +1385,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- MANAGE ITEMS MODAL -->
 <div class="overlay" id="manageModal">
 <div class="modal" style="width:700px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="✏️ إدارة الأصناف">✏️ إدارة الأصناف</div>
+  </div>
   <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
     <div class="sw" style="flex:1;min-width:160px">
       <span class="sw-ico">🔍</span>
@@ -1395,7 +1408,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- SETUP MODAL -->
 <div class="overlay" id="setupModal">
 <div class="modal">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="⚙️ إعداد الجرد">⚙️ إعداد الجرد</div>
+  </div>
   <div class="mod-field"><label class="mod-lbl" data-i18n="اسم الفرع *">اسم الفرع *</label><input class="mod-in" id="i-branch" placeholder="مثال: فرع الرياض"></div>
   <div class="mod-field"><label class="mod-lbl" data-i18n="مدير الفرع">مدير الفرع</label><input class="mod-in" id="i-manager"></div>
   <div class="mod-field"><label class="mod-lbl" data-i18n="أمين المخزن">أمين المخزن</label><input class="mod-in" id="i-store"></div>
@@ -1410,7 +1425,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- NEW DAY MODAL -->
 <div class="overlay" id="newDayModal">
 <div class="modal" style="width:420px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="📅 يوم جرد جديد">📅 يوم جرد جديد</div>
+  </div>
   <p style="color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.8">اختر كيف تريد البدء:</p>
   <div style="display:flex;gap:10px">
     <button class="hbtn" style="flex:1;justify-content:center;padding:12px" onclick="startDay(false)" data-i18n="🔄 بدء من صفر">🔄 بدء من صفر</button>
@@ -1423,6 +1440,7 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- REPORT MODAL -->
 <div class="overlay" id="rptModal">
 <div class="modal rmod">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="📋 تقرير الجرد">📋 تقرير الجرد</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('rptModal')" data-i18n="إغلاق">إغلاق</button>
@@ -1430,6 +1448,7 @@ td{padding:10px 13px;vertical-align:middle;}
     <button class="hbtn" id="rptCsvBtnTop">📊 CSV</button>
     <button class="hbtn" id="rptXlsBtnTop">📗 Excel</button>
     <button class="hbtn gold" id="rptPdfBtnTop">📄 PDF</button>
+  </div>
   </div>
   <div id="rptContent"></div>
   <div class="mod-foot">
@@ -1445,7 +1464,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- BRANCH MANAGER MODAL -->
 <div class="overlay" id="branchMgrModal">
 <div class="modal" style="width:460px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🏢 إدارة الفروع">🏢 إدارة الفروع</div>
+  </div>
   <div id="branchMgrList"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('branchMgrModal')" data-i18n="إغلاق">إغلاق</button>
@@ -1457,7 +1478,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- NEW BRANCH DEFINITION MODAL -->
 <div class="overlay" id="newBranchModal">
 <div class="modal">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🏢 تعريف فرع جديد">🏢 تعريف فرع جديد</div>
+  </div>
   <div class="mod-field"><label class="mod-lbl" data-i18n="اسم الفرع *">اسم الفرع *</label><input class="mod-in" id="nb-name" placeholder="مثال: فرع الرياض"></div>
   <div class="mod-field"><label class="mod-lbl" data-i18n="مدير الفرع">مدير الفرع</label><input class="mod-in" id="nb-manager"></div>
   <div class="mod-field"><label class="mod-lbl" data-i18n="أمين المخزن">أمين المخزن</label><input class="mod-in" id="nb-store"></div>
@@ -1472,7 +1495,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- NEW CYCLE MODAL -->
 <div class="overlay" id="newCycleModal">
 <div class="modal" style="width:420px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="➕ بدء دورة تسوية جديدة">➕ بدء دورة تسوية جديدة</div>
+  </div>
   <div class="mod-row">
     <div class="mod-field"><label class="mod-lbl" data-i18n="تاريخ البداية *">تاريخ البداية *</label><input type="date" class="mod-in" id="nc-start"></div>
     <div class="mod-field"><label class="mod-lbl" data-i18n="تاريخ النهاية *">تاريخ النهاية *</label><input type="date" class="mod-in" id="nc-end"></div>
@@ -1493,7 +1518,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- MENU & RECIPES MODAL -->
 <div class="overlay" id="menuModal">
 <div class="modal" style="width:640px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🍽️ الأصناف المباعة ووصفاتها (BOM)">🍽️ الأصناف المباعة ووصفاتها (BOM)</div>
+  </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">عرّف هنا كل صنف بيتباع في المنيو، وحدد مقادير كل مكوّن من المخزون بيدخل في تحضيره — يُستخدم ده لحساب الاستهلاك النظري من المبيعات ومقارنته بالجرد الفعلي في دورة التسوية. عندك أصناف كتير؟ استورد "اسم وسعر بس" وضيف المكوّنات بعدين من هنا، أو استورد بالمكوّنات كاملة من ملف واحد — الاختيارين تحت.</p>
   <div style="max-height:400px;overflow-y:auto" id="menuList"></div>
   <div class="mod-foot">
@@ -1511,7 +1538,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- MENU ITEM (RECIPE) MODAL -->
 <div class="overlay" id="menuItemModal">
 <div class="modal" style="width:560px">
+  <div class="mod-sticky-head">
   <div class="mod-title" id="miTitle">➕ إضافة صنف مباع جديد</div>
+  </div>
   <div class="mod-row">
     <div class="mod-field"><label class="mod-lbl" data-i18n="اسم الصنف *">اسم الصنف *</label><input class="mod-in" id="mi-name"></div>
     <div class="mod-field"><label class="mod-lbl" data-i18n="سعر البيع *">سعر البيع *</label><input type="number" inputmode="decimal" class="mod-in" id="mi-price" min="0" step="0.01"></div>
@@ -1532,10 +1561,12 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- MENU ITEM COMPONENTS (RECIPE) VIEWER MODAL -->
 <div class="overlay" id="menuRecipeViewModal">
 <div class="modal" style="width:620px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="📋 مكونات الصنف">📋 مكونات الصنف</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('menuRecipeViewModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+  </div>
   </div>
   <div id="menuRecipeViewBody"></div>
   <div class="mod-foot">
@@ -1548,12 +1579,14 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- REQUIREMENT PLANNING MODAL -->
 <div class="overlay" id="planModal">
 <div class="modal" style="width:820px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="📈 تخطيط الاحتياج (احتياج المنيو من الطلبات)">📈 تخطيط الاحتياج (احتياج المنيو من الطلبات)</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('planModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="resetPlanOverrides()" data-i18n="🔄 إعادة من المتوسط التاريخي">🔄 إعادة من المتوسط التاريخي</button>
     <button class="hbtn gold" onclick="exportPlanExcel()" data-i18n="📗 تصدير Excel">📗 تصدير Excel</button>
+  </div>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">النظام بيحسب متوسط استهلاك يومي لكل صنف من بيانات الدورات المغلقة السابقة، وبيقترح احتياج الفترة القادمة تلقائياً — وتقدر تعدّل الكميات المتوقعة لأي صنف يدوياً.</p>
   <div class="mod-row" style="align-items:end">
@@ -1578,7 +1611,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- COMPANY SETTINGS MODAL (admin only) -->
 <div class="overlay" id="companyModal">
 <div class="modal" style="width:460px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🏢 بيانات الشركة">🏢 بيانات الشركة</div>
+  </div>
   <div class="mod-field">
     <label class="mod-lbl" data-i18n="اسم الشركة">اسم الشركة</label>
     <input class="mod-in" id="co-name" placeholder="مثال: مطاعم أريكات">
@@ -1611,11 +1646,13 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- ITEM MOVEMENT LEDGER MODAL -->
 <div class="overlay" id="itemLedgerModal">
 <div class="modal" style="width:820px">
+  <div class="mod-sticky-head">
   <div class="mod-title" id="ledgerTitle">📜 حركة الصنف</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('itemLedgerModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportLedgerExcel()">📗 Excel</button>
+  </div>
   </div>
   <div id="ledgerBody"></div>
   <div class="mod-foot">
@@ -1629,7 +1666,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- QUICK MOVEMENT ENTRY MODAL (تحويل/سحب/استلام مستقل، مرتبط بالدورة حسب تاريخ الحركة) -->
 <div class="overlay" id="quickMovementModal">
 <div class="modal" style="width:720px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🔀 تسجيل حركة (تحويل/سحب/استلام)">🔀 تسجيل حركة (تحويل/سحب/استلام)</div>
+  </div>
   <div class="mod-row">
     <div class="mod-field">
       <label class="mod-lbl" data-i18n="نوع الحركة *">نوع الحركة *</label>
@@ -1660,7 +1699,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- NOTIFICATIONS CENTER MODAL (كل الإشعارات: تحويلات واردة معلّقة + أعطال صيانة مفتوحة) -->
 <div class="overlay" id="notificationsModal">
 <div class="modal" style="width:760px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🔔 مركز الإشعارات">🔔 مركز الإشعارات</div>
+  </div>
   <p style="font-size:11px;color:var(--muted);margin:-6px 0 14px">كل التنبيهات اللي محتاجة انتباهك دلوقتي: تحويلات واردة لسه معلّقة، وأعطال صيانة لسه مفتوحة.</p>
   <div id="notificationsBody"></div>
   <div class="mod-foot">
@@ -1672,7 +1713,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- INCOMING TRANSFERS REVIEW MODAL (مراجعة واعتماد التحويلات الواردة من الفروع التانية) -->
 <div class="overlay" id="incomingTransfersModal">
 <div class="modal" style="width:820px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="📥 مراجعة التحويلات الواردة">📥 مراجعة التحويلات الواردة</div>
+  </div>
   <p style="font-size:11px;color:var(--muted);margin:-6px 0 14px">التحويلات اللي فروع تانية بعتتها لك — لازم تعتمدها الأول عشان تتحسب كرصيد وارد عندك في دورة التسوية.</p>
   <div id="incomingTransfersBody"></div>
   <div class="mod-foot">
@@ -1684,11 +1727,13 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- TRANSFERS LOG MODAL -->
 <div class="overlay" id="transfersLogModal">
 <div class="modal" style="width:820px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🔀 سجل التحويلات بين الفروع">🔀 سجل التحويلات بين الفروع</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('transfersLogModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportTransfersLogExcel()">📗 Excel</button>
+  </div>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">كل حركات التحويل الصادرة والواردة المسجّلة في دورات هذا الفرع (المفتوحة والمغلقة).</p>
   <div id="transfersLogBody" style="max-height:480px;overflow-y:auto"></div>
@@ -1703,11 +1748,13 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- MENU SALES BY DATE REPORT MODAL -->
 <div class="overlay" id="menuSalesModal">
 <div class="modal" style="width:820px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="📊 تقرير مبيعات المنيو حسب التاريخ">📊 تقرير مبيعات المنيو حسب التاريخ</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('menuSalesModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportMenuSalesExcel()">📗 Excel</button>
+  </div>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">مبيعات كل صنف من المنيو مأخوذة من الدورات المغلقة، مع إمكانية التصفية بفترة تاريخ محدّدة أو بفرع محدد.</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
@@ -1731,11 +1778,13 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- ALL BRANCHES REPORT MODAL -->
 <div class="overlay" id="allBranchesModal">
 <div class="modal" style="width:900px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🌐 تقرير كل الفروع">🌐 تقرير كل الفروع</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('allBranchesModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportAllBranchesExcel()">📗 Excel</button>
+  </div>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">كل الفروع مجمّعة في تقرير واحد: إجمالي موحّد + تفصيل حسب الفرع + إجمالي استهلاك الأصناف عبر كل الفروع، لكل الدورات المغلقة اللي تقع في الفلتر المختار. متاح للإدارة أو لمن له صلاحية عرض تقارير كل الفروع.</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
@@ -1767,7 +1816,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- POS ITEM NAME MATCHING MODAL (مطابقة مسميات الأصناف مع أنظمة نقاط البيع/المحاسبة) -->
 <div class="overlay" id="posMatchModal">
 <div class="modal" style="width:820px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية">🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية</div>
+  </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.8">لو اسم الصنف عندك في أودو (Odoo) أو أونكس (Onyx) أو فوديكس (Foodics) مختلف عن اسمه هنا، سجّل الاسم المطابق تحت — النظام هيستخدمه عند سحب المبيعات عشان يلاقي الصنف صح من غير ما تغيّر أسماء المنيو عندك.</p>
   <div class="tbl-wrap"><table>
     <thead><tr><th data-i18n="الصنف">الصنف</th><th>Odoo</th><th>Onyx</th><th>Foodics</th><th data-i18n="نظام آخر">نظام آخر</th></tr></thead>
@@ -1782,11 +1833,13 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- CLOSING STOCK REPORT MODAL (تقرير المخزون الختامي المستقل لنهاية الدورة) -->
 <div class="overlay" id="closingStockModal">
 <div class="modal" style="width:920px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="📦 تقرير المخزون الختامي">📦 تقرير المخزون الختامي</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('closingStockModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportClosingStockExcel()">📗 Excel</button>
+  </div>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">الرصيد الختامي لكل صنف في نهاية الدورة، مربوط بمصدرين: الجرد اليومي المحفوظ بتاريخ نهاية الدورة، وحركة الرصيد الختامي داخل الدورة نفسها. أيهما اتسجّل أولاً هو المعتمد.</p>
   <div id="closingStockBody"></div>
@@ -1801,12 +1854,14 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- CURRENT STOCK BALANCE MODAL (رصيد المخزون الحالي — بالفرع أو مجمّع لكل الفروع) -->
 <div class="overlay" id="stockBalanceModal">
 <div class="modal" style="width:940px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="📦 رصيد المخزون الحالي">📦 رصيد المخزون الحالي</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('stockBalanceModal')" data-i18n="إغلاق">إغلاق</button>
     <select id="sbr-branch-filter" style="width:auto" onchange="setStockBalanceBranchFilter(this.value)"></select>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportStockBalanceExcel()">📗 Excel</button>
+  </div>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">رصيد كل صنف حسب آخر كمية مُدخلة في الجرد اليومي (مش رصيد دورة تسوية) — اختار فرع معيّن لتفاصيله، أو "كل الفروع (مجمّع)" لملخص قيمة المخزون في كل فرع.</p>
   <div id="stockBalanceBody"></div>
@@ -1821,12 +1876,14 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- SHORTAGE ALERT MODAL (تنبيه النواقص — الأصناف اللي وصلت للحد الأدنى) -->
 <div class="overlay" id="shortageAlertModal">
 <div class="modal" style="width:940px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="⚠️ تنبيه النواقص">⚠️ تنبيه النواقص</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('shortageAlertModal')" data-i18n="إغلاق">إغلاق</button>
     <select id="sar-branch-filter" style="width:auto" onchange="setShortageAlertBranchFilter(this.value)"></select>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportShortageAlertExcel()">📗 Excel</button>
+  </div>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">الأصناف اللي رصيدها الحالي وصل لحدّها الأدنى أو أقل منه — بناءً على "الحد الأدنى للمخزون" المحدّد لكل صنف من شاشة تعديل الصنف.</p>
   <div id="shortageAlertBody"></div>
@@ -1841,11 +1898,13 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- TOP WASTE ITEMS REPORT MODAL (تقرير أكثر الأصناف هالكًا) -->
 <div class="overlay" id="wasteReportModal">
 <div class="modal" style="width:820px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🗑️ تقرير أكثر الأصناف هالكًا">🗑️ تقرير أكثر الأصناف هالكًا</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('wasteReportModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportWasteReportExcel()">📗 Excel</button>
+  </div>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">إجمالي كميات وقيمة الهالك لكل صنف، مرتّبة تنازلياً من الأكبر قيمة، عبر كل دورات الفرع المختار — أو مجمّعة لكل الفروع.</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
@@ -1870,11 +1929,13 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- MAINTENANCE & MALFUNCTIONS LOG MODAL (سجل الأعطال والصيانة اليومي) -->
 <div class="overlay" id="maintenanceModal">
 <div class="modal" style="width:900px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🔧 سجل الأعطال والصيانة">🔧 سجل الأعطال والصيانة</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('maintenanceModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportMaintenanceExcel()">📗 Excel</button>
+  </div>
   </div>
   <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px">
     <div class="mod-row">
@@ -1896,10 +1957,12 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- POS IMPORT RECONCILIATION MODAL (مصادقة أصناف المنيو المسحوبة من نقطة البيع مع المسجّل في النظام) -->
 <div class="overlay" id="importReconcileModal">
 <div class="modal" style="width:860px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🔍 تأكيد مطابقة أصناف الاستيراد مع المنيو">🔍 تأكيد مطابقة أصناف الاستيراد مع المنيو</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('importReconcileModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+  </div>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.8">نتيجة مطابقة أسماء الأصناف المسحوبة من نقطة البيع مع الأصناف المسجّلة في المنيو عندك. الأصناف المتطابقة اتطبّقت تلقائياً على الدورة. اختر الصنف الصحيح للأصناف غير المتطابقة عشان تتطبّق وتتحفظ كاسم بديل تلقائي للمرات الجاية.</p>
   <div id="importReconcileBody"></div>
@@ -1912,11 +1975,13 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- BREAK-EVEN POINT MODULE (نقطة التعادل اليومية لكل فرع) -->
 <div class="overlay" id="breakEvenModal">
 <div class="modal" style="width:980px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="⚖️ نقطة التعادل اليومية">⚖️ نقطة التعادل اليومية</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('breakEvenModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportBreakEvenExcel()">📗 Excel</button>
+  </div>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">نقطة التعادل اليومية محسوبة من بيانات الموظفين وبنود التكاليف المباشرة المسجّلة لهذا الفرع — عدّلها من الشاشتين المخصصتين.</p>
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
@@ -1943,11 +2008,13 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- EMPLOYEES DATA SCREEN (بيانات الموظفين لكل فرع — مستقلة عن تقرير نقطة التعادل) -->
 <div class="overlay" id="employeesModal">
 <div class="modal" style="width:820px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="👥 بيانات الموظفين">👥 بيانات الموظفين</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('employeesModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportEmployeesExcel()">📗 Excel</button>
+  </div>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">موظفي كل فرع ورواتبهم الشهرية — تُستخدم في حساب نقطة التعادل اليومية. يمكن نقل الموظف لفرع آخر بحركة مرتبطة بتاريخ.</p>
   <div class="mod-field" id="employeesBranchFilterWrap" style="display:none;max-width:280px;margin-bottom:14px">
@@ -1962,7 +2029,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- EMPLOYEE TRANSFER MODAL (نقل موظف بين الفروع — حركة مرتبطة بتاريخ) -->
 <div class="overlay" id="transferEmployeeModal">
 <div class="modal" style="width:480px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🔀 نقل موظف لفرع آخر">🔀 نقل موظف لفرع آخر</div>
+  </div>
   <div id="transferEmpInfo" style="font-size:13px;margin-bottom:14px;color:var(--muted)"></div>
   <div class="mod-field">
     <label class="mod-lbl" data-i18n="الفرع الجديد *">الفرع الجديد *</label>
@@ -1982,11 +2051,13 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- DIRECT COSTS DATA SCREEN (بنود التكاليف المباشرة لكل فرع — مستقلة عن تقرير نقطة التعادل) -->
 <div class="overlay" id="directCostsModal">
 <div class="modal" style="width:820px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🧾 بنود التكاليف المباشرة">🧾 بنود التكاليف المباشرة</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('directCostsModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
     <button class="hbtn" onclick="exportDirectCostsExcel()">📗 Excel</button>
+  </div>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">بنود التكاليف المباشرة الشهرية لكل فرع (إيجار، كهرباء، تأمين، تسويق...) — تُستخدم في حساب نقطة التعادل اليومية.</p>
   <div class="mod-field" id="directCostsBranchFilterWrap" style="display:none;max-width:280px;margin-bottom:14px">
@@ -2001,10 +2072,12 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- INTERACTIVE DASHBOARD MODAL -->
 <div class="overlay" id="dashboardModal">
 <div class="modal" style="width:960px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="📊 لوحة التحكم التفاعلية">📊 لوحة التحكم التفاعلية</div>
   <div class="mod-top-actions">
     <button class="hbtn" onclick="closeM('dashboardModal')" data-i18n="إغلاق">إغلاق</button>
     <button class="hbtn" onclick="printCurrentReport()" data-i18n="🖨️ طباعة">🖨️ طباعة</button>
+  </div>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">رسوم بيانية مبنية على آخر الدورات المغلقة لهذا الفرع.</p>
   <div id="dashboardBody" style="max-height:600px;overflow-y:auto"></div>
@@ -2018,7 +2091,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- USERS & PERMISSIONS MODAL (admin only) -->
 <div class="overlay" id="usersModal">
 <div class="modal" style="width:580px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="👤 إدارة المستخدمين والصلاحيات">👤 إدارة المستخدمين والصلاحيات</div>
+  </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">حدد صلاحية كل مستخدم (إدارة/مالية تشوف كل الفروع، أو موظف فرع مقفول على فرع واحد) والفرع بتاعه، أو أنشئ حساب جديد مباشرة من غير ما تستنى الموظف يسجل بنفسه.</p>
   <button class="hbtn org" style="width:100%;justify-content:center;padding:9px;margin-bottom:14px" onclick="openCreateUserForm()" data-i18n="➕ إنشاء حساب مباشرة">➕ إنشاء حساب مباشرة</button>
   <div id="usersList" style="max-height:420px;overflow-y:auto"></div>
@@ -2029,7 +2104,9 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- CREATE USER DIRECTLY MODAL (admin/delegate only) -->
 <div class="overlay" id="createUserModal">
 <div class="modal" style="width:420px">
+  <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="➕ إنشاء حساب مستخدم مباشرة">➕ إنشاء حساب مستخدم مباشرة</div>
+  </div>
   <div class="mod-field">
     <label class="mod-lbl" data-i18n="البريد الإلكتروني *">البريد الإلكتروني *</label>
     <input class="mod-in" id="cu-email" type="email" placeholder="name@example.com">

@@ -90,46 +90,52 @@ header{
 .user-chip-val{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:right;}
 #branchLbl{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom;}
 
-/* VIEW NAV */
-.viewnav{
-  display:flex;align-items:center;gap:8px;padding:10px 24px;height:54px;box-sizing:border-box;
-  background:var(--surface);border-bottom:1px solid var(--border);
-  position:sticky;top:68px;z-index:150;flex-wrap:wrap;
-}
-.vn-btn{
-  display:flex;align-items:center;gap:7px;padding:8px 16px;
-  border-radius:8px;border:1px solid var(--border2);
-  background:var(--card2);color:var(--muted);font-family:var(--font);
-  font-size:13px;cursor:pointer;transition:all .15s;font-weight:500;
-}
-.vn-btn:hover{color:var(--text);border-color:var(--border2);}
-.vn-btn.active{background:rgba(240,192,64,.1);border-color:var(--gold);color:var(--gold);font-weight:700;}
-
-/* NAV DROPDOWNS */
-.vn-dd{position:relative;}
-.vn-dd-menu{
-  display:none;position:absolute;top:calc(100% + 6px);right:0;min-width:220px;
-  background:var(--card);border:1px solid var(--border2);border-radius:10px;
-  padding:6px;box-shadow:0 12px 30px rgba(20,30,50,.12);z-index:250;
-}
-.vn-dd.open .vn-dd-menu{display:block;}
-.vn-dd-item{
-  display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;
-  font-size:13px;color:var(--text);cursor:pointer;transition:background .12s;white-space:nowrap;
-}
-.vn-dd-item:hover{background:var(--tint);}
-.vn-dd-div{height:1px;background:var(--border);margin:5px 4px;}
-
 /* LAYOUT */
-.layout{display:flex;min-height:calc(100vh - 122px);}
+.layout{display:flex;min-height:calc(100vh - 68px);margin-right:230px;}
 
 /* SIDEBAR */
 .sidebar{
   width:252px;background:var(--surface);border-left:1px solid var(--border);
-  padding:14px 0 30px;position:sticky;top:122px;
-  height:calc(100vh - 122px);overflow-y:auto;flex-shrink:0;
+  padding:14px 0 30px;position:sticky;top:68px;
+  height:calc(100vh - 68px);overflow-y:auto;flex-shrink:0;
   display:flex;flex-direction:column;
 }
+
+/* MODULE NAV — persistent collapsible module rail docked on the right,
+   replacing the old horizontal .viewnav dropdown bar. Shares the .sidebar
+   class (in the HTML) purely so it rides along with the existing
+   toggleMobileSidebar()/mobile-drawer mechanism for free; these rules
+   layer desktop-only positioning on top of the .sidebar base above. */
+.module-nav{position:fixed;top:68px;right:0;width:230px;height:calc(100vh - 68px);z-index:120;}
+.mn-view-btn{
+  display:flex;align-items:center;gap:10px;padding:11px 16px;
+  cursor:pointer;border-right:3px solid transparent;
+  transition:all .15s;font-size:13.5px;font-weight:600;color:var(--muted);
+}
+.mn-view-btn:hover{background:var(--tint);color:var(--text);}
+.mn-view-btn.active{background:rgba(240,192,64,.07);color:var(--gold);border-right-color:var(--gold);}
+.mn-group-head{
+  display:flex;align-items:center;gap:10px;padding:11px 16px;
+  cursor:pointer;border-right:3px solid transparent;
+  transition:all .15s;font-size:13.5px;font-weight:600;color:var(--muted);
+}
+.mn-group-head:hover{background:var(--tint);color:var(--text);}
+.mn-group-head.open{background:rgba(240,192,64,.07);color:var(--gold);border-right-color:var(--gold);}
+.mn-chevron{margin-right:auto;font-size:11px;transition:transform .2s ease;display:inline-block;}
+.mn-group-head.open .mn-chevron{transform:rotate(180deg);}
+.mn-group-body{display:flex;flex-direction:column;padding-bottom:4px;}
+.mn-section-lbl{
+  font-size:9px;font-family:var(--mono);color:var(--muted2);
+  text-transform:uppercase;letter-spacing:1.5px;
+  padding:8px 20px 4px;display:block;
+}
+.mn-item{
+  display:flex;align-items:center;gap:8px;padding:8px 20px 8px 16px;
+  font-size:12.5px;color:var(--text);cursor:pointer;transition:background .12s;
+}
+.mn-item:hover{background:var(--tint);}
+.mn-div{height:1px;background:var(--border);margin:8px 16px;}
+
 .sb-label{
   font-size:9px;font-family:var(--mono);color:var(--muted2);
   text-transform:uppercase;letter-spacing:2px;
@@ -480,12 +486,6 @@ td{padding:10px 13px;vertical-align:middle;}
   .user-chip .user-chip-val{max-width:70px;}
   #branchSwitch{min-height:38px;}
 
-  .viewnav{padding:8px 12px;height:auto;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;top:auto;position:sticky;}
-  .vn-btn{white-space:nowrap;font-size:12px;padding:8px 12px;min-height:38px;flex-shrink:0;}
-  .vn-dd{flex-shrink:0;}
-  .vn-dd-menu{position:fixed;left:12px;right:12px;top:auto;width:auto;min-width:0;max-height:70vh;overflow-y:auto;}
-  .vn-dd-item{white-space:normal;min-height:40px;}
-
   main{padding:14px;}
   .stats{grid-template-columns:repeat(2,1fr);gap:8px;}
   .stat{padding:12px 14px;}
@@ -498,13 +498,20 @@ td{padding:10px 13px;vertical-align:middle;}
   .db-r{flex-wrap:wrap;}
 
   .sidebarToggleBtn{display:flex;}
-  .layout{min-height:calc(100vh - 108px);}
+  .layout{min-height:calc(100vh - 108px);margin-right:0;}
+  /* On mobile, the module-nav rail and the page-specific sidebar (categories/
+     cycle list) both carry the .sidebar class so a single ☰ tap opens both
+     together as one continuous drawer: module-nav pinned to the top of the
+     column (own bounded height + its own scroll), the page sidebar filling
+     the rest below it. Both still share the same slide-in transition/
+     backdrop/z-index from this base rule — only top/height differ. */
   .sidebar{
-    display:flex;position:fixed;top:0;right:-280px;height:100vh;width:260px;
+    display:flex;position:fixed;top:300px;right:-280px;height:calc(100vh - 300px);width:260px;
     z-index:400;transition:right .25s ease;box-shadow:-10px 0 30px rgba(20,30,50,.18);
   }
   .sidebar.mobile-open{right:0;}
   .sb-item{min-height:42px;}
+  .module-nav{top:0;height:300px;box-shadow:-10px 0 30px rgba(20,30,50,.18);}
 
   .toolbar{gap:7px;}
   .sw{min-width:0;flex:1 1 100%;}
@@ -1114,72 +1121,11 @@ td{padding:10px 13px;vertical-align:middle;}
 <button class="globalModalCloseBtn" id="globalModalCloseBtn" onclick="closeCurrentOverlay()">✕ <span data-i18n="رجوع">رجوع</span></button>
 <header id="reactHeaderRoot"></header>
 
-<div class="viewnav">
-  <button class="vn-btn active" id="vnDaily" onclick="showView('daily')" data-i18n="📋 الجرد اليومي">📋 الجرد اليومي</button>
-  <button class="vn-btn" id="vnCycle" onclick="showView('cycle')" data-i18n="🔄 دورة التسوية">🔄 دورة التسوية</button>
-
-  <div class="vn-dd" id="dd-items">
-    <button class="vn-btn" onclick="toggleDropdown('dd-items')" data-i18n="📦 الأصناف ▾">📦 الأصناف ▾</button>
-    <div class="vn-dd-menu">
-      <div class="vn-dd-item" onclick="closeDropdowns();openAddItem()" data-i18n="➕ إضافة صنف جديد">➕ إضافة صنف جديد</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();openAddCat()" data-i18n="🗂️ إضافة قسم جديد">🗂️ إضافة قسم جديد</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();openManageItems()" data-i18n="✏️ إدارة الأصناف">✏️ إدارة الأصناف</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();openUomMgr()" data-i18n="📏 وحدات القياس">📏 وحدات القياس</div>
-      <div class="vn-dd-div"></div>
-      <div class="vn-dd-item" onclick="closeDropdowns();openMenuMgr()" data-i18n="🍽️ الأصناف المباعة والوصفات">🍽️ الأصناف المباعة والوصفات</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();openPosMatchModal()" data-i18n="🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية">🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();exportRecipesExcel()" data-i18n="📗 تصدير مكونات المنيو الحالية">📗 تصدير مكونات المنيو الحالية</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('simpleMenuImportFileInput').click()" data-i18n="📥 استيراد أصناف منيو فقط بدون مكوّنات (Excel)">📥 استيراد أصناف منيو فقط بدون مكوّنات (Excel)</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();downloadSimpleMenuImportTemplate()" data-i18n="📄 قالب أصناف منيو فقط (بدون مكوّنات)">📄 قالب أصناف منيو فقط (بدون مكوّنات)</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('recipeImportFileInput').click()" data-i18n="📥 استيراد أصناف المنيو والمكونات (Excel)">📥 استيراد أصناف المنيو والمكونات (Excel)</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();downloadRecipeImportTemplate()" data-i18n="📄 قالب استيراد أصناف المنيو (بالشرح)">📄 قالب استيراد أصناف المنيو (بالشرح)</div>
-      <div class="vn-dd-div"></div>
-      <div class="vn-dd-item" onclick="closeDropdowns();exportItemsExcel()" data-i18n="📗 تصدير الأصناف الحالية (لتحديث التكلفة)">📗 تصدير الأصناف الحالية (لتحديث التكلفة)</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('importFileInput').click()" data-i18n="📥 استيراد أصناف (Excel)">📥 استيراد أصناف (Excel)</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();downloadImportTemplate()" data-i18n="📄 قالب الاستيراد">📄 قالب الاستيراد</div>
-    </div>
-  </div>
-
-  <div class="vn-dd" id="dd-movements">
-    <button class="vn-btn" onclick="toggleDropdown('dd-movements')" data-i18n="🔄 إدخال وحركات ▾">🔄 إدخال وحركات ▾</button>
-    <div class="vn-dd-menu">
-      <div class="vn-dd-item" onclick="closeDropdowns();openQuickMovement()" data-i18n="➕ تسجيل حركة (تحويل/سحب/استلام)">➕ تسجيل حركة (تحويل/سحب/استلام)</div>
-      <div class="vn-dd-item" id="ddIncomingTransfersItem" onclick="closeDropdowns();openIncomingTransfersReview()" data-i18n="📥 مراجعة التحويلات الواردة">📥 مراجعة التحويلات الواردة</div>
-      <div class="vn-dd-item" id="ddMaintenanceItem" onclick="closeDropdowns();openMaintenanceLog()" data-i18n="🔧 سجل الأعطال والصيانة">🔧 سجل الأعطال والصيانة</div>
-      <div class="vn-dd-item" id="ddEmployeesItem" onclick="closeDropdowns();openEmployeesScreen()" data-i18n="👥 بيانات الموظفين">👥 بيانات الموظفين</div>
-      <div class="vn-dd-item" id="ddDirectCostsItem" onclick="closeDropdowns();openDirectCostsScreen()" data-i18n="🧾 بنود التكاليف المباشرة">🧾 بنود التكاليف المباشرة</div>
-    </div>
-  </div>
-
-  <div class="vn-dd" id="dd-reports">
-    <button class="vn-btn" onclick="toggleDropdown('dd-reports')" data-i18n="📊 التقارير ▾">📊 التقارير ▾</button>
-    <div class="vn-dd-menu">
-      <div class="vn-dd-item" id="ddDashboardItem" onclick="closeDropdowns();openDashboard()" data-i18n="📊 لوحة تحكم تفاعلية">📊 لوحة تحكم تفاعلية</div>
-      <div class="vn-dd-item" id="ddMenuSalesItem" onclick="closeDropdowns();openMenuSalesReport()" data-i18n="📊 مبيعات المنيو حسب التاريخ">📊 مبيعات المنيو حسب التاريخ</div>
-      <div class="vn-dd-item" id="ddPlannerItem" onclick="closeDropdowns();openRequirementPlanner()" data-i18n="📈 تخطيط الاحتياج">📈 تخطيط الاحتياج</div>
-      <div class="vn-dd-item" id="ddTransfersLogItem" onclick="closeDropdowns();openTransfersLog()" data-i18n="🔀 سجل التحويلات">🔀 سجل التحويلات</div>
-      <div class="vn-dd-item" id="ddWasteReportItem" onclick="closeDropdowns();openWasteReport()" data-i18n="🗑️ تقرير أكثر الأصناف هالكًا">🗑️ تقرير أكثر الأصناف هالكًا</div>
-      <div class="vn-dd-item" id="ddBreakEvenItem" onclick="closeDropdowns();openBreakEvenModule()" data-i18n="⚖️ نقطة التعادل اليومية">⚖️ نقطة التعادل اليومية</div>
-      <div class="vn-dd-item" id="ddStockBalanceItem" onclick="closeDropdowns();openStockBalanceReport()" data-i18n="📦 رصيد المخزون الحالي">📦 رصيد المخزون الحالي</div>
-      <div class="vn-dd-item" id="ddShortageAlertItem" onclick="closeDropdowns();openShortageAlertReport()" data-i18n="⚠️ تنبيه النواقص">⚠️ تنبيه النواقص</div>
-      <div class="vn-dd-item" id="ddAllBranchReports" style="display:none" onclick="closeDropdowns();openAllBranchesReport()" data-i18n="🌐 تقرير كل الفروع">🌐 تقرير كل الفروع</div>
-      <div class="vn-dd-div"></div>
-      <div class="vn-dd-item" onclick="closeDropdowns();exportFullDataExcel()" data-i18n="📗 تفريغ كل البيانات (Excel)">📗 تفريغ كل البيانات (Excel)</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();exportBackupJSON()" data-i18n="💽 حفظ نسخة احتياطية (JSON)">💽 حفظ نسخة احتياطية (JSON)</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();document.getElementById('backupFileInput').click()" data-i18n="📤 استعادة من نسخة احتياطية">📤 استعادة من نسخة احتياطية</div>
-    </div>
-  </div>
-
-  <div class="vn-dd" id="dd-admin">
-    <button class="vn-btn" onclick="toggleDropdown('dd-admin')" data-i18n="⚙️ الإدارة ▾">⚙️ الإدارة ▾</button>
-    <div class="vn-dd-menu">
-      <div class="vn-dd-item" onclick="closeDropdowns();openSetup()" data-i18n="⚙️ إعداد الفرع">⚙️ إعداد الفرع</div>
-      <div class="vn-dd-item" onclick="closeDropdowns();openBranchMgr()" data-i18n="🏢 إدارة الفروع">🏢 إدارة الفروع</div>
-      <div class="vn-dd-item" id="ddUsersItem" style="display:none" onclick="closeDropdowns();openUsersMgr()" data-i18n="👤 المستخدمين والصلاحيات">👤 المستخدمين والصلاحيات</div>
-      <div class="vn-dd-item" id="ddCompanyItem" style="display:none" onclick="closeDropdowns();openCompanyMgr()" data-i18n="🏢 بيانات الشركة">🏢 بيانات الشركة</div>
-    </div>
-  </div>
-</div>
+<!-- MODULE NAV — persistent collapsible right-side rail, replacing the old
+     horizontal .viewnav dropdown bar. React (reactModuleNavRoot). Shares the
+     .sidebar class so it rides along with the existing mobile drawer
+     mechanism (toggleMobileSidebar()/#sidebarBackdrop). -->
+<div id="reactModuleNavRoot" class="sidebar module-nav"></div>
 
 <div class="layout" id="dailyView">
 
@@ -2149,6 +2095,7 @@ const I18N_EN={
   "📦 تقرير المخزون الختامي": "📦 Closing Stock Report",
   "⚖️ نقطة التعادل اليومية": "⚖️ Daily Break-Even Point",
   "🔄 إدخال وحركات ▾": "🔄 Entries & Movements ▾",
+  "🔄 إدخال وحركات": "🔄 Entries & Movements",
   "👥 بيانات الموظفين": "👥 Employee Data",
   "🔀 نقل موظف لفرع آخر": "🔀 Transfer Employee to Another Branch",
   "🧾 بنود التكاليف المباشرة": "🧾 Direct Cost Items",
@@ -2218,6 +2165,7 @@ const I18N_EN={
   "⚙️ إعداد الجرد": "⚙️ Inventory Setup",
   "⚙️ إعداد الفرع": "⚙️ Branch Setup",
   "⚙️ الإدارة ▾": "⚙️ Admin ▾",
+  "⚙️ الإدارة": "⚙️ Admin",
   "✏️ إدارة الأصناف": "✏️ Manage Items",
   "✓ إضافة الصنف": "✓ Add Item",
   "✓ إضافة القسم": "✓ Add Category",
@@ -2253,6 +2201,7 @@ const I18N_EN={
   "📈 تخطيط الاحتياج": "📈 Requirement Planning",
   "📈 تخطيط الاحتياج (احتياج المنيو من الطلبات)": "📈 Requirement Planning",
   "📊 التقارير ▾": "📊 Reports ▾",
+  "📊 التقارير": "📊 Reports",
   "📊 لوحة التحكم التفاعلية": "📊 Interactive Dashboard",
   "📊 لوحة تحكم تفاعلية": "📊 Interactive Dashboard",
   "📋 الجرد اليومي": "📋 Daily Inventory",
@@ -2266,6 +2215,14 @@ const I18N_EN={
   "📥 استيراد أصناف المنيو والمكونات (Excel)": "📥 Import Menu Items & Recipes (Excel)",
   "📥 استيراد أصناف منيو فقط بدون مكوّنات (Excel)": "📥 Import Menu Items Only, No Recipe (Excel)",
   "📦 الأصناف ▾": "📦 Items ▾",
+  "📦 الأصناف": "📦 Items",
+  "بيانات الأصناف والوحدات": "Item & Unit Data",
+  "المنيو والوصفات": "Menu & Recipes",
+  "استيراد/تصدير الوصفات": "Import/Export Recipes",
+  "استيراد/تصدير بيانات الأصناف": "Import/Export Item Data",
+  "تقارير تشغيلية": "Operational Reports",
+  "تقارير المخزون": "Stock Reports",
+  "بيانات ونسخ احتياطي": "Data & Backup",
   "🔀 سجل التحويلات": "🔀 Transfers Log",
   "🔀 سجل التحويلات بين الفروع": "🔀 Inter-Branch Transfers Log",
   "🔄 دورة التسوية": "🔄 Reconciliation Cycle",
@@ -2533,7 +2490,7 @@ function toggleLang(){
 }
 function reRenderDynamicContentForLang(){
   if(!bootedUI) return;
-  __headerRerender();__sidebarRerender();__mainRerender();
+  __headerRerender();__sidebarRerender();__mainRerender();__moduleNavRerender();
   if(typeof renderIncomingTransfersBadge==='function') renderIncomingTransfersBadge();
   if(curView==='cycle'){renderCycleTabs();renderCycleBody();}
   const openRenders=[
@@ -2805,6 +2762,7 @@ let curView='daily', curCycleId=null, curCycleTab='sales', curClosingStockCycleI
 let __headerRerender=()=>{};
 let __sidebarRerender=()=>{};
 let __mainRerender=()=>{};
+let __moduleNavRerender=()=>{};
 let saveBtnFlash=false;
 
 function today(){
@@ -3085,24 +3043,10 @@ async function onAuthChange(user){
 let unsubCompany=null;
 function startDataSync(){
   hideAuthScreen();
-  document.getElementById('ddUsersItem').style.display=canManageUsersUI()?'':'none';
-  document.getElementById('ddCompanyItem').style.display=canManageCompanyUI()?'':'none';
-  document.getElementById('ddAllBranchReports').style.display=canViewAllReportsUI()?'':'none';
-  document.getElementById('ddDashboardItem').style.display=canViewDashboardUI()?'':'none';
-  document.getElementById('ddMenuSalesItem').style.display=canViewMenuSalesUI()?'':'none';
-  document.getElementById('ddPlannerItem').style.display=canViewPlannerUI()?'':'none';
-  document.getElementById('ddTransfersLogItem').style.display=canViewTransfersLogUI()?'':'none';
-  document.getElementById('ddWasteReportItem').style.display=canViewWasteReportUI()?'':'none';
-  document.getElementById('ddMaintenanceItem').style.display=canViewMaintenanceUI()?'':'none';
-  document.getElementById('ddIncomingTransfersItem').style.display=canViewIncomingTransfersUI()?'':'none';
-  document.getElementById('ddBreakEvenItem').style.display=canViewBreakEvenUI()?'':'none';
-  document.getElementById('ddStockBalanceItem').style.display=canViewStockBalanceUI()?'':'none';
-  document.getElementById('ddShortageAlertItem').style.display=canViewStockBalanceUI()?'':'none';
-  document.getElementById('ddEmployeesItem').style.display=canViewEmployeesUI()?'':'none';
-  document.getElementById('ddDirectCostsItem').style.display=canViewDirectCostsUI()?'':'none';
-  // notificationsBtn/branchSwitch are now rendered by the React header — it
-  // reads canViewNotificationsUI()/canManageBranchesUI() live on every
-  // render, so this just needs to ask it to re-render, not write to the DOM.
+  // notificationsBtn/branchSwitch and every permission-gated module-nav item
+  // are now rendered by React — they read the canView*UI()/canManage*UI()
+  // checks live on every render, so this just needs to ask them to
+  // re-render, not write to the DOM.
   updateHeader();
 
   if(!unsubCompany){
@@ -3246,7 +3190,7 @@ function save(){
 // ══════════════════════════════════════════════
 initFirebase();
 
-function updateHeader(){ __headerRerender(); }
+function updateHeader(){ __headerRerender(); __moduleNavRerender(); }
 function updateCompanyBranding(){ __headerRerender(); }
 function updateNotificationsBadge(){ __headerRerender(); }
 function renderBranchSwitch(){ __headerRerender(); }
@@ -4012,8 +3956,7 @@ function showView(v){
   curView=v;
   document.getElementById('dailyView').style.display=v==='daily'?'':'none';
   document.getElementById('cycleView').style.display=v==='cycle'?'':'none';
-  document.getElementById('vnDaily').classList.toggle('active',v==='daily');
-  document.getElementById('vnCycle').classList.toggle('active',v==='cycle');
+  __moduleNavRerender();
   if(v==='cycle'){
     if(!curCycleId) selectLatestCycle();
     renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();
@@ -5414,22 +5357,6 @@ function loadDashboardBranchCompare(){
 }
 
 // ══════════════════════════════════════════════
-//  DROPDOWN NAV MENUS
-// ══════════════════════════════════════════════
-function toggleDropdown(id){
-  const el=document.getElementById(id);
-  const wasOpen=el.classList.contains('open');
-  document.querySelectorAll('.vn-dd.open').forEach(d=>d.classList.remove('open'));
-  if(!wasOpen) el.classList.add('open');
-}
-function closeDropdowns(){
-  document.querySelectorAll('.vn-dd.open').forEach(d=>d.classList.remove('open'));
-}
-document.addEventListener('click',e=>{
-  if(!e.target.closest('.vn-dd')) closeDropdowns();
-});
-
-// ══════════════════════════════════════════════
 //  MOBILE SIDEBAR DRAWER
 // ══════════════════════════════════════════════
 function toggleMobileSidebar(){
@@ -6509,12 +6436,7 @@ function sendTransferRequest(targetBranchKey,date,items,sourceCycle){
     return db.collection('branches').doc(targetBranchKey).set({incomingTransfers:list},{merge:true});
   }).catch(e=>toast('⚠️ اتسجّل التحويل عندك بس تعذّر إرساله لفرع '+req.toBranchName+': '+e.message,'err'));
 }
-function renderIncomingTransfersBadge(){
-  const el=document.getElementById('ddIncomingTransfersItem');
-  if(!el) return;
-  const pending=(S.incomingTransfers||[]).filter(r=>r.status==='pending').length;
-  el.innerHTML=`${t('📥 مراجعة التحويلات الواردة')}${pending?` <span style="background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-right:6px">${pending}</span>`:''}`;
-}
+function renderIncomingTransfersBadge(){ __moduleNavRerender(); }
 // aggregates the two operational notice types this business actually needs
 // surfaced proactively — pending incoming-transfer approvals and maintenance
 // issues still open — rather than a full audit log of every field edit.
@@ -8473,6 +8395,102 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
   }
 
   // ══════════════════════════════════════════════
+  //  MODULE NAV — persistent right-side collapsible rail replacing the old
+  //  horizontal .viewnav dropdown bar. One group open at a time, same as
+  //  the old toggleDropdown() behavior. Permission-gated items stay in the
+  //  DOM with style.display toggled (not conditionally unmounted) so
+  //  existing external lookups by id keep working, same convention already
+  //  used for the header's notifications bell.
+  // ══════════════════════════════════════════════
+  function ModuleNav(){
+    useBridge(fn=>{__moduleNavRerender=fn;});
+    const [openGroup,setOpenGroup]=useState(null);
+    const toggleGroup=g=>setOpenGroup(og=>og===g?null:g);
+    const pendingTransfers=(S.incomingTransfers||[]).filter(r=>r.status==='pending').length;
+
+    const Item=({onClick,i18n,id,show=true,badge})=>(
+      <div className="mn-item" id={id} style={{display:show?'':'none'}} onClick={()=>{setOpenGroup(null);onClick();}}>
+        <span>{t(i18n)}</span>
+        {!!badge && <span style={{background:'var(--red)',color:'#fff',borderRadius:10,padding:'1px 7px',fontSize:10,fontFamily:'var(--mono)',marginRight:6}}>{badge}</span>}
+      </div>
+    );
+    const Section=({label})=><span className="mn-section-lbl">{t(label)}</span>;
+    const Group=({id,icon,label,children})=>(
+      <div id={`mn-group-${id}`}>
+        <div className={`mn-group-head${openGroup===id?' open':''}`} id={`mn-group-head-${id}`} onClick={()=>toggleGroup(id)}>
+          <span>{icon} {t(label)}</span>
+          <span className="mn-chevron">▾</span>
+        </div>
+        <div className="mn-group-body" id={`mn-group-body-${id}`} style={{display:openGroup===id?'':'none'}}>{children}</div>
+      </div>
+    );
+
+    return (<React.Fragment>
+      <div className={`mn-view-btn${curView==='daily'?' active':''}`} id="vnDaily" onClick={()=>showView('daily')}>
+        <span>📋</span><span>{t('📋 الجرد اليومي')}</span>
+      </div>
+      <div className={`mn-view-btn${curView==='cycle'?' active':''}`} id="vnCycle" onClick={()=>showView('cycle')}>
+        <span>🔄</span><span>{t('🔄 دورة التسوية')}</span>
+      </div>
+      <div className="mn-div"></div>
+
+      <Group id="items" icon="📦" label="📦 الأصناف">
+        <Section label="بيانات الأصناف والوحدات" />
+        <Item onClick={openAddItem} i18n="➕ إضافة صنف جديد" />
+        <Item onClick={openAddCat} i18n="🗂️ إضافة قسم جديد" />
+        <Item onClick={openManageItems} i18n="✏️ إدارة الأصناف" />
+        <Item onClick={openUomMgr} i18n="📏 وحدات القياس" />
+        <Section label="المنيو والوصفات" />
+        <Item onClick={openMenuMgr} i18n="🍽️ الأصناف المباعة والوصفات" />
+        <Item onClick={openPosMatchModal} i18n="🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية" />
+        <Section label="استيراد/تصدير الوصفات" />
+        <Item onClick={()=>document.getElementById('simpleMenuImportFileInput').click()} i18n="📥 استيراد أصناف منيو فقط بدون مكوّنات (Excel)" />
+        <Item onClick={downloadSimpleMenuImportTemplate} i18n="📄 قالب أصناف منيو فقط (بدون مكوّنات)" />
+        <Item onClick={exportRecipesExcel} i18n="📗 تصدير مكونات المنيو الحالية" />
+        <Item onClick={()=>document.getElementById('recipeImportFileInput').click()} i18n="📥 استيراد أصناف المنيو والمكونات (Excel)" />
+        <Item onClick={downloadRecipeImportTemplate} i18n="📄 قالب استيراد أصناف المنيو (بالشرح)" />
+        <Section label="استيراد/تصدير بيانات الأصناف" />
+        <Item onClick={exportItemsExcel} i18n="📗 تصدير الأصناف الحالية (لتحديث التكلفة)" />
+        <Item onClick={()=>document.getElementById('importFileInput').click()} i18n="📥 استيراد أصناف (Excel)" />
+        <Item onClick={downloadImportTemplate} i18n="📄 قالب الاستيراد" />
+      </Group>
+
+      <Group id="movements" icon="🔄" label="🔄 إدخال وحركات">
+        <Item onClick={openQuickMovement} i18n="➕ تسجيل حركة (تحويل/سحب/استلام)" />
+        <Item id="ddIncomingTransfersItem" show={canViewIncomingTransfersUI()} onClick={openIncomingTransfersReview} i18n="📥 مراجعة التحويلات الواردة" badge={pendingTransfers||null} />
+        <Item id="ddMaintenanceItem" show={canViewMaintenanceUI()} onClick={openMaintenanceLog} i18n="🔧 سجل الأعطال والصيانة" />
+        <Item id="ddEmployeesItem" show={canViewEmployeesUI()} onClick={openEmployeesScreen} i18n="👥 بيانات الموظفين" />
+        <Item id="ddDirectCostsItem" show={canViewDirectCostsUI()} onClick={openDirectCostsScreen} i18n="🧾 بنود التكاليف المباشرة" />
+      </Group>
+
+      <Group id="reports" icon="📊" label="📊 التقارير">
+        <Section label="تقارير تشغيلية" />
+        <Item id="ddDashboardItem" show={canViewDashboardUI()} onClick={openDashboard} i18n="📊 لوحة تحكم تفاعلية" />
+        <Item id="ddMenuSalesItem" show={canViewMenuSalesUI()} onClick={openMenuSalesReport} i18n="📊 مبيعات المنيو حسب التاريخ" />
+        <Item id="ddPlannerItem" show={canViewPlannerUI()} onClick={openRequirementPlanner} i18n="📈 تخطيط الاحتياج" />
+        <Item id="ddTransfersLogItem" show={canViewTransfersLogUI()} onClick={openTransfersLog} i18n="🔀 سجل التحويلات" />
+        <Item id="ddWasteReportItem" show={canViewWasteReportUI()} onClick={openWasteReport} i18n="🗑️ تقرير أكثر الأصناف هالكًا" />
+        <Item id="ddBreakEvenItem" show={canViewBreakEvenUI()} onClick={openBreakEvenModule} i18n="⚖️ نقطة التعادل اليومية" />
+        <Section label="تقارير المخزون" />
+        <Item id="ddStockBalanceItem" show={canViewStockBalanceUI()} onClick={openStockBalanceReport} i18n="📦 رصيد المخزون الحالي" />
+        <Item id="ddShortageAlertItem" show={canViewStockBalanceUI()} onClick={openShortageAlertReport} i18n="⚠️ تنبيه النواقص" />
+        <Item id="ddAllBranchReports" show={canViewAllReportsUI()} onClick={openAllBranchesReport} i18n="🌐 تقرير كل الفروع" />
+        <Section label="بيانات ونسخ احتياطي" />
+        <Item onClick={exportFullDataExcel} i18n="📗 تفريغ كل البيانات (Excel)" />
+        <Item onClick={exportBackupJSON} i18n="💽 حفظ نسخة احتياطية (JSON)" />
+        <Item onClick={()=>document.getElementById('backupFileInput').click()} i18n="📤 استعادة من نسخة احتياطية" />
+      </Group>
+
+      <Group id="admin" icon="⚙️" label="⚙️ الإدارة">
+        <Item onClick={openSetup} i18n="⚙️ إعداد الفرع" />
+        <Item onClick={openBranchMgr} i18n="🏢 إدارة الفروع" />
+        <Item id="ddUsersItem" show={canManageUsersUI()} onClick={openUsersMgr} i18n="👤 المستخدمين والصلاحيات" />
+        <Item id="ddCompanyItem" show={canManageCompanyUI()} onClick={openCompanyMgr} i18n="🏢 بيانات الشركة" />
+      </Group>
+    </React.Fragment>);
+  }
+
+  // ══════════════════════════════════════════════
   //  SIDEBAR — categories + quick export actions (report history and the
   //  hidden import file inputs stay plain HTML siblings, outside this root)
   // ══════════════════════════════════════════════
@@ -8679,6 +8697,7 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
   }
 
   ReactDOM.createRoot(document.getElementById('reactHeaderRoot')).render(<Header />);
+  ReactDOM.createRoot(document.getElementById('reactModuleNavRoot')).render(<ModuleNav />);
   ReactDOM.createRoot(document.getElementById('reactSidebarRoot')).render(<CategorySidebar />);
   ReactDOM.createRoot(document.getElementById('reactDailyMainRoot')).render(<DailyMain />);
 })();

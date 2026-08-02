@@ -12,6 +12,13 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+<!-- React powers the header + daily-inventory screen only (Phase 1 of a
+     staged redesign) — everything else in the app is still the original
+     vanilla JS/CSS, loaded the same CDN-script way as the libraries above,
+     no build step, so the file stays a single deployable HTML page. -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 :root{
   --bg:#f2f3f8;--surface:#f8f9fc;--card:#ffffff;--card2:#f5f6fa;
@@ -523,6 +530,537 @@ td{padding:10px 13px;vertical-align:middle;}
   .logo-sub{display:none;}
   .dash-kpis{grid-template-columns:repeat(2,1fr);}
 }
+
+/* ============================================================
+   TAILWIND UTILITIES (compiled statically via the Tailwind CLI,
+   not loaded at runtime) — used only by the React header +
+   daily-inventory components below. Preflight/base is deliberately
+   excluded so it can't reset styling on the rest of the (still
+   vanilla) app. Regenerate with:
+     npx tailwindcss -i tw_input.css -o tw_output.css --config tailwind.config.js
+   whenever a new Tailwind class is added to the React components.
+   ============================================================ */
+/* Deliberately NOT including @tailwind base: Tailwind's preflight reset
+   would apply globally (button/input/select/etc across the WHOLE app, not
+   just the new React section) and fight with the existing app-wide custom
+   CSS reset + element styling used by every other still-vanilla screen. */
+
+.absolute {
+  position: absolute
+}
+
+.relative {
+  position: relative
+}
+
+.-left-4 {
+  left: -1rem
+}
+
+.-top-4 {
+  top: -1rem
+}
+
+.right-3\.5 {
+  right: 0.875rem
+}
+
+.top-1\/2 {
+  top: 50%
+}
+
+.mb-1\.5 {
+  margin-bottom: 0.375rem
+}
+
+.mb-4 {
+  margin-bottom: 1rem
+}
+
+.mb-5 {
+  margin-bottom: 1.25rem
+}
+
+.mr-1\.5 {
+  margin-right: 0.375rem
+}
+
+.mt-1 {
+  margin-top: 0.25rem
+}
+
+.mt-2 {
+  margin-top: 0.5rem
+}
+
+.flex {
+  display: flex
+}
+
+.inline-flex {
+  display: inline-flex
+}
+
+.table {
+  display: table
+}
+
+.grid {
+  display: grid
+}
+
+.hidden {
+  display: none
+}
+
+.h-1\.5 {
+  height: 0.375rem
+}
+
+.h-20 {
+  height: 5rem
+}
+
+.h-\[3px\] {
+  height: 3px
+}
+
+.h-full {
+  height: 100%
+}
+
+.w-1\.5 {
+  width: 0.375rem
+}
+
+.w-20 {
+  width: 5rem
+}
+
+.w-8 {
+  width: 2rem
+}
+
+.w-full {
+  width: 100%
+}
+
+.min-w-\[190px\] {
+  min-width: 190px
+}
+
+.flex-1 {
+  flex: 1 1 0%
+}
+
+.border-collapse {
+  border-collapse: collapse
+}
+
+.-translate-y-1\/2 {
+  --tw-translate-y: -50%;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))
+}
+
+.cursor-pointer {
+  cursor: pointer
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr))
+}
+
+.flex-wrap {
+  flex-wrap: wrap
+}
+
+.items-center {
+  align-items: center
+}
+
+.justify-between {
+  justify-content: space-between
+}
+
+.gap-1 {
+  gap: 0.25rem
+}
+
+.gap-1\.5 {
+  gap: 0.375rem
+}
+
+.gap-2 {
+  gap: 0.5rem
+}
+
+.gap-2\.5 {
+  gap: 0.625rem
+}
+
+.gap-3\.5 {
+  gap: 0.875rem
+}
+
+.overflow-hidden {
+  overflow: hidden
+}
+
+.overflow-x-auto {
+  overflow-x: auto
+}
+
+.whitespace-nowrap {
+  white-space: nowrap
+}
+
+.\!rounded-2xl {
+  border-radius: 1rem !important
+}
+
+.rounded {
+  border-radius: 0.25rem
+}
+
+.rounded-2xl {
+  border-radius: 1rem
+}
+
+.rounded-full {
+  border-radius: 9999px
+}
+
+.rounded-lg {
+  border-radius: 0.5rem
+}
+
+.rounded-md {
+  border-radius: 0.375rem
+}
+
+.border {
+  border-width: 1px
+}
+
+.border-b {
+  border-bottom-width: 1px
+}
+
+.border-r-2 {
+  border-right-width: 2px
+}
+
+.\!border-slate-200 {
+  --tw-border-opacity: 1 !important;
+  border-color: rgb(226 232 240 / var(--tw-border-opacity, 1)) !important
+}
+
+.border-blue-100 {
+  --tw-border-opacity: 1;
+  border-color: rgb(219 234 254 / var(--tw-border-opacity, 1))
+}
+
+.border-orange-200 {
+  --tw-border-opacity: 1;
+  border-color: rgb(254 215 170 / var(--tw-border-opacity, 1))
+}
+
+.border-slate-100 {
+  --tw-border-opacity: 1;
+  border-color: rgb(241 245 249 / var(--tw-border-opacity, 1))
+}
+
+.border-slate-200 {
+  --tw-border-opacity: 1;
+  border-color: rgb(226 232 240 / var(--tw-border-opacity, 1))
+}
+
+.border-r-\[var\(--orange\)\] {
+  border-right-color: var(--orange)
+}
+
+.bg-amber-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 251 235 / var(--tw-bg-opacity, 1))
+}
+
+.bg-blue-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(239 246 255 / var(--tw-bg-opacity, 1))
+}
+
+.bg-emerald-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(236 253 245 / var(--tw-bg-opacity, 1))
+}
+
+.bg-orange-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 247 237 / var(--tw-bg-opacity, 1))
+}
+
+.bg-rose-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 241 242 / var(--tw-bg-opacity, 1))
+}
+
+.bg-slate-200 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(226 232 240 / var(--tw-bg-opacity, 1))
+}
+
+.bg-slate-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(248 250 252 / var(--tw-bg-opacity, 1))
+}
+
+.bg-slate-50\/60 {
+  background-color: rgb(248 250 252 / 0.6)
+}
+
+.bg-white {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1))
+}
+
+.p-4 {
+  padding: 1rem
+}
+
+.px-1\.5 {
+  padding-left: 0.375rem;
+  padding-right: 0.375rem
+}
+
+.px-2 {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem
+}
+
+.px-2\.5 {
+  padding-left: 0.625rem;
+  padding-right: 0.625rem
+}
+
+.px-3 {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem
+}
+
+.px-3\.5 {
+  padding-left: 0.875rem;
+  padding-right: 0.875rem
+}
+
+.px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem
+}
+
+.py-0\.5 {
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem
+}
+
+.py-1\.5 {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem
+}
+
+.py-2\.5 {
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem
+}
+
+.py-3 {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem
+}
+
+.pl-3\.5 {
+  padding-left: 0.875rem
+}
+
+.pr-10 {
+  padding-right: 2.5rem
+}
+
+.text-right {
+  text-align: right
+}
+
+.font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace
+}
+
+.text-\[10\.5px\] {
+  font-size: 10.5px
+}
+
+.text-\[11\.5px\] {
+  font-size: 11.5px
+}
+
+.text-\[11px\] {
+  font-size: 11px
+}
+
+.text-\[12\.5px\] {
+  font-size: 12.5px
+}
+
+.text-\[13px\] {
+  font-size: 13px
+}
+
+.text-\[26px\] {
+  font-size: 26px
+}
+
+.text-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem
+}
+
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem
+}
+
+.font-black {
+  font-weight: 900
+}
+
+.font-bold {
+  font-weight: 700
+}
+
+.font-medium {
+  font-weight: 500
+}
+
+.uppercase {
+  text-transform: uppercase
+}
+
+.leading-none {
+  line-height: 1
+}
+
+.tracking-wide {
+  letter-spacing: 0.025em
+}
+
+.text-\[var\(--blue\)\] {
+  color: var(--blue)
+}
+
+.text-\[var\(--orange\)\] {
+  color: var(--orange)
+}
+
+.text-slate-400 {
+  --tw-text-opacity: 1;
+  color: rgb(148 163 184 / var(--tw-text-opacity, 1))
+}
+
+.text-slate-500 {
+  --tw-text-opacity: 1;
+  color: rgb(100 116 139 / var(--tw-text-opacity, 1))
+}
+
+.text-slate-600 {
+  --tw-text-opacity: 1;
+  color: rgb(71 85 105 / var(--tw-text-opacity, 1))
+}
+
+.text-slate-700 {
+  --tw-text-opacity: 1;
+  color: rgb(51 65 85 / var(--tw-text-opacity, 1))
+}
+
+.text-slate-800 {
+  --tw-text-opacity: 1;
+  color: rgb(30 41 59 / var(--tw-text-opacity, 1))
+}
+
+.opacity-\[0\.09\] {
+  opacity: 0.09
+}
+
+.\!shadow-sm {
+  --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+  --tw-shadow-colored: 0 1px 2px 0 var(--tw-shadow-color) !important;
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow) !important
+}
+
+.shadow-sm {
+  --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --tw-shadow-colored: 0 1px 2px 0 var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)
+}
+
+.outline-none {
+  outline: 2px solid transparent;
+  outline-offset: 2px
+}
+
+.filter {
+  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)
+}
+
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms
+}
+
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms
+}
+
+.last\:border-0:last-child {
+  border-width: 0px
+}
+
+.hover\:-translate-y-0\.5:hover {
+  --tw-translate-y: -0.125rem;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))
+}
+
+.hover\:border-slate-300:hover {
+  --tw-border-opacity: 1;
+  border-color: rgb(203 213 225 / var(--tw-border-opacity, 1))
+}
+
+.hover\:bg-orange-100:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 237 213 / var(--tw-bg-opacity, 1))
+}
+
+.hover\:bg-slate-50:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(248 250 252 / var(--tw-bg-opacity, 1))
+}
+
+.hover\:shadow-md:hover {
+  --tw-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --tw-shadow-colored: 0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)
+}
+
+.focus\:border-\[var\(--gold\)\]:focus {
+  border-color: var(--gold)
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr))
+  }
+}
+
 </style>
 </head>
 <body>
@@ -569,34 +1107,7 @@ td{padding:10px 13px;vertical-align:middle;}
 <div id="appRoot" style="display:none">
 <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleMobileSidebar()"></div>
 <button class="globalModalCloseBtn" id="globalModalCloseBtn" onclick="closeCurrentOverlay()">✕ <span data-i18n="رجوع">رجوع</span></button>
-<header>
-  <div class="logo">
-    <img id="companyLogoImg" style="display:none;width:44px;height:44px;border-radius:12px;object-fit:contain;background:#fff;padding:3px">
-    <div class="logo-icon" id="defaultLogoIcon">🗃️</div>
-    <div>
-      <div class="logo-name" id="companyNameOrDefault" data-i18n="نظام الجرد الذكي">نظام الجرد الذكي</div>
-      <div class="logo-sub">SMART INVENTORY v3.0 · <span id="buildStamp"></span></div>
-    </div>
-  </div>
-  <div class="hright">
-    <button class="hbtn sidebarToggleBtn" id="sidebarToggleBtn" onclick="toggleMobileSidebar()" title="القوائم" aria-label="فتح القوائم">☰</button>
-    <button class="hbtn" id="langToggleBtn" onclick="toggleLang()" title="Language / اللغة" aria-label="تبديل اللغة" style="font-family:var(--mono)">EN</button>
-    <button class="hbtn" id="notificationsBtn" onclick="openNotificationsCenter()" title="الإشعارات" data-i18n-title="الإشعارات" aria-label="الإشعارات" style="position:relative">🔔<span id="notifBadge" style="display:none;position:absolute;top:-4px;left:-4px;background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-family:var(--mono)"></span></button>
-    <div class="user-chip" id="userChip" title="" style="display:none">
-      <div class="bc-dot" style="background:var(--blue);box-shadow:0 0 6px var(--blue)"></div>
-      <div><div class="bc-lbl" data-i18n="المستخدم">المستخدم</div><div class="bc-val user-chip-val" id="userEmailLbl" style="color:var(--blue)">—</div></div>
-    </div>
-    <div class="bchip" onclick="openBranchMgr()" onkeydown="if(event.key==='Enter')openBranchMgr()" style="cursor:pointer" title="إدارة الفروع" data-i18n-title="إدارة الفروع" role="button" tabindex="0" aria-label="إدارة الفروع">
-      <div class="bc-dot"></div>
-      <div><div class="bc-lbl" data-i18n="الفرع">الفرع</div><div class="bc-val" id="branchLbl">—</div></div>
-    </div>
-    <select id="branchSwitch" style="max-width:150px;font-size:12.5px;padding:8px 10px" onchange="switchBranch(this.value)"></select>
-    <button class="hbtn org" onclick="openAddItem()" title="إضافة صنف" data-i18n-title="إضافة صنف" aria-label="إضافة صنف"><span>➕</span><span class="hbtn-txt" data-i18n="إضافة صنف">إضافة صنف</span></button>
-    <button class="hbtn grn" onclick="saveAndExport()" id="saveBtn" title="حفظ وتصدير" data-i18n-title="حفظ وتصدير" aria-label="حفظ وتصدير"><span>💾</span><span class="hbtn-txt" data-i18n="حفظ وتصدير">حفظ وتصدير</span></button>
-    <button class="hbtn gold" onclick="openNewDay()" title="يوم جديد" data-i18n-title="يوم جديد" aria-label="يوم جديد"><span>📅</span><span class="hbtn-txt" data-i18n="يوم جديد">يوم جديد</span></button>
-    <button class="hbtn" onclick="doLogout()" title="خروج" data-i18n-title="خروج" aria-label="تسجيل الخروج">🚪</button>
-  </div>
-</header>
+<header id="reactHeaderRoot"></header>
 
 <div class="viewnav">
   <button class="vn-btn active" id="vnDaily" onclick="showView('daily')" data-i18n="📋 الجرد اليومي">📋 الجرد اليومي</button>
@@ -665,20 +1176,11 @@ td{padding:10px 13px;vertical-align:middle;}
 
 <div class="layout" id="dailyView">
 
-<!-- SIDEBAR -->
+<!-- SIDEBAR — category list + quick actions are React (reactSidebarRoot);
+     saved-report history and the hidden import/backup file inputs stay
+     plain HTML, untouched, since viewnav dropdown items click them by id -->
 <div class="sidebar">
-  <span class="sb-label" data-i18n="الأقسام">الأقسام</span>
-  <div class="sb-item active" id="sb-all" onclick="filterCat('all',this)">
-    <span class="sb-ico">📦</span><span data-i18n="جميع الأصناف">جميع الأصناف</span>
-    <span class="sb-badge" id="b-all">—</span>
-  </div>
-  <div id="catSidebar"></div>
-
-  <div class="sb-div"></div>
-  <span class="sb-label" data-i18n="إجراءات سريعة">إجراءات سريعة</span>
-  <div class="sb-item" onclick="saveAndExport()"><span class="sb-ico">💾</span><span data-i18n="حفظ وتصدير PDF">حفظ وتصدير PDF</span></div>
-  <div class="sb-item" onclick="exportCsv()"><span class="sb-ico">📊</span><span data-i18n="تصدير CSV">تصدير CSV</span></div>
-  <div class="sb-item" onclick="clearQty()"><span class="sb-ico">🗑️</span><span data-i18n="مسح الكميات">مسح الكميات</span></div>
+  <div id="reactSidebarRoot"></div>
   <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFileSelected(event)">
   <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none" onchange="handleBackupFileSelected(event)">
   <input type="file" id="recipeImportFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleRecipeImportFileSelected(event)">
@@ -691,65 +1193,9 @@ td{padding:10px 13px;vertical-align:middle;}
   </div>
 </div>
 
-<!-- MAIN -->
+<!-- MAIN — React (reactDailyMainRoot) -->
 <main>
-  <div class="stats">
-    <div class="stat s1"><div class="stat-ico">📦</div><div class="stat-val" id="st-tot">0</div><div class="stat-lbl" data-i18n="إجمالي الأصناف">إجمالي الأصناف</div></div>
-    <div class="stat s2"><div class="stat-ico">✅</div><div class="stat-val" id="st-ent">0</div><div class="stat-lbl" data-i18n="تم جردها">تم جردها</div></div>
-    <div class="stat s3"><div class="stat-ico">⚠️</div><div class="stat-val" id="st-zer">0</div><div class="stat-lbl" data-i18n="صفرية">صفرية</div></div>
-    <div class="stat s4"><div class="stat-ico">📈</div><div class="stat-val" id="st-pct">0%</div><div class="stat-lbl" data-i18n="نسبة الإنجاز">نسبة الإنجاز</div><div class="prog"><div class="prog-f" id="progF" style="width:0"></div></div></div>
-  </div>
-
-  <div class="dbanner">
-    <div class="db-l">
-      <span style="font-size:20px">📅</span>
-      <div><div class="db-main" id="dbMain">—</div><div class="db-sub" id="dbSub">—</div></div>
-    </div>
-    <div class="db-r">
-      <div class="unsaved" id="unsavedDot"></div>
-      <button class="hbtn" style="padding:6px 11px;font-size:12px" onclick="saveAndExport()" data-i18n="💾 حفظ">💾 حفظ</button>
-    </div>
-  </div>
-
-  <div class="toolbar">
-    <div class="sw">
-      <span class="sw-ico">🔍</span>
-      <input type="text" id="srch" placeholder="ابحث بالاسم أو رقم المرجع..." oninput="renderTbl()">
-    </div>
-    <select id="uomF" onchange="renderTbl()"><option value="" data-i18n="كل الوحدات">كل الوحدات</option></select>
-    <select id="typeF" onchange="renderTbl()">
-      <option value="" data-i18n="كل الأنواع">كل الأنواع</option>
-      <option value="raw" data-i18n="خامة">خامة</option><option value="semi" data-i18n="نصف مصنّع">نصف مصنّع</option><option value="finished" data-i18n="منتج نهائي/جاهز">منتج نهائي/جاهز</option>
-    </select>
-    <select id="stF" onchange="renderTbl()">
-      <option value="" data-i18n="كل الحالات">كل الحالات</option>
-      <option value="F" data-i18n="مدخل كمية">مدخل كمية</option><option value="Z" data-i18n="صفري">صفري</option><option value="E" data-i18n="لم يُجرد">لم يُجرد</option>
-    </select>
-    <button class="hbtn org" style="padding:7px 13px;font-size:12.5px" onclick="openAddItem()" data-i18n="➕ إضافة صنف">➕ إضافة صنف</button>
-  </div>
-
-  <div class="tbl-wrap">
-    <div class="tbl-head">
-      <div class="tbl-title"><span id="tIco">📦</span>&nbsp;<span id="tTit">جميع الأصناف</span></div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="tbl-cnt" id="tCnt"></div>
-        <button class="hbtn org" style="padding:5px 11px;font-size:11.5px" onclick="openAddItem()" data-i18n="➕ إضافة">➕ إضافة</button>
-      </div>
-    </div>
-    <table>
-      <thead><tr>
-        <th style="width:32px">#</th>
-        <th data-i18n="رقم المرجع">رقم المرجع</th>
-        <th data-i18n="اسم الصنف">اسم الصنف</th>
-        <th data-i18n="القسم">القسم</th>
-        <th data-i18n="الوحدة">الوحدة</th>
-        <th data-i18n="الكمية الفعلية">الكمية الفعلية</th>
-        <th data-i18n="ملاحظات">ملاحظات</th>
-        <th style="width:30px"></th>
-      </tr></thead>
-      <tbody id="tBody"></tbody>
-    </table>
-  </div>
+  <div id="reactDailyMainRoot"></div>
 </main>
 </div>
 
@@ -1926,8 +2372,8 @@ function applyTranslations(){
   document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
     el.placeholder=t(el.getAttribute('data-i18n-ph'));
   });
-  const langBtn=document.getElementById('langToggleBtn');
-  if(langBtn) langBtn.textContent=curLang==='en'?'AR':'EN';
+  // langToggleBtn's own text is now rendered by the React header, which
+  // reads curLang directly — no DOM write needed here.
 }
 // most screens re-render fresh (new DOM nodes) when opened rather than going
 // through reRenderDynamicContentForLang's fixed list — this catches any
@@ -1961,9 +2407,8 @@ function toggleLang(){
 }
 function reRenderDynamicContentForLang(){
   if(!bootedUI) return;
-  if(typeof renderTbl==='function') renderTbl();
+  __headerRerender();__sidebarRerender();__mainRerender();
   if(typeof renderIncomingTransfersBadge==='function') renderIncomingTransfersBadge();
-  if(typeof updateNotificationsBadge==='function') updateNotificationsBadge();
   if(curView==='cycle'){renderCycleTabs();renderCycleBody();}
   const openRenders=[
     ['usersModal',renderUsersList],
@@ -2219,6 +2664,20 @@ let S={
 };
 let curCat='all', unsaved=false;
 let curView='daily', curCycleId=null, curCycleTab='sales', curClosingStockCycleId=null;
+
+// ---- React re-render bridges (Phase 1: the header and the daily-inventory
+// view render via React; every piece of state stays in the same plain
+// globals — S, curCat, curUser, etc. — the rest of this (still vanilla)
+// app already reads/writes directly, so no logic is duplicated. Each
+// React root sets its own callback here on mount; existing functions like
+// renderTbl()/updateStats()/updateHeader() keep their exact names (so the
+// 40+ existing call sites across the file don't change) but now just ask
+// React to re-read the live globals and re-render, instead of doing
+// innerHTML/textContent writes themselves. ----
+let __headerRerender=()=>{};
+let __sidebarRerender=()=>{};
+let __mainRerender=()=>{};
+let saveBtnFlash=false;
 
 function today(){
   const d=new Date();
@@ -2509,9 +2968,10 @@ function startDataSync(){
   document.getElementById('ddBreakEvenItem').style.display=canViewBreakEvenUI()?'':'none';
   document.getElementById('ddEmployeesItem').style.display=canViewEmployeesUI()?'':'none';
   document.getElementById('ddDirectCostsItem').style.display=canViewDirectCostsUI()?'':'none';
-  document.getElementById('notificationsBtn').style.display=canViewNotificationsUI()?'':'none';
-  updateNotificationsBadge();
-  document.getElementById('branchSwitch').disabled=!canManageBranchesUI();
+  // notificationsBtn/branchSwitch are now rendered by the React header — it
+  // reads canViewNotificationsUI()/canManageBranchesUI() live on every
+  // render, so this just needs to ask it to re-render, not write to the DOM.
+  updateHeader();
 
   if(!unsubCompany){
     unsubCompany=db.collection('settings').doc('company').onSnapshot(snap=>{
@@ -2654,24 +3114,15 @@ function save(){
 // ══════════════════════════════════════════════
 initFirebase();
 
-function updateHeader(){
-  document.getElementById('branchLbl').textContent=S.branch||'—';
-  const email=curUser&&curUser.email;
-  const chip=document.getElementById('userChip');
-  if(email){
-    document.getElementById('userEmailLbl').textContent=email;
-    chip.title=email;
-    chip.style.display='';
-  } else {
-    chip.style.display='none';
-  }
+function updateHeader(){ __headerRerender(); }
+function updateCompanyBranding(){ __headerRerender(); }
+function updateNotificationsBadge(){ __headerRerender(); }
+function renderBranchSwitch(){ __headerRerender(); }
+function flashSaveButton(){
+  saveBtnFlash=true; __headerRerender();
+  setTimeout(()=>{saveBtnFlash=false; __headerRerender();},2500);
 }
-function updateBanner(){
-  const d=new Date(S.date+'T00:00:00');
-  const ar=d.toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  document.getElementById('dbMain').textContent='جلسة جرد: '+ar;
-  document.getElementById('dbSub').textContent='SESSION: '+S.sid;
-}
+function updateBanner(){ __mainRerender(); }
 
 function buildColorGrid(){
   const g=document.getElementById('colorGrid');
@@ -2695,17 +3146,7 @@ function selIco(el){
 // ══════════════════════════════════════════════
 //  SIDEBAR RENDER
 // ══════════════════════════════════════════════
-function renderSidebar(){
-  const cont=document.getElementById('catSidebar');
-  cont.innerHTML=Object.entries(S.cats).map(([k,v])=>`
-    <div class="sb-cat-item${curCat===k?' active':''}" id="sbc-${k}" onclick="filterCat('${k}',this)">
-      <span class="sb-cat-dot" style="background:${v.c}"></span>
-      <span>${v.i||'📦'} ${v.l}</span>
-      <span class="sb-badge" id="b-${k}">${S.items.filter(i=>i.c===k).length}</span>
-      <button class="sb-cat-edit" onclick="event.stopPropagation();openEditCat('${k}')" title="تعديل">✏</button>
-    </div>`).join('');
-  document.getElementById('b-all').textContent=S.items.length;
-}
+function renderSidebar(){ __sidebarRerender(); }
 
 function populateCatSelects(){
   const s1=document.getElementById('ai-cat');
@@ -2716,16 +3157,16 @@ function populateCatSelects(){
 }
 
 function populateUomSelects(){
+  // the daily toolbar's uomF filter is now the React Toolbar component,
+  // which reads S.uoms directly on every render — only the add-item
+  // modal's plain-HTML select needs populating here now.
   const uoms=(S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS);
   const opts=uoms.map(u=>`<option value="${u.name}">${u.name}</option>`).join('');
   const aiUom=document.getElementById('ai-uom');
   const curAi=aiUom.value;
   aiUom.innerHTML=opts;
   if(uoms.some(u=>u.name===curAi)) aiUom.value=curAi;
-  const uomF=document.getElementById('uomF');
-  const curF=uomF.value;
-  uomF.innerHTML='<option value="" data-i18n="كل الوحدات">كل الوحدات</option>'+opts;
-  uomF.value=curF;
+  __mainRerender();
 }
 
 function openUomMgr(){renderUomList();document.getElementById('uomModal').classList.add('open');}
@@ -2815,13 +3256,12 @@ function deleteUom(u){
 //  TABLE RENDER
 // ══════════════════════════════════════════════
 const ITEM_TYPE_LABELS={raw:'خامة',semi:'نصف مصنّع',finished:'منتج نهائي'};
-function renderTbl(){
-  const srch=document.getElementById('srch').value.toLowerCase();
-  const uom=document.getElementById('uomF').value;
-  const typ=document.getElementById('typeF').value;
-  const st=document.getElementById('stF').value;
-
-  const list=S.items.filter(it=>{
+// shared by the React InventoryTable component (which owns the filter
+// inputs as controlled state) and anything else that needs the same
+// "which items show in the daily table" logic
+function filterDailyItems(srch,uom,typ,st){
+  srch=(srch||'').toLowerCase();
+  return S.items.filter(it=>{
     if(curCat!=='all'&&it.c!==curCat) return false;
     if(uom&&it.u!==uom) return false;
     if(typ&&(it.type||'raw')!==typ) return false;
@@ -2834,75 +3274,27 @@ function renderTbl(){
     }
     return true;
   });
-
-  document.getElementById('tCnt').textContent=list.length+' صنف';
-  document.getElementById('tBody').innerHTML=list.map((it,i)=>{
-    const cat=S.cats[it.c]||{l:'أخرى',c:'#888',i:'📦'};
-    const v=S.qty[it.r];
-    const qv=v!=null&&v!==''?v:'';
-    const cls=qv===''?'':(parseFloat(qv)===0?'Z':'F');
-    const nt=(S.notes||{})[it.r]||'';
-    return `<tr${it.custom?' class="custom-row"':''}>
-      <td class="td-num">${i+1}</td>
-      <td class="td-ref">${it.r}</td>
-      <td class="td-name">
-        ${it.custom?'<span class="custom-badge">✨ جديد</span>':''}
-        ${it.type&&it.type!=='raw'?`<span class="custom-badge" style="color:var(--purple);border-color:rgba(157,108,245,.3);background:rgba(157,108,245,.1)">${ITEM_TYPE_LABELS[it.type]}</span>`:''}
-        ${it.n}${it.e?`<span style="font-size:11px;color:var(--muted);margin-right:5px">${it.e}</span>`:''}
-      </td>
-      <td><span class="cat-pill"><span class="cpill-dot" style="background:${cat.c}"></span>${cat.l}</span></td>
-      <td><span class="uom-pill">${it.u}</span></td>
-      <td><div class="qty-wrap">
-        <button class="qbtn" onclick="adj('${it.r}',-1)">−</button>
-        <input type="number" inputmode="decimal" class="qin ${cls}" min="0" step="0.001"
-          value="${qv}" id="q_${it.r}" placeholder="—"
-          oninput="chg('${it.r}',this.value)"
-          onchange="chg('${it.r}',this.value)">
-        <button class="qbtn" onclick="adj('${it.r}',1)">+</button>
-      </div></td>
-      <td><input type="text" class="note-in" value="${nt}" placeholder="ملاحظة..."
-        onchange="chgNote('${it.r}',this.value)"></td>
-      <td>
-        <button class="row-del" onclick="deleteItem('${it.r}')" title="حذف الصنف">🗑</button>
-      </td>
-    </tr>`;
-  }).join('');
 }
+function renderTbl(){ __mainRerender(); }
 
 function chg(r,v){
   if(v===''||v===null){delete S.qty[r];}
   else{S.qty[r]=parseFloat(v)||0;}
-  const el=document.getElementById('q_'+r);
-  if(el){el.classList.remove('F','Z');if(v!=='')el.classList.add(parseFloat(v)===0?'Z':'F');}
   markUnsaved();save();updateStats();
 }
 function adj(r,d){
-  const el=document.getElementById('q_'+r);if(!el)return;
-  const v=Math.max(0,(parseFloat(el.value)||0)+d);
-  el.value=v;chg(r,v);
+  const v=Math.max(0,(parseFloat(S.qty[r])||0)+d);
+  chg(r,v);
 }
 function chgNote(r,v){if(!S.notes)S.notes={};S.notes[r]=v;save();}
 
-function updateStats(){
-  const ent=S.items.filter(it=>S.qty[it.r]!=null&&S.qty[it.r]!=='').length;
-  const zer=S.items.filter(it=>S.qty[it.r]!=null&&parseFloat(S.qty[it.r])===0).length;
-  const pct=Math.round((ent/S.items.length)*100)||0;
-  document.getElementById('st-tot').textContent=S.items.length;
-  document.getElementById('st-ent').textContent=ent;
-  document.getElementById('st-zer').textContent=zer;
-  document.getElementById('st-pct').textContent=pct+'%';
-  document.getElementById('progF').style.width=pct+'%';
-}
+function updateStats(){ __mainRerender(); }
 
-function markUnsaved(){unsaved=true;document.getElementById('unsavedDot').classList.add('on');}
-function filterCat(cat,el){
+function markUnsaved(){unsaved=true; __mainRerender();}
+function filterCat(cat){
   curCat=cat;
-  document.querySelectorAll('.sb-item,.sb-cat-item').forEach(e=>e.classList.remove('active'));
-  el.classList.add('active');
-  const cat_data=S.cats[cat];
-  document.getElementById('tIco').textContent=cat==='all'?'📦':(cat_data?.i||'📦');
-  document.getElementById('tTit').textContent=cat==='all'?t('جميع الأصناف'):(cat_data?.l||cat);
-  renderTbl();
+  __sidebarRerender();
+  __mainRerender();
 }
 
 // ══════════════════════════════════════════════
@@ -3267,10 +3659,9 @@ function saveAndExport(){
   const idx=S.reports.findIndex(r=>r.id===rpt.id);
   if(idx>=0)S.reports[idx]=rpt; else S.reports.unshift(rpt);
   save();
-  unsaved=false;document.getElementById('unsavedDot').classList.remove('on');
-  const btn=document.getElementById('saveBtn');
-  btn.textContent='✅ تم الحفظ';
-  setTimeout(()=>btn.textContent='💾 حفظ وتصدير',2500);
+  unsaved=false;
+  updateBanner();
+  flashSaveButton();
   renderHist();
   toast('✅ تم الحفظ — جاري تصدير PDF...','suc');
   setTimeout(()=>exportPDF(rpt),500);
@@ -3452,8 +3843,8 @@ function openNewDay(){document.getElementById('newDayModal').classList.add('open
 function startDay(keep){
   S.date=today();S.sid=genSid();
   if(!keep){S.qty={};S.notes={};}
+  unsaved=false;
   save();updateBanner();renderTbl();updateStats();
-  unsaved=false;document.getElementById('unsavedDot').classList.remove('on');
   closeM('newDayModal');toast('📅 تم فتح جلسة جديدة: '+S.sid,'suc');
 }
 function openSetup(){
@@ -3496,18 +3887,13 @@ function showView(v){
 // ══════════════════════════════════════════════
 //  BRANCHES (multi-branch support)
 // ══════════════════════════════════════════════
-function renderBranchSwitch(){
-  const sel=document.getElementById('branchSwitch');
-  sel.innerHTML=Object.entries(S.branches).map(([k,b])=>`<option value="${k}"${k===S.curBranch?' selected':''}>${b.name}</option>`).join('');
-}
-
 function switchBranch(key){
   if(!canManageBranchesUI()){toast('⚠️ التبديل بين الفروع متاح للإدارة أو لمن له صلاحية إدارة الفروع بس','wrn');return;}
   if(!S.branches[key]||key===S.curBranch) return;
   curCat='all';curCycleId=null;
   const name=S.branches[key].name;
+  unsaved=false;
   switchToBranchDoc(key);
-  unsaved=false;document.getElementById('unsavedDot').classList.remove('on');
   toast('🏢 تم التبديل إلى: '+name,'inf');
 }
 
@@ -3691,19 +4077,6 @@ let pendingLogoDataUrl=undefined;
 function netOfVat(gross){
   const v=companyInfo.vatPct||0;
   return v>0?gross/(1+v/100):gross;
-}
-function updateCompanyBranding(){
-  const nameEl=document.getElementById('companyNameOrDefault');
-  const logoImg=document.getElementById('companyLogoImg');
-  const defIcon=document.getElementById('defaultLogoIcon');
-  if(nameEl) nameEl.textContent=companyInfo.name||'نظام الجرد الذكي';
-  if(companyInfo.logo){
-    if(logoImg){logoImg.src=companyInfo.logo;logoImg.style.display='';}
-    if(defIcon) defIcon.style.display='none';
-  }else{
-    if(logoImg) logoImg.style.display='none';
-    if(defIcon) defIcon.style.display='';
-  }
 }
 function openCompanyMgr(){
   if(!canManageCompanyUI()){toast('⚠️ إدارة بيانات الشركة متاحة للإدارة أو لمن له صلاحية إدارة بيانات الشركة بس','wrn');return;}
@@ -6014,14 +6387,6 @@ function computeNotifications(){
   const openMaintenance=canViewMaintenanceUI()?(S.maintenance||[]).filter(x=>x.status!=='resolved'):[];
   return {pendingTransfers,openMaintenance};
 }
-function updateNotificationsBadge(){
-  const badge=document.getElementById('notifBadge');
-  if(!badge) return;
-  if(!canViewNotificationsUI()){badge.style.display='none';return;}
-  const n=computeNotifications();
-  const total=n.pendingTransfers.length+n.openMaintenance.length;
-  if(total>0){badge.style.display='';badge.textContent=total;} else {badge.style.display='none';}
-}
 function openNotificationsCenter(){
   if(!canViewNotificationsUI()){toast('⚠️ مركز الإشعارات غير متاح لحسابك — راجع الإدارة','wrn');return;}
   renderNotificationsCenter();
@@ -7650,5 +8015,279 @@ function toast(msg,type='inf'){
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.returnValue='';}});
 </script>
+<script type="text/babel" data-presets="react">
+(function(){
+  const {useReducer,useEffect,useState} = React;
+
+  // subscribes a component to one of the module-level rerender bridges
+  // (__headerRerender/__sidebarRerender/__mainRerender) so calling the
+  // existing renderTbl()/updateStats()/updateHeader()/etc. functions from
+  // anywhere in the (still vanilla) codebase re-renders this component.
+  function useBridge(setter){
+    const [,bump]=useReducer(x=>x+1,0);
+    useEffect(()=>{ setter(bump); return ()=>setter(()=>{}); },[]);
+  }
+
+  // ══════════════════════════════════════════════
+  //  HEADER — logo, branch chip, user chip, notifications, language,
+  //  quick actions. Visual language matches the existing header exactly
+  //  (same classes/colors/mobile behavior already tuned in earlier passes);
+  //  what's new here is that it's a React component reading S/curUser/etc.
+  //  live instead of imperative innerHTML/textContent writes.
+  // ══════════════════════════════════════════════
+  function Header(){
+    useBridge(fn=>{__headerRerender=fn;});
+    const email=curUser&&curUser.email;
+    const notif=canViewNotificationsUI()?computeNotifications():{pendingTransfers:[],openMaintenance:[]};
+    const notifCount=notif.pendingTransfers.length+notif.openMaintenance.length;
+    const branchEntries=Object.entries(S.branches||{});
+
+    return (<React.Fragment>
+      <div className="logo">
+        {companyInfo.logo
+          ? <img id="companyLogoImg" src={companyInfo.logo} style={{width:44,height:44,borderRadius:12,objectFit:'contain',background:'#fff',padding:3}} />
+          : <div className="logo-icon" id="defaultLogoIcon">🗃️</div>}
+        <div>
+          <div className="logo-name" id="companyNameOrDefault">{companyInfo.name||t('نظام الجرد الذكي')}</div>
+          <div className="logo-sub">SMART INVENTORY v3.0 · <span id="buildStamp">{typeof BUILD_STAMP!=='undefined'?BUILD_STAMP:''}</span></div>
+        </div>
+      </div>
+      <div className="hright">
+        <button className="hbtn sidebarToggleBtn" id="sidebarToggleBtn" onClick={toggleMobileSidebar} title="القوائم" aria-label="فتح القوائم">☰</button>
+        <button className="hbtn" id="langToggleBtn" onClick={toggleLang} title="Language / اللغة" aria-label="تبديل اللغة" style={{fontFamily:'var(--mono)'}}>{curLang==='en'?'AR':'EN'}</button>
+        <button className="hbtn" id="notificationsBtn" onClick={openNotificationsCenter} title={t('الإشعارات')} aria-label={t('الإشعارات')} style={{position:'relative',display:canViewNotificationsUI()?'':'none'}}>
+          🔔<span id="notifBadge" style={{display:notifCount>0?'':'none',position:'absolute',top:-4,left:-4,background:'var(--red)',color:'#fff',borderRadius:10,padding:'1px 6px',fontSize:10,fontFamily:'var(--mono)'}}>{notifCount}</span>
+        </button>
+        <div className="user-chip" id="userChip" title={email||''} style={{display:email?'':'none'}}>
+          <div className="bc-dot" style={{background:'var(--blue)',boxShadow:'0 0 6px var(--blue)'}}></div>
+          <div><div className="bc-lbl">{t('المستخدم')}</div><div className="bc-val user-chip-val" id="userEmailLbl" style={{color:'var(--blue)'}}>{email||'—'}</div></div>
+        </div>
+        <div className="bchip" onClick={openBranchMgr} onKeyDown={e=>{if(e.key==='Enter')openBranchMgr();}} style={{cursor:'pointer'}} title="إدارة الفروع" role="button" tabIndex={0} aria-label="إدارة الفروع">
+          <div className="bc-dot"></div>
+          <div><div className="bc-lbl">{t('الفرع')}</div><div className="bc-val" id="branchLbl">{S.branch||'—'}</div></div>
+        </div>
+        <select id="branchSwitch" style={{maxWidth:150,fontSize:'12.5px',padding:'8px 10px'}} disabled={!canManageBranchesUI()} value={S.curBranch||''} onChange={e=>switchBranch(e.target.value)}>
+          {branchEntries.map(([k,b])=><option key={k} value={k}>{b.name}</option>)}
+        </select>
+        <button className="hbtn org" onClick={openAddItem} title={t('إضافة صنف')} aria-label={t('إضافة صنف')}><span>➕</span><span className="hbtn-txt">{t('إضافة صنف')}</span></button>
+        <button className="hbtn grn" id="saveBtn" onClick={saveAndExport} title={t('حفظ وتصدير')} aria-label={t('حفظ وتصدير')}><span>💾</span><span className="hbtn-txt">{saveBtnFlash?'✅ '+t('تم الحفظ'):t('حفظ وتصدير')}</span></button>
+        <button className="hbtn gold" onClick={openNewDay} title={t('يوم جديد')} aria-label={t('يوم جديد')}><span>📅</span><span className="hbtn-txt">{t('يوم جديد')}</span></button>
+        <button className="hbtn" id="logoutBtn" onClick={doLogout} title="خروج" aria-label="تسجيل الخروج">🚪</button>
+      </div>
+    </React.Fragment>);
+  }
+
+  // ══════════════════════════════════════════════
+  //  SIDEBAR — categories + quick export actions (report history and the
+  //  hidden import file inputs stay plain HTML siblings, outside this root)
+  // ══════════════════════════════════════════════
+  function CategorySidebar(){
+    useBridge(fn=>{__sidebarRerender=fn;});
+    const cats=Object.entries(S.cats||{});
+    return (<React.Fragment>
+      <span className="sb-label">{t('الأقسام')}</span>
+      <div className={`sb-item${curCat==='all'?' active':''}`} id="sb-all" onClick={()=>filterCat('all')}>
+        <span className="sb-ico">📦</span><span>{t('جميع الأصناف')}</span>
+        <span className="sb-badge" id="b-all">{S.items.length}</span>
+      </div>
+      {cats.map(([k,v])=>(
+        <div key={k} className={`sb-cat-item${curCat===k?' active':''}`} id={`sbc-${k}`} onClick={()=>filterCat(k)}>
+          <span className="sb-cat-dot" style={{background:v.c}}></span>
+          <span>{v.i||'📦'} {v.l}</span>
+          <span className="sb-badge" id={`b-${k}`}>{S.items.filter(i=>i.c===k).length}</span>
+          <button className="sb-cat-edit" onClick={e=>{e.stopPropagation();openEditCat(k);}} title="تعديل">✏</button>
+        </div>
+      ))}
+      <div className="sb-div"></div>
+      <span className="sb-label">{t('إجراءات سريعة')}</span>
+      <div className="sb-item" onClick={saveAndExport}><span className="sb-ico">💾</span><span>{t('حفظ وتصدير PDF')}</span></div>
+      <div className="sb-item" onClick={exportCsv}><span className="sb-ico">📊</span><span>{t('تصدير CSV')}</span></div>
+      <div className="sb-item" onClick={clearQty}><span className="sb-ico">🗑️</span><span>{t('مسح الكميات')}</span></div>
+    </React.Fragment>);
+  }
+
+  // ══════════════════════════════════════════════
+  //  KPI CARDS — redesigned as clean, high-contrast micro-dashboards
+  // ══════════════════════════════════════════════
+  function KpiCards(){
+    const ent=S.items.filter(it=>S.qty[it.r]!=null&&S.qty[it.r]!=='').length;
+    const zer=S.items.filter(it=>S.qty[it.r]!=null&&parseFloat(S.qty[it.r])===0).length;
+    const pct=Math.round((ent/S.items.length)*100)||0;
+    const cards=[
+      {id:'st-tot',icon:'📦',val:S.items.length,lbl:t('إجمالي الأصناف'),accent:'var(--gold)',bg:'bg-amber-50'},
+      {id:'st-ent',icon:'✅',val:ent,lbl:t('تم جردها'),accent:'var(--green)',bg:'bg-emerald-50'},
+      {id:'st-zer',icon:'⚠️',val:zer,lbl:t('صفرية'),accent:'var(--red)',bg:'bg-rose-50'},
+      {id:'st-pct',icon:'📈',val:pct+'%',lbl:t('نسبة الإنجاز'),accent:'var(--blue)',bg:'bg-blue-50'},
+    ];
+    return (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5">
+        {cards.map(c=>(
+          <div key={c.id} className={`relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all p-4`}>
+            <div className={`absolute -top-4 -left-4 w-20 h-20 rounded-full opacity-[0.09] ${c.bg}`} style={{background:c.accent}}></div>
+            <div className="text-lg mb-1.5">{c.icon}</div>
+            <div id={c.id} className="text-[26px] font-black font-mono leading-none" style={{color:c.accent}}>{c.val}</div>
+            <div className="text-[11.5px] text-slate-500 mt-1">{c.lbl}</div>
+            {c.id==='st-pct'&&(
+              <div className="h-[3px] bg-slate-200 rounded-full mt-2 overflow-hidden">
+                <div id="progF" className="h-full rounded-full transition-all" style={{width:pct+'%',background:'linear-gradient(90deg,var(--blue),var(--green))'}}></div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════════════
+  //  SESSION BANNER
+  // ══════════════════════════════════════════════
+  function SessionBanner(){
+    const d=new Date(S.date+'T00:00:00');
+    const ar=d.toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    return (
+      <div className="dbanner">
+        <div className="db-l">
+          <span style={{fontSize:20}}>📅</span>
+          <div><div className="db-main" id="dbMain">{t('جلسة جرد')}: {ar}</div><div className="db-sub" id="dbSub">SESSION: {S.sid}</div></div>
+        </div>
+        <div className="db-r">
+          <div className={`unsaved${unsaved?' on':''}`} id="unsavedDot"></div>
+          <button className="hbtn" style={{padding:'6px 11px',fontSize:12}} onClick={saveAndExport}>💾 {t('حفظ')}</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════════════
+  //  TOOLBAR — search + filters + add item, redesigned with Tailwind
+  // ══════════════════════════════════════════════
+  function Toolbar({srch,setSrch,uom,setUom,typ,setTyp,st,setSt}){
+    const uoms=(S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS);
+    return (
+      <div className="flex flex-wrap items-center gap-2.5 mb-4">
+        <div className="relative flex-1 min-w-[190px]">
+          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+          <input id="srch" type="text" value={srch} onChange={e=>setSrch(e.target.value)}
+            placeholder={t('ابحث بالاسم أو رقم المرجع...')}
+            className="w-full bg-white border border-slate-200 rounded-lg pr-10 pl-3.5 py-2.5 text-[13px] text-slate-800 outline-none focus:border-[var(--gold)] transition-colors" />
+        </div>
+        <select id="uomF" value={uom} onChange={e=>setUom(e.target.value)}
+          className="bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-[13px] text-slate-700 cursor-pointer outline-none hover:border-slate-300">
+          <option value="">{t('كل الوحدات')}</option>
+          {uoms.map(u=><option key={u.name} value={u.name}>{u.name}</option>)}
+        </select>
+        <select id="typeF" value={typ} onChange={e=>setTyp(e.target.value)}
+          className="bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-[13px] text-slate-700 cursor-pointer outline-none hover:border-slate-300">
+          <option value="">{t('كل الأنواع')}</option>
+          <option value="raw">{t('خامة')}</option><option value="semi">{t('نصف مصنّع')}</option><option value="finished">{t('منتج نهائي/جاهز')}</option>
+        </select>
+        <select id="stF" value={st} onChange={e=>setSt(e.target.value)}
+          className="bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-[13px] text-slate-700 cursor-pointer outline-none hover:border-slate-300">
+          <option value="">{t('كل الحالات')}</option>
+          <option value="F">{t('مدخل كمية')}</option><option value="Z">{t('صفري')}</option><option value="E">{t('لم يُجرد')}</option>
+        </select>
+        <button className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-orange-50 border border-orange-200 text-[var(--orange)] text-[12.5px] font-medium hover:bg-orange-100 transition-colors" onClick={openAddItem}>➕ {t('إضافة صنف')}</button>
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════════════
+  //  INVENTORY TABLE — clean bordered rows, hover states, badges, stepper
+  // ══════════════════════════════════════════════
+  function TableRow({it,i}){
+    const cat=S.cats[it.c]||{l:'أخرى',c:'#888',i:'📦'};
+    const v=S.qty[it.r];
+    const qv=v!=null&&v!==''?v:'';
+    const nt=(S.notes||{})[it.r]||'';
+    const zero=qv!==''&&parseFloat(qv)===0;
+    const filled=qv!==''&&!zero;
+    return (
+      <tr className={`border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors group${it.custom?' border-r-2 border-r-[var(--orange)]':''}`}>
+        <td className="px-3 py-2.5 font-mono text-[10.5px] text-slate-400">{i+1}</td>
+        <td className="px-3 py-2.5 font-mono text-[11px] text-slate-500">{it.r}</td>
+        <td className="px-3 py-2.5 font-medium text-slate-800">
+          {it.custom&&<span className="custom-badge">✨ جديد</span>}
+          {it.type&&it.type!=='raw'&&<span className="custom-badge" style={{color:'var(--purple)',borderColor:'rgba(157,108,245,.3)',background:'rgba(157,108,245,.1)'}}>{ITEM_TYPE_LABELS[it.type]}</span>}
+          {it.n}{it.e&&<span className="text-[11px] text-slate-400 mr-1.5">{it.e}</span>}
+        </td>
+        <td className="px-3 py-2.5"><span className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5 text-[11px] text-slate-500 whitespace-nowrap"><span className="w-1.5 h-1.5 rounded-full" style={{background:cat.c}}></span>{cat.l}</span></td>
+        <td className="px-3 py-2.5"><span className="font-mono text-[10.5px] bg-blue-50 text-[var(--blue)] border border-blue-100 rounded px-1.5 py-0.5">{it.u}</span></td>
+        <td className="px-3 py-2.5">
+          <div className="flex items-center gap-1.5">
+            <button className="qbtn" onClick={()=>adj(it.r,-1)}>−</button>
+            <input type="number" inputMode="decimal" className={`qin ${zero?'Z':filled?'F':''}`} min="0" step="0.001"
+              value={qv} id={`q_${it.r}`} placeholder="—"
+              onChange={e=>chg(it.r,e.target.value)} />
+            <button className="qbtn" onClick={()=>adj(it.r,1)}>+</button>
+          </div>
+        </td>
+        <td className="px-3 py-2.5"><input type="text" className="note-in" defaultValue={nt} placeholder={t('ملاحظة...')} onChange={e=>chgNote(it.r,e.target.value)} /></td>
+        <td className="px-3 py-2.5">
+          <button className="row-del" onClick={()=>deleteItem(it.r)} title={t('حذف الصنف')}>🗑</button>
+        </td>
+      </tr>
+    );
+  }
+
+  function InventoryTable({srch,uom,typ,st}){
+    const list=filterDailyItems(srch,uom,typ,st);
+    const catData=curCat!=='all'?S.cats[curCat]:null;
+    const tIco=curCat==='all'?'📦':(catData?.i||'📦');
+    const tTit=curCat==='all'?t('جميع الأصناف'):(catData?.l||curCat);
+    return (
+      <div className="tbl-wrap !rounded-2xl !border-slate-200 !shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/60">
+          <div className="font-bold text-sm flex items-center gap-2"><span id="tIco">{tIco}</span>&nbsp;<span id="tTit">{tTit}</span></div>
+          <div className="flex items-center gap-2.5">
+            <div className="font-mono text-[11.5px] text-slate-400" id="tCnt">{list.length} {t('صنف')}</div>
+            <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-orange-50 border border-orange-200 text-[var(--orange)] text-[11.5px] font-medium hover:bg-orange-100" onClick={openAddItem}>➕ {t('إضافة')}</button>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[13px]">
+            <thead><tr className="bg-slate-50 text-right">
+              <th className="px-3 py-2.5 text-[10.5px] font-bold font-mono uppercase tracking-wide text-slate-600 border-b border-slate-200 whitespace-nowrap w-8">#</th>
+              <th className="px-3 py-2.5 text-[10.5px] font-bold font-mono uppercase tracking-wide text-slate-600 border-b border-slate-200 whitespace-nowrap">{t('رقم المرجع')}</th>
+              <th className="px-3 py-2.5 text-[10.5px] font-bold font-mono uppercase tracking-wide text-slate-600 border-b border-slate-200 whitespace-nowrap">{t('اسم الصنف')}</th>
+              <th className="px-3 py-2.5 text-[10.5px] font-bold font-mono uppercase tracking-wide text-slate-600 border-b border-slate-200 whitespace-nowrap">{t('القسم')}</th>
+              <th className="px-3 py-2.5 text-[10.5px] font-bold font-mono uppercase tracking-wide text-slate-600 border-b border-slate-200 whitespace-nowrap">{t('الوحدة')}</th>
+              <th className="px-3 py-2.5 text-[10.5px] font-bold font-mono uppercase tracking-wide text-slate-600 border-b border-slate-200 whitespace-nowrap">{t('الكمية الفعلية')}</th>
+              <th className="px-3 py-2.5 text-[10.5px] font-bold font-mono uppercase tracking-wide text-slate-600 border-b border-slate-200 whitespace-nowrap">{t('ملاحظات')}</th>
+              <th className="px-3 py-2.5 border-b border-slate-200 w-8"></th>
+            </tr></thead>
+            <tbody id="tBody">
+              {list.map((it,i)=><TableRow key={it.r} it={it} i={i} />)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════════════
+  //  DAILY MAIN — composes KPI cards, banner, toolbar and table; owns the
+  //  filter inputs as controlled React state (previously read from the DOM
+  //  inside renderTbl() on every call)
+  // ══════════════════════════════════════════════
+  function DailyMain(){
+    useBridge(fn=>{__mainRerender=fn;});
+    const [srch,setSrch]=useState('');
+    const [uom,setUom]=useState('');
+    const [typ,setTyp]=useState('');
+    const [st,setSt]=useState('');
+    return (<React.Fragment>
+      <KpiCards />
+      <SessionBanner />
+      <Toolbar srch={srch} setSrch={setSrch} uom={uom} setUom={setUom} typ={typ} setTyp={setTyp} st={st} setSt={setSt} />
+      <InventoryTable srch={srch} uom={uom} typ={typ} st={st} />
+    </React.Fragment>);
+  }
+
+  ReactDOM.createRoot(document.getElementById('reactHeaderRoot')).render(<Header />);
+  ReactDOM.createRoot(document.getElementById('reactSidebarRoot')).render(<CategorySidebar />);
+  ReactDOM.createRoot(document.getElementById('reactDailyMainRoot')).render(<DailyMain />);
+})();
+</script>
+
 </body>
 </html>

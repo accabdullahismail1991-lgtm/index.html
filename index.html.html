@@ -32,6 +32,7 @@
   --font:'Tajawal',sans-serif;--mono:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
+.ico{width:16px;height:16px;display:inline-block;vertical-align:-3px;margin-inline-end:4px;flex-shrink:0;}
 body{
   background-color:var(--bg);
   background-image:radial-gradient(circle at 12% -10%,rgba(122,35,49,.05),transparent 38%),
@@ -2445,6 +2446,163 @@ const I18N_EN={
   "نسبة الإنجاز": "Completion %",
 };
 
+
+// ══════════════════════════════════════════════
+//  MODERN ICONS — replaces emoji glyphs across the whole app with a
+//  consistent outline-style SVG set, without touching any i18n key or
+//  template string. modernizeIcons() walks the rendered DOM after boot
+//  (and on every subsequent mutation) and, wherever it finds a mapped
+//  emoji character inside a text node, hides that character (display:none,
+//  so element.textContent stays byte-identical to before — nothing that
+//  reads textContent, e.g. reports or tests, is affected) and inserts a
+//  visible <svg> right next to it. Emoji with no entry in ICON_MAP (custom
+//  category icons a user typed themselves) are left exactly as they were.
+// ══════════════════════════════════════════════
+const ICONS={
+  warningTriangle:'<path d="M12 3L2 20h20L12 3z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17.3" r=".6" fill="currentColor" stroke="none"/>',
+  plusCircle:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  printer:'<rect x="6" y="9" width="12" height="7" rx="1"/><path d="M6 9V4h12v5"/><path d="M6 16v4h12v-4"/>',
+  fileDoc:'<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><line x1="9.5" y1="12" x2="14.5" y2="12"/><line x1="9.5" y1="15.5" x2="14.5" y2="15.5"/>',
+  checkCircle:'<circle cx="12" cy="12" r="9"/><polyline points="8,12 11,15 16,9"/>',
+  check:'<polyline points="5,13 9,17 19,7"/>',
+  trash:'<line x1="4" y1="7" x2="20" y2="7"/><path d="M6 7V4h12v3"/><path d="M6 7l1 13h10l1-13"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+  packageBox:'<path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v9l9 5 9-5V8"/><line x1="12" y1="13" x2="12" y2="22"/>',
+  refresh:'<path d="M4.5 12a7.5 7.5 0 0113-5"/><polyline points="17,3 17.5,7 13.5,7"/><path d="M19.5 12a7.5 7.5 0 01-13 5"/><polyline points="6.5,21 6,17 10,17"/>',
+  inboxDown:'<path d="M4 12V5h16v7"/><path d="M4 12l3 6h10l3-6"/><line x1="12" y1="3" x2="12" y2="13"/><polyline points="9,10 12,13 15,10"/>',
+  uploadTray:'<path d="M4 12V5h16v7"/><path d="M4 12l3 6h10l3-6"/><line x1="12" y1="13" x2="12" y2="3"/><polyline points="9,6 12,3 15,6"/>',
+  chartBar:'<line x1="5" y1="21" x2="5" y2="12"/><line x1="12" y1="21" x2="12" y2="7"/><line x1="19" y1="21" x2="19" y2="15"/>',
+  chartLine:'<polyline points="3,17 9,11 13,15 21,6"/><polyline points="15,6 21,6 21,12"/>',
+  clipboard:'<rect x="6" y="4" width="12" height="17" rx="1"/><rect x="9" y="2" width="6" height="4" rx="1"/>',
+  search:'<circle cx="10" cy="10" r="6"/><line x1="15" y1="15" x2="20" y2="20"/>',
+  shuffle:'<polyline points="16,3 21,3 21,8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="16,21 21,21 21,16"/><line x1="4" y1="4" x2="9" y2="9"/><line x1="15" y1="15" x2="21" y2="21"/>',
+  building:'<rect x="5" y="3" width="14" height="18" rx="1"/><rect x="8" y="7" width="2" height="2"/><rect x="14" y="7" width="2" height="2"/><rect x="8" y="11" width="2" height="2"/><rect x="14" y="11" width="2" height="2"/><rect x="10" y="17" width="4" height="4"/>',
+  arrowLeft:'<line x1="19" y1="12" x2="5" y2="12"/><polyline points="11,6 5,12 11,18"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a13.7 13.7 0 010 18"/><path d="M12 3a13.7 13.7 0 000 18"/>',
+  pencil:'<path d="M4 20l1-4L15.5 5.5l3 3L8 19l-4 1z"/><line x1="14" y1="6.5" x2="17" y2="9.5"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l1.9-1.5-1.9-3.3-2.3.9a7 7 0 00-2-1.2L14.2 3H9.8l-.4 2.7a7 7 0 00-2 1.2l-2.3-.9-1.9 3.3 1.9 1.5A7 7 0 005 12a7 7 0 00.1 1.2L3.2 14.7l1.9 3.3 2.3-.9a7 7 0 002 1.2l.4 2.7h4.4l.4-2.7a7 7 0 002-1.2l2.3.9 1.9-3.3-1.9-1.5c.1-.4.1-.8.1-1.2z"/>',
+  calendar:'<rect x="4" y="5" width="16" height="16" rx="1"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/>',
+  lock:'<rect x="6" y="11" width="12" height="9" rx="1"/><path d="M8 11V7a4 4 0 018 0v4"/>',
+  lockOpen:'<rect x="6" y="11" width="12" height="9" rx="1"/><path d="M8 11V7a4 4 0 017.8-1.6"/>',
+  utensils:'<line x1="6.5" y1="2" x2="6.5" y2="22"/><path d="M4.5 2v7a2 2 0 004 0V2"/><path d="M17.5 2c-1.7 0-3 2-3 5.5s1.3 5.5 3 5.5V22"/>',
+  scale:'<line x1="12" y1="3" x2="12" y2="21"/><line x1="4" y1="7" x2="20" y2="7"/><path d="M4 7l-2.5 5.5a3 3 0 006 0z"/><path d="M20 7l-2.5 5.5a3 3 0 006 0z"/>',
+  wrench:'<path d="M14.7 6.3a4 4 0 01-5.4 5.4L5 16l3 3 4.3-4.3a4 4 0 015.4-5.4L15.5 12l-2-2z"/>',
+  users:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0112 0"/><circle cx="17" cy="9.5" r="2.5"/><path d="M15 20a5 5 0 016.5-4.8"/>',
+  receipt:'<path d="M6 3h12v18l-2-1.5L14 21l-2-1.5L10 21l-2-1.5L6 21z"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0116 0"/>',
+  save:'<path d="M5 4h11l3 3v13H5z"/><rect x="8" y="4" width="8" height="5"/><rect x="8" y="14" width="8" height="6"/>',
+  xCircle:'<circle cx="12" cy="12" r="9"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/>',
+  folder:'<path d="M3 7a1 1 0 011-1h5l2 2h9a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1z"/>',
+  ruler:'<rect x="3" y="9" width="18" height="6" rx="1"/><line x1="7" y1="9" x2="7" y2="12"/><line x1="11" y1="9" x2="11" y2="12"/><line x1="15" y1="9" x2="15" y2="12"/>',
+  archiveBox:'<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9"/><line x1="10" y1="13" x2="14" y2="13"/>',
+  link:'<path d="M8 12l-2.5 2.5a3 3 0 004.2 4.2L12 16"/><path d="M16 12l2.5-2.5a3 3 0 00-4.2-4.2L12 8"/><line x1="9" y1="15" x2="15" y2="9"/>',
+  x:'<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',
+  sparkles:'<path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M19 15.5l.6 1.9 1.9.6-1.9.6-.6 1.9-.6-1.9-1.9-.6 1.9-.6z"/>',
+  bell:'<path d="M6 10a6 6 0 0112 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 004 0"/>',
+  dot:'<circle cx="12" cy="12" r="5" fill="currentColor" stroke="none"/>',
+  currency:'<circle cx="12" cy="12" r="9"/><path d="M12 6v12"/><path d="M15 9a3 3 0 00-3-1.5c-1.7 0-3 1-3 2.5s1.3 2 3 2.5 3 1 3 2.5-1.3 2.5-3 2.5a3 3 0 01-3-1.5"/>',
+  menuBars:'<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>',
+  eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  truck:'<rect x="2" y="9" width="12" height="7"/><path d="M14 12h4l3 3v1h-7z"/><circle cx="6.5" cy="18" r="1.5"/><circle cx="16.5" cy="18" r="1.5"/>',
+  dice:'<rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="9" cy="9" r=".9" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r=".9" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r=".9" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r=".9" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r=".9" fill="currentColor" stroke="none"/>',
+};
+const ICON_MAP={
+  '⚠️':'warningTriangle','⚠':'warningTriangle',
+  '➕':'plusCircle',
+  '🖨️':'printer','🖨':'printer',
+  '📗':'fileDoc','📄':'fileDoc','📜':'fileDoc',
+  '✅':'checkCircle',
+  '✓':'check',
+  '🗑️':'trash','🗑':'trash',
+  '📦':'packageBox','🗃️':'archiveBox','🗃':'archiveBox','🗂️':'archiveBox','🗂':'archiveBox',
+  '🔄':'refresh',
+  '📥':'inboxDown',
+  '📤':'uploadTray',
+  '📊':'chartBar',
+  '📈':'chartLine',
+  '📋':'clipboard',
+  '🔍':'search','🔎':'search',
+  '🔀':'shuffle',
+  '🏢':'building',
+  '←':'arrowLeft',
+  '🌐':'globe',
+  '✏️':'pencil','✏':'pencil',
+  '⚙️':'gear','⚙':'gear',
+  '📅':'calendar',
+  '🔒':'lock',
+  '🔓':'lockOpen',
+  '🍽️':'utensils','🍽':'utensils',
+  '⚖️':'scale','⚖':'scale',
+  '🔧':'wrench',
+  '👥':'users',
+  '🧾':'receipt',
+  '👤':'user',
+  '💾':'save','💽':'save',
+  '❌':'xCircle',
+  '📁':'folder',
+  '📏':'ruler',
+  '🔗':'link',
+  '✖️':'x','✖':'x',
+  '✨':'sparkles',
+  '🔔':'bell',
+  '🟢':'dot',
+  '💰':'currency',
+  '☰':'menuBars',
+  '👁️':'eye','👁':'eye',
+  '🛵':'truck',
+  '🎲':'dice',
+};
+function svgIcon(name){
+  const body=ICONS[name];
+  if(!body) return '';
+  return `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+}
+const ICON_EMOJI_RE=new RegExp('('+Object.keys(ICON_MAP).sort((a,b)=>b.length-a.length).map(e=>e.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')','g');
+// marks the wrapper we create around the now-hidden emoji character so the
+// MutationObserver (which sees our own insertions as new nodes) never walks
+// back into it — without this guard the hidden emoji text would get matched
+// and re-wrapped forever
+const ICON_SRC_CLASS='ico-src';
+function modernizeIconsInNode(node){
+  if(!node) return;
+  if(node.nodeType===3){ // text node
+    const parent=node.parentNode;
+    if(!parent) return;
+    const tag=parent.nodeName;
+    if(tag==='SCRIPT'||tag==='STYLE'||tag==='TEXTAREA'||tag==='INPUT'||tag==='SVG') return;
+    if(parent.classList&&parent.classList.contains(ICON_SRC_CLASS)) return;
+    const text=node.nodeValue;
+    if(!text||!ICON_EMOJI_RE.test(text)) return;
+    ICON_EMOJI_RE.lastIndex=0;
+    const parts=text.split(ICON_EMOJI_RE);
+    if(parts.length<2) return;
+    const frag=document.createDocumentFragment();
+    parts.forEach(part=>{
+      if(ICON_MAP[part]){
+        const hide=document.createElement('span');
+        hide.className=ICON_SRC_CLASS;
+        hide.style.display='none';
+        hide.textContent=part;
+        frag.appendChild(hide);
+        const wrap=document.createElement('span');
+        wrap.innerHTML=svgIcon(ICON_MAP[part]);
+        frag.appendChild(wrap.firstChild);
+      } else if(part){
+        frag.appendChild(document.createTextNode(part));
+      }
+    });
+    parent.replaceChild(frag,node);
+    return;
+  }
+  if(node.nodeType!==1) return;
+  const tag=node.nodeName;
+  if(tag==='SCRIPT'||tag==='STYLE'||tag==='TEXTAREA'||tag==='SVG') return;
+  if(node.classList&&node.classList.contains(ICON_SRC_CLASS)) return;
+  // snapshot children first since text nodes get replaced/removed during the walk
+  Array.prototype.slice.call(node.childNodes).forEach(modernizeIconsInNode);
+}
+function modernizeIcons(root){
+  try{ modernizeIconsInNode(root); }catch(e){ /* never let a display-only sweep break the app */ }
+}
 let curLang=localStorage.getItem('appLang')||'ar';
 function t(key){
   if(curLang==='en'&&I18N_EN[key]!=null) return I18N_EN[key];
@@ -2487,6 +2645,10 @@ new MutationObserver(muts=>{
     });
   });
 }).observe(document.body,{childList:true,subtree:true});
+new MutationObserver(muts=>{
+  muts.forEach(mut=>{ mut.addedNodes.forEach(modernizeIcons); });
+}).observe(document.body,{childList:true,subtree:true});
+modernizeIcons(document.body);
 function toggleLang(){
   curLang=curLang==='en'?'ar':'en';
   localStorage.setItem('appLang',curLang);
@@ -8423,7 +8585,7 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
     const Group=({id,icon,label,children})=>(
       <div id={`mn-group-${id}`}>
         <div className={`mn-group-head${openGroup===id?' open':''}`} id={`mn-group-head-${id}`} onClick={()=>toggleGroup(id)}>
-          <span>{icon} {t(label)}</span>
+          <span>{t(label)}</span>
           <span className="mn-chevron">▾</span>
         </div>
         <div className="mn-group-body" id={`mn-group-body-${id}`} style={{display:openGroup===id?'':'none'}}>{children}</div>
@@ -8432,10 +8594,10 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
 
     return (<React.Fragment>
       <div className={`mn-view-btn${curView==='daily'?' active':''}`} id="vnDaily" onClick={()=>showView('daily')}>
-        <span>📋</span><span>{t('📋 الجرد اليومي')}</span>
+        <span>{t('📋 الجرد اليومي')}</span>
       </div>
       <div className={`mn-view-btn${curView==='cycle'?' active':''}`} id="vnCycle" onClick={()=>showView('cycle')}>
-        <span>🔄</span><span>{t('🔄 دورة التسوية')}</span>
+        <span>{t('🔄 دورة التسوية')}</span>
       </div>
       <div className="mn-div"></div>
 

@@ -33,6 +33,15 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 .ico{width:16px;height:16px;display:inline-block;vertical-align:-3px;margin-inline-end:4px;flex-shrink:0;}
+/* every input/button/select in this file sets outline:none (keeping the
+   default focus ring from ever clashing with the design), which normally
+   leaves keyboard users with zero visual indication of focus — this
+   restores one, but only for :focus-visible (keyboard/programmatic focus),
+   not plain mouse clicks, matching how outline:none was actually being
+   used everywhere. !important because outline:none is set inside dozens
+   of component rules with varying specificity, and this must always win
+   when an element genuinely has keyboard focus. */
+:focus-visible{outline:2px solid var(--gold) !important;outline-offset:2px;}
 body{
   background-color:var(--bg);
   background-image:radial-gradient(circle at 12% -10%,rgba(122,35,49,.05),transparent 38%),
@@ -1192,12 +1201,12 @@ td{padding:10px 13px;vertical-align:middle;}
 <div class="layout" id="cycleView" style="display:none">
 <div class="sidebar">
   <span class="sb-label" data-i18n="دورات التسوية">دورات التسوية</span>
-  <div class="sb-item sb-item-pinned" onclick="openNewCycle()" title="بدء دورة تسوية جديدة" data-i18n-title="بدء دورة تسوية جديدة"><span class="sb-ico">➕</span><span data-i18n="بدء دورة جديدة">بدء دورة جديدة</span></div>
+  <div class="sb-item sb-item-pinned" onclick="openNewCycle()" title="بدء دورة تسوية جديدة" aria-label="بدء دورة تسوية جديدة" data-i18n-title="بدء دورة تسوية جديدة"><span class="sb-ico">➕</span><span data-i18n="بدء دورة جديدة">بدء دورة جديدة</span></div>
   <div class="sb-div"></div>
   <div style="padding:0 14px 10px">
     <div style="font-size:10.5px;color:var(--muted);margin-bottom:5px">🔍 فلترة الدورات بالتاريخ</div>
-    <input type="date" class="mod-in" style="width:100%;margin-bottom:6px;font-size:11.5px;padding:6px 8px" id="cycleFilterFrom" onchange="renderCycleList()" title="من تاريخ">
-    <input type="date" class="mod-in" style="width:100%;font-size:11.5px;padding:6px 8px" id="cycleFilterTo" onchange="renderCycleList()" title="إلى تاريخ">
+    <input type="date" class="mod-in" style="width:100%;margin-bottom:6px;font-size:11.5px;padding:6px 8px" id="cycleFilterFrom" onchange="renderCycleList()" title="من تاريخ" aria-label="من تاريخ">
+    <input type="date" class="mod-in" style="width:100%;font-size:11.5px;padding:6px 8px" id="cycleFilterTo" onchange="renderCycleList()" title="إلى تاريخ" aria-label="إلى تاريخ">
     <button class="hbtn" style="width:100%;justify-content:center;margin-top:6px;padding:5px;font-size:11px" onclick="document.getElementById('cycleFilterFrom').value='';document.getElementById('cycleFilterTo').value='';renderCycleList()" data-i18n="🔄 مسح الفلتر">🔄 مسح الفلتر</button>
   </div>
   <div class="sb-div"></div>
@@ -1337,18 +1346,18 @@ td{padding:10px 13px;vertical-align:middle;}
   <div class="mod-field">
     <label class="mod-lbl" data-i18n="أيقونة القسم">أيقونة القسم</label>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px" id="icoGrid">
-      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🥤">🥤</span>
-      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🧴">🧴</span>
-      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🧹">🧹</span>
-      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="❄️">❄️</span>
-      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🔧">🔧</span>
-      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="📦">📦</span>
-      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🍰">🍰</span>
-      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🧂">🧂</span>
-      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🫙">🫙</span>
-      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🥛">🥛</span>
-      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🫒">🫒</span>
-      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🌾">🌾</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🥤" aria-label="أيقونة كوب مشروبات">🥤</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🧴" aria-label="أيقونة زجاجة">🧴</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🧹" aria-label="أيقونة أدوات تنظيف">🧹</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="❄️" aria-label="أيقونة تجميد/ثلج">❄️</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🔧" aria-label="أيقونة صيانة">🔧</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="📦" aria-label="أيقونة صندوق">📦</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🍰" aria-label="أيقونة حلويات">🍰</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🧂" aria-label="أيقونة ملح/بهارات">🧂</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🫙" aria-label="أيقونة برطمان">🫙</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🥛" aria-label="أيقونة ألبان">🥛</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🫒" aria-label="أيقونة زيتون">🫒</span>
+      <span style="font-size:22px;cursor:pointer" onclick="selIco(this)" title="🌾" aria-label="أيقونة حبوب/قمح">🌾</span>
     </div>
     <input class="mod-in" id="ac-ico" placeholder="أو اكتب أيقونة مخصصة 🎯" style="margin-top:8px">
   </div>
@@ -1979,7 +1988,7 @@ td{padding:10px 13px;vertical-align:middle;}
       <label class="mod-lbl" data-i18n="إلى تاريخ">إلى تاريخ</label>
       <input type="date" class="mod-in" id="be-date-to" style="width:150px" onchange="setBreakEvenDateFilter()">
     </div>
-    <button class="hbtn" onclick="clearBreakEvenDateFilter()" title="رجوع لمتوسط كل الدورات" data-i18n="✖️ كل الفترات">✖️ كل الفترات</button>
+    <button class="hbtn" onclick="clearBreakEvenDateFilter()" title="رجوع لمتوسط كل الدورات" aria-label="رجوع لمتوسط كل الدورات" data-i18n="✖️ كل الفترات">✖️ كل الفترات</button>
     <button class="hbtn" onclick="openEmployeesScreen()" data-i18n="👥 بيانات الموظفين">👥 بيانات الموظفين</button>
     <button class="hbtn" onclick="openDirectCostsScreen()" data-i18n="🧾 بنود التكاليف المباشرة">🧾 بنود التكاليف المباشرة</button>
   </div>
@@ -3452,13 +3461,13 @@ function renderUomList(){
     const nameEsc=(u.name||'').replace(/"/g,'&quot;');
     return `<tr>
       <td><input type="text" class="mod-in" style="min-width:110px" value="${nameEsc}" onchange="setUomField('${nameEsc}','name',this.value)"></td>
-      <td><select class="mod-in" style="width:100px" onchange="setUomField('${nameEsc}','kind',this.value)" ${u.base?'disabled title="وحدة أساسية — النوع ثابت"':''}>${kindOptsFor(u.kind)}</select></td>
+      <td><select class="mod-in" style="width:100px" onchange="setUomField('${nameEsc}','kind',this.value)" ${u.base?'disabled title="وحدة أساسية — النوع ثابت" aria-label="وحدة أساسية — النوع ثابت"':''}>${kindOptsFor(u.kind)}</select></td>
       <td>${u.base?'<span style="font-size:11px;color:var(--muted)">1 (أساسية)</span>':`<input type="number" inputmode="decimal" class="mod-in" style="width:90px" min="0.0001" step="0.0001" value="${u.factor}" onchange="setUomField('${nameEsc}','factor',this.value)">`}</td>
       <td style="font-size:11px;color:var(--muted)">${u.base?'—':baseUnitNameForKind(u.kind)}</td>
       <td><input type="text" class="mod-in" style="width:80px" value="${(u.symbol||'').replace(/"/g,'&quot;')}" placeholder="اختياري" onchange="setUomField('${nameEsc}','symbol',this.value)"></td>
       <td><input type="text" class="mod-in" style="min-width:150px" value="${(u.notes||'').replace(/"/g,'&quot;')}" placeholder="ملاحظات (اختياري)" onchange="setUomField('${nameEsc}','notes',this.value)"></td>
       <td style="font-size:11px;color:var(--muted);text-align:center">${usageCount||'-'}</td>
-      <td>${u.base?'<span style="font-size:10px;color:var(--muted)">أساسية</span>':`<button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteUom('${nameEsc}')" title="حذف الوحدة">🗑</button>`}</td>
+      <td>${u.base?'<span style="font-size:10px;color:var(--muted)">أساسية</span>':`<button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteUom('${nameEsc}')" title="حذف الوحدة" aria-label="حذف الوحدة">🗑</button>`}</td>
     </tr>`;
   }).join('');
   document.getElementById('uomList').innerHTML=`<div class="tbl-wrap" style="max-height:400px;overflow-y:auto"><table>
@@ -3724,7 +3733,7 @@ function renderItemRecipeRows(){
       <div style="flex:1.3">${isearchHtml('ai-recipe-isearch-'+i,row.r,{exclude:editingItem,onSelect:'setItemRecipeRowRef'})}</div>
       <input type="number" inputmode="decimal" class="mod-in" style="flex:.6" min="0" step="0.001" value="${row.q||''}" placeholder="الكمية" oninput="curItemRecipeRows[${i}].q=parseFloat(this.value)||0">
       <select class="mod-in" style="flex:.5" onchange="setItemRecipeRowUom(${i},this.value)">${unitOpts}</select>
-      <button class="hi-btn del" style="flex:none;padding:8px 10px" onclick="curItemRecipeRows.splice(${i},1);renderItemRecipeRows()" title="حذف المكوّن">🗑</button>
+      <button class="hi-btn del" style="flex:none;padding:8px 10px" onclick="curItemRecipeRows.splice(${i},1);renderItemRecipeRows()" title="حذف المكوّن" aria-label="حذف المكوّن">🗑</button>
     </div>`;
   }).join('');
 }
@@ -3908,9 +3917,9 @@ function renderManage(){
         <td style="padding:7px 10px;font-family:var(--mono);color:var(--blue);font-size:11px">${it.u}</td>
         <td style="padding:7px 10px;font-family:var(--mono);font-size:11px">${fmt(effectiveItemCost(it))}${it.recipe&&it.recipe.length?' <span style="color:var(--purple);font-size:9.5px">(محسوبة)</span>':''}</td>
         <td style="padding:7px 10px;text-align:center;display:flex;gap:5px;justify-content:center">
-          ${canViewReportsUI()?`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="openItemLedger('${it.r}')" title="حركة الصنف">📜</button>`:''}
-          <button class="hi-btn" style="flex:none;padding:4px 8px" onclick="closeM('manageModal');openEditItem('${it.r}')" title="تعديل الصنف">✏</button>
-          <button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteItem('${it.r}');renderManage()" title="حذف الصنف">🗑</button>
+          ${canViewReportsUI()?`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="openItemLedger('${it.r}')" title="حركة الصنف" aria-label="حركة الصنف">📜</button>`:''}
+          <button class="hi-btn" style="flex:none;padding:4px 8px" onclick="closeM('manageModal');openEditItem('${it.r}')" title="تعديل الصنف" aria-label="تعديل الصنف">✏</button>
+          <button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteItem('${it.r}');renderManage()" title="حذف الصنف" aria-label="حذف الصنف">🗑</button>
         </td>
       </tr>`;
     }).join('')}</tbody>
@@ -4044,9 +4053,9 @@ function renderHist(){
       <div class="hi-date">📅 ${r.date}</div>
       <div class="hi-meta">🏢 ${r.branch} · ✅ ${r.meta.entered} · ${r.meta.pct}%</div>
       <div class="hi-acts">
-        <button class="hi-btn" onclick="viewRpt('${r.id}')" title="عرض التقرير">👁</button>
-        <button class="hi-btn" onclick="dlRpt('${r.id}')" title="تحميل PDF">📄</button>
-        <button class="hi-btn del" onclick="delRpt('${r.id}')" title="حذف التقرير">🗑</button>
+        <button class="hi-btn" onclick="viewRpt('${r.id}')" title="عرض التقرير" aria-label="عرض التقرير">👁</button>
+        <button class="hi-btn" onclick="dlRpt('${r.id}')" title="تحميل PDF" aria-label="تحميل PDF">📄</button>
+        <button class="hi-btn del" onclick="delRpt('${r.id}')" title="حذف التقرير" aria-label="حذف التقرير">🗑</button>
       </div>
     </div>`).join('');
 }
@@ -4185,8 +4194,8 @@ function renderBranchMgrList(){
         <div style="font-size:11px;color:var(--muted);margin-top:2px">مدير: ${b.manager||'-'}</div>
       </div>
       ${canManage&&k!==S.curBranch?`<button class="hi-btn" style="flex:none;padding:5px 10px" onclick="switchBranch('${k}');renderBranchMgrList()" data-i18n="تبديل">تبديل</button>`:''}
-      <button class="hi-btn" style="flex:none;padding:5px 8px" onclick="closeM('branchMgrModal');openSetup()" title="تعديل بيانات الفرع">✏</button>
-      ${canManage&&Object.keys(S.branches).length>1?`<button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteBranch('${k}')" title="حذف الفرع">🗑</button>`:''}
+      <button class="hi-btn" style="flex:none;padding:5px 8px" onclick="closeM('branchMgrModal');openSetup()" title="تعديل بيانات الفرع" aria-label="تعديل بيانات الفرع">✏</button>
+      ${canManage&&Object.keys(S.branches).length>1?`<button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteBranch('${k}')" title="حذف الفرع" aria-label="حذف الفرع">🗑</button>`:''}
     </div>`).join('');
 }
 function openNewBranchForm(){
@@ -4838,13 +4847,13 @@ function renderMaintenanceList(){
       <td style="font-family:var(--mono);font-size:11px">${e.date}</td>
       <td class="td-name">${e.equipment}</td>
       <td style="font-size:12px;max-width:240px">${e.desc}</td>
-      <td>${e.photoUrl?`<a href="${e.photoUrl}" target="_blank" rel="noopener"><img src="${e.photoUrl}" style="width:38px;height:38px;object-fit:cover;border-radius:6px;border:1px solid var(--border)" title="فتح الصورة كاملة"></a> <button class="hi-btn del" style="flex:none;padding:2px 6px;font-size:10px" onclick="removeMaintenancePhoto('${e.id}')" title="حذف الصورة">🗑</button>`:'-'}</td>
+      <td>${e.photoUrl?`<a href="${e.photoUrl}" target="_blank" rel="noopener"><img src="${e.photoUrl}" style="width:38px;height:38px;object-fit:cover;border-radius:6px;border:1px solid var(--border)" title="فتح الصورة كاملة"></a> <button class="hi-btn del" style="flex:none;padding:2px 6px;font-size:10px" onclick="removeMaintenancePhoto('${e.id}')" title="حذف الصورة" aria-label="حذف الصورة">🗑</button>`:'-'}</td>
       <td style="font-size:11px;color:var(--muted)">${e.reporter||'-'}</td>
       <td style="font-family:var(--mono)">${e.cost?fmt(e.cost):'-'}</td>
       <td><select class="mod-in" style="width:auto;padding:5px 8px;font-size:11px" onchange="setMaintenanceStatus('${e.id}',this.value)">
         ${Object.entries(MAINT_STATUS_LABELS).map(([k,l])=>`<option value="${k}" ${e.status===k?'selected':''}>${l}</option>`).join('')}
       </select></td>
-      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteMaintenanceEntry('${e.id}')" title="حذف السجل">🗑</button></td>
+      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteMaintenanceEntry('${e.id}')" title="حذف السجل" aria-label="حذف السجل">🗑</button></td>
     </tr>`).join('')}</tbody>
   </table></div>`;
 }
@@ -4979,8 +4988,8 @@ function renderEmployeesScreen(){
       <td><input type="text" class="mod-in" style="min-width:140px" value="${(e.name||'').replace(/"/g,'&quot;')}" onchange="setEmployeeField('${e.id}','name',this.value)" placeholder="اسم الموظف">${transferNote}</td>
       <td><input type="text" class="mod-in" style="min-width:120px" value="${(e.role||'').replace(/"/g,'&quot;')}" onchange="setEmployeeField('${e.id}','role',this.value)" placeholder="الوظيفة"></td>
       <td><input type="number" inputmode="decimal" class="mod-in" style="width:120px" min="0" step="0.01" value="${e.salary||0}" onchange="setEmployeeField('${e.id}','salary',this.value)"></td>
-      <td><button class="hi-btn" style="flex:none;padding:4px 8px" onclick="openTransferEmployeeModal('${e.id}')" title="نقل لفرع آخر">🔀</button></td>
-      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteEmployee('${e.id}')" title="حذف الموظف">🗑</button></td>
+      <td><button class="hi-btn" style="flex:none;padding:4px 8px" onclick="openTransferEmployeeModal('${e.id}')" title="نقل لفرع آخر" aria-label="نقل لفرع آخر">🔀</button></td>
+      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteEmployee('${e.id}')" title="حذف الموظف" aria-label="حذف الموظف">🗑</button></td>
     </tr>`:`<tr>
       ${src.isAll?`<td>${e.__branchName||'-'}</td>`:''}
       <td class="td-name">${e.name||'-'}${transferNote}</td><td>${e.role||'-'}</td><td style="font-family:var(--mono)">${fmt(e.salary||0)}</td>
@@ -5095,7 +5104,7 @@ function renderDirectCostsScreen(){
     <tbody>${list.map(dcost=>src.editable?`<tr>
       <td><input type="text" class="mod-in" style="min-width:160px" value="${(dcost.name||'').replace(/"/g,'&quot;')}" onchange="setDirectCostField('${dcost.id}','name',this.value)" placeholder="مثال: إيجار"></td>
       <td><input type="number" inputmode="decimal" class="mod-in" style="width:130px" min="0" step="0.01" value="${dcost.amount||0}" onchange="setDirectCostField('${dcost.id}','amount',this.value)"></td>
-      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteDirectCost('${dcost.id}')" title="حذف البند">🗑</button></td>
+      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="deleteDirectCost('${dcost.id}')" title="حذف البند" aria-label="حذف البند">🗑</button></td>
     </tr>`:`<tr>
       ${src.isAll?`<td>${dcost.__branchName||'-'}</td>`:''}
       <td class="td-name">${dcost.name||'-'}</td><td style="font-family:var(--mono)">${fmt(dcost.amount||0)}</td>
@@ -5728,8 +5737,8 @@ function renderMenuList(){
         <div style="font-weight:700;font-size:13.5px">${m.n}${m.e?`<span style="font-size:11px;color:var(--muted);margin-right:6px">${m.e}</span>`:''}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:3px">السعر: ${fmt(m.price)} (شامل الضريبة) · تكلفة الوصفة: ${fmt(cost)} (${pct}% من صافي السعر) · ${(m.recipe||[]).length} مكوّن</div>
       </div>
-      <button class="hi-btn" style="flex:none;padding:5px 10px" onclick="openEditMenuItem('${m.id}')" title="تعديل الصنف">✏</button>
-      <button class="hi-btn del" style="flex:none;padding:5px 10px" onclick="deleteMenuItem('${m.id}')" title="حذف الصنف">🗑</button>
+      <button class="hi-btn" style="flex:none;padding:5px 10px" onclick="openEditMenuItem('${m.id}')" title="تعديل الصنف" aria-label="تعديل الصنف">✏</button>
+      <button class="hi-btn del" style="flex:none;padding:5px 10px" onclick="deleteMenuItem('${m.id}')" title="حذف الصنف" aria-label="حذف الصنف">🗑</button>
     </div>`;
   }).join('');
 }
@@ -5795,7 +5804,7 @@ function renderRecipeRows(){
       <div style="flex:1.3">${isearchHtml('mi-recipe-isearch-'+i,row.r,{onSelect:'setMenuRecipeRowRef'})}</div>
       <input type="number" inputmode="decimal" class="mod-in" style="flex:.6" min="0" step="0.001" value="${row.q||''}" placeholder="الكمية" oninput="curRecipeRows[${i}].q=parseFloat(this.value)||0">
       <select class="mod-in" style="flex:.5" onchange="setMenuRecipeRowUom(${i},this.value)">${unitOpts}</select>
-      <button class="hi-btn del" style="flex:none;padding:8px 10px" onclick="curRecipeRows.splice(${i},1);renderRecipeRows()" title="حذف المكوّن">🗑</button>
+      <button class="hi-btn del" style="flex:none;padding:8px 10px" onclick="curRecipeRows.splice(${i},1);renderRecipeRows()" title="حذف المكوّن" aria-label="حذف المكوّن">🗑</button>
     </div>`;
   }).join('');
 }
@@ -5895,7 +5904,7 @@ function renderCycleList(){
   if(to) arr=arr.filter(c=>c.start<=to);
   if(!arr.length){cont.innerHTML=`<div class="no-hist">${(from||to)?'لا توجد دورات تغطي الفترة المحددة':'لا توجد دورات بعد'}</div>`;return;}
   cont.innerHTML=arr.map(c=>`
-    <div class="hist-item${c.id===curCycleId?' cur':''}" style="cursor:pointer" onclick="curCycleId='${c.id}';renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();" title="اضغط لعرض تفاصيل الدورة">
+    <div class="hist-item${c.id===curCycleId?' cur':''}" style="cursor:pointer" onclick="curCycleId='${c.id}';renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();" title="اضغط لعرض تفاصيل الدورة" aria-label="اضغط لعرض تفاصيل الدورة">
       <div class="hi-date" style="display:flex;align-items:center;justify-content:space-between">
         <span>📅 ${c.start} ← ${c.end}</span>
         <span style="font-size:11px;color:var(--gold);font-weight:400">👁 عرض</span>
@@ -5964,7 +5973,7 @@ function renderCycleHeader(){
       ${!c.closed
         ?`<button class="hbtn gold" style="padding:6px 12px;font-size:12px" onclick="closeCycle()" data-i18n="🔒 إغلاق الدورة وحساب النتائج">🔒 إغلاق الدورة وحساب النتائج</button>`
         :`<button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="reopenCycle()" data-i18n="🔓 إعادة فتح">🔓 إعادة فتح</button>`}
-      <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="openClosingStockReport('${c.id}')" title="تقرير المخزون الختامي المستقل لنهاية الدورة" data-i18n="📦 المخزون الختامي">📦 المخزون الختامي</button>
+      <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="openClosingStockReport('${c.id}')" title="تقرير المخزون الختامي المستقل لنهاية الدورة" aria-label="تقرير المخزون الختامي المستقل لنهاية الدورة" data-i18n="📦 المخزون الختامي">📦 المخزون الختامي</button>
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="exportCyclePDF('${c.id}')">📄 PDF</button>
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="exportCycleCSV('${c.id}')">📊 CSV</button>
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="exportCycleExcel('${c.id}')">📗 Excel</button>
@@ -6153,7 +6162,7 @@ function renderPurchasesRows(c){
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
       <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${p.qty||''}" placeholder="0" ${dis} oninput="setCyclePurchase('${c.id}','${r}','qty',this.value)"></td>
       <td><input type="number" inputmode="decimal" class="qin" style="width:110px" min="0" step="0.01" value="${p.cost||''}" placeholder="0.00" ${dis} oninput="setCyclePurchase('${c.id}','${r}','cost',this.value)"></td>
-      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removePurchaseItem('${c.id}','${r}')" title="إزالة">🗑️</button>`}</td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removePurchaseItem('${c.id}','${r}')" title="إزالة" aria-label="إزالة">🗑️</button>`}</td>
     </tr>`;
   }).join('');
   document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(6);
@@ -6220,7 +6229,7 @@ function renderWasteRows(c){
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
       <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${w.qty||''}" placeholder="0" ${dis} oninput="setCycleWaste('${c.id}','${r}','qty',this.value)"></td>
       <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${w.reason||''}" placeholder="سبب الهالك..." ${dis} oninput="setCycleWaste('${c.id}','${r}','reason',this.value)"></td>
-      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeWasteItem('${c.id}','${r}')" title="إزالة">🗑️</button>`}</td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeWasteItem('${c.id}','${r}')" title="إزالة" aria-label="إزالة">🗑️</button>`}</td>
     </tr>`;
   }).join('');
   document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(6);
@@ -6262,7 +6271,7 @@ function renderWasteMenuRows(c){
       <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="1" value="${w.qty||''}" placeholder="0" ${dis} oninput="setCycleWasteMenu('${c.id}','${mid}','qty',this.value)"></td>
       <td style="font-family:var(--mono);color:var(--red)">${fmt(cost)}</td>
       <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${w.reason||''}" placeholder="سبب الهالك..." ${dis} oninput="setCycleWasteMenu('${c.id}','${mid}','reason',this.value)"></td>
-      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeWasteMenuItem('${c.id}','${mid}')" title="إزالة">🗑️</button>`}</td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeWasteMenuItem('${c.id}','${mid}')" title="إزالة" aria-label="إزالة">🗑️</button>`}</td>
     </tr>`;
   }).join('');
   document.getElementById('ctWasteMenuRows').innerHTML=rows||emptyCycleRow(5);
@@ -6330,7 +6339,7 @@ function renderWithdrawRows(c){
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
       <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${w.qty||''}" placeholder="0" ${dis} oninput="setCycleWithdraw('${c.id}','${r}','qty',this.value)"></td>
       <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${w.reason||''}" placeholder="الجهة/الغرض (مثال: أكل عاملين، فرع تاني...)" ${dis} oninput="setCycleWithdraw('${c.id}','${r}','reason',this.value)"></td>
-      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeWithdrawItem('${c.id}','${r}')" title="إزالة">🗑️</button>`}</td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeWithdrawItem('${c.id}','${r}')" title="إزالة" aria-label="إزالة">🗑️</button>`}</td>
     </tr>`;
   }).join('');
   document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(6);
@@ -6372,7 +6381,7 @@ function renderWithdrawMenuRows(c){
       <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="1" value="${w.qty||''}" placeholder="0" ${dis} oninput="setCycleWithdrawMenu('${c.id}','${mid}','qty',this.value)"></td>
       <td style="font-family:var(--mono);color:var(--red)">${fmt(cost)}</td>
       <td><input type="text" class="note-in" style="width:170px;color:var(--text)" value="${w.reason||''}" placeholder="الجهة/الغرض (مثال: أكل عاملين...)" ${dis} oninput="setCycleWithdrawMenu('${c.id}','${mid}','reason',this.value)"></td>
-      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeWithdrawMenuItem('${c.id}','${mid}')" title="إزالة">🗑️</button>`}</td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeWithdrawMenuItem('${c.id}','${mid}')" title="إزالة" aria-label="إزالة">🗑️</button>`}</td>
     </tr>`;
   }).join('');
   document.getElementById('ctWithdrawMenuRows').innerHTML=rows||emptyCycleRow(5);
@@ -6438,13 +6447,13 @@ function renderTransferOutRows(c){
     const sendCell=tr.requestId
       ?`<span style="font-size:11px;color:var(--green);white-space:nowrap">${svgIcon('checkCircle')} تم الإرسال</span>`
       :canSend
-        ?`<button class="hi-btn" style="flex:none;padding:4px 8px;white-space:nowrap" onclick="sendCycleTransferOutRequest('${c.id}','${r}')" title="إرسال طلب مراجعة للفرع المستلم">${svgIcon('uploadTray')} إرسال</button>`
+        ?`<button class="hi-btn" style="flex:none;padding:4px 8px;white-space:nowrap" onclick="sendCycleTransferOutRequest('${c.id}','${r}')" title="إرسال طلب مراجعة للفرع المستلم" aria-label="إرسال طلب مراجعة للفرع المستلم">${svgIcon('uploadTray')} إرسال</button>`
         :'';
     return `<tr>
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
       <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${tr.qty||''}" placeholder="0" ${dis} oninput="setCycleTransferOut('${c.id}','${r}','qty',this.value)"></td>
       <td><select class="mod-in" style="width:170px" ${dis} onchange="setCycleTransferOut('${c.id}','${r}','reason',this.value)">${branchSelectOptions(tr.reason)}</select></td>
-      <td style="display:flex;gap:6px;align-items:center">${sendCell}${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeTransferOutItem('${c.id}','${r}')" title="إزالة">🗑️</button>`}</td>
+      <td style="display:flex;gap:6px;align-items:center">${sendCell}${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeTransferOutItem('${c.id}','${r}')" title="إزالة" aria-label="إزالة">🗑️</button>`}</td>
     </tr>`;
   }).join('');
   document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(6);
@@ -6518,7 +6527,7 @@ function renderTransferInRows(c){
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
       <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${tr.qty||''}" placeholder="0" ${dis} oninput="setCycleTransferIn('${c.id}','${r}','qty',this.value)"></td>
       <td><select class="mod-in" style="width:170px" ${dis} onchange="setCycleTransferIn('${c.id}','${r}','reason',this.value)">${branchSelectOptions(tr.reason)}</select></td>
-      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeTransferInItem('${c.id}','${r}')" title="إزالة">🗑️</button>`}</td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeTransferInItem('${c.id}','${r}')" title="إزالة" aria-label="إزالة">🗑️</button>`}</td>
     </tr>`;
   }).join('');
   document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(6);
@@ -6572,7 +6581,7 @@ function renderQmRows(){
       <td><span class="uom-pill">${it?it.u:''}</span></td>
       <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${r.qty||''}" placeholder="0" oninput="qmSetRowField('${r.ref}','qty',this.value)"></td>
       <td ${showCost?'':'style="display:none"'}><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.01" value="${r.cost||''}" placeholder="0.00" oninput="qmSetRowField('${r.ref}','cost',this.value)"></td>
-      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="qmRemoveItem('${r.ref}')" title="إزالة">🗑</button></td>
+      <td><button class="hi-btn del" style="flex:none;padding:4px 8px" onclick="qmRemoveItem('${r.ref}')" title="إزالة" aria-label="إزالة">🗑</button></td>
     </tr>`;
   }).join(''):`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">لم تُضف أصناف بعد — استخدم البحث بالأعلى</td></tr>`;
 }
@@ -6761,7 +6770,7 @@ function renderIncomingTransfersScreen(){
     return `<div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
         <div><b>من فرع:</b> ${req.fromBranchName}</div>
-        <div style="font-family:var(--mono);color:var(--muted)" title="تاريخ إرسال الفرع الآخر للحركة">تاريخ الإرسال: ${req.date}</div>
+        <div style="font-family:var(--mono);color:var(--muted)" title="تاريخ إرسال الفرع الآخر للحركة" aria-label="تاريخ إرسال الفرع الآخر للحركة">تاريخ الإرسال: ${req.date}</div>
       </div>
       ${cycleWarn}
       <table style="width:100%;margin-bottom:10px"><thead><tr><th style="text-align:right">${t('الصنف')}</th><th style="text-align:right">${t('الوحدة')}</th><th style="text-align:right">الكمية المُرسلة</th><th style="text-align:right">الكمية المُستلمة فعليًا</th></tr></thead>
@@ -6892,7 +6901,7 @@ function renderOpeningRows(c){
     return `<tr>
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
       <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${val||''}" placeholder="0" ${dis} oninput="setCycleOpeningOverride('${c.id}','${r}',this.value)"></td>
-      <td>${carried?'<span style="font-size:10px;color:var(--muted)">من الدورة السابقة</span>':(dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeOpeningItem('${c.id}','${r}')" title="إزالة">🗑️</button>`)}</td>
+      <td>${carried?'<span style="font-size:10px;color:var(--muted)">من الدورة السابقة</span>':(dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeOpeningItem('${c.id}','${r}')" title="إزالة" aria-label="إزالة">🗑️</button>`)}</td>
     </tr>`;
   }).join('');
   document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(5);
@@ -6947,7 +6956,7 @@ function renderClosingRows(c){
     return `<tr>
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
       <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${cl!=null?cl:''}" placeholder="0" ${dis} oninput="setCycleClosing('${c.id}','${r}',this.value)"></td>
-      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeClosingItem('${c.id}','${r}')" title="إزالة">🗑️</button>`}</td>
+      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeClosingItem('${c.id}','${r}')" title="إزالة" aria-label="إزالة">🗑️</button>`}</td>
     </tr>`;
   }).join('');
   document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(5);
@@ -8583,6 +8592,12 @@ let _tt;
 function toast(msg,type='inf'){
   const el=document.getElementById('toast');
   el.className=`toast ${type} on`;el.textContent=msg;
+  // errors interrupt (assertive) since they need action; everything else is
+  // announced without cutting off whatever the screen reader is already
+  // saying (polite) — role="alert" on error additionally implies assertive
+  // in most screen readers, set explicitly here for clarity
+  el.setAttribute('aria-live',type==='err'?'assertive':'polite');
+  el.setAttribute('role',type==='err'?'alert':'status');
   clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),3500);
 }
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));

@@ -282,7 +282,14 @@ select{
 select:hover{border-color:var(--border2);}
 
 /* TABLE */
-.tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow-x:auto;box-shadow:var(--shadow-sm);}
+/* overflow-x:auto alone would also force overflow-y to auto (a CSS spec
+   quirk: a non-visible x-axis overflow converts a visible y-axis to auto
+   too), which turns .tbl-wrap into its own scroll container and traps
+   thead's position:sticky against it instead of the modal that actually
+   scrolls — so horizontal scroll for wide tables is desktop-off, mobile-on
+   only (see the mobile media query), keeping sticky table headers working
+   on desktop where the outer modal is what scrolls. */
+.tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow-sm);}
 .tbl-head{
   display:flex;align-items:center;justify-content:space-between;
   padding:12px 18px;border-bottom:1px solid var(--border);
@@ -295,6 +302,7 @@ thead th{
   background:var(--card2);padding:9px 13px;text-align:right;
   color:var(--text);font-weight:700;font-size:10.5px;font-family:var(--mono);
   text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;
+  position:sticky;top:var(--thead-top,0px);z-index:6;
 }
 tbody tr{border-bottom:1px solid var(--border);border-right:2px solid transparent;transition:background .12s,border-color .12s;}
 tbody tr:hover{background:var(--card2);border-right-color:rgba(122,35,49,.35);}
@@ -361,10 +369,11 @@ td{padding:10px 13px;vertical-align:middle;}
 }
 .overlay.open{display:flex;}
 .modal{
+  --modal-pad-top:64px;
   background:var(--card);border:none;
   border-radius:0;width:100% !important;max-width:100% !important;
   height:100vh;max-height:100vh;overflow-y:auto;
-  padding:64px clamp(16px,6vw,70px) 40px;
+  padding:0 clamp(16px,6vw,70px) 40px;
   animation:mIn .2s ease;
 }
 .globalModalCloseBtn{
@@ -383,7 +392,14 @@ td{padding:10px 13px;vertical-align:middle;}
    while a long report/table scrolls beneath them, instead of scrolling
    away with the rest of the modal — padding-bottom:1px stops the title's
    own margin-bottom from collapsing through this wrapper */
-.mod-sticky-head{position:sticky;top:0;z-index:15;background:var(--card);padding-bottom:1px;}
+/* the top spacing reserved for the floating close button (previously
+   .modal's own top padding) lives here instead, on the sticky element
+   itself — so its solid background actually reaches the true top of the
+   scrollport (top:0) and covers that space, rather than leaving a gap
+   above it where .modal's padding used to be (padding scrolls with
+   content same as anything else, so rows would show through it once
+   scrolled past, with nothing there covering them). */
+.mod-sticky-head{position:sticky;top:0;z-index:15;background:var(--card);padding-bottom:1px;padding-top:var(--modal-pad-top);}
 .dash-card{background:var(--card2);border:1px solid var(--border);border-radius:13px;padding:16px 18px;margin-bottom:16px;}
 .dash-card-title{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text);}
 .dash-legend{margin-bottom:8px;font-size:11.5px;color:var(--muted);}
@@ -519,11 +535,16 @@ td{padding:10px 13px;vertical-align:middle;}
 
   /* wide data tables no longer squish into unreadable multi-line cells —
      they keep a readable natural width and scroll horizontally within
-     .tbl-wrap (which already had overflow-x:auto, just neutralized by the
-     table's own width:100% forcing everything to shrink to fit). Only
-     headers and the name column are forced single-line — other columns are
-     already short pills/inputs that don't wrap, and free-text columns
-     (e.g. maintenance/report notes) are left free to wrap for readability. */
+     .tbl-wrap. overflow-x:auto lives here (mobile-only) rather than on the
+     base rule because it would also force overflow-y to auto (a CSS
+     overflow-interdependency quirk), trapping thead's sticky positioning
+     against .tbl-wrap instead of the modal — an acceptable trade-off since
+     mobile screens are short enough that this matters less than desktop's
+     long scroll sessions. Only headers and the name column are forced
+     single-line — other columns are already short pills/inputs that don't
+     wrap, and free-text columns (e.g. maintenance/report notes) are left
+     free to wrap for readability. */
+  .tbl-wrap{overflow-x:auto;}
   table{font-size:12px;width:auto;min-width:100%;}
   thead th{padding:9px 10px;white-space:nowrap;}
   td{padding:9px 10px;}
@@ -536,7 +557,7 @@ td{padding:10px 13px;vertical-align:middle;}
   .hi-btn{min-height:34px;min-width:34px;}
 
   .mod-row{grid-template-columns:1fr;gap:0;}
-  .modal{padding:60px 16px 30px;}
+  .modal{--modal-pad-top:60px;padding:0 16px 30px;}
 }
 @media(max-width:480px){
   .stats{grid-template-columns:1fr 1fr;}
@@ -5553,7 +5574,19 @@ function updateGlobalModalCloseBtn(){
   if(!btn) return;
   btn.classList.toggle('show',!!document.querySelector('.overlay.open'));
 }
-new MutationObserver(updateGlobalModalCloseBtn).observe(document.documentElement,{attributes:true,attributeFilter:['class'],subtree:true});
+// table column headers (thead th) are sticky too (see the `position:sticky`
+// rule above), stacked right below the modal's own sticky title bar rather
+// than overlapping it — since .mod-sticky-head's height varies per modal
+// (some have a row of top-action buttons, some don't), this measures each
+// open modal's actual title-bar height and feeds it in as --thead-top.
+function syncStickyTableHeaderOffsets(){
+  document.querySelectorAll('.overlay.open .modal').forEach(modal=>{
+    const head=modal.querySelector(':scope > .mod-sticky-head');
+    modal.style.setProperty('--thead-top',(head?head.offsetHeight:0)+'px');
+  });
+}
+new MutationObserver(()=>{ updateGlobalModalCloseBtn(); syncStickyTableHeaderOffsets(); }).observe(document.documentElement,{attributes:true,attributeFilter:['class'],subtree:true});
+window.addEventListener('resize',syncStickyTableHeaderOffsets);
 
 // ══════════════════════════════════════════════
 //  PRINT

@@ -87,7 +87,7 @@ header{
 }
 .bc-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
 .bc-lbl{color:var(--muted);font-size:11px;}
-.bc-val{font-weight:600;color:var(--gold);}
+.bc-val{font-weight:600;color:var(--text);}
 .user-chip-val{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:right;}
 #branchLbl{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom;}
 
@@ -2217,6 +2217,7 @@ const I18N_EN={
   "📗 تصدير مكونات المنيو الحالية": "📗 Export Current Recipes",
   "📗 تفريغ كل البيانات (Excel)": "📗 Export All Data (Excel)",
   "📤 استعادة من نسخة احتياطية": "📤 Restore from Backup",
+  "📤 تم إرسال طلب المراجعة لفرع": "📤 Review request sent to branch",
   "📥 استيراد أصناف (Excel)": "📥 Import Items (Excel)",
   "📥 استيراد أصناف المنيو والمكونات (Excel)": "📥 Import Menu Items & Recipes (Excel)",
   "📥 استيراد أصناف منيو فقط بدون مكوّنات (Excel)": "📥 Import Menu Items Only, No Recipe (Excel)",
@@ -6346,7 +6347,7 @@ function renderTransferOutTab(c,el){
   <div class="tbl-wrap"><table>
     <thead><tr><th>${t('المرجع')}</th><th>${t('الصنف')}</th><th>${t('الوحدة')}</th><th>${t('الكمية المحوّلة صادر')}</th><th>${t('الفرع المستلم')}</th><th></th></tr></thead>
     <tbody id="ctRows"></tbody></table></div>
-    <p style="font-size:11px;color:var(--muted);margin-top:8px">كمية خرجت من هذا الفرع لفرع تاني — بتتخصم من الاستهلاك الفعلي زي الهالك. اختر الصنف من البحث بالأعلى لإضافته للتحويل — الأفضل تستخدم "🔀 تسجيل حركة" عشان يوصل طلب مراجعة واعتماد تلقائي للفرع المستلم.</p>`;
+    <p style="font-size:11px;color:var(--muted);margin-top:8px">كمية خرجت من هذا الفرع لفرع تاني — بتتخصم من الاستهلاك الفعلي زي الهالك. اختر الصنف من البحث بالأعلى لإضافته للتحويل، وحدد الفرع المستلم، ثم اضغط "إرسال" عشان يوصل طلب مراجعة واعتماد للفرع المستلم ويظهر في إشعاراته.</p>`;
   renderTransferOutRows(c);
 }
 function addTransferOutItem(ref){
@@ -6373,11 +6374,17 @@ function renderTransferOutRows(c){
   const rows=refs.map(r=>{
     const it=S.items.find(x=>x.r===r);if(!it)return'';
     const tr=c.transfersOut[r];
+    const canSend=!dis&&tr.qty>0&&tr.reason&&!tr.requestId;
+    const sendCell=tr.requestId
+      ?`<span style="font-size:11px;color:var(--green);white-space:nowrap">${svgIcon('checkCircle')} تم الإرسال</span>`
+      :canSend
+        ?`<button class="hi-btn" style="flex:none;padding:4px 8px;white-space:nowrap" onclick="sendCycleTransferOutRequest('${c.id}','${r}')" title="إرسال طلب مراجعة للفرع المستلم">${svgIcon('uploadTray')} إرسال</button>`
+        :'';
     return `<tr>
       <td class="td-ref">${it.r}</td><td class="td-name">${it.n}</td><td><span class="uom-pill">${it.u}</span></td>
       <td><input type="number" inputmode="decimal" class="qin" style="width:100px" min="0" step="0.001" value="${tr.qty||''}" placeholder="0" ${dis} oninput="setCycleTransferOut('${c.id}','${r}','qty',this.value)"></td>
       <td><select class="mod-in" style="width:170px" ${dis} onchange="setCycleTransferOut('${c.id}','${r}','reason',this.value)">${branchSelectOptions(tr.reason)}</select></td>
-      <td>${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeTransferOutItem('${c.id}','${r}')" title="إزالة">🗑️</button>`}</td>
+      <td style="display:flex;gap:6px;align-items:center">${sendCell}${dis?'':`<button class="hi-btn" style="flex:none;padding:4px 8px" onclick="removeTransferOutItem('${c.id}','${r}')" title="إزالة">🗑️</button>`}</td>
     </tr>`;
   }).join('');
   document.getElementById('ctRows').innerHTML=rows||emptyCycleRow(6);
@@ -6387,7 +6394,29 @@ function setCycleTransferOut(cid,r,field,v){
   if(!c.transfersOut) c.transfersOut={};
   const t=c.transfersOut[r]||(c.transfersOut[r]={qty:0,reason:''});
   t[field]=field==='reason'?v:(v===''?0:(parseFloat(v)||0));
+  // changing qty/branch after a request was already sent doesn't retract or
+  // update it (the receiving branch already has that snapshot to review) —
+  // only allow sending again if it hasn't been sent yet
+  if(field==='reason'&&t.requestId) delete t.requestId;
   save();
+  renderTransferOutRows(c);
+}
+// the cycle's own "Transfer Out" tab used to just record the outgoing qty
+// locally with a hint telling users to use Quick Movement instead if they
+// wanted the receiving branch notified — this wires it into the exact same
+// sendTransferRequest() mechanism Quick Movement uses, so either path
+// reaches the other branch's notifications/incoming-transfers review screen.
+function sendCycleTransferOutRequest(cid,r){
+  const c=getCycle(cid);if(!c||c.closed)return;
+  const tr=c.transfersOut&&c.transfersOut[r];
+  if(!tr||!(tr.qty>0)){toast('⚠️ أدخل كمية أكبر من صفر الأول','wrn');return;}
+  if(!tr.reason){toast('⚠️ اختر الفرع المستلم الأول','wrn');return;}
+  const entry=Object.entries(S.branches||{}).find(([k,b])=>(b.name||k)===tr.reason);
+  if(!entry){toast('⚠️ تعذّر التعرّف على الفرع المستلم','err');return;}
+  const targetBranchKey=entry[0];
+  sendTransferRequest(targetBranchKey,c.end||new Date().toISOString().slice(0,10),[{ref:r,qty:tr.qty}],c);
+  toast(`${t('📤 تم إرسال طلب المراجعة لفرع')} ${tr.reason}`,'suc');
+  renderTransferOutRows(c);
 }
 
 function renderTransferInTab(c,el){

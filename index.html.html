@@ -322,6 +322,16 @@ thead th{
   text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;
   position:sticky;top:var(--thead-top,0px);z-index:6;
 }
+/* a handful of modals (manage items, menu list, transfers log, dashboard
+   reports, ...) put their table in its OWN inner overflow-y:auto box
+   instead of relying on the modal's own scroll — for those, the nearest
+   scrolling ancestor of thead is that inner box, not the modal, so the
+   modal-level --thead-top offset (calibrated for sticking below the
+   modal's own title bar) is meaningless there and pushes/hides the header
+   incorrectly. Every such box in this file is written with this exact
+   inline style, so this resets the offset to 0 (stick to the box's own
+   top) for all of them without having to tag each one individually. */
+[style*="overflow-y:auto"]{--thead-top:0px;}
 tbody tr{border-bottom:1px solid var(--border);border-right:2px solid transparent;transition:background .12s,border-color .12s;}
 tbody tr:hover{background:var(--card2);border-right-color:rgba(122,35,49,.35);}
 tbody tr:last-child{border-bottom:none;}
@@ -1711,6 +1721,21 @@ td{padding:10px 13px;vertical-align:middle;}
   <div id="incomingTransfersBody"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('incomingTransfersModal')" data-i18n="إغلاق">إغلاق</button>
+  </div>
+</div>
+</div>
+
+<!-- MANDATORY NOTICE MODAL (no X, no backdrop-click-close — used for
+     instructions the user must actively acknowledge, e.g. the system
+     auto-opening a cycle to receive a transfer) -->
+<div class="overlay overlay-nodismiss" id="mandatoryNoticeModal">
+<div class="modal" style="width:460px">
+  <div class="mod-sticky-head">
+  <div class="mod-title" id="mandatoryNoticeTitle"></div>
+  </div>
+  <div id="mandatoryNoticeBody" style="font-size:13px;line-height:1.9"></div>
+  <div class="mod-foot">
+    <button class="hbtn gold" onclick="closeM('mandatoryNoticeModal')" data-i18n="فهمت/متابعة">فهمت/متابعة</button>
   </div>
 </div>
 </div>
@@ -5585,12 +5610,13 @@ document.addEventListener('click',e=>{
 // ══════════════════════════════════════════════
 function closeCurrentOverlay(){
   const overlay=[...document.querySelectorAll('.overlay.open')].pop();
-  if(overlay) overlay.classList.remove('open');
+  if(overlay&&!overlay.classList.contains('overlay-nodismiss')) overlay.classList.remove('open');
 }
 function updateGlobalModalCloseBtn(){
   const btn=document.getElementById('globalModalCloseBtn');
   if(!btn) return;
-  btn.classList.toggle('show',!!document.querySelector('.overlay.open'));
+  const top=[...document.querySelectorAll('.overlay.open')].pop();
+  btn.classList.toggle('show',!!top&&!top.classList.contains('overlay-nodismiss'));
 }
 // table column headers (thead th) are sticky too (see the `position:sticky`
 // rule above), stacked right below the modal's own sticky title bar rather
@@ -5913,18 +5939,29 @@ function renderCycleList(){
     </div>`).join('');
 }
 
-function openNewCycle(){
+function nextCycleStartDate(){
   const arr=sortedCycles();
   const last=arr.length?arr[arr.length-1]:null;
-  let start=today();
-  if(last){
-    const d=new Date(last.end+'T00:00:00');d.setDate(d.getDate()+1);
-    start=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
-  }
+  if(!last) return today();
+  const d=new Date(last.end+'T00:00:00');d.setDate(d.getDate()+1);
+  return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+}
+function openNewCycle(){
+  const start=nextCycleStartDate();
   const sd=new Date(start+'T00:00:00');const ed=new Date(sd);
   document.getElementById('nc-start').value=start;
   document.getElementById('nc-end').value=`${ed.getFullYear()}-${p2(ed.getMonth()+1)}-${p2(ed.getDate())}`;
   document.getElementById('newCycleModal').classList.add('open');
+}
+// used when receiving an incoming transfer with no cycle covering today —
+// physical receiving can't wait on someone opening a cycle first, so this
+// mirrors openNewCycle()'s own date defaults and creates it unattended
+function autoOpenCycleForDate(dateStr){
+  const start=nextCycleStartDate();
+  const c={id:'CYC'+Date.now().toString(36).toUpperCase(),start:(start<=dateStr?start:dateStr),end:dateStr,closed:false,
+    sales:{},salesAmount:null,deliverySalesAmount:null,purchases:{},waste:{},wasteMenu:{},withdrawals:{},withdrawMenu:{},transfersOut:{},transfersIn:{},openingOverride:{},closing:{},closingSetAt:{},result:null};
+  BCycles().push(c);
+  return c;
 }
 function setCyclePreset(extraDays){
   const start=document.getElementById('nc-start').value;
@@ -6766,7 +6803,7 @@ function renderIncomingTransfersScreen(){
     // cycle no longer blocks acceptance: approving still updates it and
     // recomputes its results, since physical receiving can't wait on that.
     const c=findCycleForDate(today());
-    const cycleWarn=!c?'<div style="color:var(--red);font-size:11px;margin-bottom:8px">⚠️ لا توجد دورة تسوية تغطي اليوم عندك — افتح دورة تشمل تاريخ اليوم قبل الاعتماد</div>':(c.closed?'<div style="color:var(--blue);font-size:11px;margin-bottom:8px">ℹ️ دورة اليوم مقفولة — الاعتماد هيحدّث أرصدتها ونتائجها تلقائيًا</div>':'');
+    const cycleWarn=!c?'<div style="color:var(--blue);font-size:11px;margin-bottom:8px">ℹ️ لا توجد دورة تسوية تغطي اليوم عندك — الاعتماد هيفتح دورة جديدة تلقائيًا</div>':(c.closed?'<div style="color:var(--blue);font-size:11px;margin-bottom:8px">ℹ️ دورة اليوم مقفولة — الاعتماد هيحدّث أرصدتها ونتائجها تلقائيًا</div>':'');
     return `<div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
         <div><b>من فرع:</b> ${req.fromBranchName}</div>
@@ -6804,8 +6841,12 @@ function approveTransferRequest(reqId){
   // Received goods must be accepted even if that cycle is already closed —
   // physical receiving doesn't wait for paperwork — so the balances get
   // updated and the cycle's results are recomputed to match.
-  const c=findCycleForDate(today());
-  if(!c){toast('⚠️ لا توجد دورة تسوية تغطي اليوم عندك — افتح دورة تشمل تاريخ اليوم الأول','err');return;}
+  let c=findCycleForDate(today());
+  // no cycle covers today at all (as opposed to one that's merely closed,
+  // handled above) — physical receiving can't wait on someone opening one
+  // manually first, so open it unattended and tell the user afterward
+  const autoOpened=!c;
+  if(autoOpened) c=autoOpenCycleForDate(today());
   const receivedItems=req.items.map((it,i)=>{
     const input=document.getElementById(`itr-qty-${req.id}-${i}`);
     const qty=input?(parseFloat(input.value)||0):it.qtySent;
@@ -6822,6 +6863,11 @@ function approveTransferRequest(reqId){
   persistIncomingTransferDecision(reqId,'approved',receivedItems,'');
   toast(`✅ تم اعتماد التحويل من فرع ${req.fromBranchName} في دورة ${c.start} ← ${c.end}`+(c.closed?' (الدورة مقفولة — تم تحديث نتائجها تلقائيًا)':''),'suc');
   if(curCycleId===c.id){renderCycleTabs();renderCycleBody();}
+  if(autoOpened){
+    curCycleId=c.id;renderCycleList();
+    showMandatoryNotice('ℹ️ تم فتح دورة تسوية تلقائيًا',
+      `تم فتح دورة تسوية جديدة (<b>${c.start} ← ${c.end}</b>) تلقائيًا لاستقبال هذا التحويل، لأنه لم تكن هناك دورة تغطي تاريخ اليوم.<br><br>راجع الرصيد الافتتاحي وباقي بيانات الدورة من شاشة "دورات التسوية" للتأكد إنها مضبوطة قبل ما تقفلها.`);
+  }
 }
 function rejectTransferRequest(reqId){
   const req=(S.incomingTransfers||[]).find(r=>r.id===reqId);if(!req||req.status!=='pending')return;
@@ -8588,6 +8634,13 @@ function restoreBackup(data){
 //  UTILS
 // ══════════════════════════════════════════════
 function closeM(id){document.getElementById(id).classList.remove('open');}
+// shows an instructional popup the user must actively acknowledge (single
+// "فهمت/متابعة" button — no X, no backdrop-click-close, see .overlay-nodismiss)
+function showMandatoryNotice(title,bodyHtml){
+  document.getElementById('mandatoryNoticeTitle').textContent=title;
+  document.getElementById('mandatoryNoticeBody').innerHTML=bodyHtml;
+  document.getElementById('mandatoryNoticeModal').classList.add('open');
+}
 let _tt;
 function toast(msg,type='inf'){
   const el=document.getElementById('toast');
@@ -8600,7 +8653,7 @@ function toast(msg,type='inf'){
   el.setAttribute('role',type==='err'?'alert':'status');
   clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),3500);
 }
-document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+document.querySelectorAll('.overlay:not(.overlay-nodismiss)').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.returnValue='';}});
 </script>
 <script type="text/babel" data-presets="react">

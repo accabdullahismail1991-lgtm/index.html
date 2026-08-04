@@ -1206,6 +1206,7 @@ td{padding:10px 13px;vertical-align:middle;}
   <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFileSelected(event)">
   <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none" onchange="handleBackupFileSelected(event)">
   <input type="file" id="recipeImportFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleRecipeImportFileSelected(event)">
+  <input type="file" id="foodicsRecipeImportFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFoodicsRecipeImportFileSelected(event)">
   <input type="file" id="simpleMenuImportFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleSimpleMenuImportFileSelected(event)">
   <input type="file" id="salesImportFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleSalesImportFileSelected(event)">
 
@@ -1554,6 +1555,7 @@ td{padding:10px 13px;vertical-align:middle;}
     <button class="hbtn" onclick="document.getElementById('simpleMenuImportFileInput').click()" data-i18n="📥 استيراد أصناف فقط (Excel)">📥 استيراد أصناف فقط (Excel)</button>
     <button class="hbtn" onclick="downloadRecipeImportTemplate()" data-i18n="📄 قالب استيراد أصناف المنيو (بالشرح)">📄 قالب استيراد أصناف المنيو (بالشرح)</button>
     <button class="hbtn" onclick="document.getElementById('recipeImportFileInput').click()" data-i18n="📥 استيراد أصناف المنيو (Excel)">📥 استيراد أصناف المنيو (Excel)</button>
+    <button class="hbtn" onclick="document.getElementById('foodicsRecipeImportFileInput').click()" data-i18n="📥 استيراد مباشر من تصدير فودكس (المكونات)">📥 استيراد مباشر من تصدير فودكس (المكونات)</button>
     <button class="hbtn org" onclick="closeM('menuModal');openAddMenuItem()" data-i18n="➕ إضافة صنف جديد">➕ إضافة صنف جديد</button>
   </div>
 </div>
@@ -2307,6 +2309,7 @@ const I18N_EN={
   "📤 تم إرسال طلب المراجعة لفرع": "📤 Review request sent to branch",
   "📥 استيراد أصناف (Excel)": "📥 Import Items (Excel)",
   "📥 استيراد أصناف المنيو والمكونات (Excel)": "📥 Import Menu Items & Recipes (Excel)",
+  "📥 استيراد مباشر من تصدير فودكس (المكونات)": "📥 Direct Import from Foodics Export (Recipes)",
   "📥 استيراد أصناف منيو فقط بدون مكوّنات (Excel)": "📥 Import Menu Items Only, No Recipe (Excel)",
   "📦 الأصناف ▾": "📦 Items ▾",
   "📦 الأصناف": "📦 Items",
@@ -8237,6 +8240,16 @@ function processRecipeImportRows(rows){
     if(!(compRef in g.compMap)) g.order.push(compRef);
     g.compMap[compRef]=compQty;
   }
+  applyRecipeImportGroups(groups,{unknownComponent,skippedRows,selfRefSkipped});
+}
+// shared by every recipe/BOM importer (our own template + native external
+// formats like Foodics below) — takes the same {type,name,price,compMap,order}
+// groups regardless of where they came from, and does the actual
+// group-and-replace-atomically write into S.menu/S.items, plus the
+// summary toast. extraCounts lets a caller add its own skip-reason
+// counters (e.g. unmatched components) to the same summary line.
+function applyRecipeImportGroups(groups,extraCounts){
+  const {unknownComponent=0,skippedRows=0,selfRefSkipped=0}=extraCounts||{};
   let menuAdded=0,menuUpdated=0,semiUpdated=0,semiNotFound=0;
   groups.forEach(g=>{
     const comps=g.order.map(r=>({r,q:g.compMap[r]}));
@@ -8257,6 +8270,87 @@ function processRecipeImportRows(rows){
   if(selfRefSkipped) parts.push(`⚠️ ${selfRefSkipped} سطر متجاهل (الصنف مكوّن لنفسه)`);
   if(skippedRows) parts.push(`${skippedRows} سطر متجاهل (بيانات ناقصة)`);
   toast('✅ تم الاستيراد: '+parts.join('، '),'suc');
+}
+
+// ══════════════════════════════════════════════
+//  NATIVE FOODICS RECIPE/BOM IMPORT — reads Foodics' own "products &
+//  ingredients" export (product_sku, product_name, product_name_localized,
+//  inventory_item_sku, inventory_item_name, inventory_item_name_localized,
+//  quantity, unit, ingredient_cost) directly, with no manual reformatting.
+//  Foodics' inventory_item_sku (e.g. "inv-3") never matches our own item
+//  references (two independent ID spaces), so components are matched by
+//  NAME instead — Arabic first, English fallback — the same idea already
+//  used for matching Foodics SALES data (findMenuItemByExternalName), just
+//  applied to inventory items instead of menu items.
+// ══════════════════════════════════════════════
+const FOODICS_RECIPE_REQUIRED_HEADERS=['product_sku','product_name','inventory_item_sku','quantity'];
+function looksLikeFoodicsRecipeExport(headerRow){
+  const norm=(headerRow||[]).map(h=>String(h||'').trim().toLowerCase());
+  return FOODICS_RECIPE_REQUIRED_HEADERS.every(h=>norm.includes(h));
+}
+function handleFoodicsRecipeImportFileSelected(e){
+  const file=e.target.files[0];
+  e.target.value='';
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=new Uint8Array(ev.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      processFoodicsRecipeImportRows(rows);
+    }catch(err){ toast('⚠️ تعذر قراءة الملف: '+err.message,'err'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function processFoodicsRecipeImportRows(rows){
+  if(!rows||!rows.length){toast('⚠️ الملف فارغ','wrn');return;}
+  const headerRow=rows[0].map(h=>String(h||'').trim().toLowerCase());
+  if(!looksLikeFoodicsRecipeExport(headerRow)){
+    toast('⚠️ الملف مش بنفس تنسيق تصدير المكونات من فودكس — لازم يحتوي على أعمدة product_sku وproduct_name وinventory_item_sku وquantity','err');
+    return;
+  }
+  const col={};
+  headerRow.forEach((h,i)=>{col[h]=i;});
+  const groups=[];
+  const groupIndex={};
+  let unknownComponent=0,skippedRows=0;
+  for(let i=1;i<rows.length;i++){
+    const row=rows[i];
+    if(!row||!row.length) continue;
+    const productSku=String(row[col['product_sku']]||'').trim();
+    if(!productSku) continue;
+    const nameLocalized=col['product_name_localized']!=null?String(row[col['product_name_localized']]||'').trim():'';
+    const ownerName=nameLocalized||String(row[col['product_name']]||'').trim();
+    if(!ownerName) continue;
+    const key='menu::'+ownerName.toLowerCase();
+    if(!(key in groupIndex)){
+      groupIndex[key]=groups.length;
+      // Foodics' BOM export never carries a selling price — price stays
+      // blank for newly-created menu items (same as our own template's
+      // blank-price rows), left for the user to set from the menu screen.
+      groups.push({type:'menu',name:ownerName,price:null,compMap:{},order:[]});
+    }
+    const g=groups[groupIndex[key]];
+    const compSku=String(row[col['inventory_item_sku']]||'').trim();
+    // which of these two name columns actually holds the Arabic vs English
+    // name varies by Foodics account (some type the base name in Arabic and
+    // "localized" in English, others the reverse) — try both, order doesn't
+    // matter since either one matching our catalog is a valid match.
+    const compNameA=col['inventory_item_name']!=null?String(row[col['inventory_item_name']]||'').trim():'';
+    const compNameB=col['inventory_item_name_localized']!=null?String(row[col['inventory_item_name_localized']]||'').trim():'';
+    if(!compSku&&!compNameA&&!compNameB) continue;
+    const compQty=parseFloat(row[col['quantity']]);
+    if(isNaN(compQty)||compQty<=0){skippedRows++;continue;}
+    const comp=S.items.find(it=>it.r.toUpperCase()===compSku.toUpperCase())
+      ||(compNameA&&S.items.find(it=>it.n.trim().toLowerCase()===compNameA.toLowerCase()))
+      ||(compNameB&&S.items.find(it=>it.n.trim().toLowerCase()===compNameB.toLowerCase()));
+    if(!comp){unknownComponent++;continue;}
+    if(!(comp.r in g.compMap)) g.order.push(comp.r);
+    g.compMap[comp.r]=compQty;
+  }
+  applyRecipeImportGroups(groups,{unknownComponent,skippedRows});
 }
 
 // ══════════════════════════════════════════════
@@ -8815,6 +8909,7 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
         <Item onClick={exportRecipesExcel} i18n="📗 تصدير مكونات المنيو الحالية" />
         <Item onClick={()=>document.getElementById('recipeImportFileInput').click()} i18n="📥 استيراد أصناف المنيو والمكونات (Excel)" />
         <Item onClick={downloadRecipeImportTemplate} i18n="📄 قالب استيراد أصناف المنيو (بالشرح)" />
+        <Item onClick={()=>document.getElementById('foodicsRecipeImportFileInput').click()} i18n="📥 استيراد مباشر من تصدير فودكس (المكونات)" />
         <Section label="استيراد/تصدير بيانات الأصناف" />
         <Item onClick={exportItemsExcel} i18n="📗 تصدير الأصناف الحالية (لتحديث التكلفة)" />
         <Item onClick={()=>document.getElementById('importFileInput').click()} i18n="📥 استيراد أصناف (Excel)" />

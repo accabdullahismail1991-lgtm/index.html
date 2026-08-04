@@ -452,6 +452,7 @@ td{padding:10px 13px;vertical-align:middle;}
 .dash-kpi{background:var(--card2);border:1px solid var(--border);border-radius:11px;padding:12px 14px;}
 .dash-kpi-lbl{font-size:10.5px;color:var(--muted);margin-bottom:6px;}
 .dash-kpi-val{font-size:18px;font-weight:800;font-family:var(--mono);}
+.dash-kpi-badge{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
 .mod-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
 .mod-field{margin-bottom:14px;}
 .mod-lbl{font-size:10.5px;color:var(--muted);margin-bottom:5px;display:block;font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;}
@@ -4633,10 +4634,10 @@ function renderMenuSalesReport(){
   body.innerHTML=`
     ${reportHeaderBlock({title:'📊 تقرير مبيعات المنيو حسب التاريخ',branchName:rows.branchLabel})}
     <div class="dash-kpis" style="margin-bottom:16px">
-      ${dashKpi('إجمالي الكمية المباعة',fmt(totalQty),'#3d8ef0')}
-      ${dashKpi('إجمالي الإيراد (نظري)',fmt(totalRev),'#2ee89a')}
-      ${rows.actualTotal!=null?dashKpi('إجمالي المبيعات الفعلي',fmt(rows.actualTotal),'#7a2331'):''}
-      ${dashKpi('🛵 مبيعات تطبيقات التوصيل',fmt(rows.deliveryTotal),'#3d8ef0')}
+      ${dashKpi('إجمالي الكمية المباعة',fmt(totalQty),'#3d8ef0','📦')}
+      ${dashKpi('إجمالي الإيراد (نظري)',fmt(totalRev),'#2ee89a','💰')}
+      ${rows.actualTotal!=null?dashKpi('إجمالي المبيعات الفعلي',fmt(rows.actualTotal),'#7a2331','💵'):''}
+      ${dashKpi('مبيعات تطبيقات التوصيل',fmt(rows.deliveryTotal),'#3d8ef0','🛵')}
     </div>
     <div style="font-weight:700;font-size:13px;margin-bottom:8px">📦 ملخص حسب الصنف</div>
     <div class="tbl-wrap" style="max-height:260px;overflow-y:auto;margin-bottom:18px"><table>
@@ -4787,7 +4788,7 @@ function computeWasteReport(){
 }
 function renderWasteReport(){
   const rep=computeWasteReport();
-  const kpi=(l,v,color)=>`<div class="stat" style="border-color:${color}55"><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>`;
+  const kpi=(l,v,color,icon)=>`<div class="stat" style="border-color:${color}55"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>${icon?`<div class="dash-kpi-badge" style="background:${color}22;color:${color}">${icon}</div>`:''}</div></div>`;
   if(!rep.rows.length&&!rep.menuRows.length){
     document.getElementById('wasteReportBody').innerHTML=`${reportHeaderBlock({title:'🗑️ تقرير أكثر الأصناف هالكًا',branchName:rep.label,periodLabel:document.getElementById('wr-date-from').value||document.getElementById('wr-date-to').value?`${document.getElementById('wr-date-from').value||'...'} ← ${document.getElementById('wr-date-to').value||'...'}`:'كل الفترات'})}
     <div style="padding:24px;text-align:center;color:var(--muted)">لا يوجد هالك مسجّل في النطاق المختار.</div>`;
@@ -5256,7 +5257,7 @@ function renderBreakEvenModule(){
   const editable=breakEvenBranchFilter==='__current__';
   const result=computeBreakEven();
   if(result==null){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري تحميل بيانات الفروع...</div>';return;}
-  const kpi=(l,v,color)=>`<div class="stat" style="border-color:${color}55"><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>`;
+  const kpi=(l,v,color,icon)=>`<div class="stat" style="border-color:${color}55"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>${icon?`<div class="dash-kpi-badge" style="background:${color}22;color:${color}">${icon}</div>`:''}</div></div>`;
   if(Array.isArray(result)){
     el.innerHTML=`${reportHeaderBlock({title:'⚖️ نقطة التعادل اليومية — مقارنة بين الفروع'})}
     <div class="tbl-wrap"><table>
@@ -5283,17 +5284,24 @@ function renderBreakEvenModule(){
       <td class="td-name">${dcost.name||'-'}</td><td style="font-family:var(--mono)">${fmt(dcost.amount||0)}</td>
     </tr>`).join('');
   el.innerHTML=`${reportHeaderBlock({title:'⚖️ نقطة التعادل اليومية',branchName:r.label})}
-  <div style="font-weight:700;font-size:13px;margin-bottom:8px">👥 بيانات الموظفين (الرواتب الشهرية)${editable?` — <a href="#" onclick="openEmployeesScreen();return false" style="color:var(--gold);font-weight:400;font-size:11px">تعديل ✏️</a>`:''}</div>
-  <div class="tbl-wrap" style="margin-bottom:18px"><table>
-    <thead><tr><th>${t('الاسم')}</th><th>${t('الوظيفة')}</th><th>${t('الراتب الشهري')}</th></tr></thead>
-    <tbody>${empRows||`<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:16px">لا يوجد موظفين مسجّلين بعد</td></tr>`}</tbody>
-  </table></div>
-
-  <div style="font-weight:700;font-size:13px;margin-bottom:8px">🧾 بنود التكاليف المباشرة الشهرية (إيجار، كهرباء، تأمين، تسويق...)${editable?` — <a href="#" onclick="openDirectCostsScreen();return false" style="color:var(--gold);font-weight:400;font-size:11px">تعديل ✏️</a>`:''}</div>
-  <div class="tbl-wrap" style="margin-bottom:18px"><table>
-    <thead><tr><th>${t('البند')}</th><th>${t('القيمة الشهرية')}</th></tr></thead>
-    <tbody>${dcRows||`<tr><td colspan="2" style="text-align:center;color:var(--muted);padding:16px">لا توجد بنود تكاليف مسجّلة بعد</td></tr>`}</tbody>
-  </table></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">
+    <div>
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px">👥 بيانات الموظفين (الرواتب الشهرية)${editable?` — <a href="#" onclick="openEmployeesScreen();return false" style="color:var(--gold);font-weight:400;font-size:11px">تعديل ✏️</a>`:''}</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>${t('الاسم')}</th><th>${t('الوظيفة')}</th><th>${t('الراتب الشهري')}</th></tr></thead>
+        <tbody>${empRows||`<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:16px">لا يوجد موظفين مسجّلين بعد</td></tr>`}</tbody>
+        ${r.employees.length?`<tfoot><tr style="font-weight:700;border-top:2px solid var(--border)"><td class="td-name" colspan="2">${t('الإجمالي')}</td><td style="font-family:var(--mono)">${fmt(r.employees.reduce((s,e)=>s+(e.salary||0),0))}</td></tr></tfoot>`:''}
+      </table></div>
+    </div>
+    <div>
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px">🧾 بنود التكاليف المباشرة الشهرية (إيجار، كهرباء، تأمين، تسويق...)${editable?` — <a href="#" onclick="openDirectCostsScreen();return false" style="color:var(--gold);font-weight:400;font-size:11px">تعديل ✏️</a>`:''}</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>${t('البند')}</th><th>${t('القيمة الشهرية')}</th></tr></thead>
+        <tbody>${dcRows||`<tr><td colspan="2" style="text-align:center;color:var(--muted);padding:16px">لا توجد بنود تكاليف مسجّلة بعد</td></tr>`}</tbody>
+        ${r.directCosts.length?`<tfoot><tr style="font-weight:700;border-top:2px solid var(--border)"><td class="td-name">${t('الإجمالي')}</td><td style="font-family:var(--mono)">${fmt(r.directCosts.reduce((s,d)=>s+(d.amount||0),0))}</td></tr></tfoot>`:''}
+      </table></div>
+    </div>
+  </div>
 
   ${(r.dateFrom||r.dateTo)?`<div style="font-size:11px;color:var(--blue);margin-bottom:10px">📅 نسبة التكلفة المتغيرة أدناه محسوبة من متوسط ${r.cyclesUsed} دورة مقفولة بين ${r.dateFrom||'بداية البيانات'} و${r.dateTo||'اليوم'} فقط.</div>`:''}
   <div class="mod-row" style="align-items:end;margin-bottom:16px">
@@ -5308,18 +5316,18 @@ function renderBreakEvenModule(){
   </div>
 
   <div class="stats" style="margin-bottom:16px">
-    ${kpi(t('إجمالي التكاليف الثابتة الشهرية'),fmt(r.totalFixed),'#3d8ef0')}
-    ${kpi(t('التكلفة الثابتة اليومية'),fmt(r.dailyFixed),'#7a2331')}
-    ${kpi(t('نسبة هامش المساهمة'),r.contributionPct.toFixed(1)+'%','#2ee89a')}
-    ${kpi(t('⚖️ نقطة التعادل اليومية (إيراد)'),fmt(r.dailyBreakEven),'#f05050')}
-    ${kpi(t('نقطة التعادل الشهرية (إيراد)'),fmt(r.monthlyBreakEven),'#f05050')}
+    ${kpi(t('إجمالي التكاليف الثابتة الشهرية'),fmt(r.totalFixed),'#3d8ef0','💰')}
+    ${kpi(t('التكلفة الثابتة اليومية'),fmt(r.dailyFixed),'#7a2331','📅')}
+    ${kpi(t('نسبة هامش المساهمة'),r.contributionPct.toFixed(1)+'%','#2ee89a','📈')}
+    ${kpi(t('⚖️ نقطة التعادل اليومية (إيراد)'),fmt(r.dailyBreakEven),'#f05050','⚖️')}
+    ${kpi(t('نقطة التعادل الشهرية (إيراد)'),fmt(r.monthlyBreakEven),'#f05050','⚖️')}
   </div>
   <p style="font-size:11px;color:var(--muted);line-height:1.8">نقطة التعادل = التكلفة الثابتة اليومية ÷ نسبة هامش المساهمة (100% − نسبة التكلفة المتغيرة). يعني ده أقل إيراد يومي لازم الفرع يحققه عشان يغطي كل مصاريفه الثابتة (رواتب + تكاليف مباشرة) من غير ما يخسر.</p>
 
   <div style="font-weight:700;font-size:13px;margin:16px 0 8px">📐 المعيار الطبيعي (القياسي)</div>
   <div class="stats" style="margin-bottom:10px">
-    ${kpi(`نقطة التعادل اليومية القياسية (بافتراض تكلفة طعام ${FOOD_COST_TARGET_PCT}%)`,fmt(r.dailyBreakEvenStandard),'#7a5cff')}
-    ${kpi(t('نقطة التعادل الشهرية القياسية'),fmt(r.monthlyBreakEvenStandard),'#7a5cff')}
+    ${kpi(`نقطة التعادل اليومية القياسية (بافتراض تكلفة طعام ${FOOD_COST_TARGET_PCT}%)`,fmt(r.dailyBreakEvenStandard),'#7a5cff','📐')}
+    ${kpi(t('نقطة التعادل الشهرية القياسية'),fmt(r.monthlyBreakEvenStandard),'#7a5cff','📐')}
   </div>
   <p style="font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:14px">المعيار الطبيعي بيحسب نقطة التعادل بنفس التكاليف الثابتة لكن بافتراض إن نسبة تكلفة الطعام عند الهدف المعتمد (${FOOD_COST_TARGET_PCT}%) بدل الأداء الفعلي — يعني ده الشكل اللي المفروض يكون عليه الفرع لو حقق هدفه، تقدر تقارنه بنقطة التعادل الفعلية بالأعلى عشان تشوف تأثير الأداء الحالي على المطلوب تحقيقه.</p>
   ${reportSignatureBlock(['أُعِدّ بواسطة (المحاسب)','رُوجع بواسطة (مدير الفرع)','اعتُمد بواسطة (الإدارة المالية)'])}`;
@@ -5447,12 +5455,12 @@ function renderAllBranchesReport(){
     ?`${document.getElementById('abrDateFrom').value||'...'} ← ${document.getElementById('abrDateTo').value||'...'}`:'كل الفترات';
   const consolidated=tot?`<div style="font-weight:700;font-size:13px;margin-bottom:8px">🌐 الإجمالي الموحّد للفلتر الحالي (كأن الفروع المطابقة تقرير واحد)</div>
     <div class="dash-kpis" style="margin-bottom:12px">
-      ${dashKpi('عدد الفروع اللي ليها بيانات',tot.branchesWithData,'#3d8ef0')}
-      ${dashKpi('إجمالي المبيعات',fmt(tot.totalSales),'#3d8ef0')}
-      ${dashKpi('إجمالي تكلفة الاستهلاك الفعلي',fmt(tot.totalActual),'#f05050')}
-      ${dashKpi('نسبة التكلفة الفعلية الموحّدة',tot.actualPct.toFixed(1)+'%','#7a2331')}
-      ${dashKpi('نسبة التكلفة النظرية الموحّدة',tot.theoPct.toFixed(1)+'%','#2ee89a')}
-      ${dashKpi('إجمالي قيمة الانحراف',acctFmt(tot.varVal),tot.varVal>0?'#f05050':'#2ee89a')}
+      ${dashKpi('عدد الفروع اللي ليها بيانات',tot.branchesWithData,'#3d8ef0','🏢')}
+      ${dashKpi('إجمالي المبيعات',fmt(tot.totalSales),'#3d8ef0','💰')}
+      ${dashKpi('إجمالي تكلفة الاستهلاك الفعلي',fmt(tot.totalActual),'#f05050','💸')}
+      ${dashKpi('نسبة التكلفة الفعلية الموحّدة',tot.actualPct.toFixed(1)+'%','#7a2331','📊')}
+      ${dashKpi('نسبة التكلفة النظرية الموحّدة',tot.theoPct.toFixed(1)+'%','#2ee89a','📈')}
+      ${dashKpi('إجمالي قيمة الانحراف',acctFmt(tot.varVal),tot.varVal>0?'#f05050':'#2ee89a','⚖️')}
     </div>
     ${companyInfo.vatPct?`<p style="font-size:10.5px;color:var(--muted);margin:-8px 0 12px">إجمالي المبيعات شامل الضريبة (${companyInfo.vatPct}%) — نسب التكلفة محسوبة على صافي المبيعات بعد خصم الضريبة.</p>`:''}
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">${targetBadge(tot.actualPct)}${varianceBadge(netOfVat(tot.totalSales)>0?(tot.varVal/netOfVat(tot.totalSales)*100):0)}</div>`:'';
@@ -5524,6 +5532,21 @@ function exportAllBranchesExcel(){
 // ══════════════════════════════════════════════
 //  INTERACTIVE DASHBOARD (lightweight inline SVG charts, no external libs)
 // ══════════════════════════════════════════════
+// Catmull-Rom-to-cubic-Bezier smoothing (tension 1/6, the standard factor)
+// — turns a plain point list into a smooth curve instead of straight
+// line segments, without needing any charting library.
+function smoothPathD(pts){
+  if(pts.length<2) return '';
+  if(pts.length===2) return `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)} L${pts[1].x.toFixed(1)},${pts[1].y.toFixed(1)}`;
+  let d=`M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[Math.max(i-1,0)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(i+2,pts.length-1)];
+    const c1x=p1.x+(p2.x-p0.x)/6,c1y=p1.y+(p2.y-p0.y)/6;
+    const c2x=p2.x-(p3.x-p1.x)/6,c2y=p2.y-(p3.y-p1.y)/6;
+    d+=` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
 function svgLineChart(seriesList,labels,opts){
   opts=opts||{};
   const w=opts.w||880,h=opts.h||200,pad=34;
@@ -5535,22 +5558,33 @@ function svgLineChart(seriesList,labels,opts){
   const xStep=n>1?(w-pad*2)/(n-1):0;
   const xPos=i=>pad+i*xStep;
   const yPos=v=>h-pad-((v-minV)/range)*(h-pad*2);
+  const baseY=h-pad;
   let grid='';
   for(let g=0;g<=4;g++){
     const y=pad+g*(h-pad*2)/4;
     grid+=`<line x1="${pad}" y1="${y.toFixed(1)}" x2="${w-pad}" y2="${y.toFixed(1)}" stroke="#e3e6ee" stroke-width="1"/>`;
   }
-  const paths=seriesList.map(s=>{
-    const d=s.values.map((v,i)=>`${i===0?'M':'L'}${xPos(i).toFixed(1)},${yPos(v).toFixed(1)}`).join(' ');
-    const dots=s.values.map((v,i)=>`<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(v).toFixed(1)}" r="3" fill="${s.color}"/>`).join('');
-    return `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.5"/>${dots}`;
+  // a fresh random id per render — svgLineChart can render several charts
+  // on the same page (dashboard has 2), and gradient <defs> ids must be
+  // unique document-wide or later charts silently reuse an earlier fill
+  const chartId='lc'+Math.random().toString(36).slice(2,8);
+  let defs='';
+  const paths=seriesList.map((s,si)=>{
+    const pts=s.values.map((v,i)=>({x:xPos(i),y:yPos(v)}));
+    const lineD=smoothPathD(pts);
+    const gradId=`${chartId}-g${si}`;
+    defs+=`<linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${s.color}" stop-opacity="0.25"/><stop offset="100%" stop-color="${s.color}" stop-opacity="0"/></linearGradient>`;
+    const last=pts[pts.length-1],first=pts[0];
+    const areaD=`${lineD} L${last.x.toFixed(1)},${baseY.toFixed(1)} L${first.x.toFixed(1)},${baseY.toFixed(1)} Z`;
+    const dots=pts.map(p=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="${s.color}"/>`).join('');
+    return `<path d="${areaD}" fill="url(#${gradId})" stroke="none"/><path d="${lineD}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linecap="round"/>${dots}`;
   }).join('');
   const xLabels=labels.map((l,i)=>{
     if(n>10 && i%Math.ceil(n/10)!==0 && i!==n-1) return '';
     return `<text x="${xPos(i).toFixed(1)}" y="${h-10}" font-size="9" fill="#68748a" text-anchor="middle">${l}</text>`;
   }).join('');
   const legend=seriesList.map(s=>`<span><i style="background:${s.color}"></i>${s.name}</span>`).join('');
-  return `<div class="dash-legend">${legend}</div><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">${grid}${paths}${xLabels}</svg>`;
+  return `<div class="dash-legend">${legend}</div><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block"><defs>${defs}</defs>${grid}${paths}${xLabels}</svg>`;
 }
 function svgBarChart(items,opts){
   opts=opts||{};
@@ -5602,10 +5636,10 @@ function renderDashboard(){
 
   body.innerHTML=`
     <div class="dash-kpis">
-      ${dashKpi('تكلفة فعلية % (آخر دورة)',last.result.actualCostPct.toFixed(1)+'%','#7a2331')}
-      ${dashKpi('تكلفة نظرية % (آخر دورة)',last.result.theoCostPct.toFixed(1)+'%','#2ee89a')}
-      ${dashKpi('قيمة الانحراف (آخر دورة)',fmt(last.result.totalVarVal),last.result.totalVarVal>0?'#f05050':'#2ee89a')}
-      ${dashKpi('مبيعات آخر دورة',fmt(last.result.totalSalesAmount),'#3d8ef0')}
+      ${dashKpi('تكلفة فعلية % (آخر دورة)',last.result.actualCostPct.toFixed(1)+'%','#7a2331','📊')}
+      ${dashKpi('تكلفة نظرية % (آخر دورة)',last.result.theoCostPct.toFixed(1)+'%','#2ee89a','📈')}
+      ${dashKpi('قيمة الانحراف (آخر دورة)',fmt(last.result.totalVarVal),last.result.totalVarVal>0?'#f05050':'#2ee89a','⚖️')}
+      ${dashKpi('مبيعات آخر دورة',fmt(last.result.totalSalesAmount),'#3d8ef0','💰')}
     </div>
     <div class="dash-card">
       <div class="dash-card-title">📈 نسبة التكلفة: فعلية مقابل نظرية (آخر ${cycles.length} دورة)</div>
@@ -5623,8 +5657,9 @@ function renderDashboard(){
   `;
   if(canViewAllReportsUI()) loadDashboardBranchCompare();
 }
-function dashKpi(lbl,val,color){
-  return `<div class="dash-kpi"><div class="dash-kpi-lbl">${lbl}</div><div class="dash-kpi-val" style="color:${color}">${val}</div></div>`;
+function dashKpi(lbl,val,color,icon){
+  const badge=icon?`<div class="dash-kpi-badge" style="background:${color}22;color:${color}">${icon}</div>`:'';
+  return `<div class="dash-kpi"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><div class="dash-kpi-lbl">${lbl}</div><div class="dash-kpi-val" style="color:${color}">${val}</div></div>${badge}</div></div>`;
 }
 function loadDashboardBranchCompare(){
   db.collection('branches').get().then(snap=>{
@@ -5715,9 +5750,13 @@ function printCurrentReport(){
   const content=overlay.querySelector('.modal').innerHTML;
   const appStyleEl=document.querySelector('head style');
   const appStyles=appStyleEl?appStyleEl.textContent:'';
+  const appName=companyInfo.name||'نظام الجرد الذكي';
+  const reportTitle=(overlay.querySelector('.mod-title')?.textContent||'').trim();
+  const appIconLink=document.querySelector('link[rel="icon"]');
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
-    <title>${(companyInfo.name||'نظام الجرد الذكي')}</title>
+    <title>${appName}${reportTitle?' - '+reportTitle:''}</title>
+    ${appIconLink?appIconLink.outerHTML:''}
     <style>${appStyles}</style>
     <style>
       body{background:#fff !important;padding:24px;}
@@ -7126,7 +7165,7 @@ function renderClosingStockReport(){
   if(!c){el.innerHTML='';return;}
   const rep=computeClosingStockReport(c);
   const srcLabel=s=>s==='daily'?'📋 الجرد اليومي':(s==='cycle'?'🔄 حركة الدورة':'-');
-  const kpi=(l,v,color)=>`<div class="stat" style="border-color:${color}55"><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>`;
+  const kpi=(l,v,color,icon)=>`<div class="stat" style="border-color:${color}55"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>${icon?`<div class="dash-kpi-badge" style="background:${color}22;color:${color}">${icon}</div>`:''}</div></div>`;
   const banner=`<div class="dbanner" style="margin-bottom:14px">
     <div class="db-l"><div><div class="db-main">دورة ${c.start} ← ${c.end}</div>
       <div class="db-sub">${rep.dailyReport?`فيه جرد يومي محفوظ بتاريخ ${c.end} (${rep.dailyReport.sid}) بيتقارن برصيد الدورة`:'مفيش جرد يومي محفوظ بتاريخ نهاية الدورة — الاعتماد على رصيد الدورة نفسه فقط'}</div></div></div>
@@ -7281,7 +7320,7 @@ function renderResultsTab(c,el){
     return;
   }
   const r=c.result;
-  const kpi=(l,v,color)=>`<div class="stat" style="border-color:${color}55"><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>`;
+  const kpi=(l,v,color,icon)=>`<div class="stat" style="border-color:${color}55"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>${icon?`<div class="dash-kpi-badge" style="background:${color}22;color:${color}">${icon}</div>`:''}</div></div>`;
   const be=cycleBreakEvenInfo(c);
   const groups=groupRowsByCategory(r.rows,'r');
   const bodyRows=groups.map(g=>{
@@ -7605,7 +7644,7 @@ function computeStockBalanceAllBranches(){
 function renderStockBalanceReport(){
   const el=document.getElementById('stockBalanceBody');
   document.getElementById('sbr-branch-filter').innerHTML=branchFilterOptionsHtml(stockBalanceBranchFilter);
-  const kpi=(l,v,color)=>`<div class="stat" style="border-color:${color}55"><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>`;
+  const kpi=(l,v,color,icon)=>`<div class="stat" style="border-color:${color}55"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>${icon?`<div class="dash-kpi-badge" style="background:${color}22;color:${color}">${icon}</div>`:''}</div></div>`;
   if(stockBalanceBranchFilter==='__all__'){
     const branchRows=computeStockBalanceAllBranches();
     const totalValue=branchRows.reduce((s,r)=>s+r.totalValue,0);
@@ -7712,7 +7751,7 @@ function renderShortageAlertReport(){
   const rows=computeShortageAlertRows(shortageAlertBranchFilter);
   const showBranchCol=shortageAlertBranchFilter==='__all__';
   const noSetupHint=S.items.every(it=>it.minStock==null)?`<div class="dbanner" style="margin-bottom:14px"><div class="db-l"><span style="font-size:20px">ℹ️</span><div><div class="db-main">مفيش أصناف عليها حد أدنى للمخزون لسه</div><div class="db-sub">حدّد "الحد الأدنى للمخزون" من شاشة تعديل كل صنف عشان يظهر هنا لو رصيده وصل للحد ده</div></div></div></div>`:'';
-  const kpi=(l,v,color)=>`<div class="stat" style="border-color:${color}55"><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>`;
+  const kpi=(l,v,color,icon)=>`<div class="stat" style="border-color:${color}55"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><div class="stat-val" style="color:${color}">${v}</div><div class="stat-lbl">${l}</div></div>${icon?`<div class="dash-kpi-badge" style="background:${color}22;color:${color}">${icon}</div>`:''}</div></div>`;
   el.innerHTML=`${reportHeaderBlock({title:'⚠️ تقرير تنبيه النواقص (Low Stock Alert)'})}
   ${noSetupHint}
   <div class="stats" style="margin-bottom:16px">

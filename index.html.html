@@ -5538,7 +5538,7 @@ function svgLineChart(seriesList,labels,opts){
   let grid='';
   for(let g=0;g<=4;g++){
     const y=pad+g*(h-pad*2)/4;
-    grid+=`<line x1="${pad}" y1="${y.toFixed(1)}" x2="${w-pad}" y2="${y.toFixed(1)}" stroke="#2d3a50" stroke-width="1"/>`;
+    grid+=`<line x1="${pad}" y1="${y.toFixed(1)}" x2="${w-pad}" y2="${y.toFixed(1)}" stroke="#e3e6ee" stroke-width="1"/>`;
   }
   const paths=seriesList.map(s=>{
     const d=s.values.map((v,i)=>`${i===0?'M':'L'}${xPos(i).toFixed(1)},${yPos(v).toFixed(1)}`).join(' ');
@@ -5547,7 +5547,7 @@ function svgLineChart(seriesList,labels,opts){
   }).join('');
   const xLabels=labels.map((l,i)=>{
     if(n>10 && i%Math.ceil(n/10)!==0 && i!==n-1) return '';
-    return `<text x="${xPos(i).toFixed(1)}" y="${h-10}" font-size="9" fill="#7888a8" text-anchor="middle">${l}</text>`;
+    return `<text x="${xPos(i).toFixed(1)}" y="${h-10}" font-size="9" fill="#68748a" text-anchor="middle">${l}</text>`;
   }).join('');
   const legend=seriesList.map(s=>`<span><i style="background:${s.color}"></i>${s.name}</span>`).join('');
   return `<div class="dash-legend">${legend}</div><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">${grid}${paths}${xLabels}</svg>`;
@@ -5562,11 +5562,16 @@ function svgBarChart(items,opts){
     const y=pad+i*(barH+gap);
     const bw=Math.max(2,Math.abs(it.value)/maxV*(w-leftW-70));
     const label=(it.label.length>22?it.label.slice(0,21)+'…':it.label);
-    return `<text x="${leftW-8}" y="${(y+barH*0.68).toFixed(1)}" font-size="11" fill="#e8ecf5" text-anchor="end">${label}</text>
+    return `<text x="${leftW-8}" y="${(y+barH*0.68).toFixed(1)}" font-size="11" fill="#1a2030" text-anchor="end">${label}</text>
       <rect x="${leftW}" y="${y}" width="${bw.toFixed(1)}" height="${barH}" rx="4" fill="${it.color||'#7a2331'}"/>
-      <text x="${(leftW+bw+8).toFixed(1)}" y="${(y+barH*0.68).toFixed(1)}" font-size="11" fill="#7888a8">${it.valueLabel!=null?it.valueLabel:it.value.toFixed(1)}</text>`;
+      <text x="${(leftW+bw+8).toFixed(1)}" y="${(y+barH*0.68).toFixed(1)}" font-size="11" fill="#68748a">${it.valueLabel!=null?it.valueLabel:it.value.toFixed(1)}</text>`;
   }).join('');
-  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">${bars}</svg>`;
+  // the chart's own x-coordinates are computed in a plain LTR space (x=0 is
+  // the left edge, bars grow rightward) — but the page is dir="rtl", and
+  // text-anchor="end" is direction-aware per the SVG spec, so without an
+  // explicit direction here it silently flips which side "end" anchors to,
+  // pushing item-name labels to overlap/hide behind their own bar.
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block;direction:ltr">${bars}</svg>`;
 }
 function openDashboard(){
   if(!canViewDashboardUI()){toast('⚠️ عرض لوحة التحكم التفاعلية غير متاح لحسابك — راجع الإدارة','wrn');return;}

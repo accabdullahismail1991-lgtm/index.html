@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>نظام الجرد الذكي 2025</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%237a2331'/%3E%3Cg transform='translate(4,4)' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8l9-5 9 5-9 5-9-5z'/%3E%3Cpath d='M3 8v9l9 5 9-5V8'/%3E%3Cline x1='12' y1='13' x2='12' y2='22'/%3E%3C/g%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -4489,9 +4490,16 @@ function itemLedgerRows(){
   const it=S.items.find(i=>i.r===curLedgerRef);
   if(!it) return {it:null,rows:[]};
   const rows=[];
-  sortedCycles().filter(c=>c.closed&&c.result).forEach(c=>{
-    const row=c.result.rows.find(r=>r.r===curLedgerRef);
-    if(row) rows.push({start:c.start,end:c.end,...row});
+  // a still-OPEN cycle has no cached .result (only computed/frozen when the
+  // cycle is closed) — skipping those meant a transfer approved into
+  // today's (still open) cycle never showed up here until someone
+  // remembered to close it. Compute it live for open cycles instead, same
+  // formula, just not persisted — closed cycles still use their frozen
+  // result so this doesn't recompute finalized numbers.
+  sortedCycles().forEach(c=>{
+    const result=c.closed&&c.result?c.result:computeCycleResults(c);
+    const row=result.rows.find(r=>r.r===curLedgerRef);
+    if(row) rows.push({start:c.start,end:c.end,closed:c.closed,...row});
   });
   return {it,rows};
 }
@@ -4500,13 +4508,14 @@ function renderItemLedger(){
   if(!it){document.getElementById('ledgerBody').innerHTML='';return;}
   document.getElementById('ledgerTitle').textContent=`📜 حركة الصنف: ${it.n} (${it.r})`;
   if(!rows.length){
-    document.getElementById('ledgerBody').innerHTML=`<div class="tbl-wrap"><div style="padding:24px;text-align:center;color:var(--muted)">لا توجد حركة مسجّلة لهذا الصنف في أي دورة مغلقة بعد.</div></div>`;
+    document.getElementById('ledgerBody').innerHTML=`<div class="tbl-wrap"><div style="padding:24px;text-align:center;color:var(--muted)">لا توجد حركة مسجّلة لهذا الصنف بعد.</div></div>`;
     return;
   }
   document.getElementById('ledgerBody').innerHTML=`<div class="tbl-wrap"><table>
-    <thead><tr><th>${t('الدورة')}</th><th>${t('افتتاحي')}</th><th>${t('مشتريات')}</th><th>${t('تحويل وارد')}</th><th>${t('هالك')}</th><th>${t('سحب داخلي')}</th><th>${t('تحويل صادر')}</th><th>${t('ختامي')}</th><th>${t('استهلاك فعلي')}</th><th>${t('استهلاك نظري')}</th><th>${t('انحراف قيمة')}</th></tr></thead>
+    <thead><tr><th>${t('الدورة')}</th><th>${t('الحالة')}</th><th>${t('افتتاحي')}</th><th>${t('مشتريات')}</th><th>${t('تحويل وارد')}</th><th>${t('هالك')}</th><th>${t('سحب داخلي')}</th><th>${t('تحويل صادر')}</th><th>${t('ختامي')}</th><th>${t('استهلاك فعلي')}</th><th>${t('استهلاك نظري')}</th><th>${t('انحراف قيمة')}</th></tr></thead>
     <tbody>${rows.map(r=>`<tr>
       <td class="td-name" style="font-family:var(--mono);font-size:11px">${r.start} ← ${r.end}</td>
+      <td style="font-size:11px;color:var(--muted);white-space:nowrap">${r.closed?'🔒 مغلقة':'🟢 مفتوحة (مبدئي)'}</td>
       <td>${fmt(r.op)}</td><td>${fmt(r.pur)}</td><td>${fmt(r.trIn)}</td><td>${fmt(r.was)}</td><td>${fmt(r.wd)}</td><td>${fmt(r.trOut)}</td><td>${fmt(r.cl)}</td>
       <td style="font-weight:700">${fmt(r.actual)}</td><td>${fmt(r.theo)}</td>
       <td style="color:${Math.abs(r.varVal)<0.01?'var(--muted)':(r.varVal>0?'var(--red)':'var(--green)')};font-weight:700">${fmt(r.varVal)}</td>
@@ -4517,8 +4526,8 @@ function exportLedgerExcel(){
   const {it,rows}=itemLedgerRows();
   if(!it||!rows.length){toast('⚠️ لا توجد بيانات للتصدير','wrn');return;}
   const wb=XLSX.utils.book_new();
-  const out=[['الدورة من','الدورة إلى','افتتاحي','مشتريات','تحويل وارد','هالك','سحب داخلي','تحويل صادر','ختامي','استهلاك فعلي','استهلاك نظري','انحراف قيمة']];
-  rows.forEach(r=>out.push([r.start,r.end,r.op,r.pur,r.trIn,r.was,r.wd,r.trOut,r.cl,r.actual,r.theo,+r.varVal.toFixed(2)]));
+  const out=[['الدورة من','الدورة إلى','الحالة','افتتاحي','مشتريات','تحويل وارد','هالك','سحب داخلي','تحويل صادر','ختامي','استهلاك فعلي','استهلاك نظري','انحراف قيمة']];
+  rows.forEach(r=>out.push([r.start,r.end,r.closed?'مغلقة':'مفتوحة (مبدئي)',r.op,r.pur,r.trIn,r.was,r.wd,r.trOut,r.cl,r.actual,r.theo,+r.varVal.toFixed(2)]));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(out),'حركة الصنف');
   XLSX.writeFile(wb,`ItemLedger_${it.r}_${(S.branch||'Branch').replace(/\s/g,'_')}.xlsx`);
   toast('📗 تم تصدير حركة الصنف','inf');

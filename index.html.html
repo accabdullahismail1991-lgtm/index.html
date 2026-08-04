@@ -146,6 +146,20 @@ header{
 .mn-item:hover{background:var(--tint);}
 .mn-div{height:1px;background:var(--border);margin:8px 16px;}
 
+/* REPORTS HUB — a grid of grouped cards (icon-first rows), replacing a
+   flat one-report-at-a-time list with something scannable at a glance */
+.rpt-hub-title{font-size:20px;font-weight:800;margin-bottom:18px;}
+.rpt-hub-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;}
+@media (max-width:900px){.rpt-hub-grid{grid-template-columns:1fr;}}
+.rpt-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(20,30,50,.05);}
+.rpt-card-head{display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--tint);border-bottom:1px solid var(--border);font-weight:800;font-size:14.5px;}
+.rpt-card-body{padding:6px 8px;}
+.rpt-row{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:10px;cursor:pointer;transition:background .12s;}
+.rpt-row:hover{background:var(--tint);}
+.rpt-row-ico{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.rpt-row-label{font-weight:700;font-size:13px;flex:1;}
+.rpt-row-open{font-size:11.5px;color:var(--gold);font-weight:600;white-space:nowrap;}
+
 .sb-label{
   font-size:9px;font-family:var(--mono);color:var(--muted2);
   text-transform:uppercase;letter-spacing:2px;
@@ -339,7 +353,7 @@ tbody tr.custom-row{border-right:2px solid var(--orange);}
 td{padding:10px 13px;vertical-align:middle;}
 .td-num{font-family:var(--mono);font-size:10.5px;color:var(--muted2);}
 .td-ref{font-family:var(--mono);font-size:11px;color:var(--muted);}
-.td-name{font-weight:500;}
+.td-name{font-weight:700;}
 .custom-badge{
   display:inline-flex;align-items:center;gap:4px;
   background:rgba(240,120,48,.1);border:1px solid rgba(240,120,48,.25);
@@ -367,7 +381,7 @@ td{padding:10px 13px;vertical-align:middle;}
 .qin{
   width:82px;background:var(--tint2);border:1px solid var(--border);
   border-radius:6px;padding:6px 9px;color:var(--text);
-  font-family:var(--mono);font-size:12.5px;text-align:center;outline:none;transition:all .15s;
+  font-family:var(--mono);font-size:12.5px;font-weight:700;text-align:center;outline:none;transition:all .15s;
 }
 .qin:focus{border-color:var(--green);background:rgba(46,232,154,.05);}
 .qin.F{border-color:rgba(46,232,154,.4);color:var(--green);}
@@ -1226,6 +1240,15 @@ td{padding:10px 13px;vertical-align:middle;}
   <div id="cycleHeader"></div>
   <div class="toolbar" id="cycleTabs"></div>
   <div id="cycleBody"></div>
+</main>
+</div>
+
+<!-- REPORTS HUB VIEW — a dedicated landing page grouping every report into
+     labeled cards (icon + one-click open), instead of only being reachable
+     one at a time from the module-nav rail's flat dropdown list -->
+<div class="layout" id="reportsView" style="display:none">
+<main style="width:100%">
+  <div id="reactReportsHubRoot"></div>
 </main>
 </div>
 
@@ -2509,6 +2532,20 @@ const I18N_EN={
   "تم جردها": "Counted",
   "صفرية": "Zero Balance",
   "نسبة الإنجاز": "Completion %",
+  "📊 مركز التقارير": "📊 Reports Hub",
+  "فتح ←": "Open ←",
+  "تقارير تشغيلية": "Operational Reports",
+  "تقارير المخزون": "Inventory Reports",
+  "تقارير الفروع": "Branch Reports",
+  "بيانات ونسخ احتياطي": "Data & Backup",
+  "لوحة تحكم تفاعلية": "Interactive Dashboard",
+  "مبيعات المنيو حسب التاريخ": "Menu Sales by Date",
+  "أكثر الأصناف هالكًا": "Top Waste Items",
+  "رصيد المخزون الحالي": "Current Stock Balance",
+  "تنبيه النواقص": "Shortage Alert",
+  "تقرير كل الفروع": "All Branches Report",
+  "تفريغ كل البيانات (Excel)": "Export All Data (Excel)",
+  "حفظ نسخة احتياطية (JSON)": "Save Backup (JSON)",
 };
 
 
@@ -2722,7 +2759,7 @@ function toggleLang(){
 }
 function reRenderDynamicContentForLang(){
   if(!bootedUI) return;
-  __headerRerender();__sidebarRerender();__mainRerender();__moduleNavRerender();
+  __headerRerender();__sidebarRerender();__mainRerender();__moduleNavRerender();__reportsHubRerender();
   if(typeof renderIncomingTransfersBadge==='function') renderIncomingTransfersBadge();
   if(curView==='cycle'){renderCycleTabs();renderCycleBody();}
   const openRenders=[
@@ -2995,6 +3032,7 @@ let __headerRerender=()=>{};
 let __sidebarRerender=()=>{};
 let __mainRerender=()=>{};
 let __moduleNavRerender=()=>{};
+let __reportsHubRerender=()=>{};
 let saveBtnFlash=false;
 
 function today(){
@@ -3422,7 +3460,7 @@ function save(){
 // ══════════════════════════════════════════════
 initFirebase();
 
-function updateHeader(){ __headerRerender(); __moduleNavRerender(); }
+function updateHeader(){ __headerRerender(); __moduleNavRerender(); __reportsHubRerender(); }
 function updateCompanyBranding(){ __headerRerender(); }
 function updateNotificationsBadge(){ __headerRerender(); }
 function renderBranchSwitch(){ __headerRerender(); }
@@ -3937,7 +3975,7 @@ function renderManage(){
       const cat=S.cats[it.c]||{l:'—',c:'#888'};
       return `<tr style="border-bottom:1px solid rgba(34,44,61,.7)">
         <td style="padding:7px 10px;font-family:var(--mono);font-size:10.5px;color:var(--muted)">${it.r}</td>
-        <td style="padding:7px 10px">${it.custom?'<span style="font-size:10px;color:var(--orange);margin-left:4px">✨</span>':''}${it.n}</td>
+        <td style="padding:7px 10px;font-weight:700">${it.custom?'<span style="font-size:10px;color:var(--orange);margin-left:4px">✨</span>':''}${it.n}</td>
         <td style="padding:7px 10px"><span style="font-size:11px;color:${cat.c}">${cat.l}</span></td>
         <td style="padding:7px 10px;font-family:var(--mono);color:var(--blue);font-size:11px">${it.u}</td>
         <td style="padding:7px 10px;font-family:var(--mono);font-size:11px">${fmt(effectiveItemCost(it))}${it.recipe&&it.recipe.length?' <span style="color:var(--purple);font-size:9.5px">(محسوبة)</span>':''}</td>
@@ -4188,6 +4226,7 @@ function showView(v){
   curView=v;
   document.getElementById('dailyView').style.display=v==='daily'?'':'none';
   document.getElementById('cycleView').style.display=v==='cycle'?'':'none';
+  document.getElementById('reportsView').style.display=v==='reports'?'':'none';
   __moduleNavRerender();
   if(v==='cycle'){
     if(!curCycleId) selectLatestCycle();
@@ -8756,6 +8795,9 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
       <div className={`mn-view-btn${curView==='cycle'?' active':''}`} id="vnCycle" onClick={()=>showView('cycle')}>
         <span>{t('🔄 دورة التسوية')}</span>
       </div>
+      <div className={`mn-view-btn${curView==='reports'?' active':''}`} id="vnReports" onClick={()=>showView('reports')}>
+        <span>{t('📊 مركز التقارير')}</span>
+      </div>
       <div className="mn-div"></div>
 
       <Group id="items" icon="📦" label="📦 الأصناف">
@@ -8812,6 +8854,55 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
         <Item id="ddCompanyItem" show={canManageCompanyUI()} onClick={openCompanyMgr} i18n="🏢 بيانات الشركة" />
       </Group>
     </React.Fragment>);
+  }
+
+  // ══════════════════════════════════════════════
+  //  REPORTS HUB — a dedicated landing page grouping every report into
+  //  labeled cards (icon + one-click open), reusing the exact same
+  //  open-functions and permission gates as the module-nav rail's reports
+  //  dropdown — this is just a friendlier front door to the same screens.
+  // ══════════════════════════════════════════════
+  function ReportsHub(){
+    useBridge(fn=>{__reportsHubRerender=fn;});
+    const Row=({icon,color,label,onClick,show=true})=>show?(
+      <div className="rpt-row" onClick={onClick}>
+        <span className="rpt-row-ico" style={{background:color+'22',color}}>{icon}</span>
+        <span className="rpt-row-label">{t(label)}</span>
+        <span className="rpt-row-open">{t('فتح ←')}</span>
+      </div>
+    ):null;
+    const Card=({icon,title,children})=>(
+      <div className="rpt-card">
+        <div className="rpt-card-head"><span>{icon}</span><span>{t(title)}</span></div>
+        <div className="rpt-card-body">{children}</div>
+      </div>
+    );
+    return (
+      <div style={{padding:'22px'}}>
+        <div className="rpt-hub-title">{t('📊 مركز التقارير')}</div>
+        <div className="rpt-hub-grid">
+          <Card icon="📊" title="تقارير تشغيلية">
+            <Row icon="📊" color="#3d8ef0" label="لوحة تحكم تفاعلية" onClick={openDashboard} show={canViewDashboardUI()} />
+            <Row icon="📊" color="#3d8ef0" label="مبيعات المنيو حسب التاريخ" onClick={openMenuSalesReport} show={canViewMenuSalesUI()} />
+            <Row icon="📈" color="#2ee89a" label="تخطيط الاحتياج" onClick={openRequirementPlanner} show={canViewPlannerUI()} />
+            <Row icon="⚖️" color="#9d6cf5" label="نقطة التعادل اليومية" onClick={openBreakEvenModule} show={canViewBreakEvenUI()} />
+            <Row icon="🗑️" color="#f05050" label="أكثر الأصناف هالكًا" onClick={openWasteReport} show={canViewWasteReportUI()} />
+          </Card>
+          <Card icon="📦" title="تقارير المخزون">
+            <Row icon="📦" color="#f07830" label="رصيد المخزون الحالي" onClick={openStockBalanceReport} show={canViewStockBalanceUI()} />
+            <Row icon="⚠️" color="#f05050" label="تنبيه النواقص" onClick={openShortageAlertReport} show={canViewStockBalanceUI()} />
+            <Row icon="🔀" color="#3d8ef0" label="سجل التحويلات" onClick={openTransfersLog} show={canViewTransfersLogUI()} />
+          </Card>
+          <Card icon="🌐" title="تقارير الفروع">
+            <Row icon="🌐" color="#7a2331" label="تقرير كل الفروع" onClick={openAllBranchesReport} show={canViewAllReportsUI()} />
+          </Card>
+          <Card icon="💽" title="بيانات ونسخ احتياطي">
+            <Row icon="📗" color="#2ee89a" label="تفريغ كل البيانات (Excel)" onClick={exportFullDataExcel} />
+            <Row icon="💽" color="#3d8ef0" label="حفظ نسخة احتياطية (JSON)" onClick={exportBackupJSON} />
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   // ══════════════════════════════════════════════
@@ -8942,7 +9033,7 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
       <tr className={`border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors group${it.custom?' border-r-2 border-r-[var(--orange)]':''}`}>
         <td className="px-3 py-2.5 font-mono text-[10.5px] text-slate-400">{i+1}</td>
         <td className="px-3 py-2.5 font-mono text-[11px] text-slate-500">{it.r}</td>
-        <td className="px-3 py-2.5 font-medium text-slate-800">
+        <td className="px-3 py-2.5 font-bold text-slate-800">
           {it.custom&&<span className="custom-badge">✨ جديد</span>}
           {it.type&&it.type!=='raw'&&<span className="custom-badge" style={{color:'var(--purple)',borderColor:'rgba(157,108,245,.3)',background:'rgba(157,108,245,.1)'}}>{ITEM_TYPE_LABELS[it.type]}</span>}
           {it.n}{it.e&&<span className="text-[11px] text-slate-400 mr-1.5">{it.e}</span>}
@@ -9024,6 +9115,7 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
   ReactDOM.createRoot(document.getElementById('reactModuleNavRoot')).render(<ModuleNav />);
   ReactDOM.createRoot(document.getElementById('reactSidebarRoot')).render(<CategorySidebar />);
   ReactDOM.createRoot(document.getElementById('reactDailyMainRoot')).render(<DailyMain />);
+  ReactDOM.createRoot(document.getElementById('reactReportsHubRoot')).render(<ReportsHub />);
 })();
 </script>
 

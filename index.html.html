@@ -1667,6 +1667,12 @@ td{padding:10px 13px;vertical-align:middle;}
     <input type="number" inputmode="decimal" class="mod-in" id="co-vat" min="0" max="100" step="0.1" placeholder="مثال: 14">
     <div class="mod-hint">سعر بيع أصناف المنيو المُدخل في النظام يُعتبر شامل الضريبة. نسبة تكلفة المبيعات (Food Cost %) في كل التقارير بتتحسب على صافي المبيعات بعد خصم الضريبة دي، مطابقةً للمعيار المحاسبي المتبع في تقارير المطاعم. سيبها فاضية أو صفر لو مفيش ضريبة على مبيعاتك.</div>
   </div>
+  <div class="mod-field">
+    <label class="mod-lbl" data-i18n="لون النظام الأساسي">لون النظام الأساسي</label>
+    <div class="color-grid" id="themeColorGrid"></div>
+    <input type="color" class="mod-in" id="co-theme-color" value="#7a2331" style="height:40px;padding:4px 8px;margin-top:8px" oninput="pickThemeColor(this.value)">
+    <div class="mod-hint" data-i18n="بيتغيّر بيه لون الأزرار والعناصر الرئيسية في كل شاشات النظام لكل المستخدمين.">بيتغيّر بيه لون الأزرار والعناصر الرئيسية في كل شاشات النظام لكل المستخدمين.</div>
+  </div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('companyModal')" data-i18n="إلغاء">إلغاء</button>
     <button class="hbtn gold" onclick="saveCompanyInfo()" data-i18n="✓ حفظ">✓ حفظ</button>
@@ -1872,6 +1878,34 @@ td{padding:10px 13px;vertical-align:middle;}
   </table></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('posMatchModal')" data-i18n="إغلاق">إغلاق</button>
+  </div>
+</div>
+</div>
+
+<!-- IMPORT REVIEW MODAL (استكمال مطابقة أصناف/مكونات لم يجدها استيراد الوصفات تلقائيًا) -->
+<div class="overlay" id="importReviewModal">
+<div class="modal" style="width:720px">
+  <div class="mod-sticky-head">
+  <div class="mod-title" data-i18n="⚠️ استكمال مطابقة الاستيراد">⚠️ استكمال مطابقة الاستيراد</div>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.8" data-i18n="بعض الأصناف من الملف المستورد لم تُطابَق تلقائيًا مع الكتالوج — اختر الصنف الصحيح لكل واحد منها لإكمال ربطه، أو تجاهله.">بعض الأصناف من الملف المستورد لم تُطابَق تلقائيًا مع الكتالوج — اختر الصنف الصحيح لكل واحد منها لإكمال ربطه، أو تجاهله.</p>
+  <div id="importReviewRows" style="max-height:440px;overflow-y:auto"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('importReviewModal')" data-i18n="إغلاق">إغلاق</button>
+  </div>
+</div>
+</div>
+
+<!-- MISSING RECIPE REPORT MODAL (أصناف منيو/نصف مصنّعة بدون مكوّنات محدّدة) -->
+<div class="overlay" id="missingRecipeModal">
+<div class="modal" style="width:640px">
+  <div class="mod-sticky-head">
+  <div class="mod-title" data-i18n="⚠️ أصناف بدون مكوّنات">⚠️ أصناف بدون مكوّنات</div>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8" data-i18n="أصناف المنيو والأصناف نصف المصنّعة دي مسجّلة من غير وصفة/مكوّنات، يعني الاستهلاك النظري بتاعها مش هيتحسب صح في التقارير — أضف مكوّناتها من هنا.">أصناف المنيو والأصناف نصف المصنّعة دي مسجّلة من غير وصفة/مكوّنات، يعني الاستهلاك النظري بتاعها مش هيتحسب صح في التقارير — أضف مكوّناتها من هنا.</p>
+  <div id="missingRecipeBody" style="max-height:460px;overflow-y:auto"></div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('missingRecipeModal')" data-i18n="إغلاق">إغلاق</button>
   </div>
 </div>
 </div>
@@ -2192,6 +2226,27 @@ td{padding:10px 13px;vertical-align:middle;}
 <script>
 const I18N_EN={
   "© جميع الحقوق محفوظة - عبدالله اسماعيل": "© All rights reserved - Abdullah Ismail",
+  "⚠️ استكمال مطابقة الاستيراد": "⚠️ Complete Import Matching",
+  "بعض الأصناف من الملف المستورد لم تُطابَق تلقائيًا مع الكتالوج — اختر الصنف الصحيح لكل واحد منها لإكمال ربطه، أو تجاهله.": "Some items from the imported file weren't automatically matched with the catalog — choose the correct item for each one to complete the link, or ignore it.",
+  "لا توجد عناصر تحتاج مطابقة يدوية": "No items need manual matching",
+  "صنف شبه مصنّع غير موجود بالكتالوج": "Semi-finished item not found in the catalog",
+  "مكوّن": "component",
+  "مكوّن غير موجود بالمخزون": "Component not found in inventory",
+  "في وصفة": "in the recipe of",
+  "تجاهل": "Ignore",
+  "🔍 اختر الصنف الصحيح...": "🔍 Choose the correct item...",
+  "✅ تم ربط \"%1\" بالصنف \"%2\" وتطبيق مكوّناته": "✅ \"%1\" was linked to \"%2\" and its components were applied",
+  "✅ تم إضافة \"%1\" إلى وصفة \"%2\"": "✅ \"%1\" was added to the recipe of \"%2\"",
+  "⚠️ تعذّر إيجاد الوصفة \"%1\" لإضافة المكوّن — رُبما اتغيّرت أو اتحذفت": "⚠️ Couldn't find the recipe \"%1\" to add the component to — it may have changed or been deleted",
+  "⚠️ أصناف بدون مكوّنات": "⚠️ Items Without Components",
+  "أصناف منيو بدون مكوّنات": "Menu items without components",
+  "أصناف نصف مصنّعة بدون مكوّنات": "Semi-finished items without components",
+  "أصناف المنيو والأصناف نصف المصنّعة دي مسجّلة من غير وصفة/مكوّنات، يعني الاستهلاك النظري بتاعها مش هيتحسب صح في التقارير — أضف مكوّناتها من هنا.": "These menu and semi-finished items are registered with no recipe/components, meaning their theoretical consumption won't be computed correctly in the reports — add their components from here.",
+  "كل أصناف المنيو والأصناف نصف المصنّعة عندها مكوّنات محدّدة 🎉": "Every menu and semi-finished item has its components defined 🎉",
+  "➕ أضف المكوّنات": "➕ Add Components",
+  "أصناف بدون مكوّنات": "Items Without Components",
+  "لون النظام الأساسي": "Primary System Color",
+  "بيتغيّر بيه لون الأزرار والعناصر الرئيسية في كل شاشات النظام لكل المستخدمين.": "Changes the color of buttons and primary elements across every screen in the system, for all users.",
   "🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية": "🔗 Match Item Names With External Systems",
   "📦 تقرير المخزون الختامي": "📦 Closing Stock Report",
   "⚖️ نقطة التعادل اليومية": "⚖️ Daily Break-Even Point",
@@ -2803,6 +2858,7 @@ const ICONS={
   eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
   truck:'<rect x="2" y="9" width="12" height="7"/><path d="M14 12h4l3 3v1h-7z"/><circle cx="6.5" cy="18" r="1.5"/><circle cx="16.5" cy="18" r="1.5"/>',
   dice:'<rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="9" cy="9" r=".9" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r=".9" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r=".9" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r=".9" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r=".9" fill="currentColor" stroke="none"/>',
+  logOut:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/>',
 };
 const ICON_MAP={
   '⚠️':'warningTriangle','⚠':'warningTriangle',
@@ -2849,6 +2905,7 @@ const ICON_MAP={
   '👁️':'eye','👁':'eye',
   '🛵':'truck',
   '🎲':'dice',
+  '🚪':'logOut',
 };
 function svgIcon(name){
   const body=ICONS[name];
@@ -2968,6 +3025,8 @@ function reRenderDynamicContentForLang(){
     ['planModal',renderRequirementPlanner],
     ['menuSalesModal',renderMenuSalesReport],
     ['posMatchModal',renderPosMatchList],
+    ['importReviewModal',renderImportReviewRows],
+    ['missingRecipeModal',renderMissingRecipeReport],
     ['closingStockModal',renderClosingStockReport],
     ['stockBalanceModal',renderStockBalanceReport],
     ['shortageAlertModal',renderShortageAlertReport],
@@ -3041,6 +3100,34 @@ function convertQty(qty,fromUnit,toUnit){
   const f=uomObj(fromUnit),t=uomObj(toUnit);
   if(!f||!t||f.kind!==t.kind) return qty;
   return qty*f.factor/t.factor;
+}
+// common unit spellings/abbreviations seen in EXTERNAL exports (Foodics,
+// Odoo, any Excel/CSV a user might upload) that don't necessarily match
+// this catalog's own uom names exactly — mapped to their factor relative
+// to the base unit of their kind, same convention as S.uoms' own .factor.
+const IMPORT_UNIT_FACTORS={
+  weight:{kg:1,كجم:1,كيلو:1,كيلوجرام:1,كج:1,g:0.001,gm:0.001,gr:0.001,جم:0.001,جرام:0.001,غرام:0.001,غم:0.001},
+  volume:{l:1,liter:1,litre:1,لتر:1,ml:0.001,مل:0.001,مللي:0.001},
+  count:{pcs:1,pc:1,piece:1,pieces:1,unit:1,units:1,قطعة:1,قطع:1,حبة:1,حبات:1},
+};
+// converts an imported quantity into the TARGET item's own stored unit —
+// used by every recipe/BOM importer so a component reported in the source
+// file as e.g. "50 g" is correctly stored as 0.05 when this catalog's item
+// is tracked in kg, instead of a bare "50" that would silently multiply
+// against a per-kg cost and inflate that recipe's cost ~1000x. Falls back
+// to returning qty unchanged if either unit can't be recognized (same
+// fail-safe convention as convertQty), rather than guessing.
+function convertImportedQty(qty,sourceUnitRaw,targetUnitName){
+  if(qty==null||isNaN(qty)) return qty;
+  const targetU=uomObj(targetUnitName);
+  if(!targetU) return qty;
+  const src=String(sourceUnitRaw||'').trim().toLowerCase();
+  if(!src||src===targetUnitName.toLowerCase()) return qty;
+  const exact=(S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS).find(u=>u.name.toLowerCase()===src);
+  if(exact) return exact.kind===targetU.kind?qty*exact.factor/targetU.factor:qty;
+  const table=IMPORT_UNIT_FACTORS[targetU.kind];
+  if(!table||!(src in table)) return qty;
+  return qty*table[src]/targetU.factor;
 }
 function unitsOfSameKind(unitName){
   const uoms=(S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS);
@@ -3187,6 +3274,8 @@ const DEFAULT_ITEMS = [
 ];
 
 const PALETTE=['#7a2331','#3d8ef0','#2ee89a','#f05050','#9d6cf5','#f07830','#f0e040','#3dc8f0','#e840a0','#40c8a0','#a0b040','#c07030'];
+const THEME_PALETTE=['#7a2331','#1a5c9e','#1f7a4d','#a83232','#6a3fa0','#b5651d','#0f766e','#2b3a67'];
+let selThemeColor='#7a2331';
 
 // Bump this string whenever a change is pushed, so a glance at the header
 // confirms which build is actually live (GitHub Pages can take a minute to update).
@@ -3658,7 +3747,40 @@ function save(){
 initFirebase();
 
 function updateHeader(){ __headerRerender(); __moduleNavRerender(); __reportsHubRerender(); }
-function updateCompanyBranding(){ __headerRerender(); }
+// ══════════════════════════════════════════════
+//  SYSTEM COLOR THEME — companyInfo.theme.accent overrides the app's
+//  primary brand color (--gold everywhere: buttons, active nav states,
+//  header) for every user, synced through the same settings/company doc
+//  as the rest of company branding. --gold2 (used for gradients) is
+//  derived automatically by darkening the chosen color, so the admin only
+//  ever has to pick one color, not a matching pair.
+// ══════════════════════════════════════════════
+function darkenHex(hex,amt){
+  hex=String(hex||'').replace('#','');
+  if(hex.length===3) hex=hex.split('').map(c=>c+c).join('');
+  if(!/^[0-9a-fA-F]{6}$/.test(hex)) return hex;
+  const num=parseInt(hex,16);
+  const r=Math.max(0,Math.round(((num>>16)&255)*(1-amt)));
+  const g=Math.max(0,Math.round(((num>>8)&255)*(1-amt)));
+  const b=Math.max(0,Math.round((num&255)*(1-amt)));
+  return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+function applyTheme(){
+  const accent=(companyInfo.theme&&companyInfo.theme.accent)||'#7a2331';
+  document.documentElement.style.setProperty('--gold',accent);
+  document.documentElement.style.setProperty('--gold2',darkenHex(accent,.25));
+}
+function buildThemeColorGrid(){
+  const g=document.getElementById('themeColorGrid');
+  if(!g) return;
+  g.innerHTML=THEME_PALETTE.map(c=>`<div class="c-swatch${c.toLowerCase()===selThemeColor.toLowerCase()?' sel':''}" style="background:${c}" onclick="pickThemeColor('${c}')"></div>`).join('');
+}
+function pickThemeColor(c){
+  selThemeColor=c;
+  document.getElementById('co-theme-color').value=c;
+  buildThemeColorGrid();
+}
+function updateCompanyBranding(){ applyTheme(); __headerRerender(); }
 function updateNotificationsBadge(){ __headerRerender(); }
 function renderBranchSwitch(){ __headerRerender(); }
 function flashSaveButton(){
@@ -4631,6 +4753,9 @@ function openCompanyMgr(){
   document.getElementById('co-phone').value=companyInfo.phone||'';
   document.getElementById('co-address').value=companyInfo.address||'';
   document.getElementById('co-vat').value=companyInfo.vatPct!=null?companyInfo.vatPct:'';
+  selThemeColor=(companyInfo.theme&&companyInfo.theme.accent)||'#7a2331';
+  document.getElementById('co-theme-color').value=selThemeColor;
+  buildThemeColorGrid();
   pendingLogoDataUrl=undefined;
   const prev=document.getElementById('co-logo-preview');
   if(companyInfo.logo){prev.src=companyInfo.logo;prev.style.display='';}else{prev.style.display='none';}
@@ -4661,6 +4786,7 @@ function saveCompanyInfo(){
     phone:document.getElementById('co-phone').value.trim(),
     address:document.getElementById('co-address').value.trim(),
     vatPct:vatRaw===''?0:(parseFloat(vatRaw)||0),
+    theme:{accent:document.getElementById('co-theme-color').value||'#7a2331'},
   };
   if(pendingLogoDataUrl!==undefined) payload.logo=pendingLogoDataUrl||'';
   else payload.logo=companyInfo.logo||'';
@@ -8459,6 +8585,7 @@ function processRecipeImportRows(rows){
   // lets one recipe safely span many component rows without partial overwrites.
   const groups=[];
   const groupIndex={};
+  const unresolvedComponents=[];
   let unknownComponent=0,skippedRows=0,selfRefSkipped=0;
   for(let i=1;i<rows.length;i++){
     const row=rows[i];
@@ -8481,11 +8608,12 @@ function processRecipeImportRows(rows){
     if(isNaN(compQty)||compQty<=0){skippedRows++;continue;}
     if(ownerType==='semi'&&compRef===ownerName.toUpperCase()){selfRefSkipped++;continue;}
     const comp=S.items.find(it=>it.r===compRef);
-    if(!comp){unknownComponent++;continue;}
+    if(!comp){unknownComponent++;unresolvedComponents.push({group:g,ownerDisplay:ownerName,rawText:compRefRaw,qty:compQty,source:t('القالب')});continue;}
     if(!(compRef in g.compMap)) g.order.push(compRef);
     g.compMap[compRef]=compQty;
   }
-  applyRecipeImportGroups(groups,{unknownComponent,skippedRows,selfRefSkipped});
+  const {unresolvedOwnerGroups}=applyRecipeImportGroups(groups,{unknownComponent,skippedRows,selfRefSkipped});
+  queueImportReview(unresolvedOwnerGroups,unresolvedComponents);
 }
 // shared by every recipe/BOM importer (our own template + native external
 // formats like Foodics below) — takes the same {type,name,price,compMap,order}
@@ -8565,6 +8693,7 @@ function processFoodicsRecipeImportRows(rows){
   headerRow.forEach((h,i)=>{col[h]=i;});
   const groups=[];
   const groupIndex={};
+  const unresolvedComponents=[];
   let unknownComponent=0,skippedRows=0;
   for(let i=1;i<rows.length;i++){
     const row=rows[i];
@@ -8596,11 +8725,13 @@ function processFoodicsRecipeImportRows(rows){
     const comp=S.items.find(it=>it.r.toUpperCase()===compSku.toUpperCase())
       ||(compNameA&&S.items.find(it=>it.n.trim().toLowerCase()===compNameA.toLowerCase()))
       ||(compNameB&&S.items.find(it=>it.n.trim().toLowerCase()===compNameB.toLowerCase()));
-    if(!comp){unknownComponent++;continue;}
+    const sourceUnit=col['unit']!=null?String(row[col['unit']]||'').trim():'';
+    if(!comp){unknownComponent++;unresolvedComponents.push({group:g,ownerDisplay:g.name,rawText:compNameA||compNameB||compSku,qty:compQty,sourceUnit,source:'Foodics'});continue;}
     if(!(comp.r in g.compMap)) g.order.push(comp.r);
-    g.compMap[comp.r]=compQty;
+    g.compMap[comp.r]=convertImportedQty(compQty,sourceUnit,comp.u);
   }
-  applyRecipeImportGroups(groups,{unknownComponent,skippedRows});
+  const {unresolvedOwnerGroups}=applyRecipeImportGroups(groups,{unknownComponent,skippedRows});
+  queueImportReview(unresolvedOwnerGroups,unresolvedComponents);
 }
 
 // ══════════════════════════════════════════════
@@ -8663,9 +8794,10 @@ function processOdooRecipeImportRows(rows){
   }
   const col={};
   headerRow.forEach((h,i)=>{if(col[h]==null) col[h]=i;});
-  const cType=col['الرقم المرجعي'],cQty=col['الكمية'],cProduct=col['المنتج'],cComp=col['بنود قائمة المواد/المكون'],cCompQty=col['بنود قائمة المواد/الكمية'];
+  const cType=col['الرقم المرجعي'],cQty=col['الكمية'],cProduct=col['المنتج'],cComp=col['بنود قائمة المواد/المكون'],cCompQty=col['بنود قائمة المواد/الكمية'],cCompUom=col['بنود قائمة المواد/وحدة قياس المنتج'];
   const groups=[];
   const groupIndex={};
+  const unresolvedComponents=[];
   let unknownComponent=0,skippedRows=0;
   let curGroup=null,curBatchQty=1;
   for(let i=1;i<rows.length;i++){
@@ -8704,11 +8836,153 @@ function processOdooRecipeImportRows(rows){
     const compQty=compQtyRaw/curBatchQty;
     const comp=(compRef&&S.items.find(it=>it.r.toUpperCase()===compRef.toUpperCase()))
       ||(compName&&S.items.find(it=>it.n.trim().toLowerCase()===compName.toLowerCase()));
-    if(!comp){unknownComponent++;continue;}
+    const sourceUnit=cCompUom!=null?String(row[cCompUom]||'').trim():'';
+    if(!comp){unknownComponent++;unresolvedComponents.push({group:curGroup,ownerDisplay:curGroup.name,rawText:compName||compRef,qty:compQty,sourceUnit,source:'Odoo'});continue;}
     if(!(comp.r in curGroup.compMap)) curGroup.order.push(comp.r);
-    curGroup.compMap[comp.r]=compQty;
+    curGroup.compMap[comp.r]=convertImportedQty(compQty,sourceUnit,comp.u);
   }
-  applyRecipeImportGroups(groups,{unknownComponent,skippedRows});
+  const {unresolvedOwnerGroups}=applyRecipeImportGroups(groups,{unknownComponent,skippedRows});
+  queueImportReview(unresolvedOwnerGroups,unresolvedComponents);
+}
+
+// ══════════════════════════════════════════════
+//  MANUAL MATCH REVIEW — every recipe/BOM importer above (own template,
+//  Foodics, Odoo) reports whatever it couldn't auto-match instead of just
+//  silently dropping it: owners (semi-finished items not found in our
+//  catalog) and components (ingredients not found), each queued here for
+//  the user to manually pick the correct catalog item, or ignore.
+//  Component rows belonging to an owner that ALSO failed to match are
+//  dropped from the queue (not shown) — that owner's whole group is
+//  already in unresolvedOwnerGroups, and once the user manually resolves
+//  IT, editing that item's recipe directly (menu/items screen) covers the
+//  rest; chaining a second round of matching onto an unresolved owner
+//  would just be extra UI for a case editing the recipe already handles.
+// ══════════════════════════════════════════════
+let pendingImportReview=null;
+function queueImportReview(unresolvedOwnerGroups,unresolvedComponents){
+  const ownerGroups=unresolvedOwnerGroups||[];
+  const ownerSet=new Set(ownerGroups);
+  const comps=(unresolvedComponents||[]).filter(c=>!ownerSet.has(c.group));
+  if(!ownerGroups.length&&!comps.length) return;
+  if(!pendingImportReview) pendingImportReview={unresolvedOwnerGroups:[],unresolvedComponents:[]};
+  pendingImportReview.unresolvedOwnerGroups.push(...ownerGroups);
+  pendingImportReview.unresolvedComponents.push(...comps);
+  openImportReviewModal();
+}
+function openImportReviewModal(){
+  renderImportReviewRows();
+  document.getElementById('importReviewModal').classList.add('open');
+}
+function renderImportReviewRows(){
+  const cont=document.getElementById('importReviewRows');
+  if(!cont) return;
+  if(!pendingImportReview||(!pendingImportReview.unresolvedOwnerGroups.length&&!pendingImportReview.unresolvedComponents.length)){
+    cont.innerHTML=`<div style="text-align:center;padding:26px;color:var(--muted)">${t('لا توجد عناصر تحتاج مطابقة يدوية')}</div>`;
+    return;
+  }
+  let html='';
+  pendingImportReview.unresolvedOwnerGroups.forEach((g,i)=>{
+    html+=`<div style="border:1px solid var(--border);border-radius:9px;padding:10px 12px;margin-bottom:8px">
+      <div style="font-size:12.5px;margin-bottom:6px">${t('صنف شبه مصنّع غير موجود بالكتالوج')}: <b>${g.name}</b> <span style="color:var(--muted)">(${g.order.length} ${t('مكوّن')})</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div style="flex:1">${isearchHtml('irv-owner-'+i,'',{onSelect:'resolveImportOwner',placeholder:t('🔍 اختر الصنف الصحيح...')})}</div>
+        <button class="hbtn" onclick="skipImportOwner(${i})" data-i18n="تجاهل">${t('تجاهل')}</button>
+      </div>
+    </div>`;
+  });
+  pendingImportReview.unresolvedComponents.forEach((c,i)=>{
+    html+=`<div style="border:1px solid var(--border);border-radius:9px;padding:10px 12px;margin-bottom:8px">
+      <div style="font-size:12.5px;margin-bottom:6px">${t('مكوّن غير موجود بالمخزون')}: <b>${c.rawText}</b> <span style="color:var(--muted)">(${t('في وصفة')} ${c.ownerDisplay} — ${fmt(c.qty)})</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div style="flex:1">${isearchHtml('irv-comp-'+i,'',{onSelect:'resolveImportComponent',placeholder:t('🔍 اختر الصنف الصحيح...')})}</div>
+        <button class="hbtn" onclick="skipImportComponent(${i})" data-i18n="تجاهل">${t('تجاهل')}</button>
+      </div>
+    </div>`;
+  });
+  cont.innerHTML=html;
+}
+function resolveImportOwner(ref,pickerId){
+  const i=parseInt(pickerId.split('-').pop(),10);
+  const g=pendingImportReview&&pendingImportReview.unresolvedOwnerGroups[i];
+  if(!g) return;
+  const it=S.items.find(x=>x.r===ref);
+  if(!it) return;
+  const comps=g.order.map(r=>({r,q:g.compMap[r]}));
+  it.recipe=comps; it.type='semi';
+  save();renderMenuList();renderTbl();
+  toast(t('✅ تم ربط "%1" بالصنف "%2" وتطبيق مكوّناته').replace('%1',g.name).replace('%2',it.n),'suc');
+  pendingImportReview.unresolvedOwnerGroups.splice(i,1);
+  renderImportReviewRows();
+}
+function skipImportOwner(i){
+  pendingImportReview.unresolvedOwnerGroups.splice(i,1);
+  renderImportReviewRows();
+}
+function resolveImportComponent(ref,pickerId){
+  const i=parseInt(pickerId.split('-').pop(),10);
+  const c=pendingImportReview&&pendingImportReview.unresolvedComponents[i];
+  if(!c) return;
+  const comp=S.items.find(x=>x.r===ref);
+  if(!comp) return;
+  const g=c.group;
+  const owner=g.type==='menu'
+    ?S.menu.find(x=>x.n.trim().toLowerCase()===g.name.toLowerCase())
+    :S.items.find(x=>(g.matchRef&&x.r.toUpperCase()===g.matchRef.toUpperCase())||x.r.toUpperCase()===g.name.toUpperCase()||x.n.trim().toLowerCase()===g.name.toLowerCase());
+  if(!owner){ toast(t('⚠️ تعذّر إيجاد الوصفة "%1" لإضافة المكوّن — رُبما اتغيّرت أو اتحذفت').replace('%1',c.ownerDisplay),'err'); return; }
+  if(!owner.recipe) owner.recipe=[];
+  const q=c.sourceUnit?convertImportedQty(c.qty,c.sourceUnit,comp.u):c.qty;
+  const existing=owner.recipe.find(r=>r.r===comp.r);
+  if(existing) existing.q=q; else owner.recipe.push({r:comp.r,q});
+  save();renderMenuList();renderTbl();
+  toast(t('✅ تم إضافة "%1" إلى وصفة "%2"').replace('%1',comp.n).replace('%2',c.ownerDisplay),'suc');
+  pendingImportReview.unresolvedComponents.splice(i,1);
+  renderImportReviewRows();
+}
+function skipImportComponent(i){
+  pendingImportReview.unresolvedComponents.splice(i,1);
+  renderImportReviewRows();
+}
+
+// ══════════════════════════════════════════════
+//  MISSING-RECIPE REPORT — menu items and semi-finished items that exist
+//  in the catalog but have no components defined yet, whether because an
+//  import couldn't match every ingredient or because they were added by
+//  hand and never given a recipe. Their theoretical consumption can't be
+//  computed until they have one, so they're surfaced here for a quick fix.
+// ══════════════════════════════════════════════
+function itemsMissingRecipe(){
+  return {
+    menu:S.menu.filter(m=>!(m.recipe&&m.recipe.length)),
+    semi:S.items.filter(it=>it.type==='semi'&&!(it.recipe&&it.recipe.length)),
+  };
+}
+function openMissingRecipeReport(){
+  if(!canManageMenuUI()){toast(t('⚠️ إدارة المنيو متاحة للإدارة أو لمن يملك صلاحية إدارة المنيو فقط'),'wrn');return;}
+  renderMissingRecipeReport();
+  document.getElementById('missingRecipeModal').classList.add('open');
+}
+function renderMissingRecipeReport(){
+  const el=document.getElementById('missingRecipeBody');
+  if(!el) return;
+  const {menu,semi}=itemsMissingRecipe();
+  if(!menu.length&&!semi.length){
+    el.innerHTML=`<div style="text-align:center;padding:30px;color:var(--muted)">${t('كل أصناف المنيو والأصناف نصف المصنّعة عندها مكوّنات محدّدة 🎉')}</div>`;
+    return;
+  }
+  const row=(label,onClick)=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:7px">
+    <div style="flex:1;font-weight:700;font-size:13px">${label}</div>
+    <button class="hbtn org" style="flex:none" onclick="${onClick}">${t('➕ أضف المكوّنات')}</button>
+  </div>`;
+  let html='';
+  if(menu.length){
+    html+=`<div class="mn-section-lbl" style="margin:0 0 8px">${t('أصناف منيو بدون مكوّنات')} (${menu.length})</div>`;
+    html+=menu.map(m=>row(m.n,`closeM('missingRecipeModal');openEditMenuItem('${m.id}')`)).join('');
+  }
+  if(semi.length){
+    html+=`<div class="mn-section-lbl" style="margin:16px 0 8px">${t('أصناف نصف مصنّعة بدون مكوّنات')} (${semi.length})</div>`;
+    html+=semi.map(it=>row(it.n,`closeM('missingRecipeModal');openEditItem('${it.r}')`)).join('');
+  }
+  el.innerHTML=html;
 }
 
 // ══════════════════════════════════════════════
@@ -9219,6 +9493,7 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
     const [openGroup,setOpenGroup]=useState(null);
     const toggleGroup=g=>setOpenGroup(og=>og===g?null:g);
     const pendingTransfers=(S.incomingTransfers||[]).filter(r=>r.status==='pending').length;
+    const missingRecipeCount=canManageMenuUI()?(()=>{const mr=itemsMissingRecipe();return mr.menu.length+mr.semi.length;})():0;
 
     const Item=({onClick,i18n,id,show=true,badge})=>(
       <div className="mn-item" id={id} style={{display:show?'':'none'}} onClick={()=>{setOpenGroup(null);onClick();}}>
@@ -9256,7 +9531,7 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
         <Item onClick={openManageItems} i18n="✏️ إدارة الأصناف" />
         <Item onClick={openUomMgr} i18n="📏 وحدات القياس" />
         <Section label="المنيو والوصفات" />
-        <Item onClick={openMenuMgr} i18n="🍽️ الأصناف المباعة والوصفات" />
+        <Item onClick={openMenuMgr} i18n="🍽️ الأصناف المباعة والوصفات" badge={missingRecipeCount||null} />
         <Item onClick={openPosMatchModal} i18n="🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية" />
         <Section label="استيراد/تصدير الوصفات" />
         <Item onClick={()=>document.getElementById('simpleMenuImportFileInput').click()} i18n="📥 استيراد أصناف منيو فقط بدون مكوّنات (Excel)" />
@@ -9343,6 +9618,7 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
           <Card icon="📦" title="تقارير المخزون">
             <Row icon="📦" color="#f07830" label="رصيد المخزون الحالي" onClick={openStockBalanceReport} show={canViewStockBalanceUI()} />
             <Row icon="⚠️" color="#f05050" label="تنبيه النواقص" onClick={openShortageAlertReport} show={canViewStockBalanceUI()} />
+            <Row icon="🍽️" color="#f0a83d" label="أصناف بدون مكوّنات" onClick={openMissingRecipeReport} show={canManageMenuUI()} />
             <Row icon="🔀" color="#3d8ef0" label="سجل التحويلات" onClick={openTransfersLog} show={canViewTransfersLogUI()} />
           </Card>
           <Card icon="🌐" title="تقارير الفروع">

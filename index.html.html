@@ -90,6 +90,9 @@ header{
 .hbtn.grn:hover{background:rgba(46,232,154,.2);}
 .hbtn.org{background:rgba(240,120,48,.12);border-color:rgba(240,120,48,.3);color:var(--orange);}
 .hbtn.org:hover{background:rgba(240,120,48,.2);}
+.hbtn.logout{padding:8px 10px;}
+.hbtn.logout:hover{background:rgba(230,70,70,.12);border-color:rgba(230,70,70,.35);color:var(--red);}
+.hdiv{width:1px;align-self:stretch;margin:4px 2px;background:var(--border2);}
 .bchip,.user-chip{
   background:var(--card);border:1px solid var(--border2);
   border-radius:8px;padding:7px 14px;font-size:13px;
@@ -167,32 +170,34 @@ header{
   padding:0 16px 6px;margin-top:16px;display:block;
 }
 .sb-item{
-  display:flex;align-items:center;gap:10px;padding:9px 16px;
-  cursor:pointer;border-right:3px solid transparent;
-  transition:all .15s;font-size:13px;color:var(--muted);
+  display:flex;align-items:center;gap:10px;padding:9px 11px;
+  cursor:pointer;transition:all .13s;font-size:13px;color:var(--muted);
+  background:var(--card);border:1px solid var(--border);border-radius:8px;
+  margin:0 8px 5px;
 }
-.sb-item:hover{background:var(--tint);color:var(--text);}
-.sb-item.active{background:rgba(122,35,49,.07);color:var(--gold);border-right-color:var(--gold);}
+.sb-item:hover{border-color:var(--border2);color:var(--text);}
+.sb-item.active{border-color:var(--gold);background:rgba(122,35,49,.05);color:var(--gold);}
 .sb-ico{font-size:14px;flex-shrink:0;}
 .sb-badge{
-  margin-right:auto;background:var(--card);border:1px solid var(--border);
+  margin-right:auto;background:var(--card2);border:1px solid var(--border);
   border-radius:4px;padding:1px 7px;font-size:10.5px;font-family:var(--mono);color:var(--muted);
 }
 .sb-item.active .sb-badge{color:var(--gold);border-color:rgba(122,35,49,.3);}
 .sb-div{height:1px;background:var(--border);margin:8px 16px;}
 .sb-item-pinned{color:var(--gold);font-weight:700;}
-.sb-item-pinned:hover{background:rgba(122,35,49,.1);}
+.sb-item-pinned:hover{border-color:var(--gold);}
 .sb-scroll{flex:1;overflow-y:auto;min-height:0;}
 
 /* CATEGORY MANAGE SIDEBAR ITEMS */
 .sb-cat-item{
-  display:flex;align-items:center;gap:8px;padding:7px 16px;
+  display:flex;align-items:center;gap:8px;padding:7px 11px;
   font-size:12px;color:var(--muted);
-  border-right:3px solid transparent;
+  background:var(--card);border:1px solid var(--border);border-radius:8px;
+  margin:0 8px 5px;
   transition:all .12s;cursor:pointer;
 }
-.sb-cat-item:hover{background:var(--tint);color:var(--text);}
-.sb-cat-item.active{background:rgba(122,35,49,.06);color:var(--gold);border-right-color:var(--gold);}
+.sb-cat-item:hover{border-color:var(--border2);color:var(--text);}
+.sb-cat-item.active{border-color:var(--gold);background:rgba(122,35,49,.05);color:var(--gold);}
 .sb-cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .sb-cat-edit{
   margin-right:auto;opacity:0;font-size:11px;
@@ -453,6 +458,17 @@ td{padding:10px 13px;vertical-align:middle;}
 .dash-kpi-lbl{font-size:10.5px;color:var(--muted);margin-bottom:6px;}
 .dash-kpi-val{font-size:18px;font-weight:800;font-family:var(--mono);}
 .dash-kpi-badge{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+
+/* HOME ACTIVITY OVERVIEW (daily-view landing summary) */
+.ov-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px;}
+.ov-chip{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .13s;}
+.ov-chip:hover{border-color:var(--border2);box-shadow:0 3px 12px rgba(20,30,50,.06);}
+.ov-chip-val{font-size:19px;font-weight:800;font-family:var(--mono);line-height:1;}
+.ov-chip-lbl{font-size:10.5px;color:var(--muted);margin-top:3px;}
+.ov-recent{margin-bottom:18px;}
+.ov-recent-head{font-weight:800;font-size:13.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.ov-recent-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;background:var(--card);border:1px solid var(--border);border-radius:9px;margin-bottom:6px;font-size:12.5px;}
+.ov-recent-row .ov-muted{color:var(--muted);font-size:11px;}
 .mod-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
 .mod-field{margin-bottom:14px;}
 .mod-lbl{font-size:10.5px;color:var(--muted);margin-bottom:5px;display:block;font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;}
@@ -537,6 +553,7 @@ td{padding:10px 13px;vertical-align:middle;}
   header{height:auto;min-height:60px;padding:10px 14px;flex-wrap:wrap;row-gap:8px;}
   .logo-name{font-size:15px;}
   .hright{gap:6px;width:100%;justify-content:flex-start;}
+  .hdiv{display:none;}
   /* icon+label header buttons collapse to icon-only on mobile — the label is
      still available via title= — so the header packs into two clean rows
      instead of wrapping into a cramped third row with an orphaned button */
@@ -2245,6 +2262,12 @@ const I18N_EN={
   "كل أصناف المنيو والأصناف نصف المصنّعة عندها مكوّنات محدّدة 🎉": "Every menu and semi-finished item has its components defined 🎉",
   "➕ أضف المكوّنات": "➕ Add Components",
   "أصناف بدون مكوّنات": "Items Without Components",
+  "مبيعات الدورة الحالية": "Current Cycle Sales",
+  "نسبة تكلفة الدورة الحالية": "Current Cycle Cost %",
+  "تحويلات واردة معلّقة": "Pending Incoming Transfers",
+  "أعطال صيانة مفتوحة": "Open Maintenance Issues",
+  "أصناف تحت الحد الأدنى": "Items Below Minimum Stock",
+  "آخر الحركات": "Recent Movements",
   "لون النظام الأساسي": "Primary System Color",
   "بيتغيّر بيه لون الأزرار والعناصر الرئيسية في كل شاشات النظام لكل المستخدمين.": "Changes the color of buttons and primary elements across every screen in the system, for all users.",
   "🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية": "🔗 Match Item Names With External Systems",
@@ -2387,6 +2410,9 @@ const I18N_EN={
   "🔄 دورة التسوية": "🔄 Reconciliation Cycle",
   "🔒 إغلاق الدورة وحساب النتائج": "🔒 Close Cycle & Calculate Results",
   "🔓 إعادة فتح": "🔓 Reopen",
+  "🔄 تحديث بالأسعار الحالية": "🔄 Refresh With Current Prices",
+  "سيُعاد حساب نتائج هذه الدورة بأسعار المكونات الحالية، وسيُستبدل الرصيد المحفوظ سابقًا بها. هل تريد المتابعة؟": "This cycle's results will be recalculated using current component prices, replacing the previously saved figures. Do you want to continue?",
+  "✅ تم تحديث نتائج الدورة بأسعار المكونات الحالية": "✅ The cycle's results were refreshed with current component prices",
   "🖨️ طباعة": "🖨️ Print",
   "🗂️ إضافة قسم جديد": "🗂️ Add New Category",
   "#": "#",
@@ -6422,7 +6448,8 @@ function renderCycleHeader(){
     <div class="db-r">
       ${!c.closed
         ?`<button class="hbtn gold" style="padding:6px 12px;font-size:12px" onclick="closeCycle()" data-i18n="🔒 إغلاق الدورة وحساب النتائج">🔒 إغلاق الدورة وحساب النتائج</button>`
-        :`<button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="reopenCycle()" data-i18n="🔓 إعادة فتح">🔓 إعادة فتح</button>`}
+        :`<button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="reopenCycle()" data-i18n="🔓 إعادة فتح">🔓 إعادة فتح</button>
+        <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="recomputeCycleCost('${c.id}')" title="إعادة حساب نتائج الدورة بأسعار المكونات الحالية" aria-label="إعادة حساب نتائج الدورة بأسعار المكونات الحالية" data-i18n="🔄 تحديث بالأسعار الحالية">🔄 تحديث بالأسعار الحالية</button>`}
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="openClosingStockReport('${c.id}')" title="تقرير المخزون الختامي المستقل لنهاية الدورة" aria-label="تقرير المخزون الختامي المستقل لنهاية الدورة" data-i18n="📦 المخزون الختامي">📦 المخزون الختامي</button>
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="exportCyclePDF('${c.id}')">📄 PDF</button>
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="exportCycleCSV('${c.id}')">📊 CSV</button>
@@ -7616,6 +7643,18 @@ function reopenCycle(){
   c.closed=false;
   save();renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();
   toast(t('🔓 تم إعادة فتح الدورة'),'wrn');
+}
+// a closed cycle's result is a snapshot computed at close time — if a
+// component's cost is edited afterward (e.g. via a corrected recipe/BOM
+// import), the old snapshot silently goes stale. This recomputes it in
+// place using TODAY's catalog costs, same computation closeCycle() itself
+// uses, without touching the cycle's closed/open state.
+function recomputeCycleCost(cid){
+  const c=getCycle(cid);if(!c||!c.closed)return;
+  if(!confirm(t('سيُعاد حساب نتائج هذه الدورة بأسعار المكونات الحالية، وسيُستبدل الرصيد المحفوظ سابقًا بها. هل تريد المتابعة؟')))return;
+  c.result=computeCycleResults(c);
+  save();renderCycleList();renderCycleHeader();renderCycleBody();
+  toast(t('✅ تم تحديث نتائج الدورة بأسعار المكونات الحالية'),'suc');
 }
 
 // break-even info for one closed cycle, using ITS OWN actual cost % (not a
@@ -9461,6 +9500,7 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
         <button className="hbtn" id="notificationsBtn" onClick={openNotificationsCenter} title={t('الإشعارات')} aria-label={t('الإشعارات')} style={{position:'relative',display:canViewNotificationsUI()?'':'none'}}>
           🔔<span id="notifBadge" style={{display:notifCount>0?'':'none',position:'absolute',top:-4,left:-4,background:'var(--red)',color:'#fff',borderRadius:10,padding:'1px 6px',fontSize:10,fontFamily:'var(--mono)'}}>{notifCount}</span>
         </button>
+        <div className="hdiv"></div>
         <div className="user-chip" id="userChip" title={email||''} style={{display:email?'':'none'}}>
           <div className="bc-dot" style={{background:'var(--blue)',boxShadow:'0 0 6px var(--blue)'}}></div>
           <div><div className="bc-lbl">{t('المستخدم')}</div><div className="bc-val user-chip-val" id="userEmailLbl" style={{color:'var(--blue)'}}>{email||'—'}</div></div>
@@ -9472,10 +9512,12 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
         <select id="branchSwitch" style={{maxWidth:150,fontSize:'12.5px',padding:'8px 10px'}} disabled={!canManageBranchesUI()} value={S.curBranch||''} onChange={e=>switchBranch(e.target.value)}>
           {branchEntries.map(([k,b])=><option key={k} value={k}>{b.name}</option>)}
         </select>
+        <div className="hdiv"></div>
         <button className="hbtn org" onClick={openAddItem} title={t('إضافة صنف')} aria-label={t('إضافة صنف')}><span>➕</span><span className="hbtn-txt">{t('إضافة صنف')}</span></button>
         <button className="hbtn grn" id="saveBtn" onClick={saveAndExport} title={t('حفظ وتصدير')} aria-label={t('حفظ وتصدير')}><span>💾</span><span className="hbtn-txt">{saveBtnFlash?'✅ '+t('تم الحفظ'):t('حفظ وتصدير')}</span></button>
         <button className="hbtn gold" onClick={openNewDay} title={t('يوم جديد')} aria-label={t('يوم جديد')}><span>📅</span><span className="hbtn-txt">{t('يوم جديد')}</span></button>
-        <button className="hbtn" id="logoutBtn" onClick={doLogout} title="خروج" aria-label="تسجيل الخروج">🚪</button>
+        <div className="hdiv"></div>
+        <button className="hbtn logout" id="logoutBtn" onClick={doLogout} title={t('خروج')} aria-label="تسجيل الخروج">🚪</button>
       </div>
     </React.Fragment>);
   }
@@ -9663,6 +9705,54 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
   }
 
   // ══════════════════════════════════════════════
+  //  HOME ACTIVITY OVERVIEW — landing summary on the main (daily) page:
+  //  current cycle's sales/cost at a glance, pending alerts across the
+  //  system (transfers, maintenance, missing recipes, shortages), and the
+  //  most recent transfer movements — each entry links straight to its
+  //  own screen. Built entirely from existing computed data (no new
+  //  business logic), gated by the same permission checks their own
+  //  screens already use.
+  // ══════════════════════════════════════════════
+  function ActivityOverview(){
+    const c=curCycleId?getCycle(curCycleId):null;
+    const r=c?(c.closed&&c.result?c.result:computeCycleResults(c)):null;
+    const notif=canViewNotificationsUI()?computeNotifications():{pendingTransfers:[],openMaintenance:[]};
+    const missing=canManageMenuUI()?itemsMissingRecipe():{menu:[],semi:[]};
+    const shortageCount=canViewStockBalanceUI()?computeShortageAlertRows('__current__').length:0;
+    const moves=[...transfersLogRows()].sort((a,b)=>(b.start||'').localeCompare(a.start||'')).slice(0,6);
+
+    const chips=[
+      {label:t('مبيعات الدورة الحالية'),val:r?fmt(r.totalSalesAmount):'—',icon:'💰',color:'var(--green)',onClick:()=>showView('cycle'),show:!!c},
+      {label:t('نسبة تكلفة الدورة الحالية'),val:r?r.actualCostPct.toFixed(1)+'%':'—',icon:'📊',color:'var(--gold)',onClick:()=>showView('cycle'),show:!!c},
+      {label:t('تحويلات واردة معلّقة'),val:notif.pendingTransfers.length,icon:'📥',color:'var(--blue)',onClick:openIncomingTransfersReview,show:canViewNotificationsUI()},
+      {label:t('أعطال صيانة مفتوحة'),val:notif.openMaintenance.length,icon:'🔧',color:'var(--red)',onClick:openMaintenanceLog,show:canViewNotificationsUI()},
+      {label:t('أصناف بدون مكوّنات'),val:missing.menu.length+missing.semi.length,icon:'🍽️',color:'var(--orange)',onClick:openMissingRecipeReport,show:canManageMenuUI()},
+      {label:t('أصناف تحت الحد الأدنى'),val:shortageCount,icon:'⚠️',color:'var(--red)',onClick:openShortageAlertReport,show:canViewStockBalanceUI()},
+    ].filter(x=>x.show!==false);
+
+    if(!chips.length&&!moves.length) return null;
+    return (<div style={{marginBottom:4}}>
+      {!!chips.length&&<div className="ov-grid">
+        {chips.map((ch,i)=>(
+          <div key={i} className="ov-chip" onClick={ch.onClick} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter')ch.onClick();}}>
+            <div className="dash-kpi-badge" style={{background:ch.color+'22',color:ch.color}}>{ch.icon}</div>
+            <div><div className="ov-chip-val" style={{color:ch.color}}>{ch.val}</div><div className="ov-chip-lbl">{ch.label}</div></div>
+          </div>
+        ))}
+      </div>}
+      {!!moves.length&&<div className="ov-recent">
+        <div className="ov-recent-head">🔀 {t('آخر الحركات')}</div>
+        {moves.map((m,i)=>(
+          <div key={i} className="ov-recent-row">
+            <span>{m.dir==='in'?'📥':'📤'} {m.name} <span className="ov-muted">({fmt(m.qty)} {m.uom})</span></span>
+            <span className="ov-muted">{m.start}</span>
+          </div>
+        ))}
+      </div>}
+    </div>);
+  }
+
+  // ══════════════════════════════════════════════
   //  KPI CARDS — redesigned as clean, high-contrast micro-dashboards
   // ══════════════════════════════════════════════
   function KpiCards(){
@@ -9832,6 +9922,7 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
     const [typ,setTyp]=useState('');
     const [st,setSt]=useState('');
     return (<React.Fragment>
+      <ActivityOverview />
       <KpiCards />
       <SessionBanner />
       <Toolbar srch={srch} setSrch={setSrch} uom={uom} setUom={setUom} typ={typ} setTyp={setTyp} st={st} setSt={setSt} />

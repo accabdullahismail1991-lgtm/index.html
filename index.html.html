@@ -1338,6 +1338,11 @@ td{padding:10px 13px;vertical-align:middle;}
     <div id="aiRecipeRows" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
     <button class="hbtn" type="button" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="addItemRecipeRow()" data-i18n="➕ إضافة مكوّن">➕ إضافة مكوّن</button>
   </div>
+  <div class="mod-field" id="aiBatchQtyField">
+    <label class="mod-lbl" data-i18n="الكمية الناتجة من الوصفة (بوحدة الصنف)">الكمية الناتجة من الوصفة (بوحدة الصنف)</label>
+    <input type="number" inputmode="decimal" class="mod-in" id="ai-batchqty" placeholder="1" min="0.0001" step="0.0001">
+    <div class="mod-hint" data-i18n="اكتب هنا كمّية المكوّنات فوق دي بتطلع قد إيه. مثلاً لو الوصفة بتعمل دِفعة 10كجم من الصلصة، اكتب 10 — النظام هيقسّم تكلفة المكوّنات على الرقم ده عشان يطلع سعر الكيلو الواحد صح، بدل ما يحسب كإن كل المكوّنات دي بتطلع كيلو واحد بس.">اكتب هنا كمّية المكوّنات فوق دي بتطلع قد إيه. مثلاً لو الوصفة بتعمل دِفعة 10كجم من الصلصة، اكتب 10 — النظام هيقسّم تكلفة المكوّنات على الرقم ده عشان يطلع سعر الكيلو الواحد صح، بدل ما يحسب كإن كل المكوّنات دي بتطلع كيلو واحد بس.</div>
+  </div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('addItemModal')" data-i18n="إلغاء">إلغاء</button>
     <button class="hbtn gold" onclick="saveItem()" id="addItemBtn">✓ إضافة الصنف</button>
@@ -2243,6 +2248,12 @@ td{padding:10px 13px;vertical-align:middle;}
 <script>
 const I18N_EN={
   "© جميع الحقوق محفوظة - عبدالله اسماعيل": "© All rights reserved - Abdullah Ismail",
+  "صنف منيو": "Menu Item",
+  "الكمية الناتجة من الوصفة (بوحدة الصنف)": "Recipe Output Quantity (in the item's own unit)",
+  "اكتب هنا كمّية المكوّنات فوق دي بتطلع قد إيه. مثلاً لو الوصفة بتعمل دِفعة 10كجم من الصلصة، اكتب 10 — النظام هيقسّم تكلفة المكوّنات على الرقم ده عشان يطلع سعر الكيلو الواحد صح، بدل ما يحسب كإن كل المكوّنات دي بتطلع كيلو واحد بس.": "Enter how much the ingredients above actually yield. For example, if the recipe makes a 10kg batch of sauce, enter 10 — the system divides the ingredient cost by this number to get the correct per-kg price, instead of treating all those ingredients as if they only yielded 1kg.",
+  "العدد": "Count",
+  "عدد": "Count",
+  "صنف منيو يُحتسب بالعدد": "A menu item component is counted by quantity, not weight/volume",
   "⚠️ استكمال مطابقة الاستيراد": "⚠️ Complete Import Matching",
   "بعض الأصناف من الملف المستورد لم تُطابَق تلقائيًا مع الكتالوج — اختر الصنف الصحيح لكل واحد منها لإكمال ربطه، أو تجاهله.": "Some items from the imported file weren't automatically matched with the catalog — choose the correct item for each one to complete the link, or ignore it.",
   "لا توجد عناصر تحتاج مطابقة يدوية": "No items need manual matching",
@@ -4003,6 +4014,7 @@ function openAddItem(){
   document.getElementById('ai-cost').value='';
   document.getElementById('ai-minstock').value='';
   document.getElementById('ai-type').value='raw';
+  document.getElementById('ai-batchqty').value='';
   document.getElementById('ai-ref').readOnly=false;
   curItemRecipeRows=[];
   renderItemRecipeRows();
@@ -4028,6 +4040,7 @@ function openEditItem(ref){
   document.getElementById('ai-cost').value=it.cost||'';
   document.getElementById('ai-minstock').value=it.minStock!=null?it.minStock:'';
   document.getElementById('ai-type').value=it.type||'raw';
+  document.getElementById('ai-batchqty').value=it.batchQty!=null?it.batchQty:'';
   curItemRecipeRows=(it.recipe||[]).map(r=>{const ing=S.items.find(x=>x.r===r.r);return {...r,uom:ing?ing.u:''};});
   renderItemRecipeRows();
   document.getElementById('addItemModal').classList.add('open');
@@ -4181,6 +4194,8 @@ function saveItem(){
   const minStockRaw=document.getElementById('ai-minstock').value;
   const minStock=minStockRaw===''?null:(parseFloat(minStockRaw)||0);
   const type=document.getElementById('ai-type').value||'raw';
+  const batchQtyRaw=parseFloat(document.getElementById('ai-batchqty').value);
+  const batchQty=(!isNaN(batchQtyRaw)&&batchQtyRaw>0)?batchQtyRaw:1;
 
   // Validate
   const refEl=document.getElementById('ai-ref');
@@ -4199,11 +4214,11 @@ function saveItem(){
   if(editingItem){
     const idx=S.items.findIndex(i=>i.r===editingItem);
     if(idx>=0){
-      S.items[idx]={...S.items[idx],n:nameAr,e:nameEn,c:cat,u:uom,cost,minStock,type,recipe,custom:true};
+      S.items[idx]={...S.items[idx],n:nameAr,e:nameEn,c:cat,u:uom,cost,minStock,type,recipe,batchQty,custom:true};
     }
     toast(t('✅ تم تعديل الصنف: ')+nameAr,'suc');
   } else {
-    S.items.push({r:ref,n:nameAr,e:nameEn,c:cat,u:uom,cost,minStock,type,recipe,custom:true});
+    S.items.push({r:ref,n:nameAr,e:nameEn,c:cat,u:uom,cost,minStock,type,recipe,batchQty,custom:true});
     if(qty) S.qty[ref]=parseFloat(qty)||0;
     toast(t('✅ تمت إضافة الصنف: ')+nameAr,'suc');
   }
@@ -6124,10 +6139,37 @@ function printCurrentReport(){
 let curRecipeRows=[], editingMenuId=null;
 
 function recipeCost(recipe){
-  return (recipe||[]).reduce((s,ing)=>{
-    const it=S.items.find(i=>i.r===ing.r);
-    return s+(it?effectiveItemCost(it)*ing.q:0);
+  const flat=flattenMenuRecipe(recipe);
+  return Object.entries(flat).reduce((s,[r,q])=>{
+    const it=S.items.find(i=>i.r===r);
+    return s+(it?effectiveItemCost(it)*q:0);
   },0);
+}
+// a menu item's recipe can bundle OTHER menu items as components (a "box"
+// item made of several ready menu items, e.g. a combo), not just raw/semi
+// inventory items — such a row is {mid, q} instead of {r, q}. This resolves
+// every row down to a flat {itemRef: totalQty} map in terms of actual
+// inventory refs only, recursively expanding any bundled menu item's own
+// recipe (scaled by how many of it this row uses) — so cost and theoretical
+// consumption calculations never need to know about menu-in-menu bundling,
+// they just consume the flattened map like any other recipe. Depth-capped
+// the same way effectiveItemCost() caps semi-in-semi recursion, so a
+// mistaken/circular box reference can't loop forever.
+function flattenMenuRecipe(rows,depth){
+  depth=depth||0;
+  const out={};
+  if(depth>6) return out;
+  (rows||[]).forEach(row=>{
+    if(row.mid){
+      const sub=S.menu.find(m=>m.id===row.mid);
+      if(!sub) return;
+      const subFlat=flattenMenuRecipe(sub.recipe,depth+1);
+      Object.entries(subFlat).forEach(([r,q])=>{ out[r]=(out[r]||0)+q*row.q; });
+    }else if(row.r){
+      out[row.r]=(out[row.r]||0)+row.q;
+    }
+  });
+  return out;
 }
 
 // Cost of an inventory item: its manual unit cost, or — if it's a
@@ -6136,10 +6178,18 @@ function effectiveItemCost(it,_depth){
   _depth=_depth||0;
   if(!it) return 0;
   if(it.recipe&&it.recipe.length&&_depth<6){
-    return it.recipe.reduce((s,ing)=>{
+    const totalCost=it.recipe.reduce((s,ing)=>{
       const sub=S.items.find(i=>i.r===ing.r);
       return s+(sub?effectiveItemCost(sub,_depth+1)*ing.q:0);
     },0);
+    // a semi-finished recipe often produces a whole BATCH (e.g. ingredients
+    // for a 10kg pot of sauce), not just 1 unit of the item's own uom — so
+    // the rolled-up ingredient cost is divided by how many units that batch
+    // actually yields (batchQty, defaults to 1 = "recipe as entered makes
+    // exactly 1 unit") to get the correct cost PER UNIT. Without this, a
+    // semi item used in small quantities inside a menu recipe (e.g. 50g of
+    // sauce per sandwich) would silently inflate cost by the batch size.
+    return totalCost/(it.batchQty>0?it.batchQty:1);
   }
   return it.cost||0;
 }
@@ -6150,8 +6200,14 @@ function buildComponentTree(recipe,qtyMultiplier,depth){
   depth=depth||0;
   if(!recipe||depth>6) return [];
   return recipe.map(ing=>{
-    const it=S.items.find(i=>i.r===ing.r);
     const qty=ing.q*qtyMultiplier;
+    if(ing.mid){
+      const m=S.menu.find(x=>x.id===ing.mid);
+      const node={ref:ing.mid,name:m?('🍽️ '+m.n):ing.mid,unit:t('عدد'),qty,cost:m?recipeCost(m.recipe)*qty:0,depth,children:[]};
+      if(m&&m.recipe&&m.recipe.length) node.children=buildComponentTree(m.recipe,qty,depth+1);
+      return node;
+    }
+    const it=S.items.find(i=>i.r===ing.r);
     const node={ref:ing.r,name:it?it.n:ing.r,unit:it?it.u:'',qty,cost:it?effectiveItemCost(it)*qty:0,depth,children:[]};
     if(it&&it.recipe&&it.recipe.length) node.children=buildComponentTree(it.recipe,qty,depth+1);
     return node;
@@ -6257,16 +6313,63 @@ function setMenuRecipeRowRef(ref,pickerId){
 function setMenuRecipeRowUom(i,uom){
   if(curRecipeRows[i]) curRecipeRows[i].uom=uom;
 }
+// like isearchHtml/isearchFilter/isearchPick, but for the ONE place a
+// component can be either a raw/semi inventory item OR another menu item
+// (a "box" bundled from several ready menu items) — kept as its own small
+// set of functions rather than extending the general isearch system, which
+// is reused by many unrelated pickers (waste, transfers, planner, ...)
+// that have no business ever offering a menu item as a result.
+function recipeCompSearchHtml(id,row){
+  let label='';
+  if(row.mid){ const m=S.menu.find(x=>x.id===row.mid); label=m?('🍽️ '+m.n):''; }
+  else if(row.r){ const it=S.items.find(x=>x.r===row.r); label=it?(it.n+' ('+it.r+')'):''; }
+  return `<div class="isearch" id="${id}">
+    <input type="text" class="mod-in isearch-input" placeholder="🔍 ابحث عن صنف مخزون أو صنف منيو (بوكس)..."
+      value="${label.replace(/"/g,'&quot;')}"
+      oninput="recipeCompFilter('${id}')" onfocus="recipeCompFilter('${id}')" onblur="setTimeout(()=>isearchClose('${id}'),180)">
+    <div class="isearch-menu"></div>
+  </div>`;
+}
+function recipeCompFilter(id){
+  const root=document.getElementById(id);if(!root)return;
+  const term=root.querySelector('.isearch-input').value.trim().toLowerCase();
+  let itemOpts=S.items,menuOpts=S.menu.filter(m=>m.id!==editingMenuId);
+  if(term){
+    itemOpts=itemOpts.filter(it=>it.n.toLowerCase().includes(term)||it.r.toLowerCase().includes(term));
+    menuOpts=menuOpts.filter(m=>m.n.toLowerCase().includes(term));
+  }
+  const menu=root.querySelector('.isearch-menu');
+  const itemsHtml=itemOpts.slice(0,40).map(it=>`<div class="isearch-opt" onmousedown="recipeCompPick('${id}','r','${it.r}')">${it.n} <span style="color:var(--muted);font-family:var(--mono);font-size:10.5px">(${it.r})</span></div>`).join('');
+  const menusHtml=menuOpts.slice(0,20).map(m=>`<div class="isearch-opt" onmousedown="recipeCompPick('${id}','mid','${m.id}')">🍽️ ${m.n} <span style="color:var(--muted);font-size:10.5px">(${t('صنف منيو')})</span></div>`).join('');
+  menu.innerHTML=(itemsHtml+menusHtml)||'<div class="isearch-empty">لا توجد نتائج</div>';
+  menu.classList.add('open');
+}
+function recipeCompPick(id,kind,val){
+  const i=parseInt(id.split('-').pop(),10);
+  if(!curRecipeRows[i]) return;
+  if(kind==='mid'){ delete curRecipeRows[i].r; curRecipeRows[i].mid=val; curRecipeRows[i].uom=''; }
+  else { delete curRecipeRows[i].mid; curRecipeRows[i].r=val; const it=S.items.find(x=>x.r===val); curRecipeRows[i].uom=it?it.u:''; }
+  renderRecipeRows();
+}
 function renderRecipeRows(){
   const cont=document.getElementById('miRecipeRows');
   if(!curRecipeRows.length){cont.innerHTML='<div style="font-size:11.5px;color:var(--muted)">لا توجد مكوّنات مضافة</div>';return;}
   cont.innerHTML=curRecipeRows.map((row,i)=>{
+    if(row.mid){
+      return `
+      <div style="display:flex;gap:6px;align-items:center">
+        <div style="flex:1.3">${recipeCompSearchHtml('mi-recipe-isearch-'+i,row)}</div>
+        <input type="number" inputmode="decimal" class="mod-in" style="flex:.6" min="0" step="1" value="${row.q||''}" placeholder="${t('العدد')}" oninput="curRecipeRows[${i}].q=parseFloat(this.value)||0">
+        <div class="mod-in" style="flex:.5;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px" title="${t('صنف منيو يُحتسب بالعدد')}">${t('عدد')}</div>
+        <button class="hi-btn del" style="flex:none;padding:8px 10px" onclick="curRecipeRows.splice(${i},1);renderRecipeRows()" title="حذف المكوّن" aria-label="حذف المكوّن">🗑</button>
+      </div>`;
+    }
     const it=S.items.find(x=>x.r===row.r);
     const rowUnit=row.uom||(it?it.u:'');
     const unitOpts=unitsOfSameKind(rowUnit).map(u=>`<option value="${u.name}"${u.name===rowUnit?' selected':''}>${u.name}</option>`).join('');
     return `
     <div style="display:flex;gap:6px;align-items:center">
-      <div style="flex:1.3">${isearchHtml('mi-recipe-isearch-'+i,row.r,{onSelect:'setMenuRecipeRowRef'})}</div>
+      <div style="flex:1.3">${recipeCompSearchHtml('mi-recipe-isearch-'+i,row)}</div>
       <input type="number" inputmode="decimal" class="mod-in" style="flex:.6" min="0" step="0.001" value="${row.q||''}" placeholder="الكمية" oninput="curRecipeRows[${i}].q=parseFloat(this.value)||0">
       <select class="mod-in" style="flex:.5" onchange="setMenuRecipeRowUom(${i},this.value)">${unitOpts}</select>
       <button class="hi-btn del" style="flex:none;padding:8px 10px" onclick="curRecipeRows.splice(${i},1);renderRecipeRows()" title="حذف المكوّن" aria-label="حذف المكوّن">🗑</button>
@@ -6292,7 +6395,10 @@ function openAddMenuItem(){
 function openEditMenuItem(id){
   if(!canManageMenuUI()){toast(t('⚠️ إدارة المنيو متاحة للإدارة أو لمن يملك صلاحية إدارة المنيو فقط'),'wrn');return;}
   const m=S.menu.find(x=>x.id===id);if(!m)return;
-  editingMenuId=id;curRecipeRows=(m.recipe||[]).map(r=>{const ing=S.items.find(x=>x.r===r.r);return {...r,uom:ing?ing.u:''};});
+  editingMenuId=id;curRecipeRows=(m.recipe||[]).map(r=>{
+    if(r.mid) return {...r};
+    const ing=S.items.find(x=>x.r===r.r);return {...r,uom:ing?ing.u:''};
+  });
   document.getElementById('miTitle').textContent='✏️ تعديل: '+m.n;
   document.getElementById('miSaveBtn').textContent='✓ حفظ التعديل';
   document.getElementById('mi-name').value=m.n;
@@ -6306,7 +6412,8 @@ function saveMenuItem(){
   const price=parseFloat(document.getElementById('mi-price').value)||0;
   const e=document.getElementById('mi-name-en').value.trim();
   if(!n){toast(t('⚠️ أدخل اسم الصنف'),'wrn');return;}
-  const recipe=curRecipeRows.filter(r=>r.r&&r.q>0).map(row=>{
+  const recipe=curRecipeRows.filter(r=>(r.r||r.mid)&&r.q>0&&r.mid!==editingMenuId).map(row=>{
+    if(row.mid) return {mid:row.mid,q:row.q};
     const ing=S.items.find(x=>x.r===row.r);
     const baseUnit=ing?ing.u:row.uom;
     return {r:row.r,q:convertQty(row.q,row.uom||baseUnit,baseUnit)};
@@ -7573,7 +7680,8 @@ function cascadeMenuQtyToRaw(menuMap){
   Object.entries(menuMap||{}).forEach(([mid,rec])=>{
     const qty=(rec&&rec.qty)||0;if(!qty)return;
     const m=S.menu.find(x=>x.id===mid);if(!m)return;
-    (m.recipe||[]).forEach(ing=>{ raw[ing.r]=(raw[ing.r]||0)+qty*ing.q; });
+    const flat=flattenMenuRecipe(m.recipe);
+    Object.entries(flat).forEach(([r,q])=>{ raw[r]=(raw[r]||0)+qty*q; });
   });
   return raw;
 }
@@ -7583,8 +7691,9 @@ function computeCycleResults(c){
   S.menu.forEach(m=>{
     const qty=c.sales[m.id]||0;
     if(!qty) return;
-    (m.recipe||[]).forEach(ing=>{
-      theoretical[ing.r]=(theoretical[ing.r]||0)+qty*ing.q;
+    const flat=flattenMenuRecipe(m.recipe);
+    Object.entries(flat).forEach(([r,q])=>{
+      theoretical[r]=(theoretical[r]||0)+qty*q;
     });
   });
   const wasteFromMenu=cascadeMenuQtyToRaw(c.wasteMenu);
@@ -8216,7 +8325,8 @@ function planIngredientRequirement(hist){
   S.menu.forEach(m=>{
     const qty=plannedMenuQty(m,hist);
     if(!qty) return;
-    (m.recipe||[]).forEach(ing=>{req[ing.r]=(req[ing.r]||0)+qty*ing.q;});
+    const flat=flattenMenuRecipe(m.recipe);
+    Object.entries(flat).forEach(([r,q])=>{req[r]=(req[r]||0)+qty*q;});
   });
   return req;
 }
@@ -8355,6 +8465,11 @@ function exportFullDataExcel(){
   S.menu.forEach(m=>{
     if(!m.recipe||!m.recipe.length){menuRows.push([m.n,m.price,'-','-']);return;}
     m.recipe.forEach(ing=>{
+      if(ing.mid){
+        const sub=S.menu.find(x=>x.id===ing.mid);
+        menuRows.push([m.n,m.price,'🍽️ '+(sub?sub.n:ing.mid),ing.q]);
+        return;
+      }
       const it=S.items.find(i=>i.r===ing.r);
       menuRows.push([m.n,m.price,it?it.n:ing.r,ing.q]);
     });
@@ -8538,6 +8653,16 @@ function exportRecipesExcel(){
   S.menu.forEach(m=>{
     if(!m.recipe||!m.recipe.length){ rows.push(['منيو',m.n,m.price,'','','']); return; }
     m.recipe.forEach(ing=>{
+      if(ing.mid){
+        // this template's import path only ever matches components against
+        // S.items refs, so a bundled menu item is exported for reference
+        // only (with a ref that can never collide with a real inventory
+        // ref) — re-importing this row won't restore the bundle link, it
+        // needs to be re-added from the recipe editor's menu-item picker.
+        const sub=S.menu.find(x=>x.id===ing.mid);
+        rows.push(['منيو',m.n,m.price,'MENU:'+ing.mid,sub?'🍽️ '+sub.n:'',ing.q]);
+        return;
+      }
       const it=S.items.find(i=>i.r===ing.r);
       rows.push(['منيو',m.n,m.price,ing.r,it?it.n:'',ing.q]);
     });

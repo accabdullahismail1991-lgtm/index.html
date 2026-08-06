@@ -1573,6 +1573,10 @@ td{padding:10px 13px;vertical-align:middle;}
   <div class="mod-title" data-i18n="🍽️ الأصناف المباعة ووصفاتها (BOM)">🍽️ الأصناف المباعة ووصفاتها (BOM)</div>
   </div>
   <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.8">عرّف هنا كل صنف بيتباع في المنيو، وحدد مقادير كل مكوّن من المخزون بيدخل في تحضيره — يُستخدم ده لحساب الاستهلاك النظري من المبيعات ومقارنته بالجرد الفعلي في دورة التسوية. عندك أصناف كتير؟ استورد "اسم وسعر بس" وضيف المكوّنات بعدين من هنا، أو استورد بالمكوّنات كاملة من ملف واحد — الاختيارين تحت.</p>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <input type="text" class="mod-in" style="flex:1.4" id="menuListSearch" placeholder="🔍 ابحث بالاسم..." oninput="renderMenuList()">
+    <select class="mod-in" style="flex:1" id="menuListCatFilter" onchange="renderMenuList()"><option value="" data-i18n="كل الأقسام">كل الأقسام</option></select>
+  </div>
   <div style="max-height:400px;overflow-y:auto" id="menuList"></div>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('menuModal')" data-i18n="إغلاق">إغلاق</button>
@@ -1599,6 +1603,10 @@ td{padding:10px 13px;vertical-align:middle;}
     <div class="mod-field"><label class="mod-lbl" data-i18n="سعر البيع *">سعر البيع *</label><input type="number" inputmode="decimal" class="mod-in" id="mi-price" min="0" step="0.01"></div>
   </div>
   <div class="mod-field"><label class="mod-lbl" data-i18n="اسم بالإنجليزي (اختياري)">اسم بالإنجليزي (اختياري)</label><input class="mod-in" id="mi-name-en"></div>
+  <div class="mod-field">
+    <label class="mod-lbl" data-i18n="القسم (اختياري)">القسم (اختياري)</label>
+    <select class="mod-in" id="mi-cat"><option value="" data-i18n="بدون قسم">بدون قسم</option></select>
+  </div>
   <div class="mod-field">
     <label class="mod-lbl" data-i18n="مقادير الوصفة (المكوّنات من المخزون)">مقادير الوصفة (المكوّنات من المخزون)</label>
     <div id="miRecipeRows" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
@@ -2249,6 +2257,9 @@ td{padding:10px 13px;vertical-align:middle;}
 const I18N_EN={
   "© جميع الحقوق محفوظة - عبدالله اسماعيل": "© All rights reserved - Abdullah Ismail",
   "صنف منيو": "Menu Item",
+  "القسم (اختياري)": "Category (optional)",
+  "بدون قسم": "No Category",
+  "لا توجد أصناف مطابقة لبحثك/فلترك.": "No items match your search/filter.",
   "الكمية الناتجة من الوصفة (بوحدة الصنف)": "Recipe Output Quantity (in the item's own unit)",
   "اكتب هنا كمّية المكوّنات فوق دي بتطلع قد إيه. مثلاً لو الوصفة بتعمل دِفعة 10كجم من الصلصة، اكتب 10 — النظام هيقسّم تكلفة المكوّنات على الرقم ده عشان يطلع سعر الكيلو الواحد صح، بدل ما يحسب كإن كل المكوّنات دي بتطلع كيلو واحد بس.": "Enter how much the ingredients above actually yield. For example, if the recipe makes a 10kg batch of sauce, enter 10 — the system divides the ingredient cost by this number to get the correct per-kg price, instead of treating all those ingredients as if they only yielded 1kg.",
   "العدد": "Count",
@@ -3856,6 +3867,10 @@ function populateCatSelects(){
   const opts=Object.entries(S.cats).map(([k,v])=>`<option value="${k}">${v.i||''} ${v.l}</option>`).join('');
   s1.innerHTML=opts;
   s2.innerHTML='<option value="" data-i18n="كل الأقسام">كل الأقسام</option>'+opts;
+  const miCat=document.getElementById('mi-cat');
+  if(miCat) miCat.innerHTML='<option value="" data-i18n="بدون قسم">بدون قسم</option>'+opts;
+  const menuCatFilter=document.getElementById('menuListCatFilter');
+  if(menuCatFilter) menuCatFilter.innerHTML='<option value="" data-i18n="كل الأقسام">كل الأقسام</option>'+opts;
 }
 
 function populateUomSelects(){
@@ -6250,12 +6265,22 @@ function openMenuMgr(){renderMenuList();document.getElementById('menuModal').cla
 function renderMenuList(){
   const cont=document.getElementById('menuList');
   if(!S.menu.length){cont.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted)">لا توجد أصناف مباعة بعد.<br>أضف أول صنف من المنيو مع وصفته لبدء حساب الاستهلاك النظري.</div>';return;}
-  cont.innerHTML=S.menu.map(m=>{
+  const searchEl=document.getElementById('menuListSearch');
+  const catEl=document.getElementById('menuListCatFilter');
+  const term=(searchEl?searchEl.value:'').trim().toLowerCase();
+  const catFilter=catEl?catEl.value:'';
+  let list=S.menu;
+  if(term) list=list.filter(m=>m.n.toLowerCase().includes(term)||(m.e||'').toLowerCase().includes(term));
+  if(catFilter) list=list.filter(m=>m.c===catFilter);
+  if(!list.length){cont.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted)">لا توجد أصناف مطابقة لبحثك/فلترك.</div>';return;}
+  cont.innerHTML=list.map(m=>{
     const cost=recipeCost(m.recipe);
     const pct=m.price>0?Math.round(cost/netOfVat(m.price)*100):0;
+    const catInfo=m.c?S.cats[m.c]:null;
+    const catBadge=catInfo?`<span style="font-size:10px;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:1px 6px;margin-right:6px">${catInfo.i||''} ${catInfo.l}</span>`:'';
     return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px">
       <div style="flex:1">
-        <div style="font-weight:700;font-size:13.5px">${m.n}${m.e?`<span style="font-size:11px;color:var(--muted);margin-right:6px">${m.e}</span>`:''}</div>
+        <div style="font-weight:700;font-size:13.5px">${m.n}${m.e?`<span style="font-size:11px;color:var(--muted);margin-right:6px">${m.e}</span>`:''}${catBadge}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:3px">السعر: ${fmt(m.price)} (شامل الضريبة) · تكلفة الوصفة: ${fmt(cost)} (${pct}% من صافي السعر) · ${(m.recipe||[]).length} مكوّن</div>
       </div>
       <button class="hi-btn" style="flex:none;padding:5px 10px" onclick="openEditMenuItem('${m.id}')" title="تعديل الصنف" aria-label="تعديل الصنف">✏</button>
@@ -6389,6 +6414,7 @@ function openAddMenuItem(){
   document.getElementById('mi-name').value='';
   document.getElementById('mi-price').value='';
   document.getElementById('mi-name-en').value='';
+  document.getElementById('mi-cat').value='';
   renderRecipeRows();
   document.getElementById('menuItemModal').classList.add('open');
 }
@@ -6404,6 +6430,7 @@ function openEditMenuItem(id){
   document.getElementById('mi-name').value=m.n;
   document.getElementById('mi-price').value=m.price;
   document.getElementById('mi-name-en').value=m.e||'';
+  document.getElementById('mi-cat').value=m.c||'';
   renderRecipeRows();
   document.getElementById('menuItemModal').classList.add('open');
 }
@@ -6411,6 +6438,7 @@ function saveMenuItem(){
   const n=document.getElementById('mi-name').value.trim();
   const price=parseFloat(document.getElementById('mi-price').value)||0;
   const e=document.getElementById('mi-name-en').value.trim();
+  const c=document.getElementById('mi-cat').value||'';
   if(!n){toast(t('⚠️ أدخل اسم الصنف'),'wrn');return;}
   const recipe=curRecipeRows.filter(r=>(r.r||r.mid)&&r.q>0&&r.mid!==editingMenuId).map(row=>{
     if(row.mid) return {mid:row.mid,q:row.q};
@@ -6420,10 +6448,10 @@ function saveMenuItem(){
   });
   if(editingMenuId){
     const idx=S.menu.findIndex(x=>x.id===editingMenuId);
-    S.menu[idx]={...S.menu[idx],n,e,price,recipe};
+    S.menu[idx]={...S.menu[idx],n,e,c,price,recipe};
     toast(t('✅ تم تعديل الصنف'),'suc');
   }else{
-    S.menu.push({id:'MI'+Date.now().toString(36).toUpperCase(),n,e,price,recipe});
+    S.menu.push({id:'MI'+Date.now().toString(36).toUpperCase(),n,e,c,price,recipe});
     toast(t('✅ تمت إضافة الصنف'),'suc');
   }
   save();renderMenuList();closeM('menuItemModal');

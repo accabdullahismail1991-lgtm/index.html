@@ -322,7 +322,7 @@ tbody tr:hover{background:var(--paper-2);}
       <div class="topbar">
         <div>
           <div class="view-title">صباح الخير، سارة</div>
-          <div class="view-sub">الخميس ٩ أغسطس — ٤ فروع، مطبخ مركزي واحد، ومستودع واحد ضمن حسابك</div>
+          <div class="view-sub">الخميس ٩ أغسطس — <span id="home-branch-count">٤</span> فروع، مطبخ مركزي واحد، ومستودع واحد ضمن حسابك</div>
         </div>
         <div class="topbar-right">
           <input class="search-box" placeholder="ابحث عن صنف، تحويل، فرع…">
@@ -481,7 +481,7 @@ tbody tr:hover{background:var(--paper-2);}
 
     <!-- ============ الفروع ============ -->
     <section class="view" id="view-branches">
-      <div class="topbar"><div><div class="view-title">الفروع</div><div class="view-sub">4 فروع نشطة</div></div><button class="btn primary" onclick="openModal('branch')">+ إضافة فرع</button></div>
+      <div class="topbar"><div><div class="view-title">الفروع</div><div class="view-sub"><span id="branches-count">4</span> فروع نشطة</div></div><button class="btn primary" onclick="openModal('branch')">+ إضافة فرع</button></div>
       <div class="panel"><div class="branch-grid" id="branches-full"></div></div>
     </section>
 
@@ -651,11 +651,11 @@ let approvals = [
 ];
 
 let varianceRows = [
-  {src:'تحويل', item:'كرواسون بالزبدة', loc:'الروضة', exp:60, act:54, sev:'high', status:'open'},
-  {src:'جرد', item:'دقيق الخبز', loc:'الروضة', exp:42.0, act:41.2, sev:'low', status:'open'},
-  {src:'إنتاج', item:'خبز العجين المخمّر', loc:'المطبخ المركزي', exp:125, act:120, sev:'medium', status:'open'},
-  {src:'جرد', item:'خميرة', loc:'الروضة', exp:3.4, act:3.1, sev:'medium', status:'under_review'},
-  {src:'إيصال', item:'حليب 1 لتر', loc:'المستودع', exp:200, act:188, sev:'high', status:'open'},
+  {id:'VR-1183', src:'تحويل', item:'كرواسون بالزبدة', loc:'الروضة', exp:60, act:54, sev:'high', status:'open'},
+  {id:'VR-1179', src:'جرد', item:'دقيق الخبز', loc:'الروضة', exp:42.0, act:41.2, sev:'low', status:'open'},
+  {id:'VR-1174', src:'إنتاج', item:'خبز العجين المخمّر', loc:'المطبخ المركزي', exp:125, act:120, sev:'medium', status:'open'},
+  {id:'VR-1170', src:'جرد', item:'خميرة', loc:'الروضة', exp:3.4, act:3.1, sev:'medium', status:'under_review'},
+  {id:'VR-1166', src:'إيصال', item:'حليب 1 لتر', loc:'المستودع', exp:200, act:188, sev:'high', status:'open'},
 ];
 
 let warehouseStock = [
@@ -678,9 +678,9 @@ let deliveryRoutes = [
 ];
 
 let wasteLogs = [
-  {item:'كرواسون بالزبدة', loc:'الروضة', qty:'6 حبة', reason:'تالف', by:'محمد حسن', time:'08:41'},
-  {item:'حليب 1 لتر', loc:'المستودع', qty:'12 لتر', reason:'منتهي الصلاحية', by:'النظام', time:'06:00'},
-  {item:'خبز العجين المخمّر', loc:'المطبخ المركزي', qty:'3 حبة', reason:'خطأ تحضير', by:'أحمد يوسف', time:'05:12'},
+  {id:'WL-899', item:'كرواسون بالزبدة', loc:'الروضة', qty:'6 حبة', reason:'تالف', by:'محمد حسن', time:'08:41'},
+  {id:'WL-897', item:'حليب 1 لتر', loc:'المستودع', qty:'12 لتر', reason:'منتهي الصلاحية', by:'النظام', time:'06:00'},
+  {id:'WL-895', item:'خبز العجين المخمّر', loc:'المطبخ المركزي', qty:'3 حبة', reason:'خطأ تحضير', by:'أحمد يوسف', time:'05:12'},
 ];
 
 let usersList = [
@@ -690,7 +690,14 @@ let usersList = [
   {name:'فيصل عمر', role:'driver', scope:'التوصيل — المسار 2', status:'off'},
 ];
 
-let counters = {transfer:4471, production:2212, count:118, receipt:2291};
+let counters = {transfer:4471, production:2212, count:118, receipt:2291, waste:899};
+
+// dropdowns that offer a branch as a destination/location must read the
+// LIVE branches array, not a snapshot taken when modalConfigs was defined
+// — otherwise a branch added via "+ إضافة فرع" is invisible to every
+// other form (transfer/waste/count/adjustment) for the rest of the session.
+function branchNames(){ return branches.map(b => b.name); }
+function allLocations(){ return ['المستودع','المطبخ المركزي', ...branchNames()]; }
 
 let auditLog = [
   {t:'09:14:02', actor:'سارة العامري', action:'transfer.approve', entity:'TR-4471', before:{status:'pending_approval'}, after:{status:'dispatched'}},
@@ -698,6 +705,17 @@ let auditLog = [
   {t:'08:41:19', actor:'محمد حسن', action:'waste.log', entity:'WL-902', before:null, after:{item:'كرواسون بالزبدة', qty:'6 حبة', reason:'تالف'}},
   {t:'08:12:55', actor:'أحمد يوسف', action:'production_run.complete', entity:'PR-2210', before:{status:'in_progress'}, after:{status:'completed', output:'125 رغيف'}},
 ];
+
+// the audit view claims to be "an append-only log of every data-changing
+// action" but nothing actually called auditLog.push/unshift for any real
+// action — every mutating handler below now logs through here so the view
+// lives up to its own description instead of staying frozen at its 4 seed
+// rows regardless of how much the user actually does.
+function logAudit(action, entity, before, after){
+  auditLog.unshift({t:new Date().toTimeString().slice(0,8), actor:'سارة العامري', action, entity, before, after});
+  const el = document.getElementById('audit-table');
+  if(el) renderAudit();
+}
 
 // ---------- RENDER HELPERS ----------
 // every place below that interpolates free-typed user input (branch
@@ -738,6 +756,14 @@ function renderBranches(targetId, full){
       ` : ''}
     </div>
   `).join('');
+  // both call sites (renderAll and the "+ إضافة فرع" submit handler) always
+  // render home-branches and branches-full together, so it's safe to keep
+  // these two subtitle counts in sync from either call rather than needing
+  // a third "refresh counts" function threaded through both places.
+  const homeCount = document.getElementById('home-branch-count');
+  if(homeCount) homeCount.textContent = branches.length;
+  const branchesCount = document.getElementById('branches-count');
+  if(branchesCount) branchesCount.textContent = branches.length;
 }
 
 function renderLedgerTape(){
@@ -789,6 +815,11 @@ function renderTransfersFull(){
     </tr>
   `).join('');
   document.getElementById('badge-transfers').textContent = transfers.filter(t=>t.status==='pending_approval').length;
+  // "open" = still in flight (not yet received at its destination, not cancelled) —
+  // recomputed here (not just once at load) so the Home KPI stays live across every
+  // transfer mutation (create/approve/reject/receive), same as the sidebar badge above.
+  const kpiTransfers = document.getElementById('kpi-transfers');
+  if(kpiTransfers) kpiTransfers.textContent = transfers.filter(t=>t.status!=='received'&&t.status!=='cancelled').length;
 }
 
 function renderApprovals(targetId){
@@ -884,7 +915,7 @@ function renderUsers(){
 
 function renderAudit(){
   document.getElementById('audit-table').innerHTML = auditLog.map((a,i) => `
-    <tr><td class="mono">${a.t}</td><td>${a.actor}</td><td class="mono">${a.action}</td><td class="mono">${a.entity}</td>
+    <tr><td class="mono">${a.t}</td><td>${escapeHtml(a.actor)}</td><td class="mono">${a.action}</td><td class="mono">${escapeHtml(a.entity)}</td>
     <td><button class="btn sm" onclick="openAuditDetail(${i})">تفاصيل</button></td></tr>
   `).join('');
 }
@@ -905,7 +936,6 @@ function renderAll(){
   renderWaste();
   renderUsers();
   renderAudit();
-  document.getElementById('kpi-transfers').textContent = transfers.length;
 }
 
 // ---------- DETAIL ROW HELPER ----------
@@ -929,22 +959,28 @@ function openTransferDetail(i){
   const actions = [];
   if(t.status === 'pending_approval'){
     actions.push({label:'اعتماد وإرسال', cls:'approve', handler:() => {
+      const before = {status:t.status};
       t.status = 'dispatched'; t.time = 'الآن';
       const ai = approvals.findIndex(a => a.ref === t.id);
       if(ai > -1) approvals.splice(ai,1);
+      logAudit('transfer.approve', t.id, before, {status:t.status});
       renderTransfersFull(); renderTransfersHome(); renderApprovals('home-approvals'); renderApprovals('approvals-table');
       showToast(`تم اعتماد ${t.id} وإرساله`); closeModal();
     }});
     actions.push({label:'رفض', cls:'reject', handler:() => {
+      const before = {status:t.status};
       t.status = 'cancelled'; t.time = 'الآن';
       const ai = approvals.findIndex(a => a.ref === t.id);
       if(ai > -1) approvals.splice(ai,1);
+      logAudit('transfer.reject', t.id, before, {status:t.status});
       renderTransfersFull(); renderTransfersHome(); renderApprovals('home-approvals'); renderApprovals('approvals-table');
       showToast(`تم رفض ${t.id}`); closeModal();
     }});
   } else if(t.status === 'dispatched'){
     actions.push({label:'تأكيد الاستلام', cls:'approve', handler:() => {
+      const before = {status:t.status};
       t.status = 'received'; t.time = 'الآن';
+      logAudit('transfer.receive', t.id, before, {status:t.status});
       renderTransfersFull(); renderTransfersHome();
       showToast(`تم تأكيد استلام ${t.id}`); closeModal();
     }});
@@ -964,12 +1000,16 @@ function openProductionDetail(i){
   const actions = [];
   if(r.status === 'planned'){
     actions.push({label:'بدء التشغيلة', cls:'approve', handler:() => {
+      const before = {status:r.status};
       r.status = 'in_progress';
+      logAudit('production_run.start', r.id, before, {status:r.status});
       renderKitchen(); showToast(`بدأت التشغيلة ${r.id}`); closeModal();
     }});
   } else if(r.status === 'in_progress'){
     actions.push({label:'إنهاء التشغيلة', cls:'approve', handler:() => {
+      const before = {status:r.status};
       r.status = 'completed'; r.output = `${r.batches * 25} وحدة`;
+      logAudit('production_run.complete', r.id, before, {status:r.status, output:r.output});
       renderKitchen(); showToast(`اكتملت التشغيلة ${r.id}`); closeModal();
     }});
   }
@@ -1031,12 +1071,18 @@ function openVarianceDetail(i){
   const actions = [];
   if(v.status === 'open'){
     actions.push({label:'وضع قيد المراجعة', cls:'', handler:() => {
-      v.status = 'under_review'; renderVariance(); showToast('تم نقل الفرق لقيد المراجعة'); closeModal();
+      const before = {status:v.status};
+      v.status = 'under_review';
+      logAudit('variance.review', v.id, before, {status:v.status});
+      renderVariance(); showToast('تم نقل الفرق لقيد المراجعة'); closeModal();
     }});
   }
   if(v.status !== 'resolved'){
     actions.push({label:'تحديد كمحلولة', cls:'approve', handler:() => {
-      v.status = 'resolved'; renderVariance(); showToast('تم حل الفرق'); closeModal();
+      const before = {status:v.status};
+      v.status = 'resolved';
+      logAudit('variance.resolve', v.id, before, {status:v.status});
+      renderVariance(); showToast('تم حل الفرق'); closeModal();
     }});
   }
   showDetailModal('تفاصيل الفرق', body, actions);
@@ -1054,7 +1100,9 @@ function openUserEdit(i){
       {key:'status', label:'الحالة', type:'select', options:['active','off'], value:u.status},
     ],
     submit(v){
+      const before = {name:u.name, role:u.role, scope:u.scope, status:u.status};
       usersList[i] = {...usersList[i], name:v.name, role:v.role, scope:v.scope, status:v.status};
+      logAudit('user.update', v.name, before, {name:v.name, role:v.role, scope:v.scope, status:v.status});
       renderUsers();
       showToast(`تم تحديث بيانات ${v.name}`);
     }
@@ -1067,13 +1115,13 @@ function openAuditDetail(i){
   const a = auditLog[i];
   let body = `
     ${detailRow('الوقت', a.t)}
-    ${detailRow('المستخدم', a.actor)}
+    ${detailRow('المستخدم', escapeHtml(a.actor))}
     ${detailRow('الإجراء', `<span class="mono">${a.action}</span>`)}
-    ${detailRow('الكيان', `<span class="mono">${a.entity}</span>`)}
+    ${detailRow('الكيان', `<span class="mono">${escapeHtml(a.entity)}</span>`)}
     <div style="margin-top:14px;font-size:12.5px;font-weight:700;color:var(--text-dim);">الحالة قبل</div>
-    <pre style="background:var(--paper-2);border-radius:8px;padding:10px 12px;font-family:var(--font-mono);font-size:11.5px;direction:ltr;text-align:left;overflow-x:auto;">${a.before ? JSON.stringify(a.before,null,2) : '—'}</pre>
+    <pre style="background:var(--paper-2);border-radius:8px;padding:10px 12px;font-family:var(--font-mono);font-size:11.5px;direction:ltr;text-align:left;overflow-x:auto;">${a.before ? escapeHtml(JSON.stringify(a.before,null,2)) : '—'}</pre>
     <div style="margin-top:10px;font-size:12.5px;font-weight:700;color:var(--text-dim);">الحالة بعد</div>
-    <pre style="background:var(--paper-2);border-radius:8px;padding:10px 12px;font-family:var(--font-mono);font-size:11.5px;direction:ltr;text-align:left;overflow-x:auto;">${JSON.stringify(a.after,null,2)}</pre>
+    <pre style="background:var(--paper-2);border-radius:8px;padding:10px 12px;font-family:var(--font-mono);font-size:11.5px;direction:ltr;text-align:left;overflow-x:auto;">${a.after ? escapeHtml(JSON.stringify(a.after,null,2)) : '—'}</pre>
   `;
   showDetailModal(`سجل تدقيق — ${a.entity}`, body, []);
 }
@@ -1090,7 +1138,9 @@ function openWasteDetail(i){
     ${detailRow('الوقت', w.time)}
   `;
   const actions = [{label:'حذف السجل', cls:'reject', handler:() => {
-    wasteLogs.splice(i,1); renderWaste(); showToast('تم حذف سجل الهالك'); closeModal();
+    wasteLogs.splice(i,1);
+    logAudit('waste.delete', w.id, {item:w.item, qty:w.qty, reason:w.reason}, null);
+    renderWaste(); showToast('تم حذف سجل الهالك'); closeModal();
   }}];
   showDetailModal('تفاصيل الهالك', body, actions);
 }
@@ -1112,8 +1162,10 @@ function syncApprovalTargetStatus(a, approved){
   if(a.type === 'تحويل'){
     const t = transfers.find(x => x.id === a.ref);
     if(t && t.status === 'pending_approval'){
+      const before = {status:t.status};
       t.status = approved ? 'dispatched' : 'cancelled';
       t.time = 'الآن';
+      logAudit(approved?'transfer.approve':'transfer.reject', t.id, before, {status:t.status});
       renderTransfersFull(); renderTransfersHome();
     }
   }
@@ -1147,13 +1199,14 @@ const modalConfigs = {
     title:'تحويل جديد',
     fields:[
       {key:'from', label:'من', type:'select', options:['المستودع','المطبخ المركزي']},
-      {key:'to', label:'إلى', type:'select', options:['الروضة','السلامة','الكورنيش','الزهراء']},
+      {key:'to', label:'إلى', type:'select', options:branchNames},
       {key:'items', label:'عدد البنود', type:'number', placeholder:'مثال: 6', required:true},
       {key:'notes', label:'ملاحظات (اختياري)', type:'textarea'},
     ],
     submit(v){
       counters.transfer++;
-      transfers.unshift({id:`TR-${counters.transfer}`, from:v.from, to:v.to, items:Number(v.items)||1, status:'pending_approval', by:'سارة العامري', time:'الآن'});
+      const itemsNum = Number(v.items);
+      transfers.unshift({id:`TR-${counters.transfer}`, from:v.from, to:v.to, items:isNaN(itemsNum)?1:itemsNum, notes:v.notes, status:'pending_approval', by:'سارة العامري', time:'الآن'});
       approvals.unshift({type:'تحويل', ref:`TR-${counters.transfer}`, by:'سارة العامري', value:'—'});
       renderTransfersHome(); renderTransfersFull(); renderApprovals('home-approvals'); renderApprovals('approvals-table');
       showToast(`تم إنشاء التحويل TR-${counters.transfer}`);
@@ -1166,9 +1219,11 @@ const modalConfigs = {
       {key:'loc', label:'الموقع', type:'text', placeholder:'مثال: جدة — الجنوب', required:true},
     ],
     submit(v){
-      branches.push({name:v.name||'فرع جديد', loc:v.loc||'—', fill:0, variance:'ok', deliveries:0});
+      const name = v.name||'فرع جديد';
+      branches.push({name, loc:v.loc||'—', fill:0, variance:'ok', deliveries:0});
+      logAudit('branch.create', name, null, {name, loc:v.loc});
       renderBranches('home-branches', false); renderBranches('branches-full', true);
-      showToast(`تمت إضافة فرع ${v.name||'جديد'}`);
+      showToast(`تمت إضافة فرع ${name}`);
     }
   },
   user: {
@@ -1179,21 +1234,25 @@ const modalConfigs = {
       {key:'scope', label:'النطاق', type:'text', placeholder:'مثال: فرع الروضة'},
     ],
     submit(v){
-      usersList.push({name:v.name||'مستخدم جديد', role:v.role, scope:v.scope||'—', status:'active'});
+      const name = v.name||'مستخدم جديد';
+      usersList.push({name, role:v.role, scope:v.scope||'—', status:'active'});
+      logAudit('user.invite', name, null, {name, role:v.role, scope:v.scope});
       renderUsers();
-      showToast(`تمت دعوة ${v.name||'المستخدم'}`);
+      showToast(`تمت دعوة ${name}`);
     }
   },
   waste: {
     title:'تسجيل هالك',
     fields:[
       {key:'item', label:'الصنف', type:'text', required:true},
-      {key:'loc', label:'الموقع', type:'select', options:['المستودع','المطبخ المركزي','الروضة','السلامة','الكورنيش','الزهراء']},
+      {key:'loc', label:'الموقع', type:'select', options:allLocations},
       {key:'qty', label:'الكمية', type:'text', placeholder:'مثال: 5 حبة', required:true},
       {key:'reason', label:'السبب', type:'select', options:['تالف','منتهي الصلاحية','خطأ تحضير','أخرى']},
     ],
     submit(v){
-      wasteLogs.unshift({item:v.item||'—', loc:v.loc, qty:v.qty||'—', reason:v.reason, by:'سارة العامري', time:'الآن'});
+      const id = 'WL-'+(++counters.waste);
+      wasteLogs.unshift({id, item:v.item||'—', loc:v.loc, qty:v.qty||'—', reason:v.reason, by:'سارة العامري', time:'الآن'});
+      logAudit('waste.log', id, null, {item:v.item, qty:v.qty, reason:v.reason});
       renderWaste();
       showToast('تم تسجيل الهالك');
     }
@@ -1214,7 +1273,7 @@ const modalConfigs = {
   count: {
     title:'بدء جرد جديد',
     fields:[
-      {key:'loc', label:'الموقع', type:'select', options:['الروضة','السلامة','الكورنيش','الزهراء','المستودع']},
+      {key:'loc', label:'الموقع', type:'select', options:()=>[...branchNames(),'المستودع']},
       {key:'type', label:'نوع الجرد', type:'select', options:['جرد دوري','جرد شامل']},
     ],
     submit(v){
@@ -1237,13 +1296,15 @@ const modalConfigs = {
     title:'تعديل يدوي على الدفتر',
     fields:[
       {key:'item', label:'الصنف', type:'text', required:true},
-      {key:'loc', label:'الموقع', type:'select', options:['المستودع','المطبخ المركزي','الروضة','السلامة','الكورنيش','الزهراء']},
+      {key:'loc', label:'الموقع', type:'select', options:allLocations},
       {key:'qty', label:'الكمية (+/-)', type:'number', placeholder:'مثال: -2.5', required:true},
       {key:'reason', label:'سبب التعديل', type:'text', required:true},
     ],
     submit(v){
       const qty = Number(v.qty)||0;
-      ledgerRows.unshift({t:'الآن', item:v.item, loc:v.loc, src:'manual_adjustment', qty:qty, pos:qty>=0, bn:'BN-'+(nextBatchNum++), reason:v.reason});
+      const bn = 'BN-'+(nextBatchNum++);
+      ledgerRows.unshift({t:'الآن', item:v.item, loc:v.loc, src:'manual_adjustment', qty:qty, pos:qty>=0, bn, reason:v.reason});
+      logAudit('ledger.manual_adjustment', bn, null, {item:v.item, loc:v.loc, qty, reason:v.reason});
       renderLedgerTape(); renderLedgerTable();
       showToast('تم تسجيل التعديل في الدفتر');
     }
@@ -1270,7 +1331,8 @@ function openModal(key){
   document.getElementById('modal-body').innerHTML = cfg.fields.map(f => {
     const req = f.required ? '<span style="color:var(--terra)"> *</span>' : '';
     if(f.type==='select'){
-      return `<div class="field"><label>${f.label}${req}</label><select data-key="${f.key}" ${f.required?'required':''}>${f.options.map(o=>`<option value="${o}" ${f.value===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
+      const opts = typeof f.options==='function' ? f.options() : f.options;
+      return `<div class="field"><label>${f.label}${req}</label><select data-key="${f.key}" ${f.required?'required':''}>${opts.map(o=>`<option value="${escapeHtml(o)}" ${f.value===o?'selected':''}>${escapeHtml(o)}</option>`).join('')}</select></div>`;
     }
     if(f.type==='textarea'){
       return `<div class="field"><label>${f.label}${req}</label><textarea data-key="${f.key}" rows="3" placeholder="${f.placeholder||''}" ${f.required?'required':''}>${escapeHtml(f.value||'')}</textarea></div>`;

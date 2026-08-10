@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مانيفست — منصة عمليات المطبخ المركزي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12161f;
+  --ink-2:#1b2130;
+  --paper:#faf9f6;
+  --paper-2:#f1efe9;
+  --line:#e3e0d6;
+  --amber:#e2a63b;
+  --amber-dark:#93650f;
+  --basil:#3f6135;
+  --terra:#a23a30;
+  --slate:#6b7180;
+  --text:#1a1d23;
+  --text-dim:#6b7180;
+  --white:#ffffff;
+  --radius:10px;
+  --font-display:'Tajawal',sans-serif;
+  --font-body:'IBM Plex Sans Arabic','Tajawal',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:var(--font-body);
+  background:var(--paper);
+  color:var(--text);
+  font-size:14px;
+  line-height:1.7;
+}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+:focus-visible{outline:2px solid var(--amber-dark);outline-offset:2px;}
+.ltr{direction:ltr;unicode-bidi:embed;font-family:var(--font-mono);}
+
+/* ---------- LAYOUT ---------- */
+.app{display:grid;grid-template-columns:236px 1fr;min-height:100vh;}
+@media (max-width:900px){.app{grid-template-columns:1fr;}}
+
+/* ---------- SIDEBAR ---------- */
+.sidebar{
+  background:var(--ink);
+  color:#c9cdd6;
+  padding:22px 14px 20px;
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+@media (max-width:900px){.sidebar{position:relative;height:auto;}}
+.brand{
+  display:flex;align-items:center;gap:10px;
+  padding:6px 8px 22px;
+  border-bottom:1px solid #2a3142;margin-bottom:14px;
+}
+.brand-mark{
+  width:32px;height:32px;border-radius:7px;
+  background:linear-gradient(155deg,var(--amber),var(--amber-dark));
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-weight:600;color:var(--ink);font-size:14px;
+}
+.brand-name{font-family:var(--font-display);font-weight:800;font-size:17px;color:#fff;letter-spacing:.2px;}
+.brand-sub{font-size:11px;color:#7a8194;}
+
+.nav-group{margin-bottom:18px;}
+.nav-label{
+  font-size:11px;font-weight:700;
+  color:#565d70;padding:0 10px;margin-bottom:6px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 10px;border-radius:8px;font-size:14px;font-weight:500;
+  color:#c9cdd6;margin-bottom:2px;transition:background .12s,color .12s;cursor:pointer;
+}
+.nav-item:hover{background:#1f2635;color:#fff;}
+.nav-item.active{background:var(--amber);color:var(--ink);font-weight:700;}
+.nav-badge{
+  margin-inline-start:auto;font-family:var(--font-mono);font-size:10px;
+  background:#2a3142;color:#c9cdd6;padding:1px 7px;border-radius:20px;
+}
+.nav-item.active .nav-badge{background:rgba(18,22,31,.18);color:var(--ink);}
+
+.sidebar-foot{margin-top:auto;padding-top:14px;border-top:1px solid #2a3142;}
+.user-chip{display:flex;align-items:center;gap:9px;padding:6px 8px;}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:#2a3142;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;color:#c9cdd6;flex-shrink:0;}
+.user-name{font-size:13px;font-weight:700;color:#e9ebf0;}
+.user-role{font-size:11px;color:#7a8194;}
+
+/* ---------- MAIN ---------- */
+.main{padding:26px 32px 60px;max-width:1280px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:26px;flex-wrap:wrap;}
+.view-title{font-family:var(--font-display);font-size:25px;font-weight:800;letter-spacing:-.2px;}
+.view-sub{color:var(--text-dim);font-size:13px;margin-top:4px;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.location-switch{
+  font-size:13px;background:var(--white);border:1px solid var(--line);
+  padding:9px 13px;border-radius:8px;display:flex;align-items:center;gap:8px;color:var(--text);
+}
+.search-box{
+  background:var(--white);border:1px solid var(--line);border-radius:8px;
+  padding:9px 13px;font-size:13px;width:220px;color:var(--text-dim);font-family:inherit;
+}
+
+/* ---------- KPI CARDS ---------- */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+@media (max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+.kpi-card{
+  background:var(--white);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px 18px;position:relative;overflow:hidden;
+}
+.kpi-label{font-size:12px;color:var(--text-dim);font-weight:700;}
+.kpi-value{font-family:var(--font-display);font-size:29px;font-weight:800;margin-top:6px;}
+.kpi-delta{font-size:12px;margin-top:6px;display:inline-flex;align-items:center;gap:4px;font-weight:600;}
+.kpi-delta.up{color:var(--basil);}
+.kpi-delta.down{color:var(--terra);}
+.kpi-accent{position:absolute;top:0;inset-inline-start:0;width:3px;height:100%;background:var(--amber);}
+
+/* ---------- GRID / PANELS ---------- */
+.grid-2{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:16px;}
+@media (max-width:1050px){.grid-2{grid-template-columns:1fr;}}
+.panel{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:8px;}
+.panel-title{font-family:var(--font-display);font-size:16px;font-weight:700;}
+.panel-link{font-size:12.5px;color:var(--amber-dark);font-weight:700;cursor:pointer;border-radius:4px;}
+.panel-link:hover{text-decoration:underline;}
+@media (prefers-reduced-motion:reduce){
+  .tape-dot{animation:none;}
+  .view,.modal{animation:none;}
+}
+.panel-body{padding:6px 0;}
+
+/* ---------- LEDGER TAPE ---------- */
+.tape-wrap{background:var(--ink);position:relative;}
+.tape-head{
+  padding:15px 18px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px dashed #2a3142;
+}
+.tape-title{font-family:var(--font-display);font-size:16px;font-weight:700;color:#fff;}
+.tape-live{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:#7fd68f;text-transform:uppercase;letter-spacing:.5px;}
+.tape-dot{width:6px;height:6px;border-radius:50%;background:#7fd68f;animation:pulse 1.6s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.tape-body{max-height:340px;overflow-y:auto;padding:4px 0;}
+.tape-row{
+  display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:baseline;
+  padding:9px 18px;font-size:13px;color:#c9cdd6;
+  border-bottom:1px dotted #232a3a;
+}
+.tape-time{color:#565d70;font-family:var(--font-mono);font-size:11px;}
+.tape-desc{color:#e9ebf0;}
+.tape-qty{font-weight:700;font-family:var(--font-mono);}
+.tape-qty.pos{color:#7fd68f;}
+.tape-qty.neg{color:#e88a80;}
+
+/* ---------- TABLE ---------- */
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th{
+  text-align:right;font-size:11px;font-weight:700;
+  color:var(--text-dim);padding:11px 18px;border-bottom:1px solid var(--line);
+  background:var(--paper-2);
+}
+td{padding:12px 18px;border-bottom:1px solid var(--line);}
+tr:last-child td{border-bottom:none;}
+tbody tr{transition:background .1s;}
+tbody tr:hover{background:var(--paper-2);}
+.mono{font-family:var(--font-mono);font-size:12.5px;direction:ltr;unicode-bidi:embed;display:inline-block;}
+
+/* ---------- BADGES ---------- */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px;}
+.badge.green{background:#e9f2e6;color:var(--basil);}
+.badge.amber{background:#fbf0dd;color:var(--amber-dark);}
+.badge.red{background:#fbe9e7;color:var(--terra);}
+.badge.grey{background:var(--paper-2);color:var(--text-dim);}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
+
+/* ---------- BUTTONS ---------- */
+.btn{
+  font-size:13px;font-weight:700;padding:9px 16px;border-radius:8px;border:1.5px solid var(--line);
+  background:var(--white);color:var(--text);display:inline-flex;align-items:center;gap:6px;
+  font-family:inherit;transition:transform .08s, box-shadow .12s;
+}
+.btn:hover{border-color:#c9c5b8;}
+.btn:active{transform:scale(.97);}
+.btn.primary{background:var(--amber);color:var(--ink);border-color:var(--amber-dark);box-shadow:0 2px 0 var(--amber-dark);}
+.btn.primary:hover{background:#ecb452;}
+.btn.primary:active{box-shadow:0 0 0 var(--amber-dark);transform:translateY(2px) scale(.98);}
+.btn.dark{background:var(--ink);color:#fff;border-color:var(--ink);}
+.btn.approve{background:var(--basil);color:#fff;border-color:var(--basil);}
+.btn.reject{background:#fff;color:var(--terra);border-color:#f0c9c4;}
+.btn.sm{padding:6px 12px;font-size:12px;}
+.btn.block{width:100%;justify-content:center;}
+
+/* ---------- BRANCH GRID ---------- */
+.branch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;padding:16px 18px;}
+.branch-card{border:1px solid var(--line);border-radius:8px;padding:13px 14px;}
+.branch-name{font-weight:700;font-size:14px;margin-bottom:2px;}
+.branch-loc{font-size:11.5px;color:var(--text-dim);margin-bottom:10px;}
+.branch-stats{display:flex;justify-content:space-between;align-items:center;font-size:12px;}
+
+/* ---------- MAP PLACEHOLDER ---------- */
+.map-shell{
+  background:
+    repeating-linear-gradient(0deg,transparent,transparent 27px,#e9e6db 27px,#e9e6db 28px),
+    repeating-linear-gradient(90deg,transparent,transparent 27px,#e9e6db 27px,#e9e6db 28px),
+    var(--paper-2);
+  border-radius:8px;height:280px;position:relative;overflow:hidden;margin:16px 18px;
+}
+.map-pin{position:absolute;width:11px;height:11px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid var(--white);box-shadow:0 1px 3px rgba(0,0,0,.25);}
+.map-route{position:absolute;border-top:2px dashed var(--amber-dark);opacity:.7;}
+
+/* ---------- TOAST ---------- */
+.toast{
+  position:fixed;bottom:22px;inset-inline-start:22px;background:var(--ink);color:#fff;
+  padding:13px 20px;border-radius:8px;font-size:13.5px;font-weight:600;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;align-items:center;gap:9px;
+  transform:translateY(20px);opacity:0;pointer-events:none;transition:all .25s ease;z-index:80;
+}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast-dot{width:7px;height:7px;border-radius:50%;background:#7fd68f;flex-shrink:0;}
+
+/* ---------- MODAL ---------- */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(18,22,31,.55);display:none;
+  align-items:center;justify-content:center;z-index:100;padding:20px;backdrop-filter:blur(2px);
+}
+.modal-overlay.show{display:flex;}
+.modal{
+  background:var(--white);border-radius:14px;width:100%;max-width:440px;
+  box-shadow:0 24px 60px rgba(0,0,0,.3);overflow:hidden;
+  animation:modalin .18s ease;
+}
+@keyframes modalin{from{opacity:0;transform:translateY(10px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+.modal-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-family:var(--font-display);font-size:17px;font-weight:800;}
+.modal-close{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--white);display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--text-dim);}
+.modal-body{padding:18px 20px;display:flex;flex-direction:column;gap:14px;}
+.modal-foot{padding:16px 20px;border-top:1px solid var(--line);display:flex;gap:10px;}
+.field label{display:block;font-size:12.5px;font-weight:700;color:var(--text-dim);margin-bottom:6px;}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13.5px;font-family:inherit;background:var(--white);color:var(--text);}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--amber-dark);}
+
+/* ---------- STATE ---------- */
+.empty{padding:40px 18px;text-align:center;color:var(--text-dim);font-size:13px;}
+.section-note{font-size:13px;color:var(--text-dim);margin:0 0 16px;padding:12px 15px;background:var(--paper-2);border-radius:8px;border-inline-start:3px solid var(--amber);}
+
+.view{display:none;}
+.view.active{display:block;animation:fadein .2s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-thumb{background:#d8d4c7;border-radius:6px;}
+.tape-body::-webkit-scrollbar-thumb{background:#2a3142;}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">M</div>
+      <div>
+        <div class="brand-name">مانيفست</div>
+        <div class="brand-sub">منصة العمليات</div>
+      </div>
+    </div>
+
+    <nav class="nav-group" aria-label="نظرة عامة">
+      <div class="nav-label">نظرة عامة</div>
+      <div class="nav-item active" data-view="home" role="button" tabindex="0" aria-current="page">🏠 <span>الرئيسية</span></div>
+      <div class="nav-item" data-view="dashboards" role="button" tabindex="0">📊 <span>لوحات المعلومات</span></div>
+    </nav>
+
+    <nav class="nav-group" aria-label="المخزون">
+      <div class="nav-label">المخزون</div>
+      <div class="nav-item" data-view="ledger" role="button" tabindex="0">📒 <span>دفتر المخزون</span></div>
+      <div class="nav-item" data-view="warehouse" role="button" tabindex="0">🏬 <span>المستودع</span></div>
+      <div class="nav-item" data-view="kitchen" role="button" tabindex="0">🍞 <span>المطبخ المركزي</span></div>
+      <div class="nav-item" data-view="branches" role="button" tabindex="0">🏪 <span>الفروع</span></div>
+    </nav>
+
+    <nav class="nav-group" aria-label="سير العمل">
+      <div class="nav-label">سير العمل</div>
+      <div class="nav-item" data-view="transfers" role="button" tabindex="0">🔁 <span>التحويلات</span><span class="nav-badge" id="badge-transfers">4</span></div>
+      <div class="nav-item" data-view="delivery" role="button" tabindex="0">🚚 <span>التوصيل</span></div>
+      <div class="nav-item" data-view="receiving" role="button" tabindex="0">📥 <span>الاستلام</span></div>
+    </nav>
+
+    <nav class="nav-group" aria-label="الرقابة">
+      <div class="nav-label">الرقابة</div>
+      <div class="nav-item" data-view="stockcount" role="button" tabindex="0">🔢 <span>الجرد</span></div>
+      <div class="nav-item" data-view="variance" role="button" tabindex="0">⚠️ <span>الفروقات</span><span class="nav-badge" id="badge-variance">5</span></div>
+      <div class="nav-item" data-view="approvals" role="button" tabindex="0">✅ <span>الموافقات</span><span class="nav-badge" id="badge-approvals">2</span></div>
+      <div class="nav-item" data-view="waste" role="button" tabindex="0">🗑️ <span>الهالك</span></div>
+    </nav>
+
+    <nav class="nav-group" aria-label="النظام">
+      <div class="nav-label">النظام</div>
+      <div class="nav-item" data-view="users" role="button" tabindex="0">👥 <span>المستخدمون والصلاحيات</span></div>
+      <div class="nav-item" data-view="audit" role="button" tabindex="0">🕵️ <span>سجل التدقيق</span></div>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="user-chip">
+        <div class="user-avatar">سع</div>
+        <div>
+          <div class="user-name">سارة العامري</div>
+          <div class="user-role">مديرة العمليات</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ============ الرئيسية ============ -->
+    <section class="view active" id="view-home">
+      <div class="topbar">
+        <div>
+          <div class="view-title">صباح الخير، سارة</div>
+          <div class="view-sub">الخميس ٩ أغسطس — <span id="home-branch-count">٤</span> فروع، مطبخ مركزي واحد، ومستودع واحد ضمن حسابك</div>
+        </div>
+        <div class="topbar-right">
+          <input class="search-box" placeholder="ابحث عن صنف، تحويل، فرع…">
+          <div class="location-switch">📍 كل المواقع</div>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card"><div class="kpi-accent"></div>
+          <div class="kpi-label">تحويلات مفتوحة</div>
+          <div class="kpi-value" id="kpi-transfers">14</div>
+          <div class="kpi-delta up">▲ 3 عن الأمس</div>
+        </div>
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--terra)"></div>
+          <div class="kpi-label">فروقات مفتوحة</div>
+          <div class="kpi-value">5</div>
+          <div class="kpi-delta down">▲ فرقان بدرجة عالية</div>
+        </div>
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--basil)"></div>
+          <div class="kpi-label">توصيلات اليوم</div>
+          <div class="kpi-value">27</div>
+          <div class="kpi-delta up">21 مكتملة</div>
+        </div>
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--slate)"></div>
+          <div class="kpi-label">قيمة الهالك (الشهر الحالي)</div>
+          <div class="kpi-value"><span class="mono">4,120</span> ر.س</div>
+          <div class="kpi-delta down">▼ 6% عن الشهر الماضي</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">الموافقات المعلقة</div>
+            <span class="panel-link" data-goto="approvals">عرض الكل ←</span>
+          </div>
+          <div class="panel-body">
+            <table>
+              <thead><tr><th>النوع</th><th>المرجع</th><th>مقدّم الطلب</th><th>القيمة</th><th></th></tr></thead>
+              <tbody id="home-approvals"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tape-wrap panel">
+          <div class="tape-head">
+            <div class="tape-title">شريط الحركة</div>
+            <div class="tape-live"><span class="tape-dot"></span> مباشر</div>
+          </div>
+          <div class="tape-body" id="ledger-tape"></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-head">
+          <div class="panel-title">حالة الفروع</div>
+          <span class="panel-link" data-goto="branches">إدارة الفروع ←</span>
+        </div>
+        <div class="branch-grid" id="home-branches"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">آخر التحويلات</div>
+          <span class="panel-link" data-goto="transfers">عرض الكل ←</span>
+        </div>
+        <div class="panel-body">
+          <table>
+            <thead><tr><th>المعرّف</th><th>المسار</th><th>الحالة</th><th>التوقيت</th></tr></thead>
+            <tbody id="home-transfers"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ لوحات المعلومات ============ -->
+    <section class="view" id="view-dashboards">
+      <div class="topbar"><div><div class="view-title">لوحات المعلومات</div><div class="view-sub">تقارير واتجاهات مجمّعة من جميع الوحدات</div></div></div>
+      <div class="section-note">هذه اللوحة تجمّع بيانات المخزون والفروقات والتوصيل والهالك في اتجاهات عامة. اربطها ببيانات فعلية بعد توصيل طبقة الـ API.</div>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">قيمة المخزون حسب الموقع</div></div>
+          <div class="panel-body" style="padding:20px 18px;">
+            <div id="chart-bars"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">اتجاه الفروقات (٣٠ يومًا)</div></div>
+          <div class="panel-body" style="padding:20px 18px;">
+            <svg viewBox="0 0 300 120" style="width:100%;height:120px;">
+              <polyline fill="none" stroke="#c0453a" stroke-width="2" points="300,80 270,70 240,85 210,60 180,65 150,40 120,55 90,30 60,45 30,20 0,35"/>
+              <polyline fill="none" stroke="#e3e0d6" stroke-width="1" points="0,110 300,110"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ دفتر المخزون ============ -->
+    <section class="view" id="view-ledger">
+      <div class="topbar">
+        <div><div class="view-title">دفتر المخزون</div><div class="view-sub">سجل حركات ثابت لا يُعدَّل — المرجع الأساسي لكل وحدة في النظام</div></div>
+        <button class="btn primary" onclick="openModal('adjustment')">+ تعديل يدوي</button>
+      </div>
+      <div class="panel">
+        <div class="panel-body">
+          <table>
+            <thead><tr><th>الوقت</th><th>الصنف</th><th>الموقع</th><th>المصدر</th><th>الدفعة</th><th>الكمية</th></tr></thead>
+            <tbody id="ledger-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ المستودع ============ -->
+    <section class="view" id="view-warehouse">
+      <div class="topbar"><div><div class="view-title">المستودع</div><div class="view-sub">المستودع المركزي — المنطقة الصناعية، جدة</div></div><button class="btn primary" onclick="openModal('receipt')">+ إيصال استلام جديد</button></div>
+      <div class="kpi-row">
+        <div class="kpi-card"><div class="kpi-accent"></div><div class="kpi-label">أصناف مخزّنة</div><div class="kpi-value">312</div></div>
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--terra)"></div><div class="kpi-label">أقل من حد إعادة الطلب</div><div class="kpi-value">9</div></div>
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--basil)"></div><div class="kpi-label">نسبة إشغال الأرفف</div><div class="kpi-value">74%</div></div>
+        <div class="kpi-card"><div class="kpi-accent" style="background:var(--slate)"></div><div class="kpi-label">تنتهي خلال ٧ أيام</div><div class="kpi-value">14 دفعة</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">المخزون الحالي</div></div>
+        <table>
+          <thead><tr><th>الرمز</th><th>الصنف</th><th>الموقع بالرف</th><th>الكمية</th><th>حد الطلب</th><th>الحالة</th></tr></thead>
+          <tbody id="warehouse-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ المطبخ المركزي ============ -->
+    <section class="view" id="view-kitchen">
+      <div class="topbar"><div><div class="view-title">المطبخ المركزي</div><div class="view-sub">تشغيلات الإنتاج واستهلاك الوصفات (BOM)</div></div><button class="btn primary" onclick="openModal('production')">+ جدولة تشغيلة إنتاج</button></div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">تشغيلات الإنتاج اليوم</div></div>
+        <table>
+          <thead><tr><th>التشغيلة</th><th>الوصفة</th><th>عدد الدفعات</th><th>الناتج</th><th>الحالة</th><th></th></tr></thead>
+          <tbody id="kitchen-table"></tbody>
+        </table>
+      </div>
+      <div class="panel" style="margin-top:16px;">
+        <div class="panel-head"><div class="panel-title">وصفة — خبز العجين المخمّر (الإصدار ٣)</div></div>
+        <table>
+          <thead><tr><th>المكوّن</th><th>الكمية لكل دفعة</th><th>نسبة الفاقد المسموح</th></tr></thead>
+          <tbody>
+            <tr><td>دقيق الخبز</td><td class="mono">8.0 kg</td><td class="mono">1.5%</td></tr>
+            <tr><td>ماء</td><td class="mono">5.2 L</td><td class="mono">0%</td></tr>
+            <tr><td>خميرة العجين الحامض</td><td class="mono">1.6 kg</td><td class="mono">2.0%</td></tr>
+            <tr><td>ملح</td><td class="mono">0.18 kg</td><td class="mono">0%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ الفروع ============ -->
+    <section class="view" id="view-branches">
+      <div class="topbar"><div><div class="view-title">الفروع</div><div class="view-sub"><span id="branches-count">4</span> فروع نشطة</div></div><button class="btn primary" onclick="openModal('branch')">+ إضافة فرع</button></div>
+      <div class="panel"><div class="branch-grid" id="branches-full"></div></div>
+    </section>
+
+    <!-- ============ التحويلات ============ -->
+    <section class="view" id="view-transfers">
+      <div class="topbar"><div><div class="view-title">التحويلات</div><div class="view-sub">بين المستودع والمطبخ المركزي والفروع</div></div><button class="btn primary" onclick="openModal('transfer')">+ تحويل جديد</button></div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>المعرّف</th><th>من</th><th>إلى</th><th>الأصناف</th><th>الحالة</th><th>مقدّم الطلب</th><th></th></tr></thead>
+          <tbody id="transfers-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ التوصيل ============ -->
+    <section class="view" id="view-delivery">
+      <div class="topbar"><div><div class="view-title">إدارة التوصيل</div><div class="view-sub">تتبّع المسارات والسائقين لحظيًا</div></div></div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">الخريطة المباشرة</div><span class="badge green"><span class="badge-dot"></span> 3 سائقين نشطين</span></div>
+        <div class="map-shell" id="map-shell"></div>
+      </div>
+      <div class="panel" style="margin-top:16px;">
+        <div class="panel-head"><div class="panel-title">مسارات اليوم</div></div>
+        <table>
+          <thead><tr><th>السائق</th><th>التوقفات</th><th>التقدّم</th><th>الوصول القادم</th><th>الحالة</th><th></th></tr></thead>
+          <tbody id="delivery-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ الاستلام ============ -->
+    <section class="view" id="view-receiving">
+      <div class="topbar"><div><div class="view-title">الاستلام</div><div class="view-sub">تأكيد المخزون الوارد مقابل الكميات المتوقعة</div></div></div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">إيصال #RC-2291 — فرع الروضة</div><span class="badge amber"><span class="badge-dot"></span> يوجد فرق</span></div>
+        <table>
+          <thead><tr><th>الصنف</th><th>المتوقع</th><th>المستلم</th><th>الحالة</th><th>الفرق</th></tr></thead>
+          <tbody>
+            <tr><td>خبز العجين المخمّر</td><td class="mono">40</td><td class="mono">40</td><td><span class="badge green">سليم</span></td><td class="mono">0</td></tr>
+            <tr><td>كرواسون بالزبدة</td><td class="mono">60</td><td class="mono">54</td><td><span class="badge red">تالف</span></td><td class="mono" style="color:var(--terra)">-6</td></tr>
+            <tr><td>باغيت</td><td class="mono">30</td><td class="mono">30</td><td><span class="badge green">سليم</span></td><td class="mono">0</td></tr>
+          </tbody>
+        </table>
+        <div style="padding:14px 18px;display:flex;gap:10px;"><button class="btn approve" onclick="showToast('تم تأكيد الإيصال')">تأكيد الاستلام</button><button class="btn reject" onclick="showToast('تم رفعه للمراجعة')">وضع علامة للمراجعة</button></div>
+      </div>
+    </section>
+
+    <!-- ============ الجرد ============ -->
+    <section class="view" id="view-stockcount">
+      <div class="topbar"><div><div class="view-title">الجرد</div><div class="view-sub">جرد دوري وجرد شامل</div></div><button class="btn primary" onclick="openModal('count')">+ بدء جرد</button></div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">فرع الروضة — جرد دوري #SC-118</div><span class="badge amber"><span class="badge-dot"></span> بانتظار المراجعة</span></div>
+        <table>
+          <thead><tr><th>الصنف</th><th>الكمية بالنظام</th><th>الكمية المجرودة</th><th>الفرق</th></tr></thead>
+          <tbody>
+            <tr><td>دقيق الخبز</td><td class="mono">42.0 kg</td><td class="mono">41.2 kg</td><td class="mono" style="color:var(--terra)">-0.8</td></tr>
+            <tr><td>زبدة</td><td class="mono">18.0 kg</td><td class="mono">18.0 kg</td><td class="mono" style="color:var(--basil)">0.0</td></tr>
+            <tr><td>خميرة</td><td class="mono">3.4 kg</td><td class="mono">3.1 kg</td><td class="mono" style="color:var(--terra)">-0.3</td></tr>
+          </tbody>
+        </table>
+        <div style="padding:14px 18px;"><button class="btn primary" onclick="showToast('تم اعتماد الجرد')">إنهاء الجرد</button></div>
+      </div>
+    </section>
+
+    <!-- ============ الفروقات ============ -->
+    <section class="view" id="view-variance">
+      <div class="topbar"><div><div class="view-title">محرّك الفروقات</div><div class="view-sub">المتوقع مقابل الفعلي، من كل مصدر</div></div></div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>المصدر</th><th>الصنف</th><th>الموقع</th><th>المتوقع</th><th>الفعلي</th><th>الفرق</th><th>الخطورة</th><th>الحالة</th><th></th></tr></thead>
+          <tbody id="variance-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ الموافقات ============ -->
+    <section class="view" id="view-approvals">
+      <div class="topbar"><div><div class="view-title">مسار الموافقات</div><div class="view-sub">موافقات مرتبطة بحدود قيمة عبر الوحدات</div></div></div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>النوع</th><th>المرجع</th><th>مقدّم الطلب</th><th>القيمة</th><th></th></tr></thead>
+          <tbody id="approvals-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ الهالك ============ -->
+    <section class="view" id="view-waste">
+      <div class="topbar"><div><div class="view-title">الهالك</div><div class="view-sub">سجل الهالك مع أسباب موثّقة</div></div><button class="btn primary" onclick="openModal('waste')">+ تسجيل هالك</button></div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>الصنف</th><th>الموقع</th><th>الكمية</th><th>السبب</th><th>سجّله</th><th>الوقت</th><th></th></tr></thead>
+          <tbody id="waste-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ المستخدمون ============ -->
+    <section class="view" id="view-users">
+      <div class="topbar"><div><div class="view-title">المستخدمون والصلاحيات</div><div class="view-sub">الأدوار مرتبطة بموقع محدد وليست عامة فقط</div></div><button class="btn primary" onclick="openModal('user')">+ دعوة مستخدم</button></div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>الاسم</th><th>الدور</th><th>النطاق</th><th>الحالة</th><th></th></tr></thead>
+          <tbody id="users-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ التدقيق ============ -->
+    <section class="view" id="view-audit">
+      <div class="topbar"><div><div class="view-title">سجل التدقيق</div><div class="view-sub">سجل إضافة فقط لكل إجراء يُغيّر البيانات</div></div></div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>الوقت</th><th>المستخدم</th><th>الإجراء</th><th>الكيان</th><th></th></tr></thead>
+          <tbody id="audit-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span class="toast-dot"></span><span id="toast-text">تم تنفيذ الإجراء</span></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">إضافة</div>
+      <button class="modal-close" onclick="closeModal()" aria-label="إغلاق النافذة">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<script>
+// ---------- MOCK DATA (STATE) ----------
+let branches = [
+  {name:'الروضة', loc:'جدة — الشمال', fill:82, variance:'ok', deliveries:6},
+  {name:'السلامة', loc:'جدة — الغرب', fill:64, variance:'high', deliveries:4},
+  {name:'الكورنيش', loc:'جدة — الساحل', fill:91, variance:'ok', deliveries:8},
+  {name:'الزهراء', loc:'جدة — الشرق', fill:47, variance:'medium', deliveries:3},
+];
+
+let ledgerRows = [
+  {t:'09:14', item:'خبز العجين المخمّر', loc:'المطبخ المركزي', src:'production', qty:120, pos:true, bn:'BN-4821'},
+  {t:'09:11', item:'دقيق الخبز', loc:'المطبخ المركزي', src:'production_consume', qty:-8.4, pos:false, bn:'BN-4801'},
+  {t:'09:02', item:'كرواسون بالزبدة', loc:'المستودع', src:'transfer_out', qty:-60, pos:false, bn:'BN-4790'},
+  {t:'08:58', item:'حليب 1 لتر', loc:'المستودع', src:'waste', qty:-12, pos:false, bn:'BN-4776'},
+  {t:'08:41', item:'زبدة', loc:'المستودع', src:'receipt', qty:40, pos:true, bn:'BN-4765'},
+  {t:'08:20', item:'باغيت', loc:'الروضة', src:'transfer_in', qty:30, pos:true, bn:'BN-4750'},
+  {t:'08:05', item:'خميرة', loc:'الروضة', src:'stock_count_adj', qty:-0.3, pos:false, bn:'BN-4733'},
+];
+let nextBatchNum = 4900;
+
+let transfers = [
+  {id:'TR-4471', from:'المستودع', to:'الروضة', items:8, status:'pending_approval', by:'محمد حسن', time:'09:10'},
+  {id:'TR-4470', from:'المطبخ المركزي', to:'الكورنيش', items:14, status:'dispatched', by:'أحمد يوسف', time:'08:55'},
+  {id:'TR-4469', from:'المستودع', to:'السلامة', items:5, status:'received', by:'النظام', time:'08:30'},
+  {id:'TR-4468', from:'المطبخ المركزي', to:'الزهراء', items:11, status:'pending_approval', by:'أحمد يوسف', time:'08:12'},
+];
+
+let approvals = [
+  {type:'تحويل', ref:'TR-4471', by:'محمد حسن', value:'1,240 ر.س'},
+  {type:'تعديل جرد', ref:'SC-118', by:'محمد حسن', value:'86 ر.س'},
+];
+
+let varianceRows = [
+  {id:'VR-1183', src:'تحويل', item:'كرواسون بالزبدة', loc:'الروضة', exp:60, act:54, sev:'high', status:'open'},
+  {id:'VR-1179', src:'جرد', item:'دقيق الخبز', loc:'الروضة', exp:42.0, act:41.2, sev:'low', status:'open'},
+  {id:'VR-1174', src:'إنتاج', item:'خبز العجين المخمّر', loc:'المطبخ المركزي', exp:125, act:120, sev:'medium', status:'open'},
+  {id:'VR-1170', src:'جرد', item:'خميرة', loc:'الروضة', exp:3.4, act:3.1, sev:'medium', status:'under_review'},
+  {id:'VR-1166', src:'إيصال', item:'حليب 1 لتر', loc:'المستودع', exp:200, act:188, sev:'high', status:'open'},
+];
+
+let warehouseStock = [
+  {sku:'FLR-001', item:'دقيق الخبز', bin:'A-12', qty:'380 kg', reorder:'150 kg', status:'ok'},
+  {sku:'BTR-004', item:'زبدة', bin:'C-03', qty:'62 kg', reorder:'70 kg', status:'low'},
+  {sku:'YST-002', item:'خميرة', bin:'A-18', qty:'11 kg', reorder:'15 kg', status:'low'},
+  {sku:'MLK-010', item:'حليب 1 لتر', bin:'D-01', qty:'240 L', reorder:'100 L', status:'ok'},
+];
+
+let kitchenRuns = [
+  {id:'PR-2210', bom:'خبز العجين المخمّر (v3)', batches:5, output:'125 رغيف', status:'completed'},
+  {id:'PR-2211', bom:'كرواسون بالزبدة (v2)', batches:8, output:'—', status:'in_progress'},
+  {id:'PR-2212', bom:'باغيت (v1)', batches:3, output:'—', status:'planned'},
+];
+
+let deliveryRoutes = [
+  {driver:'فيصل عمر', stops:'6/8', progress:75, eta:'10:20', status:'in_progress'},
+  {driver:'خالد ناصر', stops:'8/8', progress:100, eta:'—', status:'completed'},
+  {driver:'عمر سعيد', stops:'2/5', progress:40, eta:'09:55', status:'in_progress'},
+];
+
+let wasteLogs = [
+  {id:'WL-899', item:'كرواسون بالزبدة', loc:'الروضة', qty:'6 حبة', reason:'تالف', by:'محمد حسن', time:'08:41'},
+  {id:'WL-897', item:'حليب 1 لتر', loc:'المستودع', qty:'12 لتر', reason:'منتهي الصلاحية', by:'النظام', time:'06:00'},
+  {id:'WL-895', item:'خبز العجين المخمّر', loc:'المطبخ المركزي', qty:'3 حبة', reason:'خطأ تحضير', by:'أحمد يوسف', time:'05:12'},
+];
+
+let usersList = [
+  {name:'سارة العامري', role:'ops_manager', scope:'كل المواقع', status:'active'},
+  {name:'محمد حسن', role:'branch_staff', scope:'الروضة', status:'active'},
+  {name:'أحمد يوسف', role:'kitchen_lead', scope:'المطبخ المركزي', status:'active'},
+  {name:'فيصل عمر', role:'driver', scope:'التوصيل — المسار 2', status:'off'},
+];
+
+let counters = {transfer:4471, production:2212, count:118, receipt:2291, waste:899};
+
+// dropdowns that offer a branch as a destination/location must read the
+// LIVE branches array, not a snapshot taken when modalConfigs was defined
+// — otherwise a branch added via "+ إضافة فرع" is invisible to every
+// other form (transfer/waste/count/adjustment) for the rest of the session.
+function branchNames(){ return branches.map(b => b.name); }
+function allLocations(){ return ['المستودع','المطبخ المركزي', ...branchNames()]; }
+
+let auditLog = [
+  {t:'09:14:02', actor:'سارة العامري', action:'transfer.approve', entity:'TR-4471', before:{status:'pending_approval'}, after:{status:'dispatched'}},
+  {t:'09:02:47', actor:'النظام', action:'variance.flag_high', entity:'VR-1183', before:{severity:'medium'}, after:{severity:'high'}},
+  {t:'08:41:19', actor:'محمد حسن', action:'waste.log', entity:'WL-902', before:null, after:{item:'كرواسون بالزبدة', qty:'6 حبة', reason:'تالف'}},
+  {t:'08:12:55', actor:'أحمد يوسف', action:'production_run.complete', entity:'PR-2210', before:{status:'in_progress'}, after:{status:'completed', output:'125 رغيف'}},
+];
+
+// the audit view claims to be "an append-only log of every data-changing
+// action" but nothing actually called auditLog.push/unshift for any real
+// action — every mutating handler below now logs through here so the view
+// lives up to its own description instead of staying frozen at its 4 seed
+// rows regardless of how much the user actually does.
+function logAudit(action, entity, before, after){
+  auditLog.unshift({t:new Date().toTimeString().slice(0,8), actor:'سارة العامري', action, entity, before, after});
+  const el = document.getElementById('audit-table');
+  if(el) renderAudit();
+}
+
+// ---------- RENDER HELPERS ----------
+// every place below that interpolates free-typed user input (branch
+// name/location, user name/scope, waste item/qty, ledger item) into an
+// innerHTML string or an HTML attribute runs it through this first —
+// without it, e.g. adding a branch named "<img src=x onerror=alert(1)>"
+// renders and executes on the Home/Branches views.
+function escapeHtml(str){
+  return String(str==null?'':str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function statusBadge(status){
+  const map = {
+    pending_approval:['amber','قيد الموافقة'], dispatched:['grey','تم الإرسال'],
+    received:['green','تم الاستلام'], completed:['green','مكتمل'],
+    in_progress:['amber','قيد التنفيذ'], planned:['grey','مخطط له'],
+    ok:['green','متوفر'], low:['red','منخفض'],
+    medium:['amber','متوسطة'], high:['red','مرتفعة'],
+    open:['amber','مفتوح'], under_review:['grey','قيد المراجعة'], resolved:['green','تم الحل'],
+    active:['green','نشط'], off:['grey','خارج الدوام'], cancelled:['red','ملغي'],
+  };
+  const [cls,label] = map[status] || ['grey', status];
+  return `<span class="badge ${cls}"><span class="badge-dot"></span>${label}</span>`;
+}
+
+function renderBranches(targetId, full){
+  const el = document.getElementById(targetId);
+  el.innerHTML = branches.map((b,i) => `
+    <div class="branch-card">
+      <div class="branch-name">${escapeHtml(b.name)}</div>
+      <div class="branch-loc">${escapeHtml(b.loc)}</div>
+      <div class="branch-stats">
+        <span>الإشغال: <strong class="mono">${b.fill}%</strong></span>
+        ${statusBadge(b.variance)}
+      </div>
+      ${full ? `
+        <div style="margin-top:10px;font-size:11.5px;color:var(--text-dim);">${b.deliveries} توصيلات اليوم</div>
+        <button class="btn sm block" style="margin-top:10px;" onclick="openBranchDetail(${i})">عرض التفاصيل</button>
+      ` : ''}
+    </div>
+  `).join('');
+  // both call sites (renderAll and the "+ إضافة فرع" submit handler) always
+  // render home-branches and branches-full together, so it's safe to keep
+  // these two subtitle counts in sync from either call rather than needing
+  // a third "refresh counts" function threaded through both places.
+  const homeCount = document.getElementById('home-branch-count');
+  if(homeCount) homeCount.textContent = branches.length;
+  const branchesCount = document.getElementById('branches-count');
+  if(branchesCount) branchesCount.textContent = branches.length;
+}
+
+function renderLedgerTape(){
+  const el = document.getElementById('ledger-tape');
+  el.innerHTML = ledgerRows.slice(0,10).map(r => `
+    <div class="tape-row">
+      <span class="tape-time">${r.t}</span>
+      <span class="tape-desc">${escapeHtml(r.item)} <span style="color:#565d70">· ${r.src}</span></span>
+      <span class="tape-qty ${r.pos?'pos':'neg'}">${r.pos?'+':''}${r.qty}</span>
+    </div>
+  `).join('');
+}
+
+function renderLedgerTable(){
+  const el = document.getElementById('ledger-table');
+  el.innerHTML = ledgerRows.map(r => `
+    <tr>
+      <td class="mono">${r.t}</td>
+      <td>${escapeHtml(r.item)}</td>
+      <td>${r.loc}</td>
+      <td><span class="badge grey">${r.src}</span></td>
+      <td class="mono">${r.bn}</td>
+      <td class="mono" style="color:${r.pos?'var(--basil)':'var(--terra)'}">${r.pos?'+':''}${r.qty}</td>
+    </tr>
+  `).join('');
+}
+
+function renderTransfersHome(){
+  document.getElementById('home-transfers').innerHTML = transfers.slice(0,4).map(t => `
+    <tr>
+      <td class="mono">${t.id}</td>
+      <td>${t.from} ← ${t.to}</td>
+      <td>${statusBadge(t.status)}</td>
+      <td class="mono">${t.time}</td>
+    </tr>
+  `).join('');
+}
+
+function renderTransfersFull(){
+  document.getElementById('transfers-table').innerHTML = transfers.map((t,i) => `
+    <tr>
+      <td class="mono">${t.id}</td>
+      <td>${t.from}</td>
+      <td>${t.to}</td>
+      <td class="mono">${t.items} بند</td>
+      <td>${statusBadge(t.status)}</td>
+      <td>${t.by}</td>
+      <td><button class="btn sm" onclick="openTransferDetail(${i})">عرض</button></td>
+    </tr>
+  `).join('');
+  document.getElementById('badge-transfers').textContent = transfers.filter(t=>t.status==='pending_approval').length;
+  // "open" = still in flight (not yet received at its destination, not cancelled) —
+  // recomputed here (not just once at load) so the Home KPI stays live across every
+  // transfer mutation (create/approve/reject/receive), same as the sidebar badge above.
+  const kpiTransfers = document.getElementById('kpi-transfers');
+  if(kpiTransfers) kpiTransfers.textContent = transfers.filter(t=>t.status!=='received'&&t.status!=='cancelled').length;
+}
+
+function renderApprovals(targetId){
+  const el = document.getElementById(targetId);
+  if(approvals.length===0){ el.innerHTML = `<tr><td colspan="5" class="empty">لا توجد موافقات معلقة حاليًا</td></tr>`; return; }
+  el.innerHTML = approvals.map((a,i) => `
+    <tr>
+      <td>${a.type}</td>
+      <td class="mono">${a.ref}</td>
+      <td>${a.by}</td>
+      <td class="mono">${a.value}</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn approve sm" onclick="doApprove(${i})">موافقة</button>
+        <button class="btn reject sm" onclick="doReject(${i})">رفض</button>
+      </td>
+    </tr>
+  `).join('');
+  document.getElementById('badge-approvals').textContent = approvals.length;
+}
+
+function renderVariance(){
+  document.getElementById('variance-table').innerHTML = varianceRows.map((v,i) => `
+    <tr>
+      <td>${v.src}</td>
+      <td>${v.item}</td>
+      <td>${v.loc}</td>
+      <td class="mono">${v.exp}</td>
+      <td class="mono">${v.act}</td>
+      <td class="mono" style="color:${v.act<v.exp?'var(--terra)':'var(--basil)'}">${(v.act-v.exp).toFixed(1)}</td>
+      <td>${statusBadge(v.sev)}</td>
+      <td>${statusBadge(v.status)}</td>
+      <td><button class="btn sm" onclick="openVarianceDetail(${i})">عرض</button></td>
+    </tr>
+  `).join('');
+  document.getElementById('badge-variance').textContent = varianceRows.filter(v=>v.status!=='resolved').length;
+}
+
+function renderWarehouse(){
+  document.getElementById('warehouse-table').innerHTML = warehouseStock.map(w => `
+    <tr><td class="mono">${w.sku}</td><td>${w.item}</td><td class="mono">${w.bin}</td><td class="mono">${w.qty}</td><td class="mono">${w.reorder}</td><td>${statusBadge(w.status)}</td></tr>
+  `).join('');
+}
+
+function renderKitchen(){
+  document.getElementById('kitchen-table').innerHTML = kitchenRuns.map((r,i) => `
+    <tr><td class="mono">${r.id}</td><td>${r.bom}</td><td class="mono">${r.batches}</td><td class="mono">${r.output}</td><td>${statusBadge(r.status)}</td><td><button class="btn sm" onclick="openProductionDetail(${i})">فتح</button></td></tr>
+  `).join('');
+}
+
+function renderDelivery(){
+  document.getElementById('delivery-table').innerHTML = deliveryRoutes.map((d,i) => `
+    <tr><td>${d.driver}</td><td class="mono">${d.stops}</td><td class="mono">${d.progress}%</td><td class="mono">${d.eta}</td><td>${statusBadge(d.status)}</td><td><button class="btn sm" onclick="openDeliveryDetail(${i})">تفاصيل</button></td></tr>
+  `).join('');
+
+  const shell = document.getElementById('map-shell');
+  const pins = [
+    {x:'18%',y:'30%',c:'var(--basil)'},{x:'42%',y:'55%',c:'var(--amber-dark)'},
+    {x:'65%',y:'22%',c:'var(--terra)'},{x:'78%',y:'68%',c:'var(--basil)'},{x:'30%',y:'75%',c:'var(--amber-dark)'}
+  ];
+  shell.innerHTML = pins.map(p => `<div class="map-pin" style="right:${p.x};top:${p.y};background:${p.c};"></div>`).join('')
+    + `<div class="map-route" style="right:18%;top:30%;width:180px;transform:rotate(18deg);"></div>`;
+}
+
+function renderCharts(){
+  const el = document.getElementById('chart-bars');
+  const data = [{l:'المستودع',v:82},{l:'المطبخ المركزي',v:54},{l:'الروضة',v:38},{l:'الكورنيش',v:61},{l:'السلامة',v:29}];
+  el.innerHTML = data.map(d => `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px;">
+      <div style="width:120px;font-size:12.5px;color:var(--text-dim);">${d.l}</div>
+      <div style="flex:1;background:var(--paper-2);border-radius:5px;height:14px;overflow:hidden;">
+        <div style="width:${d.v}%;height:100%;background:linear-gradient(90deg,var(--amber),var(--amber-dark));"></div>
+      </div>
+      <div style="width:40px;font-family:var(--font-mono);font-size:12px;">${d.v}%</div>
+    </div>
+  `).join('');
+}
+
+const wasteReasonBadge = {
+  'تالف':'red', 'منتهي الصلاحية':'amber', 'خطأ تحضير':'grey', 'أخرى':'grey'
+};
+function renderWaste(){
+  document.getElementById('waste-table').innerHTML = wasteLogs.map((w,i) => `
+    <tr><td>${escapeHtml(w.item)}</td><td>${w.loc}</td><td class="mono">${escapeHtml(w.qty)}</td><td><span class="badge ${wasteReasonBadge[w.reason]||'grey'}">${w.reason}</span></td><td>${w.by}</td><td class="mono">${w.time}</td>
+    <td><button class="btn sm" onclick="openWasteDetail(${i})">عرض</button></td></tr>
+  `).join('');
+}
+
+function renderUsers(){
+  document.getElementById('users-table').innerHTML = usersList.map((u,i) => `
+    <tr><td>${escapeHtml(u.name)}</td><td class="mono">${u.role}</td><td>${escapeHtml(u.scope)}</td><td>${statusBadge(u.status)}</td><td><button class="btn sm" onclick="openUserEdit(${i})">تعديل</button></td></tr>
+  `).join('');
+}
+
+function renderAudit(){
+  document.getElementById('audit-table').innerHTML = auditLog.map((a,i) => `
+    <tr><td class="mono">${a.t}</td><td>${escapeHtml(a.actor)}</td><td class="mono">${a.action}</td><td class="mono">${escapeHtml(a.entity)}</td>
+    <td><button class="btn sm" onclick="openAuditDetail(${i})">تفاصيل</button></td></tr>
+  `).join('');
+}
+
+function renderAll(){
+  renderBranches('home-branches', false);
+  renderBranches('branches-full', true);
+  renderLedgerTape();
+  renderLedgerTable();
+  renderTransfersHome();
+  renderTransfersFull();
+  renderApprovals('home-approvals');
+  renderApprovals('approvals-table');
+  renderVariance();
+  renderWarehouse();
+  renderKitchen();
+  renderDelivery();
+  renderWaste();
+  renderUsers();
+  renderAudit();
+}
+
+// ---------- DETAIL ROW HELPER ----------
+function detailRow(label, value){
+  return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px;">
+    <span style="color:var(--text-dim);">${label}</span><span style="font-weight:600;">${value}</span>
+  </div>`;
+}
+
+// ---------- TRANSFER DETAIL ----------
+function openTransferDetail(i){
+  const t = transfers[i];
+  let body = `
+    ${detailRow('من', t.from)}
+    ${detailRow('إلى', t.to)}
+    ${detailRow('عدد البنود', t.items)}
+    ${detailRow('مقدّم الطلب', t.by)}
+    ${detailRow('آخر تحديث', t.time)}
+    ${detailRow('الحالة', statusBadge(t.status))}
+  `;
+  const actions = [];
+  if(t.status === 'pending_approval'){
+    actions.push({label:'اعتماد وإرسال', cls:'approve', handler:() => {
+      const before = {status:t.status};
+      t.status = 'dispatched'; t.time = 'الآن';
+      const ai = approvals.findIndex(a => a.ref === t.id);
+      if(ai > -1) approvals.splice(ai,1);
+      logAudit('transfer.approve', t.id, before, {status:t.status});
+      renderTransfersFull(); renderTransfersHome(); renderApprovals('home-approvals'); renderApprovals('approvals-table');
+      showToast(`تم اعتماد ${t.id} وإرساله`); closeModal();
+    }});
+    actions.push({label:'رفض', cls:'reject', handler:() => {
+      const before = {status:t.status};
+      t.status = 'cancelled'; t.time = 'الآن';
+      const ai = approvals.findIndex(a => a.ref === t.id);
+      if(ai > -1) approvals.splice(ai,1);
+      logAudit('transfer.reject', t.id, before, {status:t.status});
+      renderTransfersFull(); renderTransfersHome(); renderApprovals('home-approvals'); renderApprovals('approvals-table');
+      showToast(`تم رفض ${t.id}`); closeModal();
+    }});
+  } else if(t.status === 'dispatched'){
+    actions.push({label:'تأكيد الاستلام', cls:'approve', handler:() => {
+      const before = {status:t.status};
+      t.status = 'received'; t.time = 'الآن';
+      logAudit('transfer.receive', t.id, before, {status:t.status});
+      renderTransfersFull(); renderTransfersHome();
+      showToast(`تم تأكيد استلام ${t.id}`); closeModal();
+    }});
+  }
+  showDetailModal(`تحويل ${t.id}`, body, actions);
+}
+
+// ---------- PRODUCTION RUN DETAIL ----------
+function openProductionDetail(i){
+  const r = kitchenRuns[i];
+  let body = `
+    ${detailRow('الوصفة', r.bom)}
+    ${detailRow('عدد الدفعات', r.batches)}
+    ${detailRow('الناتج', r.output)}
+    ${detailRow('الحالة', statusBadge(r.status))}
+  `;
+  const actions = [];
+  if(r.status === 'planned'){
+    actions.push({label:'بدء التشغيلة', cls:'approve', handler:() => {
+      const before = {status:r.status};
+      r.status = 'in_progress';
+      logAudit('production_run.start', r.id, before, {status:r.status});
+      renderKitchen(); showToast(`بدأت التشغيلة ${r.id}`); closeModal();
+    }});
+  } else if(r.status === 'in_progress'){
+    actions.push({label:'إنهاء التشغيلة', cls:'approve', handler:() => {
+      const before = {status:r.status};
+      r.status = 'completed'; r.output = `${r.batches * 25} وحدة`;
+      logAudit('production_run.complete', r.id, before, {status:r.status, output:r.output});
+      renderKitchen(); showToast(`اكتملت التشغيلة ${r.id}`); closeModal();
+    }});
+  }
+  showDetailModal(`تشغيلة إنتاج ${r.id}`, body, actions);
+}
+
+// ---------- BRANCH DETAIL ----------
+function openBranchDetail(i){
+  const b = branches[i];
+  const related = transfers.filter(t => t.to === b.name || t.from === b.name).slice(0,4);
+  let body = `
+    ${detailRow('الموقع', escapeHtml(b.loc))}
+    ${detailRow('نسبة الإشغال', b.fill + '%')}
+    ${detailRow('حالة الفروقات', statusBadge(b.variance))}
+    ${detailRow('توصيلات اليوم', b.deliveries)}
+    <div style="margin-top:14px;font-size:12.5px;font-weight:700;color:var(--text-dim);">آخر التحويلات المرتبطة</div>
+    ${related.length ? related.map(t => detailRow(t.id, `${t.from} ← ${t.to}`)).join('') : '<div class="empty" style="padding:16px 0;">لا توجد تحويلات مرتبطة</div>'}
+  `;
+  showDetailModal(`فرع ${b.name}`, body, []);
+}
+
+// ---------- DELIVERY DETAIL ----------
+function openDeliveryDetail(i){
+  const d = deliveryRoutes[i];
+  const [doneCount, totalCount] = d.stops.split('/').map(Number);
+  const stopNames = ['الروضة','السلامة','الكورنيش','الزهراء','المستودع','عميل مباشر'];
+  let stopsHtml = '';
+  for(let s=1; s<=totalCount; s++){
+    const done = s <= doneCount;
+    stopsHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;">
+      <span>${s}. ${stopNames[(s-1) % stopNames.length]}</span>
+      ${done ? statusBadge('received') : statusBadge('pending_approval')}
+    </div>`;
+  }
+  let body = `
+    ${detailRow('السائق', d.driver)}
+    ${detailRow('التقدّم', d.progress + '%')}
+    ${detailRow('الوصول القادم', d.eta)}
+    ${detailRow('الحالة', statusBadge(d.status))}
+    <div style="margin-top:14px;font-size:12.5px;font-weight:700;color:var(--text-dim);">التوقفات</div>
+    ${stopsHtml}
+  `;
+  showDetailModal(`مسار — ${d.driver}`, body, []);
+}
+
+// ---------- VARIANCE DETAIL ----------
+function openVarianceDetail(i){
+  const v = varianceRows[i];
+  let body = `
+    ${detailRow('المصدر', v.src)}
+    ${detailRow('الصنف', v.item)}
+    ${detailRow('الموقع', v.loc)}
+    ${detailRow('الكمية المتوقعة', v.exp)}
+    ${detailRow('الكمية الفعلية', v.act)}
+    ${detailRow('الفرق', (v.act-v.exp).toFixed(1))}
+    ${detailRow('درجة الخطورة', statusBadge(v.sev))}
+    ${detailRow('الحالة', statusBadge(v.status))}
+  `;
+  const actions = [];
+  if(v.status === 'open'){
+    actions.push({label:'وضع قيد المراجعة', cls:'', handler:() => {
+      const before = {status:v.status};
+      v.status = 'under_review';
+      logAudit('variance.review', v.id, before, {status:v.status});
+      renderVariance(); showToast('تم نقل الفرق لقيد المراجعة'); closeModal();
+    }});
+  }
+  if(v.status !== 'resolved'){
+    actions.push({label:'تحديد كمحلولة', cls:'approve', handler:() => {
+      const before = {status:v.status};
+      v.status = 'resolved';
+      logAudit('variance.resolve', v.id, before, {status:v.status});
+      renderVariance(); showToast('تم حل الفرق'); closeModal();
+    }});
+  }
+  showDetailModal('تفاصيل الفرق', body, actions);
+}
+
+// ---------- USER EDIT ----------
+function openUserEdit(i){
+  const u = usersList[i];
+  modalConfigs['__userEdit'] = {
+    title:`تعديل — ${u.name}`,
+    fields:[
+      {key:'name', label:'الاسم الكامل', type:'text', required:true, value:u.name},
+      {key:'role', label:'الدور', type:'select', options:['ops_manager','branch_staff','kitchen_lead','driver','auditor'], value:u.role},
+      {key:'scope', label:'النطاق', type:'text', required:true, value:u.scope},
+      {key:'status', label:'الحالة', type:'select', options:['active','off'], value:u.status},
+    ],
+    submit(v){
+      const before = {name:u.name, role:u.role, scope:u.scope, status:u.status};
+      usersList[i] = {...usersList[i], name:v.name, role:v.role, scope:v.scope, status:v.status};
+      logAudit('user.update', v.name, before, {name:v.name, role:v.role, scope:v.scope, status:v.status});
+      renderUsers();
+      showToast(`تم تحديث بيانات ${v.name}`);
+    }
+  };
+  openModal('__userEdit');
+}
+
+// ---------- AUDIT DETAIL ----------
+function openAuditDetail(i){
+  const a = auditLog[i];
+  let body = `
+    ${detailRow('الوقت', a.t)}
+    ${detailRow('المستخدم', escapeHtml(a.actor))}
+    ${detailRow('الإجراء', `<span class="mono">${a.action}</span>`)}
+    ${detailRow('الكيان', `<span class="mono">${escapeHtml(a.entity)}</span>`)}
+    <div style="margin-top:14px;font-size:12.5px;font-weight:700;color:var(--text-dim);">الحالة قبل</div>
+    <pre style="background:var(--paper-2);border-radius:8px;padding:10px 12px;font-family:var(--font-mono);font-size:11.5px;direction:ltr;text-align:left;overflow-x:auto;">${a.before ? escapeHtml(JSON.stringify(a.before,null,2)) : '—'}</pre>
+    <div style="margin-top:10px;font-size:12.5px;font-weight:700;color:var(--text-dim);">الحالة بعد</div>
+    <pre style="background:var(--paper-2);border-radius:8px;padding:10px 12px;font-family:var(--font-mono);font-size:11.5px;direction:ltr;text-align:left;overflow-x:auto;">${a.after ? escapeHtml(JSON.stringify(a.after,null,2)) : '—'}</pre>
+  `;
+  showDetailModal(`سجل تدقيق — ${a.entity}`, body, []);
+}
+
+// ---------- WASTE DETAIL ----------
+function openWasteDetail(i){
+  const w = wasteLogs[i];
+  let body = `
+    ${detailRow('الصنف', escapeHtml(w.item))}
+    ${detailRow('الموقع', w.loc)}
+    ${detailRow('الكمية', escapeHtml(w.qty))}
+    ${detailRow('السبب', `<span class="badge ${wasteReasonBadge[w.reason]||'grey'}">${w.reason}</span>`)}
+    ${detailRow('سجّله', w.by)}
+    ${detailRow('الوقت', w.time)}
+  `;
+  const actions = [{label:'حذف السجل', cls:'reject', handler:() => {
+    wasteLogs.splice(i,1);
+    logAudit('waste.delete', w.id, {item:w.item, qty:w.qty, reason:w.reason}, null);
+    renderWaste(); showToast('تم حذف سجل الهالك'); closeModal();
+  }}];
+  showDetailModal('تفاصيل الهالك', body, actions);
+}
+
+// ---------- TOAST ----------
+function showToast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toast-text').textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+// approving/rejecting from this generic queue must also flip the underlying
+// record's own status (e.g. the matching transfer) — otherwise a transfer
+// approved here stays stuck showing "قيد الموافقة" everywhere else, while
+// openTransferDetail()'s own approve/reject buttons (a second path to the
+// same action) correctly update it. Only "تحويل" is a linked type today;
+// other approval types (e.g. "تعديل جرد") have no backing record to sync.
+function syncApprovalTargetStatus(a, approved){
+  if(a.type === 'تحويل'){
+    const t = transfers.find(x => x.id === a.ref);
+    if(t && t.status === 'pending_approval'){
+      const before = {status:t.status};
+      t.status = approved ? 'dispatched' : 'cancelled';
+      t.time = 'الآن';
+      logAudit(approved?'transfer.approve':'transfer.reject', t.id, before, {status:t.status});
+      renderTransfersFull(); renderTransfersHome();
+    }
+  }
+}
+function doApprove(i){ const a = approvals[i]; syncApprovalTargetStatus(a, true); approvals.splice(i,1); renderApprovals('home-approvals'); renderApprovals('approvals-table'); showToast(`تمت الموافقة على ${a.ref}`); }
+function doReject(i){ const a = approvals[i]; syncApprovalTargetStatus(a, false); approvals.splice(i,1); renderApprovals('home-approvals'); renderApprovals('approvals-table'); showToast(`تم رفض ${a.ref}`); }
+
+// ---------- NAV ----------
+function showView(name){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item[data-view]').forEach(n => {
+    const isActive = n.dataset.view===name;
+    n.classList.toggle('active', isActive);
+    if(isActive) n.setAttribute('aria-current','page'); else n.removeAttribute('aria-current');
+  });
+  window.scrollTo(0,0);
+}
+function bindActivatable(el, handler){
+  el.addEventListener('click', handler);
+  el.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); handler(); }
+  });
+}
+document.querySelectorAll('.nav-item[data-view]').forEach(n => bindActivatable(n, () => showView(n.dataset.view)));
+document.querySelectorAll('[data-goto]').forEach(n => bindActivatable(n, () => showView(n.dataset.goto)));
+
+// ---------- MODAL (ADD FLOWS) ----------
+const modalConfigs = {
+  transfer: {
+    title:'تحويل جديد',
+    fields:[
+      {key:'from', label:'من', type:'select', options:['المستودع','المطبخ المركزي']},
+      {key:'to', label:'إلى', type:'select', options:branchNames},
+      {key:'items', label:'عدد البنود', type:'number', placeholder:'مثال: 6', required:true},
+      {key:'notes', label:'ملاحظات (اختياري)', type:'textarea'},
+    ],
+    submit(v){
+      counters.transfer++;
+      const itemsNum = Number(v.items);
+      transfers.unshift({id:`TR-${counters.transfer}`, from:v.from, to:v.to, items:isNaN(itemsNum)?1:itemsNum, notes:v.notes, status:'pending_approval', by:'سارة العامري', time:'الآن'});
+      approvals.unshift({type:'تحويل', ref:`TR-${counters.transfer}`, by:'سارة العامري', value:'—'});
+      renderTransfersHome(); renderTransfersFull(); renderApprovals('home-approvals'); renderApprovals('approvals-table');
+      showToast(`تم إنشاء التحويل TR-${counters.transfer}`);
+    }
+  },
+  branch: {
+    title:'إضافة فرع',
+    fields:[
+      {key:'name', label:'اسم الفرع', type:'text', placeholder:'مثال: حي النهضة', required:true},
+      {key:'loc', label:'الموقع', type:'text', placeholder:'مثال: جدة — الجنوب', required:true},
+    ],
+    submit(v){
+      const name = v.name||'فرع جديد';
+      branches.push({name, loc:v.loc||'—', fill:0, variance:'ok', deliveries:0});
+      logAudit('branch.create', name, null, {name, loc:v.loc});
+      renderBranches('home-branches', false); renderBranches('branches-full', true);
+      showToast(`تمت إضافة فرع ${name}`);
+    }
+  },
+  user: {
+    title:'دعوة مستخدم',
+    fields:[
+      {key:'name', label:'الاسم الكامل', type:'text', required:true},
+      {key:'role', label:'الدور', type:'select', options:['ops_manager','branch_staff','kitchen_lead','driver','auditor']},
+      {key:'scope', label:'النطاق', type:'text', placeholder:'مثال: فرع الروضة'},
+    ],
+    submit(v){
+      const name = v.name||'مستخدم جديد';
+      usersList.push({name, role:v.role, scope:v.scope||'—', status:'active'});
+      logAudit('user.invite', name, null, {name, role:v.role, scope:v.scope});
+      renderUsers();
+      showToast(`تمت دعوة ${name}`);
+    }
+  },
+  waste: {
+    title:'تسجيل هالك',
+    fields:[
+      {key:'item', label:'الصنف', type:'text', required:true},
+      {key:'loc', label:'الموقع', type:'select', options:allLocations},
+      {key:'qty', label:'الكمية', type:'text', placeholder:'مثال: 5 حبة', required:true},
+      {key:'reason', label:'السبب', type:'select', options:['تالف','منتهي الصلاحية','خطأ تحضير','أخرى']},
+    ],
+    submit(v){
+      const id = 'WL-'+(++counters.waste);
+      wasteLogs.unshift({id, item:v.item||'—', loc:v.loc, qty:v.qty||'—', reason:v.reason, by:'سارة العامري', time:'الآن'});
+      logAudit('waste.log', id, null, {item:v.item, qty:v.qty, reason:v.reason});
+      renderWaste();
+      showToast('تم تسجيل الهالك');
+    }
+  },
+  production: {
+    title:'جدولة تشغيلة إنتاج',
+    fields:[
+      {key:'bom', label:'الوصفة', type:'select', options:['خبز العجين المخمّر (v3)','كرواسون بالزبدة (v2)','باغيت (v1)']},
+      {key:'batches', label:'عدد الدفعات', type:'number', placeholder:'مثال: 4'},
+    ],
+    submit(v){
+      counters.production++;
+      kitchenRuns.unshift({id:`PR-${counters.production}`, bom:v.bom, batches:Number(v.batches)||1, output:'—', status:'planned'});
+      renderKitchen();
+      showToast(`تمت جدولة التشغيلة PR-${counters.production}`);
+    }
+  },
+  count: {
+    title:'بدء جرد جديد',
+    fields:[
+      {key:'loc', label:'الموقع', type:'select', options:()=>[...branchNames(),'المستودع']},
+      {key:'type', label:'نوع الجرد', type:'select', options:['جرد دوري','جرد شامل']},
+    ],
+    submit(v){
+      counters.count++;
+      showToast(`تم بدء ${v.type} في ${v.loc} — SC-${counters.count}`);
+    }
+  },
+  receipt: {
+    title:'إيصال استلام جديد',
+    fields:[
+      {key:'supplier', label:'المورد', type:'text', placeholder:'اسم المورد'},
+      {key:'items', label:'عدد البنود المتوقعة', type:'number'},
+    ],
+    submit(v){
+      counters.receipt++;
+      showToast(`تم إنشاء الإيصال RC-${counters.receipt}`);
+    }
+  },
+  adjustment: {
+    title:'تعديل يدوي على الدفتر',
+    fields:[
+      {key:'item', label:'الصنف', type:'text', required:true},
+      {key:'loc', label:'الموقع', type:'select', options:allLocations},
+      {key:'qty', label:'الكمية (+/-)', type:'number', placeholder:'مثال: -2.5', required:true},
+      {key:'reason', label:'سبب التعديل', type:'text', required:true},
+    ],
+    submit(v){
+      const qty = Number(v.qty)||0;
+      const bn = 'BN-'+(nextBatchNum++);
+      ledgerRows.unshift({t:'الآن', item:v.item, loc:v.loc, src:'manual_adjustment', qty:qty, pos:qty>=0, bn, reason:v.reason});
+      logAudit('ledger.manual_adjustment', bn, null, {item:v.item, loc:v.loc, qty, reason:v.reason});
+      renderLedgerTape(); renderLedgerTable();
+      showToast('تم تسجيل التعديل في الدفتر');
+    }
+  },
+};
+
+let currentModal = null;
+let lastFocusedEl = null;
+let modalActionHandlers = {};
+
+function resetModalFootToForm(){
+  document.getElementById('modal-foot').innerHTML =
+    `<button class="btn primary block" data-action="submit">حفظ</button>
+     <button class="btn block" data-action="close">إلغاء</button>`;
+}
+
+function openModal(key){
+  const cfg = modalConfigs[key];
+  if(!cfg) return;
+  currentModal = key;
+  lastFocusedEl = document.activeElement;
+  resetModalFootToForm();
+  document.getElementById('modal-title').textContent = cfg.title;
+  document.getElementById('modal-body').innerHTML = cfg.fields.map(f => {
+    const req = f.required ? '<span style="color:var(--terra)"> *</span>' : '';
+    if(f.type==='select'){
+      const opts = typeof f.options==='function' ? f.options() : f.options;
+      return `<div class="field"><label>${f.label}${req}</label><select data-key="${f.key}" ${f.required?'required':''}>${opts.map(o=>`<option value="${escapeHtml(o)}" ${f.value===o?'selected':''}>${escapeHtml(o)}</option>`).join('')}</select></div>`;
+    }
+    if(f.type==='textarea'){
+      return `<div class="field"><label>${f.label}${req}</label><textarea data-key="${f.key}" rows="3" placeholder="${f.placeholder||''}" ${f.required?'required':''}>${escapeHtml(f.value||'')}</textarea></div>`;
+    }
+    return `<div class="field"><label>${f.label}${req}</label><input data-key="${f.key}" type="${f.type}" placeholder="${f.placeholder||''}" value="${escapeHtml(f.value!=null?f.value:'')}" ${f.required?'required':''}></div>`;
+  }).join('');
+  const overlay = document.getElementById('modal-overlay');
+  overlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  const firstField = document.querySelector('#modal-body [data-key]');
+  if(firstField) firstField.focus();
+}
+
+// Read-only / action detail modal — used by every "view / open / edit" button across the app.
+function showDetailModal(title, bodyHtml, actions){
+  currentModal = null;
+  lastFocusedEl = document.activeElement;
+  modalActionHandlers = {};
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHtml;
+  const footButtons = (actions||[]).map((a,i) => {
+    const key = 'action'+i;
+    modalActionHandlers[key] = a.handler;
+    return `<button class="btn ${a.cls||''} block" data-action="${key}">${a.label}</button>`;
+  }).join('');
+  document.getElementById('modal-foot').innerHTML = footButtons + `<button class="btn block" data-action="close">إغلاق</button>`;
+  const overlay = document.getElementById('modal-overlay');
+  overlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(){
+  document.getElementById('modal-overlay').classList.remove('show');
+  document.body.style.overflow = '';
+  currentModal = null;
+  modalActionHandlers = {};
+  if(lastFocusedEl) lastFocusedEl.focus();
+}
+
+function trySubmitModal(){
+  if(!currentModal) return;
+  const cfg = modalConfigs[currentModal];
+  const values = {};
+  let hasError = false;
+  document.querySelectorAll('#modal-body [data-key]').forEach(el => {
+    values[el.dataset.key] = el.value.trim();
+    const isEmpty = el.hasAttribute('required') && el.value.trim() === '';
+    el.style.borderColor = isEmpty ? 'var(--terra)' : '';
+    if(isEmpty) hasError = true;
+  });
+  if(hasError){
+    showToast('يرجى تعبئة الحقول المطلوبة (*)');
+    return;
+  }
+  cfg.submit(values);
+  closeModal();
+}
+
+document.getElementById('modal-foot').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const action = btn.dataset.action;
+  if(action === 'submit') trySubmitModal();
+  else if(action === 'close') closeModal();
+  else if(modalActionHandlers[action]) modalActionHandlers[action]();
+});
+document.getElementById('modal-overlay').addEventListener('click', (e) => { if(e.target.id==='modal-overlay') closeModal(); });
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && document.getElementById('modal-overlay').classList.contains('show')) closeModal();
+  if(e.key === 'Enter' && currentModal && document.activeElement.tagName !== 'TEXTAREA') trySubmitModal();
+});
+
+// ---------- INIT ----------
+renderAll();
+renderCharts();
+</script>
+</body>
+</html>

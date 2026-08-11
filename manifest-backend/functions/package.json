@@ -1,0 +1,16 @@
+{
+  "name": "manifest-functions",
+  "description": "Cloud Functions backend for the Manifest Supply Chain Control Tower",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "serve": "firebase emulators:start --only functions,firestore",
+    "deploy": "firebase deploy --only functions,firestore:rules"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.3.0",
+    "firebase-functions": "^5.0.0"
+  }
+}

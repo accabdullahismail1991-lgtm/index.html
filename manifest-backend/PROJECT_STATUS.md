@@ -1,4 +1,10 @@
-# Manifest / Supply Chain Control Tower — Project Status
+# Madar (مدار) / Supply Chain Control Tower — Project Status
+
+Product name as of this pass: **مدار (Madar)**, formerly "Manifest" during
+early prototyping. The `manifest-backend/` folder path and internal doc
+filenames are kept as-is (an implementation detail, not user-facing
+branding) rather than renamed along with the product — see
+`MADAR_USER_GUIDE.md` at the repo root for the user-facing name.
 
 Tracks progress against the 10 phases described in the "Supply Chain
 Control Tower — Master AI Build Prompt V1.0". Updated at the end of every
@@ -77,7 +83,7 @@ shared before this can be deployed and actually tested end-to-end.
 
 ## Not yet started, deliberately
 
-`central-kitchen-prototype.html` (Manifest UI) still runs entirely on its
+`central-kitchen-prototype.html` (Madar UI) still runs entirely on its
 original in-memory mock arrays. Wiring specific screens to call these
 Cloud Functions instead is separate follow-up work, done incrementally
 once there's a real backend to call.

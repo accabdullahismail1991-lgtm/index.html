@@ -1,4 +1,4 @@
-# Manifest / Supply Chain Control Tower — Architecture Decisions
+# Madar / Supply Chain Control Tower — Architecture Decisions
 
 This document reinterprets the "Supply Chain Control Tower — Master AI Build
 Prompt V1.0" specification for the backend the user chose: **Firebase
@@ -15,7 +15,8 @@ every collection is top-level. If multi-tenant ever becomes a real
 requirement, that is a deliberate future migration, not something to guess
 at now.
 
-`central-kitchen-prototype.html` ("Manifest") stays a standalone file per
+`central-kitchen-prototype.html` ("Madar", formerly "Manifest" during
+early prototyping) stays a standalone file per
 the user's earlier explicit choice. It will be migrated, screen by screen,
 from its current in-memory mock arrays to calling these Cloud Functions —
 that migration is separate follow-up work, not part of this commit.

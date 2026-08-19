@@ -1,4 +1,4 @@
-# Manifest Backend — Firestore Data Model
+# Madar Backend — Firestore Data Model
 
 Top-level collections. `*` = built and enforced in this phase; everything
 else is designed here so later phases have a fixed target, but has no

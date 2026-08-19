@@ -6,6 +6,7 @@ const { setUserRole } = require('./src/rbac');
 const { postInventoryTransactionCallable } = require('./src/inventoryTransactionService');
 const { submitTransfer, approveTransfer, rejectTransfer, cancelTransfer, shipTransfer, receiveTransfer } = require('./src/transfers');
 const { createProductionOrder, startProduction, completeProduction, cancelProduction } = require('./src/production');
+const { takeStockSnapshot, dailyStockSnapshotSchedule } = require('./src/reports');
 
 module.exports = {
   setUserRole,
@@ -20,4 +21,6 @@ module.exports = {
   startProduction,
   completeProduction,
   cancelProduction,
+  takeStockSnapshot,
+  dailyStockSnapshotSchedule,
 };

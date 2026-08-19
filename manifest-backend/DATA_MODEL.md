@@ -67,5 +67,14 @@ Cloud Function writing it yet.
   `after`, `at`. Append-only, written inside the same transaction as the
   change it describes.
 - **`counters/{name}`*** — `value`. Transactional increment source for
-  human-readable document numbers (`TR-0001`, future `PO-`, `WL-`, …).
+  human-readable document numbers (`TR-0001`, `PO-0001`, `SNAP-0001`,
+  future `WL-`, …).
+- **`stockSnapshots/{id}`*** — `docNumber` (`SNAP-0001`, …), `takenAt`,
+  `takenBy` (uid, or `null` for the scheduled run), `trigger` (`manual` |
+  `scheduled`), `locations: [{locationId, items: [{itemId, qty, unitCost,
+  value}], locationValue}]`, `grandTotalValue`, `itemCount`. A frozen
+  point-in-time copy of `stockBalances` with valuation attached — never
+  itself replayed or corrected, a new snapshot is just taken again.
+  Written by `takeStockSnapshot` (on demand) or `dailyStockSnapshotSchedule`
+  (Cairo midnight, automatic).
 - **`notifications/{uid}/items/{id}`** — designed, not yet built.

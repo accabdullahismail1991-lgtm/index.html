@@ -14,6 +14,7 @@ const {
   postInventoryTransaction,
 } = require('../src/inventoryTransactionService');
 const { classifyTransferVariance, classifyProductionVariance } = require('../src/varianceEngine');
+const { computeSnapshotTotals } = require('../src/reports');
 
 let autoId = 0;
 
@@ -241,6 +242,42 @@ async function test(name, fn) {
     const variance = classifyProductionVariance(plannedQty, actualYieldQty);
     assert.equal(variance.type, 'production_yield_shortage');
     assert.equal(variance.qtyDelta, -2);
+  });
+
+  await test('computeSnapshotTotals: groups by location, values by item cost, skips empty balances', () => {
+    const balances = [
+      { itemId: 'FLOUR', locationId: 'WH1', qty: 100 },
+      { itemId: 'YEAST', locationId: 'WH1', qty: 10 },
+      { itemId: 'FLOUR', locationId: 'BRANCH1', qty: 25 },
+      { itemId: 'SUGAR', locationId: 'BRANCH1', qty: 0 }, // must be skipped
+      { itemId: 'UNKNOWN_COST_ITEM', locationId: 'BRANCH1', qty: 5 }, // no cost entry -> treated as 0
+    ];
+    const costByItem = new Map([
+      ['FLOUR', 2],
+      ['YEAST', 10],
+      ['SUGAR', 3],
+    ]);
+
+    const result = computeSnapshotTotals(balances, costByItem);
+
+    const wh1 = result.locations.find((l) => l.locationId === 'WH1');
+    const branch1 = result.locations.find((l) => l.locationId === 'BRANCH1');
+
+    assert.equal(wh1.items.length, 2);
+    assert.equal(wh1.locationValue, 100 * 2 + 10 * 10); // 300
+
+    assert.equal(branch1.items.length, 2); // SUGAR (qty 0) excluded, UNKNOWN_COST_ITEM included at cost 0
+    assert.equal(branch1.locationValue, 25 * 2 + 5 * 0); // 50
+
+    assert.equal(result.itemCount, 4); // 2 + 2, not counting the skipped zero-qty row
+    assert.equal(result.grandTotalValue, 350);
+  });
+
+  await test('computeSnapshotTotals: empty input produces an empty, zero-value snapshot', () => {
+    const result = computeSnapshotTotals([], new Map());
+    assert.deepEqual(result.locations, []);
+    assert.equal(result.grandTotalValue, 0);
+    assert.equal(result.itemCount, 0);
   });
 
   await test('a read after a write throws (mock sanity check for the ordering rule itself)', async () => {

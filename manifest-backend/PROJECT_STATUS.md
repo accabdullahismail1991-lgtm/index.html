@@ -15,7 +15,7 @@ work session on this backend, not just at milestones.
 | 6 | Approval Engine | Started — configurable threshold-rule lookup (`approvalEngine.js`) works against an `approvalRules` collection, but that collection has no admin screen or seed data yet, so no rule currently matches anything |
 | 7 | Automation Engine / event-driven workflows | Not started |
 | 8 | Notification Center | Not started |
-| 9 | Dashboards (Control Tower home, Finance) & Reporting | Not started |
+| 9 | Dashboards (Control Tower home, Finance) & Reporting | **Started** — stock snapshot reports (`reports.js`): `takeStockSnapshot` (on demand) and `dailyStockSnapshotSchedule` (automatic, Cairo midnight) both freeze `stockBalances` + valuation into a `stockSnapshots` document. No dashboards, no other report types (movement history export, variance summary, sales/costing reports) yet. |
 | 10 | Production readiness (security review, load, docs) | Not started |
 
 ## Bugs fixed this pass
@@ -36,6 +36,15 @@ against real data:
   `rejectTransfer` and `cancelTransfer` (the latter only before shipment —
   see ARCHITECTURE_DECISIONS.md §10 for why after-shipment cancellation
   isn't modeled yet).
+
+## Note: the scheduled snapshot needs Cloud Scheduler, not just Firestore
+
+`dailyStockSnapshotSchedule` (in `reports.js`) is a `firebase-functions/v2/scheduler`
+function — deploying it provisions a Cloud Scheduler job automatically,
+which is a separate (still Blaze-plan, still small/effectively-free at
+this scale) Google Cloud service from Firestore/Cloud Functions
+themselves. Nothing extra to configure by hand, just flagging that it's
+one more thing that needs the real project to exist before it can run.
 
 ## Known gap: no live Firebase project
 

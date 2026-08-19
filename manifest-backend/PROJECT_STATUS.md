@@ -15,7 +15,7 @@ work session on this backend, not just at milestones.
 | 6 | Approval Engine | Started — configurable threshold-rule lookup (`approvalEngine.js`) works against an `approvalRules` collection, but that collection has no admin screen or seed data yet, so no rule currently matches anything |
 | 7 | Automation Engine / event-driven workflows | Not started |
 | 8 | Notification Center | Not started |
-| 9 | Dashboards (Control Tower home, Finance) & Reporting | **Started** — stock snapshot reports (`reports.js`): `takeStockSnapshot` (on demand) and `dailyStockSnapshotSchedule` (automatic, Cairo midnight) both freeze `stockBalances` + valuation into a `stockSnapshots` document. No dashboards, no other report types (movement history export, variance summary, sales/costing reports) yet. |
+| 9 | Dashboards (Control Tower home, Finance) & Reporting | **Started** — `reports.js`: `takeStockSnapshot`/`dailyStockSnapshotSchedule` freeze balances+valuation into `stockSnapshots`; three separate read-only reports build on top of that data — `listSnapshotHistory` (trend list), `compareSnapshots` (period-over-period deltas), `getLowStockReport` (shortage alerts, correctly catching total stockouts — see below). No dashboards, no other report types (movement history export, variance summary, sales/costing reports) yet. |
 | 10 | Production readiness (security review, load, docs) | Not started |
 
 ## Bugs fixed this pass
@@ -36,6 +36,25 @@ against real data:
   `rejectTransfer` and `cancelTransfer` (the latter only before shipment —
   see ARCHITECTURE_DECISIONS.md §10 for why after-shipment cancellation
   isn't modeled yet).
+
+## Bugs fixed this pass
+
+- **`getLowStockReport` almost missed the most important case.**
+  `computeSnapshotTotals` deliberately skips zero-quantity balances (right
+  for a valuation snapshot — a zero-value row adds nothing there). But a
+  low-stock report's entire purpose is catching shortages, and a complete
+  stockout (qty 0) is the case that matters most — building the report
+  off the snapshot's own `locations` list would have made total stockouts
+  silently invisible, since a fully-out location never has a non-zero
+  balance to appear there. Fixed by driving the report from the full
+  active `locations` collection instead, using the snapshot purely as a
+  qty lookup. Covered by a dedicated test.
+- Caught while writing `computeSnapshotDiff`/`computeLowStockRows`: an
+  earlier edit briefly wrote a **raw NUL byte** into `reports.js` (meant
+  to be the source text `\u0000`, a collision-safe map-key separator, not
+  an actual control character in the file). Fixed at the byte level
+  before it was ever committed — `node --check` and a `grep`-for-`\x00`
+  pass both confirm it's gone.
 
 ## Note: the scheduled snapshot needs Cloud Scheduler, not just Firestore
 

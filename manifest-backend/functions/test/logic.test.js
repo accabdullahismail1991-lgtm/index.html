@@ -14,7 +14,7 @@ const {
   postInventoryTransaction,
 } = require('../src/inventoryTransactionService');
 const { classifyTransferVariance, classifyProductionVariance } = require('../src/varianceEngine');
-const { computeSnapshotTotals } = require('../src/reports');
+const { computeSnapshotTotals, computeSnapshotDiff, computeLowStockRows } = require('../src/reports');
 
 let autoId = 0;
 
@@ -278,6 +278,73 @@ async function test(name, fn) {
     assert.deepEqual(result.locations, []);
     assert.equal(result.grandTotalValue, 0);
     assert.equal(result.itemCount, 0);
+  });
+
+  await test('computeSnapshotDiff: flags qty/value changes and drops rows that did not actually change', () => {
+    const from = {
+      grandTotalValue: 300,
+      locations: [
+        { locationId: 'WH1', items: [
+          { itemId: 'FLOUR', qty: 100, value: 200 },
+          { itemId: 'YEAST', qty: 10, value: 100 },
+        ] },
+      ],
+    };
+    const to = {
+      grandTotalValue: 260,
+      locations: [
+        { locationId: 'WH1', items: [
+          { itemId: 'FLOUR', qty: 80, value: 160 }, // dropped
+          { itemId: 'YEAST', qty: 10, value: 100 }, // unchanged -> no row
+        ] },
+        { locationId: 'BRANCH1', items: [
+          { itemId: 'SUGAR', qty: 5, value: 15 }, // brand new, wasn't in `from` at all
+        ] },
+      ],
+    };
+
+    const diff = computeSnapshotDiff(from, to);
+    assert.equal(diff.rows.length, 2); // FLOUR change + new SUGAR row; YEAST unchanged is dropped
+    const flourRow = diff.rows.find((r) => r.itemId === 'FLOUR');
+    assert.equal(flourRow.qtyDelta, -20);
+    assert.equal(flourRow.valueDelta, -40);
+    const sugarRow = diff.rows.find((r) => r.itemId === 'SUGAR');
+    assert.equal(sugarRow.qtyFrom, 0); // wasn't present in `from` at all -> treated as 0, not skipped
+    assert.equal(sugarRow.qtyTo, 5);
+    assert.equal(diff.grandTotalValueDelta, -40);
+  });
+
+  await test('computeLowStockRows: a total stockout (item entirely missing from the snapshot) is still flagged', () => {
+    // BREAD has a reorder point at BRANCH1, but the snapshot's own
+    // locations list only contains WH1 — because computeSnapshotTotals
+    // skips zero-qty balances, a location that's completely out of
+    // everything simply never appears there. This is exactly the case
+    // the fix in reports.js targets: activeLocationIds (the full master
+    // list) drives the iteration, not the snapshot's own sparse list.
+    const activeLocationIds = ['WH1', 'BRANCH1'];
+    const snapshotLocations = [
+      { locationId: 'WH1', items: [{ itemId: 'BREAD', qty: 50 }] },
+      // BRANCH1 absent entirely: totally out of stock, not "no data"
+    ];
+    const reorderItems = [{ itemId: 'BREAD', reorderPoint: 10 }];
+
+    const rows = computeLowStockRows(activeLocationIds, snapshotLocations, reorderItems);
+    const branch1Row = rows.find((r) => r.locationId === 'BRANCH1' && r.itemId === 'BREAD');
+    assert.ok(branch1Row, 'BRANCH1 total stockout must be flagged even though absent from the snapshot');
+    assert.equal(branch1Row.qty, 0);
+    assert.equal(branch1Row.shortBy, 10);
+
+    // WH1 has 50, well above the reorder point of 10 -> not flagged
+    assert.equal(rows.find((r) => r.locationId === 'WH1' && r.itemId === 'BREAD'), undefined);
+  });
+
+  await test('computeLowStockRows: an item above its reorder point everywhere produces no rows', () => {
+    const rows = computeLowStockRows(
+      ['WH1'],
+      [{ locationId: 'WH1', items: [{ itemId: 'FLOUR', qty: 100 }] }],
+      [{ itemId: 'FLOUR', reorderPoint: 10 }]
+    );
+    assert.equal(rows.length, 0);
   });
 
   await test('a read after a write throws (mock sanity check for the ordering rule itself)', async () => {

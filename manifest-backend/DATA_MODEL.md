@@ -76,5 +76,14 @@ Cloud Function writing it yet.
   point-in-time copy of `stockBalances` with valuation attached — never
   itself replayed or corrected, a new snapshot is just taken again.
   Written by `takeStockSnapshot` (on demand) or `dailyStockSnapshotSchedule`
-  (Cairo midnight, automatic).
+  (Cairo midnight, automatic). Read by three separate report callables,
+  none of which write anything: `listSnapshotHistory` (lightweight
+  totals-only trend list), `compareSnapshots` (period-over-period
+  qty/value deltas, defaults to latest-vs-previous), and
+  `getLowStockReport` (cross-references the latest snapshot against every
+  active `locations` doc and every `items.reorderPoint` — deliberately
+  driven by the master location list, not the snapshot's own sparse one,
+  so a location that's completely out of stock is still flagged instead
+  of silently missing because it has no non-zero balance to appear in the
+  snapshot at all).
 - **`notifications/{uid}/items/{id}`** — designed, not yet built.

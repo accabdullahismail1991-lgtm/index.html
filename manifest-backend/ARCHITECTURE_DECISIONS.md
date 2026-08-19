@@ -120,11 +120,27 @@ implemented exactly, not simulated: `shipTransfer` moves 80kg
 Warehouse → Transit; `receiveTransfer` moves only the 75kg the receiver
 actually confirms, Transit → Branch, leaving 5kg sitting in Transit (never
 silently discarded and never assumed delivered) and writes a
-`variances` document for the 5kg delta. Only the transfer-shortage/overage
-classification is implemented so far; the other 7 of the spec's 9 variance
-types (count variance, production yield variance, etc.) are stubbed as
-named constants in `varianceEngine.js` but not yet wired to a flow — see
+`variances` document for the 5kg delta. A **total loss** (0 confirmed
+received) is the same case at the limit: no `transfer_in` posting happens
+at all, and the full shipped quantity becomes the variance — this edge
+case is covered by a dedicated test in `test/logic.test.js`.
+
+Production orders follow the same pattern: `completeProduction` compares
+`actualYieldQty` against `plannedQty` and raises a
+`production_yield_shortage`/`overage` variance on any difference.
+
+5 of the spec's 9 variance types are now implemented (transfer
+shortage/overage, production yield shortage/overage); the other 4 (count
+variance, waste, expiry loss, unexplained adjustment) are stubbed as named
+constants in `varianceEngine.js` but not yet wired to a flow — see
 Section 10.
+
+**Zero-quantity legs.** A transfer or production line whose shipped/
+received/consumed quantity is legitimately zero (an item pulled from a
+shipment, a total-loss line, a component the batch turned out not to
+need) is skipped before calling the Inventory Transaction Service, which
+rejects `qty === 0` as meaningless by design — the skip belongs in the
+caller (it knows why the quantity is zero), not in the shared service.
 
 ## 9. Audit trail
 
@@ -147,9 +163,12 @@ This is Phase 0 (architecture) plus a first vertical slice of Phase 1
 - No Notification Center delivery (push/SMS/email) — no
   `sendNotification` function exists yet.
 - No Control Tower / Finance dashboards, no Reporting module.
-- No production-order or physical-count flows — only `transfers` is
-  built end-to-end as the reference pattern for the other workflow
-  entities to follow.
+- No physical-count flow yet — `transfers` and `productionOrders` are
+  built end-to-end as the reference pattern `counts` should follow next.
+- `cancelTransfer`/`cancelProduction` only work before stock has actually
+  moved (before `shipTransfer` / `startProduction`). Cancelling something
+  already in motion needs a reversal flow, not just a status flip — not
+  modeled yet.
 - No balance-rebuild/replay tool.
 - No live Firebase project. This code has been syntax-checked
   (`node --check`) but never run against a real Firestore instance or the

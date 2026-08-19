@@ -10,9 +10,9 @@ const { nextDocNumber } = require('./counters');
 const TRANSIT_LOCATION_ID = 'transit';
 
 const TRANSITIONS = {
-  submitted: ['approved'],
-  pending_approval: ['approved', 'rejected'],
-  approved: ['in_transit'],
+  submitted: ['approved', 'cancelled'],
+  pending_approval: ['approved', 'rejected', 'cancelled'],
+  approved: ['in_transit', 'cancelled'],
   in_transit: ['received', 'variance_reviewed'],
 };
 
@@ -81,6 +81,48 @@ const approveTransfer = onCall(async (request) => {
   });
 });
 
+const rejectTransfer = onCall(async (request) => {
+  const actor = await requirePermission(request.auth, 'transfer.approve');
+  const { transferId, reason } = request.data || {};
+  if (!transferId) throw new HttpsError('invalid-argument', 'transferId مطلوب');
+
+  const db = getFirestore();
+  const ref = db.collection('transfers').doc(transferId);
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new HttpsError('not-found', 'التحويل غير موجود');
+    const transfer = snap.data();
+    assertTransition(transfer.status, 'rejected');
+
+    tx.update(ref, { status: 'rejected', rejectedBy: actor.uid, rejectedAt: new Date(), rejectReason: reason || null });
+    auditEntry(tx, db, { action: 'transfer.reject', entity: `transfers/${transferId}`, actorUid: actor.uid, before: { status: transfer.status }, after: { status: 'rejected', reason: reason || null } });
+    return { ok: true };
+  });
+});
+
+// Only reachable before shipment — once stock has actually left the
+// source location (shipTransfer), the physical goods are in motion and
+// this is no longer a paperwork-only cancellation; that case isn't
+// modeled yet (see PROJECT_STATUS.md).
+const cancelTransfer = onCall(async (request) => {
+  const actor = await requirePermission(request.auth, 'transfer.cancel');
+  const { transferId, reason } = request.data || {};
+  if (!transferId) throw new HttpsError('invalid-argument', 'transferId مطلوب');
+
+  const db = getFirestore();
+  const ref = db.collection('transfers').doc(transferId);
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new HttpsError('not-found', 'التحويل غير موجود');
+    const transfer = snap.data();
+    assertTransition(transfer.status, 'cancelled');
+
+    tx.update(ref, { status: 'cancelled', cancelledBy: actor.uid, cancelledAt: new Date(), cancelReason: reason || null });
+    auditEntry(tx, db, { action: 'transfer.cancel', entity: `transfers/${transferId}`, actorUid: actor.uid, before: { status: transfer.status }, after: { status: 'cancelled', reason: reason || null } });
+    return { ok: true };
+  });
+});
+
 // Moves the shipped quantity of every line: source location -> Transit.
 // Read phase (transfer doc + one posting-prep per line) fully completes
 // before any write, per Firestore's transaction rules — see
@@ -107,6 +149,10 @@ const shipTransfer = onCall(async (request) => {
 
     const postings = [];
     for (const line of lines) {
+      // A zero-qty leg (item pulled from the shipment) moves nothing —
+      // posting it would just be a meaningless zero-qty ledger entry, and
+      // the core service rejects qty===0 outright, so skip it here.
+      if (!(line.qtyShipped > 0)) continue;
       postings.push(await prepareInventoryPosting(db, tx, {
         type: 'transfer_out', itemId: line.itemId, locationId: transfer.fromLocationId,
         qty: -line.qtyShipped,
@@ -160,6 +206,10 @@ const receiveTransfer = onCall(async (request) => {
 
     const postings = [];
     for (const line of lines) {
+      // A total loss (qtyReceived === 0) moves nothing out of Transit —
+      // the shortfall is entirely captured by the variance record below,
+      // not by a meaningless zero-qty posting.
+      if (!(line.qtyReceived > 0)) continue;
       postings.push(await prepareInventoryPosting(db, tx, {
         type: 'transfer_out', itemId: line.itemId, locationId: TRANSIT_LOCATION_ID,
         qty: -line.qtyReceived,
@@ -201,4 +251,4 @@ const receiveTransfer = onCall(async (request) => {
   });
 });
 
-module.exports = { TRANSITIONS, submitTransfer, approveTransfer, shipTransfer, receiveTransfer };
+module.exports = { TRANSITIONS, submitTransfer, approveTransfer, rejectTransfer, cancelTransfer, shipTransfer, receiveTransfer };

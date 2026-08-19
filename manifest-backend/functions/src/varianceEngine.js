@@ -23,4 +23,13 @@ function classifyTransferVariance(qtyShipped, qtyReceived) {
   };
 }
 
-module.exports = { VARIANCE_TYPES, classifyTransferVariance };
+function classifyProductionVariance(qtyPlanned, qtyActual) {
+  const delta = qtyActual - qtyPlanned;
+  if (Math.abs(delta) < 1e-6) return null;
+  return {
+    type: delta < 0 ? VARIANCE_TYPES.PRODUCTION_YIELD_SHORTAGE : VARIANCE_TYPES.PRODUCTION_YIELD_OVERAGE,
+    qtyDelta: delta,
+  };
+}
+
+module.exports = { VARIANCE_TYPES, classifyTransferVariance, classifyProductionVariance };

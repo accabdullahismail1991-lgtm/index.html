@@ -60,6 +60,10 @@ service cloud.firestore {
       allow read: if hasPerm('variance.read');
       allow write: if false;
     }
+    match /productionOrders/{id} {
+      allow read: if hasPerm('production.read');
+      allow write: if false;
+    }
     match /approvalRules/{id} {
       allow read: if hasPerm('users.manageRoles');
       allow write: if false;

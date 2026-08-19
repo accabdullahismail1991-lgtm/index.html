@@ -1,17 +1,19 @@
-// Standalone logic test against an in-memory Firestore mock — this
+// Standalone logic tests against an in-memory Firestore mock — this
 // sandbox has no firebase-tools/Java to run the real emulator (see
 // PROJECT_STATUS.md). This does NOT replace testing against a real
-// project before deploy; it verifies the two-phase read/write ordering
-// and the core posting/variance math are correct in isolation.
+// project before deploy, and it does not exercise the onCall() wrappers
+// themselves (permission gating, request parsing) — only the internal
+// two-phase posting/variance logic that transfers.js and production.js
+// are built on. Covers both the transfer flow and the production flow.
 //
-// Run: node test/inventoryTransactionService.test.js
+// Run: node test/logic.test.js
 const assert = require('node:assert/strict');
 const {
   prepareInventoryPosting,
   commitInventoryPosting,
   postInventoryTransaction,
 } = require('../src/inventoryTransactionService');
-const { classifyTransferVariance } = require('../src/varianceEngine');
+const { classifyTransferVariance, classifyProductionVariance } = require('../src/varianceEngine');
 
 let autoId = 0;
 
@@ -165,6 +167,80 @@ async function test(name, fn) {
     const variance = classifyTransferVariance(80, 75);
     assert.equal(variance.type, 'transfer_shortage');
     assert.equal(variance.qtyDelta, -5);
+  });
+
+  await test('classifyTransferVariance returns null when shipped equals received', () => {
+    assert.equal(classifyTransferVariance(80, 80), null);
+  });
+
+  await test('classifyProductionVariance flags shortage and overage correctly', () => {
+    const shortage = classifyProductionVariance(10, 8);
+    assert.equal(shortage.type, 'production_yield_shortage');
+    assert.equal(shortage.qtyDelta, -2);
+
+    const overage = classifyProductionVariance(10, 11);
+    assert.equal(overage.type, 'production_yield_overage');
+    assert.equal(overage.qtyDelta, 1);
+
+    assert.equal(classifyProductionVariance(10, 10), null);
+  });
+
+  await test('total-loss transfer leg (0 received): no transfer_in posting, full shortfall stays a variance', async () => {
+    const store = new Map();
+    store.set('stockBalances/TRANSIT_ITEM1', { itemId: 'ITEM1', locationId: 'TRANSIT', qty: 10 });
+    const db = makeFakeDb(store);
+
+    // Mirrors receiveTransfer's zero-qty skip: only prepare/commit a
+    // posting when qtyReceived > 0.
+    await runTransaction(store, async (tx) => {
+      const qtyReceived = 0;
+      if (qtyReceived > 0) {
+        const p1 = await prepareInventoryPosting(db, tx, { type: 'transfer_out', itemId: 'ITEM1', locationId: 'TRANSIT', qty: -qtyReceived });
+        commitInventoryPosting(db, tx, p1, { actorUid: 'receiver1' });
+      }
+    });
+
+    // Transit balance is untouched — the goods were never confirmed
+    // received, so nothing was moved out of Transit on the receiving side.
+    assert.equal(store.get('stockBalances/TRANSIT_ITEM1').qty, 10);
+    const variance = classifyTransferVariance(10, 0);
+    assert.equal(variance.type, 'transfer_shortage');
+    assert.equal(variance.qtyDelta, -10);
+  });
+
+  await test('production: consume components at start, yield at completion, variance on short yield', async () => {
+    const store = new Map();
+    store.set('stockBalances/KITCHEN1_FLOUR', { itemId: 'FLOUR', locationId: 'KITCHEN1', qty: 50 });
+    store.set('stockBalances/KITCHEN1_YEAST', { itemId: 'YEAST', locationId: 'KITCHEN1', qty: 5 });
+    const db = makeFakeDb(store);
+
+    // startProduction: consume 20 flour + 2 yeast for a planned 30-unit batch
+    await runTransaction(store, async (tx) => {
+      const components = [{ itemId: 'FLOUR', qtyPlanned: 20 }, { itemId: 'YEAST', qtyPlanned: 2 }];
+      const postings = [];
+      for (const c of components) {
+        if (!(c.qtyPlanned > 0)) continue;
+        postings.push(await prepareInventoryPosting(db, tx, { type: 'production_consume', itemId: c.itemId, locationId: 'KITCHEN1', qty: -c.qtyPlanned }));
+      }
+      for (const p of postings) commitInventoryPosting(db, tx, p, { actorUid: 'chef1', refType: 'production', refId: 'PO-TEST' });
+    });
+    assert.equal(store.get('stockBalances/KITCHEN1_FLOUR').qty, 30);
+    assert.equal(store.get('stockBalances/KITCHEN1_YEAST').qty, 3);
+
+    // completeProduction: only 28 units actually came out of the oven
+    const plannedQty = 30;
+    const actualYieldQty = 28;
+    await runTransaction(store, async (tx) => {
+      const posting = actualYieldQty > 0
+        ? await prepareInventoryPosting(db, tx, { type: 'production_yield', itemId: 'BREAD', locationId: 'KITCHEN1', qty: actualYieldQty })
+        : null;
+      if (posting) commitInventoryPosting(db, tx, posting, { actorUid: 'chef1', refType: 'production', refId: 'PO-TEST' });
+    });
+    assert.equal(store.get('stockBalances/KITCHEN1_BREAD').qty, 28);
+
+    const variance = classifyProductionVariance(plannedQty, actualYieldQty);
+    assert.equal(variance.type, 'production_yield_shortage');
+    assert.equal(variance.qtyDelta, -2);
   });
 
   await test('a read after a write throws (mock sanity check for the ordering rule itself)', async () => {

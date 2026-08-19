@@ -43,11 +43,17 @@ Cloud Function writing it yet.
   - `transfers/{id}/signatures/{sigId}` — designed, not yet written:
     `role` (`driver_confirm` | `receiver_confirm`), `imageRef` (Cloud
     Storage path), `signedBy`, `geoloc`, `signedAt`.
-- **`productionOrders/{id}`** — designed, not yet built: `recipeRef`,
-  `plannedQty`, `actualYieldQty`, `consumedComponents`, `status`.
+- **`productionOrders/{id}`*** — `docNumber` (`PO-0001`, …), `itemId`
+  (the item being produced), `locationId`, `plannedQty`, `actualYieldQty`
+  (`null` until completed), `components: [{itemId, qtyPlanned,
+  qtyConsumed}]`, `status` (`planned` → `in_progress` → `completed`, or
+  `planned` → `cancelled`), `createdBy`/`startedBy`/`completedBy`/
+  `cancelledBy`, `varianceId`, timestamps. Components are consumed at
+  `start`, yield is posted at `complete` — see `production.js`'s header
+  comment for why, and revisit if the real kitchen workflow differs.
 - **`counts/{id}`** — designed, not yet built: cycle/physical count
   sessions, `lines`, `status`.
-- **`variances/{id}`*** (transfer-shortage/overage only so far) —
+- **`variances/{id}`*** (transfer and production-yield shortage/overage so far) —
   `type`, `subjectType`, `subjectId`, `itemId`, `qtyDelta`, `status`
   (`open` | `reviewed` | `resolved`), `note`, `createdAt`.
 - **`wasteLogs/{id}`** — designed, not yet built.

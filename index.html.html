@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>نظام الجرد الذكي 2025</title>
+<title>رصيد 2025</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%237a2331'/%3E%3Cg transform='translate(4,4)' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8l9-5 9 5-9 5-9-5z'/%3E%3Cpath d='M3 8v9l9 5 9-5V8'/%3E%3Cline x1='12' y1='13' x2='12' y2='22'/%3E%3C/g%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1170,7 +1170,7 @@ td{padding:10px 13px;vertical-align:middle;}
   <div class="auth-card">
     <div class="logo" style="justify-content:center;margin-bottom:22px">
       <div class="logo-icon">🗃️</div>
-      <div><div class="logo-name">نظام الجرد الذكي</div><div class="logo-sub">SMART INVENTORY v3.0</div></div>
+      <div><div class="logo-name">رصيد</div><div class="logo-sub">RASEED v3.0</div></div>
     </div>
     <div id="authForm">
       <div class="mod-field"><label class="mod-lbl" data-i18n="البريد الإلكتروني">البريد الإلكتروني</label><input class="mod-in" id="auth-email" type="email" placeholder="name@example.com"></div>
@@ -1247,7 +1247,7 @@ td{padding:10px 13px;vertical-align:middle;}
 <div class="layout" id="cycleView" style="display:none">
 <div class="sidebar">
   <span class="sb-label" data-i18n="دورات التسوية">دورات التسوية</span>
-  <div class="sb-item sb-item-pinned" onclick="openNewCycle()" title="بدء دورة تسوية جديدة" aria-label="بدء دورة تسوية جديدة" data-i18n-title="بدء دورة تسوية جديدة"><span class="sb-ico">➕</span><span data-i18n="بدء دورة جديدة">بدء دورة جديدة</span></div>
+  <div class="sb-item sb-item-pinned" onclick="openNewCycle()" title="بدء الجولة اليومية الجديدة" aria-label="بدء الجولة اليومية الجديدة" data-i18n-title="بدء الجولة اليومية الجديدة"><span class="sb-ico">➕</span><span data-i18n="بدء الجولة اليومية">بدء الجولة اليومية</span></div>
   <div class="sb-div"></div>
   <div style="padding:0 14px 10px">
     <div style="font-size:10.5px;color:var(--muted);margin-bottom:5px">🔍 فلترة الدورات بالتاريخ</div>
@@ -1547,7 +1547,7 @@ td{padding:10px 13px;vertical-align:middle;}
 <div class="overlay" id="newCycleModal">
 <div class="modal" style="width:420px">
   <div class="mod-sticky-head">
-  <div class="mod-title" data-i18n="➕ بدء دورة تسوية جديدة">➕ بدء دورة تسوية جديدة</div>
+  <div class="mod-title" data-i18n="➕ بدء الجولة اليومية الجديدة">➕ بدء الجولة اليومية الجديدة</div>
   </div>
   <div class="mod-row">
     <div class="mod-field"><label class="mod-lbl" data-i18n="تاريخ البداية *">تاريخ البداية *</label><input type="date" class="mod-in" id="nc-start"></div>
@@ -1561,7 +1561,7 @@ td{padding:10px 13px;vertical-align:middle;}
   <p style="font-size:11.5px;color:var(--muted);line-height:1.8">الرصيد الافتتاحي هياخد تلقائياً من الرصيد الختامي لآخر دورة مغلقة لنفس الفرع (أو تقدر تدخله يدوياً لو دي أول دورة).</p>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('newCycleModal')" data-i18n="إلغاء">إلغاء</button>
-    <button class="hbtn gold" onclick="createCycle()" data-i18n="✓ بدء الدورة">✓ بدء الدورة</button>
+    <button class="hbtn gold" onclick="createCycle()" data-i18n="✓ بدء الجولة">✓ بدء الجولة</button>
   </div>
 </div>
 </div>
@@ -2334,7 +2334,7 @@ const I18N_EN={
   "ملاحظات": "Notes",
   "الكمية الافتراضية": "Default Quantity",
   "الهاتف": "Phone",
-  "بدء دورة جديدة": "Start New Cycle",
+  "بدء الجولة اليومية": "Start Daily Round",
   "بيانات تاريخية متاحة": "Historical Data Available",
   "تاريخ البداية *": "Start Date *",
   "تاريخ النهاية *": "End Date *",
@@ -2360,7 +2360,7 @@ const I18N_EN={
   "مشرف الجرد": "Inventory Supervisor",
   "مقادير الوصفة (المكوّنات من المخزون)": "Recipe Ingredients (components from inventory)",
   "مكوّنات الصنف (اختياري — لو الصنف نصف مصنّع/خلطة)": "Item Components (optional — for semi-finished items)",
-  "نظام الجرد الذكي": "Smart Inventory System",
+  "رصيد": "Raseed",
   "نوع الصنف": "Item Type",
   "وحدة القياس *": "Unit of Measure *",
   "⚙️ إعداد الجرد": "⚙️ Inventory Setup",
@@ -2372,7 +2372,7 @@ const I18N_EN={
   "✓ إضافة القسم": "✓ Add Category",
   "✓ إنشاء الحساب": "✓ Create Account",
   "✓ إنشاء الفرع": "✓ Create Branch",
-  "✓ بدء الدورة": "✓ Start Cycle",
+  "✓ بدء الجولة": "✓ Start Round",
   "✓ حفظ": "✓ Save",
   "✓ حفظ الصنف": "✓ Save Item",
   "✓ دخول": "✓ Enter",
@@ -2380,7 +2380,7 @@ const I18N_EN={
   "➕ إضافة صنف": "➕ Add Item",
   "➕ إضافة صنف جديد": "➕ Add New Item",
   "➕ إنشاء حساب مستخدم مباشرة": "➕ Create User Account Directly",
-  "➕ بدء دورة تسوية جديدة": "➕ Start New Reconciliation Cycle",
+  "➕ بدء الجولة اليومية الجديدة": "➕ Start New Daily Round",
   "🌐 تقرير كل الفروع": "🌐 All Branches Report",
   "🍽️ الأصناف المباعة والوصفات": "🍽️ Menu Items & Recipes",
   "🍽️ الأصناف المباعة ووصفاتها (BOM)": "🍽️ Menu Items & Recipes (BOM)",
@@ -2429,8 +2429,8 @@ const I18N_EN={
   "بيانات ونسخ احتياطي": "Data & Backup",
   "🔀 سجل التحويلات": "🔀 Transfers Log",
   "🔀 سجل التحويلات بين الفروع": "🔀 Inter-Branch Transfers Log",
-  "🔄 دورة التسوية": "🔄 Reconciliation Cycle",
-  "🔒 إغلاق الدورة وحساب النتائج": "🔒 Close Cycle & Calculate Results",
+  "🔄 الجولة اليومية": "🔄 Daily Round",
+  "🔒 إغلاق الجولة اليومية وحساب النتائج": "🔒 Close Daily Round & Calculate Results",
   "🔓 إعادة فتح": "🔓 Reopen",
   "🔄 تحديث بالأسعار الحالية": "🔄 Refresh With Current Prices",
   "سيُعاد حساب نتائج هذه الدورة بأسعار المكونات الحالية، وسيُستبدل الرصيد المحفوظ سابقًا بها. هل تريد المتابعة؟": "This cycle's results will be recalculated using current component prices, replacing the previously saved figures. Do you want to continue?",
@@ -2757,7 +2757,7 @@ const I18N_EN={
   "🗑️ تم الحذف": "🗑️ Deleted",
   "⚠️ حدد تاريخ البداية والنهاية": "⚠️ Set the start and end dates",
   "⚠️ تاريخ النهاية قبل تاريخ البداية": "⚠️ End date is before the start date",
-  "✅ تم بدء دورة جديدة": "✅ New cycle started",
+  "✅ تم بدء الجولة اليومية": "✅ New daily round started",
   "🗑️ تم حذف الدورة": "🗑️ Cycle deleted",
   "⚠️ افتح دورة تسوية أولًا": "⚠️ Open a reconciliation cycle first",
   "⚠️ الدورة مغلقة — أعد فتحها أولًا لإضافة أصناف للمشتريات": "⚠️ The cycle is closed — reopen it first to add purchase items",
@@ -2780,7 +2780,7 @@ const I18N_EN={
   "⚠️ الدورة مغلقة — أعد فتحها أولًا لإضافة أصناف للرصيد الختامي": "⚠️ The cycle is closed — reopen it first to add closing-balance items",
   "✅ تم سحب الكميات الحالية كرصيد ختامي": "✅ Current quantities pulled in as closing balance",
   "⚠️ عرض تقرير المخزون الختامي غير متاح لحسابك — يُرجى مراجعة الإدارة": "⚠️ Viewing the closing stock report is not available for your account — please contact the administration",
-  "✅ تم إغلاق الدورة وحساب النتائج": "✅ Cycle closed and results calculated",
+  "✅ تم إغلاق الجولة اليومية وحساب النتائج": "✅ Daily round closed and results calculated",
   "🔓 تم إعادة فتح الدورة": "🔓 Cycle reopened",
   "⚠️ الدورة لا تزال مفتوحة، جارٍ تصدير البيانات الخام": "⚠️ The cycle is still open, exporting raw data",
   "⚠️ أغلق الدورة أولًا لحساب النتائج قبل التصدير": "⚠️ Close the cycle first to calculate results before exporting",
@@ -3412,7 +3412,7 @@ function reportHeaderBlock(opts){
   return `<div class="rpt-pro-header">
     <div class="rpt-pro-co">
       ${companyInfo.logo?`<img src="${companyInfo.logo}" style="height:38px;max-width:120px;object-fit:contain">`:''}
-      <div><div class="rpt-pro-co-name">${companyInfo.name||'نظام الجرد الذكي'}</div>${companyInfo.address?`<div class="rpt-pro-co-sub">${companyInfo.address}</div>`:''}</div>
+      <div><div class="rpt-pro-co-name">${companyInfo.name||'رصيد'}</div>${companyInfo.address?`<div class="rpt-pro-co-sub">${companyInfo.address}</div>`:''}</div>
     </div>
     <div class="rpt-pro-meta">
       <div class="rpt-pro-title">${opts.title||''}</div>
@@ -4410,7 +4410,7 @@ function exportPDF(rpt){
   doc.setTextColor(20,15,0);doc.setFontSize(13);doc.setFont('Arabic','bold');
   doc.text('تقرير الجرد اليومي',W/2,13,{align:'center'});
   doc.setFontSize(7);doc.setFont('Arabic','normal');
-  doc.text((companyInfo.name?companyInfo.name+' — ':'')+'Smart Inventory System v3.0',W/2,18,{align:'center'});
+  doc.text((companyInfo.name?companyInfo.name+' — ':'')+'Raseed v3.0',W/2,18,{align:'center'});
 
   doc.setFillColor(244,245,248);doc.rect(0,20,W,16,'F');
   doc.setDrawColor(224,226,232);doc.setLineWidth(.2);doc.line(0,36,W,36);
@@ -4473,7 +4473,7 @@ function exportPDF(rpt){
     doc.setFillColor(244,245,248);doc.rect(0,H-9,W,9,'F');
     doc.setDrawColor(224,226,232);doc.setLineWidth(.3);doc.line(0,H-9,W,H-9);
     doc.setFontSize(7);doc.setTextColor(120,128,140);doc.setFont('Arabic','normal');
-    doc.text(`Smart Inventory v3.0 | ${rpt.branch} | ${dStr} | ${rpt.sid}`,14,H-3.5);
+    doc.text(`Raseed v3.0 | ${rpt.branch} | ${dStr} | ${rpt.sid}`,14,H-3.5);
     doc.text(`صفحة ${p} من ${doc.internal.getNumberOfPages()}`,W-14,H-3.5,{align:'right'});
   }
   doc.save(`Inventory_${(rpt.branch||'Branch').replace(/\s/g,'_')}_${rpt.date}_${rpt.sid}.pdf`);
@@ -6124,7 +6124,7 @@ function printCurrentReport(){
   const content=overlay.querySelector('.modal').innerHTML;
   const appStyleEl=document.querySelector('head style');
   const appStyles=appStyleEl?appStyleEl.textContent:'';
-  const appName=companyInfo.name||'نظام الجرد الذكي';
+  const appName=companyInfo.name||'رصيد';
   const reportTitle=(overlay.querySelector('.mod-title')?.textContent||'').trim();
   const appIconLink=document.querySelector('link[rel="icon"]');
   const w=window.open('','_blank');
@@ -6555,7 +6555,7 @@ function createCycle(){
   BCycles().push(c);
   curCycleId=c.id;curCycleTab='sales';
   save();closeM('newCycleModal');renderCycleList();renderCycleHeader();renderCycleTabs();renderCycleBody();
-  toast(t('✅ تم بدء دورة جديدة'),'suc');
+  toast(t('✅ تم بدء الجولة اليومية'),'suc');
 }
 function deleteCycle(cid){
   if(!confirm(t('هل تريد حذف هذه الدورة نهائيًا؟ إذا اعتمدت دورات لاحقة على رصيدها الختامي فستحتاج إلى مراجعة.')))return;
@@ -6582,7 +6582,7 @@ function renderCycleHeader(){
     </div>
     <div class="db-r">
       ${!c.closed
-        ?`<button class="hbtn gold" style="padding:6px 12px;font-size:12px" onclick="closeCycle()" data-i18n="🔒 إغلاق الدورة وحساب النتائج">🔒 إغلاق الدورة وحساب النتائج</button>`
+        ?`<button class="hbtn gold" style="padding:6px 12px;font-size:12px" onclick="closeCycle()" data-i18n="🔒 إغلاق الجولة اليومية وحساب النتائج">🔒 إغلاق الجولة اليومية وحساب النتائج</button>`
         :`<button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="reopenCycle()" data-i18n="🔓 إعادة فتح">🔓 إعادة فتح</button>
         <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="recomputeCycleCost('${c.id}')" title="إعادة حساب نتائج الدورة بأسعار المكونات الحالية" aria-label="إعادة حساب نتائج الدورة بأسعار المكونات الحالية" data-i18n="🔄 تحديث بالأسعار الحالية">🔄 تحديث بالأسعار الحالية</button>`}
       <button class="hbtn" style="padding:6px 12px;font-size:12px" onclick="openClosingStockReport('${c.id}')" title="تقرير المخزون الختامي المستقل لنهاية الدورة" aria-label="تقرير المخزون الختامي المستقل لنهاية الدورة" data-i18n="📦 المخزون الختامي">📦 المخزون الختامي</button>
@@ -7772,7 +7772,7 @@ function closeCycle(){
   c.result=computeCycleResults(c);
   c.closed=true;
   save();renderCycleList();renderCycleHeader();curCycleTab='results';renderCycleTabs();renderCycleBody();
-  toast(t('✅ تم إغلاق الدورة وحساب النتائج'),'suc');
+  toast(t('✅ تم إغلاق الجولة اليومية وحساب النتائج'),'suc');
 }
 function reopenCycle(){
   const c=curCycleId?getCycle(curCycleId):null;if(!c)return;
@@ -7809,7 +7809,7 @@ function cycleBreakEvenInfo(c){
 function renderResultsTab(c,el){
   if(!c.closed||!c.result){
     el.innerHTML=`<div class="tbl-wrap"><div style="padding:30px;text-align:center;color:var(--muted)">
-      نتائج التسوية بتتحسب لما تقفل الدورة. اضغط "🔒 إغلاق الدورة وحساب النتائج" من الأعلى.
+      نتائج التسوية بتتحسب لما تقفل الدورة. اضغط "🔒 إغلاق الجولة اليومية وحساب النتائج" من الأعلى.
     </div></div>`;
     return;
   }
@@ -7913,7 +7913,7 @@ function exportCyclePDF(cid){
   doc.setTextColor(20,15,0);doc.setFontSize(13);doc.setFont('Arabic','bold');
   doc.text('تقرير نتائج التسوية (Cost of Sales Report)',W/2,13,{align:'center'});
   doc.setFontSize(7);doc.setFont('Arabic','normal');
-  doc.text((companyInfo.name?companyInfo.name+' — ':'')+'Smart Inventory System v3.0',W/2,18,{align:'center'});
+  doc.text((companyInfo.name?companyInfo.name+' — ':'')+'Raseed v3.0',W/2,18,{align:'center'});
 
   doc.setFillColor(244,245,248);doc.rect(0,20,W,16,'F');
   doc.setDrawColor(224,226,232);doc.setLineWidth(.2);doc.line(0,36,W,36);
@@ -8047,7 +8047,7 @@ function exportCyclePDF(cid){
     doc.setFillColor(244,245,248);doc.rect(0,H-9,W,9,'F');
     doc.setDrawColor(224,226,232);doc.setLineWidth(.3);doc.line(0,H-9,W,H-9);
     doc.setFontSize(7);doc.setTextColor(120,128,140);doc.setFont('Arabic','normal');
-    doc.text(`Smart Inventory v3.0 | ${S.branch} | ${c.start} - ${c.end}`,14,H-3.5);
+    doc.text(`Raseed v3.0 | ${S.branch} | ${c.start} - ${c.end}`,14,H-3.5);
     doc.text(`صفحة ${p} من ${doc.internal.getNumberOfPages()}`,W-14,H-3.5,{align:'right'});
   }
   doc.save(`Cycle_${(S.branch||'Branch').replace(/\s/g,'_')}_${c.start}_${c.end}.pdf`);
@@ -9643,8 +9643,8 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
           ? <img id="companyLogoImg" src={companyInfo.logo} style={{width:44,height:44,borderRadius:12,objectFit:'contain',background:'#fff',padding:3}} />
           : <div className="logo-icon" id="defaultLogoIcon">🗃️</div>}
         <div>
-          <div className="logo-name" id="companyNameOrDefault">{companyInfo.name||t('نظام الجرد الذكي')}</div>
-          <div className="logo-sub">SMART INVENTORY v3.0 · <span id="buildStamp">{typeof BUILD_STAMP!=='undefined'?BUILD_STAMP:''}</span></div>
+          <div className="logo-name" id="companyNameOrDefault">{companyInfo.name||t('رصيد')}</div>
+          <div className="logo-sub">RASEED v3.0 · <span id="buildStamp">{typeof BUILD_STAMP!=='undefined'?BUILD_STAMP:''}</span></div>
         </div>
       </div>
       <div className="hright">
@@ -9712,7 +9712,7 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
         <span>{t('📋 الجرد اليومي')}</span>
       </div>
       <div className={`mn-view-btn${curView==='cycle'?' active':''}`} id="vnCycle" onClick={()=>showView('cycle')}>
-        <span>{t('🔄 دورة التسوية')}</span>
+        <span>{t('🔄 الجولة اليومية')}</span>
       </div>
       <div className={`mn-view-btn${curView==='reports'?' active':''}`} id="vnReports" onClick={()=>showView('reports')}>
         <span>{t('📊 مركز التقارير')}</span>

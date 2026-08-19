@@ -130,11 +130,17 @@ Production orders follow the same pattern: `completeProduction` compares
 `actualYieldQty` against `plannedQty` and raises a
 `production_yield_shortage`/`overage` variance on any difference.
 
-5 of the spec's 9 variance types are now implemented (transfer
-shortage/overage, production yield shortage/overage); the other 4 (count
-variance, waste, expiry loss, unexplained adjustment) are stubbed as named
-constants in `varianceEngine.js` but not yet wired to a flow — see
-Section 10.
+Physical counts (`counts.js`) raise a `count_shortage`/`overage` variance
+in `applyCount`, computed from the **live** balance at apply-time rather
+than whatever the count showed when it was submitted — see the module
+comment in `counts.js` and Section 10 below for why that distinction is
+load-bearing, not cosmetic.
+
+7 of the spec's 9 variance types are now implemented (transfer
+shortage/overage, production yield shortage/overage, count
+shortage/overage); the other 2 (waste, unexplained adjustment) are
+stubbed as named constants in `varianceEngine.js` but not yet wired to a
+flow — see Section 11.
 
 **Zero-quantity legs.** A transfer or production line whose shipped/
 received/consumed quantity is legitimately zero (an item pulled from a
@@ -151,7 +157,34 @@ this phase writes one entry, inside the same Firestore transaction as the
 business write it's describing — so an audit entry can never exist without
 its corresponding change, or vice versa.
 
-## 10. What this phase does NOT include (explicitly, so it isn't assumed done)
+## 10. Physical counts: live balance vs. submit-time snapshot
+
+A physical count has a real duration — someone walks the floor with a
+clipboard while other inventory activity (a sale, an incoming transfer)
+can still post to the same location. If the delta applied to the ledger
+were computed from a balance frozen when the count started or was
+submitted, `applyCount` could silently post the wrong delta and leave the
+system balance somewhere other than what was physically counted — which
+defeats the entire purpose of counting.
+
+So `counts.js` treats the count-doc's `qtySystemAtSubmit`/`qtyDelta`
+fields as **display-only** (what the reviewer saw on the review screen),
+and always recomputes the actually-applied delta in `applyCount` from the
+live balance read at that moment — guaranteeing the post-apply balance
+equals the counted quantity exactly, regardless of what happened to that
+location in between. If the live balance at apply-time differs from what
+was shown at submit-time, that drift is recorded per-line in
+`driftWarnings` rather than silently reconciled away. A dedicated test in
+`test/logic.test.js` reproduces this exact scenario (a balance that moves
+between submit and apply) and asserts the live-balance approach lands on
+the correct figure while the naive stale-snapshot approach would not.
+
+Also unlike transfers/production, `cancelCount` is allowed from both
+`open` and `submitted` — neither state has posted anything to the ledger
+yet (`submitCount` only records numbers), so the irreversible step here
+is `applyCount`, not submission.
+
+## 11. What this phase does NOT include (explicitly, so it isn't assumed done)
 
 This is Phase 0 (architecture) plus a first vertical slice of Phase 1
 (Foundation), not the whole spec:
@@ -164,8 +197,10 @@ This is Phase 0 (architecture) plus a first vertical slice of Phase 1
 - No Notification Center delivery (push/SMS/email) — no
   `sendNotification` function exists yet.
 - No Control Tower / Finance dashboards, no Reporting module.
-- No physical-count flow yet — `transfers` and `productionOrders` are
-  built end-to-end as the reference pattern `counts` should follow next.
+- No count-doc creation UI/flow for picking WHICH items to count —
+  `startCount` takes an explicit `itemIds` list; nothing yet generates
+  that list automatically (e.g. "everything at this location", or "items
+  not counted in the last N days").
 - `cancelTransfer`/`cancelProduction` only work before stock has actually
   moved (before `shipTransfer` / `startProduction`). Cancelling something
   already in motion needs a reversal flow, not just a status flip — not

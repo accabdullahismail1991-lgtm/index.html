@@ -68,6 +68,10 @@ service cloud.firestore {
       allow read: if hasPerm('reports.read');
       allow write: if false;
     }
+    match /counts/{id} {
+      allow read: if hasPerm('count.read');
+      allow write: if false;
+    }
     match /approvalRules/{id} {
       allow read: if hasPerm('users.manageRoles');
       allow write: if false;

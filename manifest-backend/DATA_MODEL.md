@@ -51,9 +51,20 @@ Cloud Function writing it yet.
   `cancelledBy`, `varianceId`, timestamps. Components are consumed at
   `start`, yield is posted at `complete` — see `production.js`'s header
   comment for why, and revisit if the real kitchen workflow differs.
-- **`counts/{id}`** — designed, not yet built: cycle/physical count
-  sessions, `lines`, `status`.
-- **`variances/{id}`*** (transfer and production-yield shortage/overage so far) —
+- **`counts/{id}`*** — `docNumber` (`SC-0001`, …), `locationId`, `type`
+  (`cycle` | `full`), `lines: [{itemId, qtySystemAtSubmit, qtyCounted,
+  qtyDelta}]`, `status` (`open` → `submitted` → `applied`, or `open`/
+  `submitted` → `cancelled`), `createdBy`/`submittedBy`/`appliedBy`/
+  `cancelledBy`, `varianceIds`, `driftWarnings: [{itemId,
+  qtySystemAtSubmit, qtySystemAtApply}]`, timestamps.
+  `qtySystemAtSubmit`/`qtyDelta` on each line are **display-only** —
+  captured at submit-time for the review screen. The delta actually
+  posted to the ledger in `applyCount` is always recomputed from the
+  *live* balance at apply-time, so the result always matches what was
+  physically counted even if other activity moved the same location's
+  stock during the counting window; `driftWarnings` surfaces it when that
+  happened instead of silently reconciling against stale numbers.
+- **`variances/{id}`*** (transfer, production-yield, and count shortage/overage so far) —
   `type`, `subjectType`, `subjectId`, `itemId`, `qtyDelta`, `status`
   (`open` | `reviewed` | `resolved`), `note`, `createdAt`.
 - **`wasteLogs/{id}`** — designed, not yet built.

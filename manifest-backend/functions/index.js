@@ -13,6 +13,7 @@ const {
   compareSnapshots,
   getLowStockReport,
 } = require('./src/reports');
+const { startCount, submitCount, applyCount, cancelCount } = require('./src/counts');
 
 module.exports = {
   setUserRole,
@@ -32,4 +33,8 @@ module.exports = {
   listSnapshotHistory,
   compareSnapshots,
   getLowStockReport,
+  startCount,
+  submitCount,
+  applyCount,
+  cancelCount,
 };

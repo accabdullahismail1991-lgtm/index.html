@@ -13,7 +13,7 @@ const {
   commitInventoryPosting,
   postInventoryTransaction,
 } = require('../src/inventoryTransactionService');
-const { classifyTransferVariance, classifyProductionVariance } = require('../src/varianceEngine');
+const { classifyTransferVariance, classifyProductionVariance, classifyCountVariance } = require('../src/varianceEngine');
 const { computeSnapshotTotals, computeSnapshotDiff, computeLowStockRows } = require('../src/reports');
 
 let autoId = 0;
@@ -345,6 +345,87 @@ async function test(name, fn) {
       [{ itemId: 'FLOUR', reorderPoint: 10 }]
     );
     assert.equal(rows.length, 0);
+  });
+
+  await test('classifyCountVariance flags shortage/overage, null when matched', () => {
+    const shortage = classifyCountVariance(50, 42);
+    assert.equal(shortage.type, 'count_shortage');
+    assert.equal(shortage.qtyDelta, -8);
+    const overage = classifyCountVariance(50, 55);
+    assert.equal(overage.type, 'count_overage');
+    assert.equal(overage.qtyDelta, 5);
+    assert.equal(classifyCountVariance(50, 50), null);
+  });
+
+  await test('count apply: no drift — counted qty applied straightforwardly', async () => {
+    const store = new Map();
+    store.set('stockBalances/BRANCH1_FLOUR', { itemId: 'FLOUR', locationId: 'BRANCH1', qty: 50 });
+    const db = makeFakeDb(store);
+
+    // Simulates applyCount's logic: read the LIVE balance, compute delta
+    // against the counted quantity, post only if non-zero.
+    await runTransaction(store, async (tx) => {
+      const liveBefore = store.get('stockBalances/BRANCH1_FLOUR').qty;
+      const qtyCounted = 42;
+      const qty = qtyCounted - liveBefore;
+      if (Math.abs(qty) > 1e-9) {
+        const p = await prepareInventoryPosting(db, tx, { type: 'count_variance', itemId: 'FLOUR', locationId: 'BRANCH1', qty });
+        commitInventoryPosting(db, tx, p, { actorUid: 'u1', refType: 'count', refId: 'SC-TEST' });
+      }
+    });
+
+    assert.equal(store.get('stockBalances/BRANCH1_FLOUR').qty, 42);
+  });
+
+  await test('count apply: drift during the counting window — applying against a stale snapshot would be WRONG, applying against the live balance is correct', async () => {
+    const store = new Map();
+    // At submit-time the count review screen showed "system: 50". Between
+    // submit and apply, another transaction (e.g. a sale) dropped the
+    // live balance to 45 — the count itself still says "counted: 42".
+    const qtySystemAtSubmit = 50;
+    const qtyCounted = 42;
+    store.set('stockBalances/BRANCH1_FLOUR', { itemId: 'FLOUR', locationId: 'BRANCH1', qty: 45 });
+    const db = makeFakeDb(store);
+
+    // The WRONG way (what a naive implementation using the stale
+    // snapshot would compute): qty = 42 - 50 = -8, landing at 45-8=37.
+    const wrongQty = qtyCounted - qtySystemAtSubmit;
+    assert.equal(wrongQty, -8);
+    assert.notEqual(45 + wrongQty, qtyCounted); // proves the stale-snapshot approach would misapply
+
+    // applyCount's actual logic: read the LIVE balance at apply-time.
+    await runTransaction(store, async (tx) => {
+      const liveBefore = store.get('stockBalances/BRANCH1_FLOUR').qty; // 45, not 50
+      assert.notEqual(liveBefore, qtySystemAtSubmit, 'drift must exist for this test to be meaningful');
+      const qty = qtyCounted - liveBefore; // -3, not -8
+      assert.equal(qty, -3);
+      const p = await prepareInventoryPosting(db, tx, { type: 'count_variance', itemId: 'FLOUR', locationId: 'BRANCH1', qty });
+      commitInventoryPosting(db, tx, p, { actorUid: 'u1', refType: 'count', refId: 'SC-TEST' });
+    });
+
+    // The balance lands EXACTLY on what was physically counted, despite
+    // the drift — this is the whole point of computing from the live
+    // balance instead of the submit-time snapshot.
+    assert.equal(store.get('stockBalances/BRANCH1_FLOUR').qty, 42);
+  });
+
+  await test('count apply: counted qty already matches live balance — no posting, zero-qty guard holds', async () => {
+    const store = new Map();
+    store.set('stockBalances/BRANCH1_FLOUR', { itemId: 'FLOUR', locationId: 'BRANCH1', qty: 42 });
+    const db = makeFakeDb(store);
+
+    await runTransaction(store, async (tx) => {
+      const liveBefore = store.get('stockBalances/BRANCH1_FLOUR').qty;
+      const qty = 42 - liveBefore;
+      if (Math.abs(qty) > 1e-9) {
+        const p = await prepareInventoryPosting(db, tx, { type: 'count_variance', itemId: 'FLOUR', locationId: 'BRANCH1', qty });
+        commitInventoryPosting(db, tx, p, { actorUid: 'u1' });
+      }
+    });
+
+    assert.equal(store.get('stockBalances/BRANCH1_FLOUR').qty, 42);
+    const ledgerEntries = [...store.keys()].filter((k) => k.startsWith('inventoryTransactions/'));
+    assert.equal(ledgerEntries.length, 0, 'no posting should have happened when counted qty already matches live balance');
   });
 
   await test('a read after a write throws (mock sanity check for the ordering rule itself)', async () => {

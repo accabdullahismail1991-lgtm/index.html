@@ -32,4 +32,17 @@ function classifyProductionVariance(qtyPlanned, qtyActual) {
   };
 }
 
-module.exports = { VARIANCE_TYPES, classifyTransferVariance, classifyProductionVariance };
+// qtySystem here must be the LIVE balance read at apply-time, not a
+// snapshot taken when the count started or was submitted — see
+// counts.js's module comment for why (drift during the counting window
+// would otherwise silently apply the wrong delta).
+function classifyCountVariance(qtySystem, qtyCounted) {
+  const delta = qtyCounted - qtySystem;
+  if (Math.abs(delta) < 1e-6) return null;
+  return {
+    type: delta < 0 ? VARIANCE_TYPES.COUNT_SHORTAGE : VARIANCE_TYPES.COUNT_OVERAGE,
+    qtyDelta: delta,
+  };
+}
+
+module.exports = { VARIANCE_TYPES, classifyTransferVariance, classifyProductionVariance, classifyCountVariance };

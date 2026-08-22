@@ -4094,7 +4094,12 @@ function openEditItem(ref){
   document.getElementById('ai-minstock').value=it.minStock!=null?it.minStock:'';
   document.getElementById('ai-type').value=it.type||'raw';
   document.getElementById('ai-batchqty').value=it.batchQty!=null?it.batchQty:'';
-  curItemRecipeRows=(it.recipe||[]).map(r=>{const ing=S.items.find(x=>x.r===r.r);return {...r,uom:ing?ing.u:''};});
+  curItemRecipeRows=(it.recipe||[]).map(r=>{
+    const ing=S.items.find(x=>x.r===r.r);
+    const baseUnit=ing?ing.u:'';
+    const displayUom=r.uom||baseUnit; // falls back to base unit for recipes saved before this field existed
+    return {r:r.r,q:convertQty(r.q,baseUnit,displayUom),uom:displayUom};
+  });
   renderItemRecipeRows();
   document.getElementById('addItemModal').classList.add('open');
 }
@@ -4261,7 +4266,11 @@ function saveItem(){
   const recipe=curItemRecipeRows.filter(r=>r.r&&r.q>0).map(row=>{
     const ing=S.items.find(x=>x.r===row.r);
     const baseUnit=ing?ing.u:row.uom;
-    return {r:row.r,q:convertQty(row.q,row.uom||baseUnit,baseUnit)};
+    const displayUom=row.uom||baseUnit;
+    // Same reasoning as saveMenuItem: q stays in the base unit for
+    // costing, uom remembers the unit actually typed so re-editing shows
+    // the same number back instead of a silently-converted one.
+    return {r:row.r,q:convertQty(row.q,displayUom,baseUnit),uom:displayUom};
   });
 
   if(editingItem){
@@ -6501,7 +6510,13 @@ function openEditMenuItem(id){
   const m=S.menu.find(x=>x.id===id);if(!m)return;
   editingMenuId=id;curRecipeRows=(m.recipe||[]).map(r=>{
     if(r.mid) return {...r};
-    const ing=S.items.find(x=>x.r===r.r);return {...r,uom:ing?ing.u:''};
+    const ing=S.items.find(x=>x.r===r.r);
+    const baseUnit=ing?ing.u:'';
+    // r.uom (when present) is the unit the user originally entered this
+    // quantity in; falls back to the base unit for recipes saved before
+    // this field existed, reproducing the old (base-unit-only) display.
+    const displayUom=r.uom||baseUnit;
+    return {r:r.r,q:convertQty(r.q,baseUnit,displayUom),uom:displayUom};
   });
   document.getElementById('miTitle').textContent='✏️ تعديل: '+m.n;
   document.getElementById('miSaveBtn').textContent='✓ حفظ التعديل';
@@ -6522,7 +6537,14 @@ function saveMenuItem(){
     if(row.mid) return {mid:row.mid,q:row.q};
     const ing=S.items.find(x=>x.r===row.r);
     const baseUnit=ing?ing.u:row.uom;
-    return {r:row.r,q:convertQty(row.q,row.uom||baseUnit,baseUnit)};
+    const displayUom=row.uom||baseUnit;
+    // q stays in the item's base unit (everything downstream — costing,
+    // consumption, imports — assumes that), but uom remembers which unit
+    // the user actually typed the number in, so reopening this row for
+    // edit can show "5 g" again instead of resetting to "0.005 كجم" —
+    // mathematically identical, but confusing for non-technical staff who
+    // typed one number and see a different one looking back at them.
+    return {r:row.r,q:convertQty(row.q,displayUom,baseUnit),uom:displayUom};
   });
   if(editingMenuId){
     const idx=S.menu.findIndex(x=>x.id===editingMenuId);

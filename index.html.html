@@ -8914,7 +8914,7 @@ function processRecipeImportRows(rows){
 // summary toast. extraCounts lets a caller add its own skip-reason
 // counters (e.g. unmatched components) to the same summary line.
 function applyRecipeImportGroups(groups,extraCounts){
-  const {unknownComponent=0,skippedRows=0,selfRefSkipped=0}=extraCounts||{};
+  const {unknownComponent=0,skippedRows=0,selfRefSkipped=0,costUpdated=0}=extraCounts||{};
   let menuAdded=0,menuUpdated=0,semiUpdated=0,semiNotFound=0;
   const unresolvedOwnerGroups=[];
   groups.forEach(g=>{
@@ -8945,6 +8945,7 @@ function applyRecipeImportGroups(groups,extraCounts){
   });
   save();renderMenuList();renderTbl();
   const parts=[`${menuAdded} صنف منيو جديد`,`${menuUpdated} وصفة منيو محدّثة`,`${semiUpdated} وصفة شبه مصنّع محدّثة`];
+  if(costUpdated) parts.push(`💰 ${costUpdated} تكلفة مكوّن محدّثة`);
   if(semiNotFound) parts.push(`⚠️ ${semiNotFound} صنف شبه مصنّع غير معرّف بالأصناف`);
   if(unknownComponent) parts.push(`⚠️ ${unknownComponent} مكوّن غير موجود بالمخزون`);
   if(selfRefSkipped) parts.push(`⚠️ ${selfRefSkipped} سطر متجاهل (الصنف مكوّن لنفسه)`);
@@ -8998,6 +8999,7 @@ function processFoodicsRecipeImportRows(rows){
   const groupIndex={};
   const unresolvedComponents=[];
   const unresolvedUnitComponents=[];
+  const costUpdated=new Set();
   let unknownComponent=0,skippedRows=0;
   for(let i=1;i<rows.length;i++){
     const row=rows[i];
@@ -9036,12 +9038,20 @@ function processFoodicsRecipeImportRows(rows){
       ||(compNameA&&findItemByExternalName(compNameA))
       ||(compNameB&&findItemByExternalName(compNameB));
     const sourceUnit=col['unit']!=null?String(row[col['unit']]||'').trim():'';
-    if(!comp){unknownComponent++;unresolvedComponents.push({group:g,ownerDisplay:g.name,rawText:compNameA||compNameB||compSku,qty:compQty,sourceUnit,source:'Foodics'});continue;}
+    // Foodics' own recipe export already carries this — it was being read
+    // for the qty/unit columns but the cost column sat unused. Cost is
+    // orthogonal to the qty/unit resolution below (applies regardless of
+    // whether the unit needs manual review), so it's updated as soon as
+    // the component itself is matched.
+    const rawCost=col['ingredient_cost']!=null?parseFloat(row[col['ingredient_cost']]):NaN;
+    const sourceCost=(!isNaN(rawCost)&&rawCost>0)?rawCost:null;
+    if(!comp){unknownComponent++;unresolvedComponents.push({group:g,ownerDisplay:g.name,rawText:compNameA||compNameB||compSku,qty:compQty,sourceUnit,source:'Foodics',cost:sourceCost});continue;}
+    if(sourceCost!=null){ comp.cost=sourceCost; costUpdated.add(comp.r); }
     if(!isRecognizedImportUnit(sourceUnit,comp.u)){unresolvedUnitComponents.push({group:g,ownerDisplay:g.name,comp,compName:comp.n,rawQty:compQty,sourceUnit,targetUnit:comp.u});continue;}
     if(!(comp.r in g.compMap)) g.order.push(comp.r);
     g.compMap[comp.r]=convertImportedQty(compQty,sourceUnit,comp.u);
   }
-  const {unresolvedOwnerGroups}=applyRecipeImportGroups(groups,{unknownComponent,skippedRows});
+  const {unresolvedOwnerGroups}=applyRecipeImportGroups(groups,{unknownComponent,skippedRows,costUpdated:costUpdated.size});
   queueImportReview(unresolvedOwnerGroups,unresolvedComponents,unresolvedUnitComponents);
 }
 
@@ -9287,6 +9297,7 @@ function resolveImportComponent(ref,pickerId){
   const q=c.sourceUnit?convertImportedQty(c.qty,c.sourceUnit,comp.u):c.qty;
   const existing=owner.recipe.find(r=>r.r===comp.r);
   if(existing) existing.q=q; else owner.recipe.push({r:comp.r,q});
+  if(c.cost!=null) comp.cost=c.cost; // carried from the import file (e.g. Foodics' ingredient_cost), only now applicable since the item just got matched
   save();renderMenuList();renderTbl();
   if(unitOk){
     toast(t('✅ تم إضافة "%1" إلى وصفة "%2"').replace('%1',comp.n).replace('%2',c.ownerDisplay),'suc');

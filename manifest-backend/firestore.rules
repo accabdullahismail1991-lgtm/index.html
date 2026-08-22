@@ -73,7 +73,7 @@ service cloud.firestore {
       allow write: if false;
     }
     match /approvalRules/{id} {
-      allow read: if hasPerm('users.manageRoles');
+      allow read: if hasPerm('approvals.manageRules');
       allow write: if false;
     }
 

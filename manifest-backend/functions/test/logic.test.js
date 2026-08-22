@@ -15,6 +15,7 @@ const {
 } = require('../src/inventoryTransactionService');
 const { classifyTransferVariance, classifyProductionVariance, classifyCountVariance } = require('../src/varianceEngine');
 const { computeSnapshotTotals, computeSnapshotDiff, computeLowStockRows } = require('../src/reports');
+const { validateRuleShape } = require('../src/approvalRules');
 
 let autoId = 0;
 
@@ -426,6 +427,26 @@ async function test(name, fn) {
     assert.equal(store.get('stockBalances/BRANCH1_FLOUR').qty, 42);
     const ledgerEntries = [...store.keys()].filter((k) => k.startsWith('inventoryTransactions/'));
     assert.equal(ledgerEntries.length, 0, 'no posting should have happened when counted qty already matches live balance');
+  });
+
+  await test('validateRuleShape: accepts a well-formed rule, including an open-ended maxValue', () => {
+    validateRuleShape({ subjectType: 'transfer', minValue: 5000, maxValue: null });
+    validateRuleShape({ subjectType: 'transfer', minValue: 0, maxValue: 5000 });
+    // no throw = pass
+  });
+
+  await test('validateRuleShape: rejects a missing subjectType', () => {
+    assert.throws(() => validateRuleShape({ subjectType: '', minValue: 0 }), /subjectType/);
+    assert.throws(() => validateRuleShape({ minValue: 0 }), /subjectType/);
+  });
+
+  await test('validateRuleShape: rejects a negative minValue', () => {
+    assert.throws(() => validateRuleShape({ subjectType: 'transfer', minValue: -1 }), /minValue/);
+  });
+
+  await test('validateRuleShape: rejects maxValue at or below minValue', () => {
+    assert.throws(() => validateRuleShape({ subjectType: 'transfer', minValue: 100, maxValue: 100 }), /maxValue/);
+    assert.throws(() => validateRuleShape({ subjectType: 'transfer', minValue: 100, maxValue: 50 }), /maxValue/);
   });
 
   await test('a read after a write throws (mock sanity check for the ordering rule itself)', async () => {

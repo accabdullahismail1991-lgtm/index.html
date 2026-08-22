@@ -18,7 +18,7 @@ work session on this backend, not just at milestones.
 | 3 | Production orders (BOM consumption + yield) | **In progress** — `production.js`: components consumed at start, yield posted at completion, variance raised on planned-vs-actual mismatch. Cancel only works pre-consumption (see known limitation below). Not yet wired to a real BOM/recipe source (caller must pass `components` explicitly). |
 | 4 | Physical / cycle counts | **In progress** — `counts.js`: start (register items to count) → submit (record counted quantities, display-only system-qty snapshot) → apply (post the live-balance-computed delta to the ledger, raise a variance on mismatch) → or cancel (allowed pre-apply). No UI/flow yet for generating which items to count. |
 | 5 | Variance Engine (all 9 classification types) | Partially started — transfer shortage/overage, production yield shortage/overage, and count shortage/overage implemented (`varianceEngine.js`); other 2 types (waste, unexplained adjustment) stubbed as named constants only |
-| 6 | Approval Engine | Started — configurable threshold-rule lookup (`approvalEngine.js`) works against an `approvalRules` collection, but that collection has no admin screen or seed data yet, so no rule currently matches anything |
+| 6 | Approval Engine | **In progress** — configurable threshold-rule lookup (`approvalEngine.js`) plus rule management (`createApprovalRule`/`updateApprovalRule` in `approvalRules.js`, validated, audited, soft-delete only). No rules exist by default and no admin *screen* exists yet — but a rule can now actually be created via a direct Cloud Function call, closing the loop that Pass 1's `submitTransfer` approval gate depended on. |
 | 7 | Automation Engine / event-driven workflows | Not started |
 | 8 | Notification Center | Not started |
 | 9 | Dashboards (Control Tower home, Finance) & Reporting | **Started** — `reports.js`: `takeStockSnapshot`/`dailyStockSnapshotSchedule` freeze balances+valuation into `stockSnapshots`; three separate read-only reports build on top of that data — `listSnapshotHistory` (trend list), `compareSnapshots` (period-over-period deltas), `getLowStockReport` (shortage alerts, correctly catching total stockouts — see below). No dashboards, no other report types (movement history export, variance summary, sales/costing reports) yet. |
@@ -68,6 +68,14 @@ work session on this backend, not just at milestones.
   for the full reasoning and test/logic.test.js's drift-scenario test that
   proves the live-balance approach lands correctly where the stale-
   snapshot approach would not.
+
+**Pass 4 (approval rule management):**
+- **`firestore.rules` gated `approvalRules` reads on `users.manageRoles`**
+  -- a permission about managing user *roles*, not approval *thresholds*.
+  Harmless while nothing wrote to that collection (Pass 1-3), but would
+  have quietly let the wrong set of people read approval configuration
+  once a real admin UI existed. Fixed to `approvals.manageRules`, the
+  permission `approvalRules.js`'s own Cloud Functions actually check.
 
 ## Note: the scheduled snapshot needs Cloud Scheduler, not just Firestore
 

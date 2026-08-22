@@ -14,6 +14,7 @@ const {
   getLowStockReport,
 } = require('./src/reports');
 const { startCount, submitCount, applyCount, cancelCount } = require('./src/counts');
+const { createApprovalRule, updateApprovalRule } = require('./src/approvalRules');
 
 module.exports = {
   setUserRole,
@@ -37,4 +38,6 @@ module.exports = {
   submitCount,
   applyCount,
   cancelCount,
+  createApprovalRule,
+  updateApprovalRule,
 };

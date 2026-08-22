@@ -109,10 +109,19 @@ Implemented as **data, not code**: `approvalRules` documents
 (`subjectType`, `minValue`, `maxValue`, approver role) are read at submit
 time by `resolveApprovalRequirement()`. Changing a threshold is a Firestore
 write to `approvalRules`, not a redeploy — matching the spec's explicit
-"configurable, not hardcoded" requirement. No rules exist yet (empty
-collection); the engine safely no-ops (no approval required) until an
-admin screen or seed script populates them — that admin screen is future
-work.
+"configurable, not hardcoded" requirement. Management is a separate module
+(`approvalRules.js`, split from `approvalEngine.js`'s lookup logic
+deliberately — the lookup runs on every `submitTransfer` call, the CRUD
+is admin-only and occasional): `createApprovalRule`/`updateApprovalRule`,
+gated on `approvals.manageRules`, validate `approverRoleId` references a
+real `roles` doc and that `maxValue` (when set) is strictly greater than
+`minValue`. Rules are **never hard-deleted**, only deactivated
+(`active:false`) — erasing a rule that determined a real transfer's
+approval requirement would break "why was this auto-approved" auditing.
+No rules exist by default (empty collection); the engine safely no-ops
+(no approval required) until someone actually creates one — that's
+expected, not a bug. No admin *screen* exists yet, only the Cloud
+Functions a future one would call.
 
 ## 8. Variance Engine — worked example implemented literally
 

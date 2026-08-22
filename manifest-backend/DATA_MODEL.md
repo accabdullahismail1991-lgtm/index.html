@@ -68,9 +68,12 @@ Cloud Function writing it yet.
   `type`, `subjectType`, `subjectId`, `itemId`, `qtyDelta`, `status`
   (`open` | `reviewed` | `resolved`), `note`, `createdAt`.
 - **`wasteLogs/{id}`** — designed, not yet built.
-- **`approvalRules/{id}`*** — `subjectType`, `minValue`, `maxValue`,
-  `approverRoleId`, `active`. Empty until an admin screen or seed script
-  populates it.
+- **`approvalRules/{id}`*** — `subjectType`, `minValue`, `maxValue`
+  (`null` = open-ended), `approverRoleId`, `active`, `createdBy`/
+  `updatedBy`, timestamps. Managed by `createApprovalRule`/
+  `updateApprovalRule` (`approvalRules.js`) — rules are never hard-deleted,
+  only deactivated (`active:false`), so the audit trail can always answer
+  "what rule was in effect when this transfer was auto-approved".
 
 ## Cross-cutting
 

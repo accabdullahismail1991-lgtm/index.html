@@ -2271,6 +2271,13 @@ const I18N_EN={
   "صنف شبه مصنّع غير موجود بالكتالوج": "Semi-finished item not found in the catalog",
   "مكوّن": "component",
   "مكوّن غير موجود بالمخزون": "Component not found in inventory",
+  "وحدة غير معروفة — أدخل الكمية الصحيحة": "Unrecognized unit — enter the correct quantity",
+  "الملف يذكر": "The file states",
+  "وحدة الصنف بالمخزون": "The item's inventory unit",
+  "الكمية بوحدة": "Quantity in",
+  "✓ تطبيق": "✓ Apply",
+  "⚠️ أدخل كمية صحيحة أكبر من صفر": "⚠️ Enter a valid quantity greater than zero",
+  "⚠️ لم يتم التعرف على وحدة \"%1\" — أُضيفت الكمية %2 كما هي بوحدة %3، تأكد من صحتها يدويًا": "⚠️ Unit \"%1\" wasn't recognized — quantity %2 was added as-is in unit %3, please verify it manually",
   "في وصفة": "in the recipe of",
   "تجاهل": "Ignore",
   "🔍 اختر الصنف الصحيح...": "🔍 Choose the correct item...",
@@ -3154,8 +3161,8 @@ function convertQty(qty,fromUnit,toUnit){
 // this catalog's own uom names exactly — mapped to their factor relative
 // to the base unit of their kind, same convention as S.uoms' own .factor.
 const IMPORT_UNIT_FACTORS={
-  weight:{kg:1,كجم:1,كيلو:1,كيلوجرام:1,كج:1,g:0.001,gm:0.001,gr:0.001,جم:0.001,جرام:0.001,غرام:0.001,غم:0.001},
-  volume:{l:1,liter:1,litre:1,لتر:1,ml:0.001,مل:0.001,مللي:0.001},
+  weight:{kg:1,كجم:1,كيلو:1,كيلوجرام:1,كج:1,kilogram:1,kilograms:1,g:0.001,gm:0.001,gr:0.001,gram:0.001,grams:0.001,جم:0.001,جرام:0.001,غرام:0.001,غم:0.001},
+  volume:{l:1,liter:1,liters:1,litre:1,litres:1,لتر:1,ml:0.001,milliliter:0.001,milliliters:0.001,مل:0.001,مللي:0.001},
   count:{pcs:1,pc:1,piece:1,pieces:1,unit:1,units:1,قطعة:1,قطع:1,حبة:1,حبات:1},
 };
 // converts an imported quantity into the TARGET item's own stored unit —
@@ -3176,6 +3183,31 @@ function convertImportedQty(qty,sourceUnitRaw,targetUnitName){
   const table=IMPORT_UNIT_FACTORS[targetU.kind];
   if(!table||!(src in table)) return qty;
   return qty*table[src]/targetU.factor;
+}
+// true only when convertImportedQty actually had real unit knowledge to
+// convert with. convertImportedQty's own fallback — returning the raw
+// number unchanged when the source unit can't be matched — is safe ONLY
+// when no unit was given at all (nothing to contradict "assume it's
+// already in the target unit"). When the imported file DOES specify a
+// unit but it just isn't one of ours (an Odoo/Foodics unit string this
+// catalog's uom list and IMPORT_UNIT_FACTORS don't recognize, or of a
+// different kind entirely — e.g. weight vs count), silently treating
+// that the same way means quietly storing the raw imported number in the
+// item's own base unit regardless of what unit it actually was — which
+// is exactly the kind of silent quantity/cost corruption
+// convertImportedQty exists to prevent, reintroduced through its own
+// fallback path. The two BOM importers use this to route such rows to
+// manual review instead of guessing.
+function isRecognizedImportUnit(sourceUnitRaw,targetUnitName){
+  const targetU=uomObj(targetUnitName);
+  if(!targetU) return false;
+  const src=String(sourceUnitRaw||'').trim().toLowerCase();
+  if(!src) return true;
+  if(src===targetUnitName.toLowerCase()) return true;
+  const exact=(S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS).find(u=>u.name.toLowerCase()===src);
+  if(exact) return exact.kind===targetU.kind;
+  const table=IMPORT_UNIT_FACTORS[targetU.kind];
+  return !!(table&&(src in table));
 }
 function unitsOfSameKind(unitName){
   const uoms=(S.uoms&&S.uoms.length?S.uoms:DEFAULT_UOMS);
@@ -8886,6 +8918,7 @@ function processFoodicsRecipeImportRows(rows){
   const groups=[];
   const groupIndex={};
   const unresolvedComponents=[];
+  const unresolvedUnitComponents=[];
   let unknownComponent=0,skippedRows=0;
   for(let i=1;i<rows.length;i++){
     const row=rows[i];
@@ -8919,11 +8952,12 @@ function processFoodicsRecipeImportRows(rows){
       ||(compNameB&&S.items.find(it=>it.n.trim().toLowerCase()===compNameB.toLowerCase()));
     const sourceUnit=col['unit']!=null?String(row[col['unit']]||'').trim():'';
     if(!comp){unknownComponent++;unresolvedComponents.push({group:g,ownerDisplay:g.name,rawText:compNameA||compNameB||compSku,qty:compQty,sourceUnit,source:'Foodics'});continue;}
+    if(!isRecognizedImportUnit(sourceUnit,comp.u)){unresolvedUnitComponents.push({group:g,ownerDisplay:g.name,comp,compName:comp.n,rawQty:compQty,sourceUnit,targetUnit:comp.u});continue;}
     if(!(comp.r in g.compMap)) g.order.push(comp.r);
     g.compMap[comp.r]=convertImportedQty(compQty,sourceUnit,comp.u);
   }
   const {unresolvedOwnerGroups}=applyRecipeImportGroups(groups,{unknownComponent,skippedRows});
-  queueImportReview(unresolvedOwnerGroups,unresolvedComponents);
+  queueImportReview(unresolvedOwnerGroups,unresolvedComponents,unresolvedUnitComponents);
 }
 
 // ══════════════════════════════════════════════
@@ -8990,6 +9024,7 @@ function processOdooRecipeImportRows(rows){
   const groups=[];
   const groupIndex={};
   const unresolvedComponents=[];
+  const unresolvedUnitComponents=[];
   let unknownComponent=0,skippedRows=0;
   let curGroup=null,curBatchQty=1;
   for(let i=1;i<rows.length;i++){
@@ -9030,11 +9065,12 @@ function processOdooRecipeImportRows(rows){
       ||(compName&&S.items.find(it=>it.n.trim().toLowerCase()===compName.toLowerCase()));
     const sourceUnit=cCompUom!=null?String(row[cCompUom]||'').trim():'';
     if(!comp){unknownComponent++;unresolvedComponents.push({group:curGroup,ownerDisplay:curGroup.name,rawText:compName||compRef,qty:compQty,sourceUnit,source:'Odoo'});continue;}
+    if(!isRecognizedImportUnit(sourceUnit,comp.u)){unresolvedUnitComponents.push({group:curGroup,ownerDisplay:curGroup.name,comp,compName:comp.n,rawQty:compQty,sourceUnit,targetUnit:comp.u});continue;}
     if(!(comp.r in curGroup.compMap)) curGroup.order.push(comp.r);
     curGroup.compMap[comp.r]=convertImportedQty(compQty,sourceUnit,comp.u);
   }
   const {unresolvedOwnerGroups}=applyRecipeImportGroups(groups,{unknownComponent,skippedRows});
-  queueImportReview(unresolvedOwnerGroups,unresolvedComponents);
+  queueImportReview(unresolvedOwnerGroups,unresolvedComponents,unresolvedUnitComponents);
 }
 
 // ══════════════════════════════════════════════
@@ -9051,14 +9087,16 @@ function processOdooRecipeImportRows(rows){
 //  would just be extra UI for a case editing the recipe already handles.
 // ══════════════════════════════════════════════
 let pendingImportReview=null;
-function queueImportReview(unresolvedOwnerGroups,unresolvedComponents){
+function queueImportReview(unresolvedOwnerGroups,unresolvedComponents,unresolvedUnitComponents){
   const ownerGroups=unresolvedOwnerGroups||[];
   const ownerSet=new Set(ownerGroups);
   const comps=(unresolvedComponents||[]).filter(c=>!ownerSet.has(c.group));
-  if(!ownerGroups.length&&!comps.length) return;
-  if(!pendingImportReview) pendingImportReview={unresolvedOwnerGroups:[],unresolvedComponents:[]};
+  const unitComps=(unresolvedUnitComponents||[]).filter(c=>!ownerSet.has(c.group));
+  if(!ownerGroups.length&&!comps.length&&!unitComps.length) return;
+  if(!pendingImportReview) pendingImportReview={unresolvedOwnerGroups:[],unresolvedComponents:[],unresolvedUnitComponents:[]};
   pendingImportReview.unresolvedOwnerGroups.push(...ownerGroups);
   pendingImportReview.unresolvedComponents.push(...comps);
+  pendingImportReview.unresolvedUnitComponents.push(...unitComps);
   openImportReviewModal();
 }
 function openImportReviewModal(){
@@ -9068,7 +9106,7 @@ function openImportReviewModal(){
 function renderImportReviewRows(){
   const cont=document.getElementById('importReviewRows');
   if(!cont) return;
-  if(!pendingImportReview||(!pendingImportReview.unresolvedOwnerGroups.length&&!pendingImportReview.unresolvedComponents.length)){
+  if(!pendingImportReview||(!pendingImportReview.unresolvedOwnerGroups.length&&!pendingImportReview.unresolvedComponents.length&&!(pendingImportReview.unresolvedUnitComponents||[]).length)){
     cont.innerHTML=`<div style="text-align:center;padding:26px;color:var(--muted)">${t('لا توجد عناصر تحتاج مطابقة يدوية')}</div>`;
     return;
   }
@@ -9091,7 +9129,41 @@ function renderImportReviewRows(){
       </div>
     </div>`;
   });
+  (pendingImportReview.unresolvedUnitComponents||[]).forEach((c,i)=>{
+    html+=`<div style="border:1px solid var(--border);border-radius:9px;padding:10px 12px;margin-bottom:8px">
+      <div style="font-size:12.5px;margin-bottom:6px">${t('وحدة غير معروفة — أدخل الكمية الصحيحة')}: <b>${c.compName}</b> <span style="color:var(--muted)">(${t('في وصفة')} ${c.ownerDisplay})</span></div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:6px">${t('الملف يذكر')}: <span class="mono">${fmt(c.rawQty)} ${c.sourceUnit||'—'}</span> — ${t('وحدة الصنف بالمخزون')}: <b>${c.targetUnit}</b></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" step="any" min="0" class="mod-in" id="irv-unitqty-${i}" style="max-width:160px" placeholder="${t('الكمية بوحدة')} ${c.targetUnit}">
+        <button class="hbtn primary" onclick="resolveImportUnitComponent(${i})" data-i18n="✓ تطبيق">${t('✓ تطبيق')}</button>
+        <button class="hbtn" onclick="skipImportUnitComponent(${i})" data-i18n="تجاهل">${t('تجاهل')}</button>
+      </div>
+    </div>`;
+  });
   cont.innerHTML=html;
+}
+function resolveImportUnitComponent(i){
+  const c=pendingImportReview&&pendingImportReview.unresolvedUnitComponents[i];
+  if(!c) return;
+  const input=document.getElementById('irv-unitqty-'+i);
+  const q=parseFloat(input&&input.value);
+  if(isNaN(q)||q<=0){toast(t('⚠️ أدخل كمية صحيحة أكبر من صفر'),'wrn');return;}
+  const g=c.group;
+  const owner=g.type==='menu'
+    ?S.menu.find(x=>x.n.trim().toLowerCase()===g.name.toLowerCase())
+    :S.items.find(x=>(g.matchRef&&x.r.toUpperCase()===g.matchRef.toUpperCase())||x.r.toUpperCase()===g.name.toUpperCase()||x.n.trim().toLowerCase()===g.name.toLowerCase());
+  if(!owner){ toast(t('⚠️ تعذّر إيجاد الوصفة "%1" لإضافة المكوّن — رُبما اتغيّرت أو اتحذفت').replace('%1',c.ownerDisplay),'err'); return; }
+  if(!owner.recipe) owner.recipe=[];
+  const existing=owner.recipe.find(r=>r.r===c.comp.r);
+  if(existing) existing.q=q; else owner.recipe.push({r:c.comp.r,q});
+  save();renderMenuList();renderTbl();
+  toast(t('✅ تم إضافة "%1" إلى وصفة "%2"').replace('%1',c.compName).replace('%2',c.ownerDisplay),'suc');
+  pendingImportReview.unresolvedUnitComponents.splice(i,1);
+  renderImportReviewRows();
+}
+function skipImportUnitComponent(i){
+  pendingImportReview.unresolvedUnitComponents.splice(i,1);
+  renderImportReviewRows();
 }
 function resolveImportOwner(ref,pickerId){
   const i=parseInt(pickerId.split('-').pop(),10);
@@ -9122,11 +9194,16 @@ function resolveImportComponent(ref,pickerId){
     :S.items.find(x=>(g.matchRef&&x.r.toUpperCase()===g.matchRef.toUpperCase())||x.r.toUpperCase()===g.name.toUpperCase()||x.n.trim().toLowerCase()===g.name.toLowerCase());
   if(!owner){ toast(t('⚠️ تعذّر إيجاد الوصفة "%1" لإضافة المكوّن — رُبما اتغيّرت أو اتحذفت').replace('%1',c.ownerDisplay),'err'); return; }
   if(!owner.recipe) owner.recipe=[];
+  const unitOk=!c.sourceUnit||isRecognizedImportUnit(c.sourceUnit,comp.u);
   const q=c.sourceUnit?convertImportedQty(c.qty,c.sourceUnit,comp.u):c.qty;
   const existing=owner.recipe.find(r=>r.r===comp.r);
   if(existing) existing.q=q; else owner.recipe.push({r:comp.r,q});
   save();renderMenuList();renderTbl();
-  toast(t('✅ تم إضافة "%1" إلى وصفة "%2"').replace('%1',comp.n).replace('%2',c.ownerDisplay),'suc');
+  if(unitOk){
+    toast(t('✅ تم إضافة "%1" إلى وصفة "%2"').replace('%1',comp.n).replace('%2',c.ownerDisplay),'suc');
+  }else{
+    toast(t('⚠️ لم يتم التعرف على وحدة "%1" — أُضيفت الكمية %2 كما هي بوحدة %3، تأكد من صحتها يدويًا').replace('%1',c.sourceUnit).replace('%2',fmt(q)).replace('%3',comp.u),'wrn');
+  }
   pendingImportReview.unresolvedComponents.splice(i,1);
   renderImportReviewRows();
 }

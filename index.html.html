@@ -1901,7 +1901,8 @@ td{padding:10px 13px;vertical-align:middle;}
   <div class="mod-sticky-head">
   <div class="mod-title" data-i18n="🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية">🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية</div>
   </div>
-  <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.8">لو اسم الصنف عندك في أودو (Odoo) أو أونكس (Onyx) أو فوديكس (Foodics) مختلف عن اسمه هنا، سجّل الاسم المطابق تحت — النظام هيستخدمه عند سحب المبيعات عشان يلاقي الصنف صح من غير ما تغيّر أسماء المنيو عندك.</p>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.8" data-i18n="لو اسم الصنف عندك في أودو (Odoo) أو أونكس (Onyx) أو فوديكس (Foodics) مختلف عن اسمه هنا، سجّل الاسم المطابق تحت — النظام هيستخدمه عند سحب المبيعات وعند استيراد المكونات (BOM) عشان يلاقي الصنف الصحيح من غير ما تغيّر أسماء المنيو أو المخزون عندك.">لو اسم الصنف عندك في أودو (Odoo) أو أونكس (Onyx) أو فوديكس (Foodics) مختلف عن اسمه هنا، سجّل الاسم المطابق تحت — النظام هيستخدمه عند سحب المبيعات وعند استيراد المكونات (BOM) عشان يلاقي الصنف الصحيح من غير ما تغيّر أسماء المنيو أو المخزون عندك.</p>
+  <input type="text" id="posMatchSearch" class="mod-in" style="margin-bottom:10px" placeholder="🔍 ابحث عن صنف..." oninput="filterPosMatchList(this.value)">
   <div class="tbl-wrap"><table>
     <thead><tr><th data-i18n="الصنف">الصنف</th><th>Odoo</th><th>Onyx</th><th>Foodics</th><th data-i18n="نظام آخر">نظام آخر</th></tr></thead>
     <tbody id="posMatchRows"></tbody>
@@ -2300,6 +2301,11 @@ const I18N_EN={
   "لون النظام الأساسي": "Primary System Color",
   "بيتغيّر بيه لون الأزرار والعناصر الرئيسية في كل شاشات النظام لكل المستخدمين.": "Changes the color of buttons and primary elements across every screen in the system, for all users.",
   "🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية": "🔗 Match Item Names With External Systems",
+  "لو اسم الصنف عندك في أودو (Odoo) أو أونكس (Onyx) أو فوديكس (Foodics) مختلف عن اسمه هنا، سجّل الاسم المطابق تحت — النظام هيستخدمه عند سحب المبيعات وعند استيراد المكونات (BOM) عشان يلاقي الصنف الصحيح من غير ما تغيّر أسماء المنيو أو المخزون عندك.": "If an item's name in Odoo, Onyx, or Foodics differs from its name here, enter the matching name below — the system uses it both when importing sales and when importing components (BOM), so it can find the right item without you renaming your menu or inventory.",
+  "لا توجد أصناف بعد": "No items yet",
+  "أصناف المنيو": "Menu items",
+  "المكوّنات (أصناف المخزون)": "Components (inventory items)",
+  "لا توجد نتائج مطابقة لبحثك": "No results match your search",
   "📦 تقرير المخزون الختامي": "📦 Closing Stock Report",
   "⚖️ نقطة التعادل اليومية": "⚖️ Daily Break-Even Point",
   "🔄 إدخال وحركات ▾": "🔄 Entries & Movements ▾",
@@ -6321,29 +6327,53 @@ function renderMenuList(){
   }).join('');
 }
 
+let posMatchSearch='';
 function openPosMatchModal(){
   if(!canManageMenuUI()){toast(t('⚠️ مطابقة أسماء الأصناف متاحة لمن يملك صلاحية إدارة المنيو فقط'),'wrn');return;}
+  posMatchSearch='';
+  const s=document.getElementById('posMatchSearch');if(s) s.value='';
   renderPosMatchList();
   document.getElementById('posMatchModal').classList.add('open');
 }
+function filterPosMatchList(v){ posMatchSearch=v; renderPosMatchList(); }
+// Lists BOTH menu items and inventory items (raw/semi) — extended from
+// menu-only because component matching in the Foodics/Odoo BOM importers
+// needed the same "this item's name differs per external system" fix
+// that findMenuItemByExternalName already gave the menu side. A search
+// box is needed here (unlike the menu section) since the inventory
+// catalog can run into the hundreds of items.
 function renderPosMatchList(){
   const cont=document.getElementById('posMatchRows');
-  if(!S.menu.length){cont.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">لا توجد أصناف مباعة بعد — أضفها من "الأصناف المباعة والوصفات" الأول</td></tr>';return;}
-  cont.innerHTML=S.menu.map(m=>{
-    const p=m.posNames||{};
+  if(!S.menu.length&&!S.items.length){cont.innerHTML=`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">${t('لا توجد أصناف بعد')}</td></tr>`;return;}
+  const term=String(posMatchSearch||'').trim().toLowerCase();
+  const menuList=term?S.menu.filter(m=>m.n.toLowerCase().includes(term)):S.menu;
+  const itemList=term?S.items.filter(it=>it.n.toLowerCase().includes(term)||(it.e||'').toLowerCase().includes(term)):S.items;
+  const rowHtml=(kind,id,name,posNames)=>{
+    const p=posNames||{};
     return `<tr>
-      <td class="td-name">${m.n}</td>
-      <td><input type="text" class="mod-in" style="min-width:150px" value="${(p.odoo||'').replace(/"/g,'&quot;')}" placeholder="${m.n}" oninput="setPosMatchName('${m.id}','odoo',this.value)"></td>
-      <td><input type="text" class="mod-in" style="min-width:150px" value="${(p.onyx||'').replace(/"/g,'&quot;')}" placeholder="${m.n}" oninput="setPosMatchName('${m.id}','onyx',this.value)"></td>
-      <td><input type="text" class="mod-in" style="min-width:150px" value="${(p.foodics||'').replace(/"/g,'&quot;')}" placeholder="${m.n}" oninput="setPosMatchName('${m.id}','foodics',this.value)"></td>
-      <td><input type="text" class="mod-in" style="min-width:150px" value="${(p.other||'').replace(/"/g,'&quot;')}" placeholder="${m.n}" oninput="setPosMatchName('${m.id}','other',this.value)"></td>
+      <td class="td-name">${name}</td>
+      <td><input type="text" class="mod-in" style="min-width:150px" value="${(p.odoo||'').replace(/"/g,'&quot;')}" placeholder="${name}" oninput="setPosMatchName('${kind}','${id}','odoo',this.value)"></td>
+      <td><input type="text" class="mod-in" style="min-width:150px" value="${(p.onyx||'').replace(/"/g,'&quot;')}" placeholder="${name}" oninput="setPosMatchName('${kind}','${id}','onyx',this.value)"></td>
+      <td><input type="text" class="mod-in" style="min-width:150px" value="${(p.foodics||'').replace(/"/g,'&quot;')}" placeholder="${name}" oninput="setPosMatchName('${kind}','${id}','foodics',this.value)"></td>
+      <td><input type="text" class="mod-in" style="min-width:150px" value="${(p.other||'').replace(/"/g,'&quot;')}" placeholder="${name}" oninput="setPosMatchName('${kind}','${id}','other',this.value)"></td>
     </tr>`;
-  }).join('');
+  };
+  let html='';
+  if(menuList.length){
+    html+=`<tr><td colspan="5" style="background:var(--bg2);font-weight:700;font-size:11.5px;padding:6px 10px">${t('أصناف المنيو')}</td></tr>`;
+    html+=menuList.map(m=>rowHtml('menu',m.id,m.n,m.posNames)).join('');
+  }
+  if(itemList.length){
+    html+=`<tr><td colspan="5" style="background:var(--bg2);font-weight:700;font-size:11.5px;padding:6px 10px">${t('المكوّنات (أصناف المخزون)')}</td></tr>`;
+    html+=itemList.map(it=>rowHtml('item',it.r,it.n,it.posNames)).join('');
+  }
+  cont.innerHTML=html||`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">${t('لا توجد نتائج مطابقة لبحثك')}</td></tr>`;
 }
-function setPosMatchName(mid,sys,v){
-  const m=S.menu.find(x=>x.id===mid);if(!m)return;
-  if(!m.posNames) m.posNames={};
-  if(v.trim()) m.posNames[sys]=v; else delete m.posNames[sys];
+function setPosMatchName(kind,id,sys,v){
+  const rec=kind==='item'?S.items.find(x=>x.r===id):S.menu.find(x=>x.id===id);
+  if(!rec)return;
+  if(!rec.posNames) rec.posNames={};
+  if(v.trim()) rec.posNames[sys]=v; else delete rec.posNames[sys];
   saveCatalog();
 }
 function findMenuItemByExternalName(name){
@@ -6352,6 +6382,22 @@ function findMenuItemByExternalName(name){
   return S.menu.find(m=>{
     if(m.n.trim().toLowerCase()===n) return true;
     const p=m.posNames;
+    return p&&Object.values(p).some(v=>v&&v.trim().toLowerCase()===n);
+  })||null;
+}
+// Same idea as findMenuItemByExternalName but for inventory items
+// (raw/semi) — used by the Foodics/Odoo BOM importers' COMPONENT matching
+// as a fallback once SKU/ref and direct-name matching both fail, exactly
+// the same "the same physical ingredient just has a different name/code
+// in each external system" problem the menu side already had a fix for
+// (see 🔗 مطابقة أسماء الأصناف مع الأنظمة الخارجية, which now lists both
+// menu items and inventory items).
+function findItemByExternalName(name){
+  const n=String(name||'').trim().toLowerCase();
+  if(!n) return null;
+  return S.items.find(it=>{
+    if(it.n.trim().toLowerCase()===n) return true;
+    const p=it.posNames;
     return p&&Object.values(p).some(v=>v&&v.trim().toLowerCase()===n);
   })||null;
 }
@@ -8852,14 +8898,25 @@ function applyRecipeImportGroups(groups,extraCounts){
   groups.forEach(g=>{
     const comps=g.order.map(r=>({r,q:g.compMap[r]}));
     if(g.type==='menu'){
-      const m=S.menu.find(x=>x.n.trim().toLowerCase()===g.name.toLowerCase());
+      // findMenuItemByExternalName also checks each menu item's configured
+      // posNames (🔗 مطابقة أسماء الأصناف) — without it, a menu item whose
+      // Odoo/Foodics export name differs from its name in this catalog
+      // (the normal case, not the exception) would silently fail to match
+      // an EXISTING item and get duplicated instead of having its recipe
+      // updated — exactly the "same menu, but Odoo and Foodics don't match"
+      // problem this is meant to prevent.
+      const m=findMenuItemByExternalName(g.name);
       if(m){ m.recipe=comps; if(g.price!=null) m.price=g.price; menuUpdated++; }
       else { S.menu.push({id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),n:g.name,price:g.price||0,recipe:comps}); menuAdded++; }
     }else{
       // g.matchRef (set by importers whose ref space overlaps ours, e.g. Odoo)
       // is checked FIRST and independently of g.name, since g.name may just be
       // a human-readable display name that was never a valid ref to begin with.
-      const it=S.items.find(x=>(g.matchRef&&x.r.toUpperCase()===g.matchRef.toUpperCase())||x.r.toUpperCase()===g.name.toUpperCase()||x.n.trim().toLowerCase()===g.name.toLowerCase());
+      // findItemByExternalName is the last resort, same reasoning as the
+      // menu branch above — a semi-finished item is still an S.items entry
+      // subject to the same per-external-system naming mismatch.
+      const it=S.items.find(x=>(g.matchRef&&x.r.toUpperCase()===g.matchRef.toUpperCase())||x.r.toUpperCase()===g.name.toUpperCase()||x.n.trim().toLowerCase()===g.name.toLowerCase())
+        ||findItemByExternalName(g.name);
       if(!it){ semiNotFound++; unresolvedOwnerGroups.push(g); return; }
       it.recipe=comps; it.type='semi'; semiUpdated++;
     }
@@ -8947,9 +9004,15 @@ function processFoodicsRecipeImportRows(rows){
     if(!compSku&&!compNameA&&!compNameB) continue;
     const compQty=parseFloat(row[col['quantity']]);
     if(isNaN(compQty)||compQty<=0){skippedRows++;continue;}
+    // Falls back to the configured cross-system name mapping (🔗 مطابقة
+    // أسماء الأصناف) once SKU and both direct name columns fail — the
+    // same item can carry a different SKU/name in Foodics vs. this
+    // catalog even when it's conceptually "the same ingredient".
     const comp=S.items.find(it=>it.r.toUpperCase()===compSku.toUpperCase())
       ||(compNameA&&S.items.find(it=>it.n.trim().toLowerCase()===compNameA.toLowerCase()))
-      ||(compNameB&&S.items.find(it=>it.n.trim().toLowerCase()===compNameB.toLowerCase()));
+      ||(compNameB&&S.items.find(it=>it.n.trim().toLowerCase()===compNameB.toLowerCase()))
+      ||(compNameA&&findItemByExternalName(compNameA))
+      ||(compNameB&&findItemByExternalName(compNameB));
     const sourceUnit=col['unit']!=null?String(row[col['unit']]||'').trim():'';
     if(!comp){unknownComponent++;unresolvedComponents.push({group:g,ownerDisplay:g.name,rawText:compNameA||compNameB||compSku,qty:compQty,sourceUnit,source:'Foodics'});continue;}
     if(!isRecognizedImportUnit(sourceUnit,comp.u)){unresolvedUnitComponents.push({group:g,ownerDisplay:g.name,comp,compName:comp.n,rawQty:compQty,sourceUnit,targetUnit:comp.u});continue;}
@@ -9061,8 +9124,12 @@ function processOdooRecipeImportRows(rows){
     const compQtyRaw=parseFloat(row[cCompQty]);
     if(isNaN(compQtyRaw)||compQtyRaw<=0){skippedRows++;continue;}
     const compQty=compQtyRaw/curBatchQty;
+    // Falls back to the configured cross-system name mapping (🔗 مطابقة
+    // أسماء الأصناف) once ref and direct name both fail — see the
+    // matching comment in the Foodics importer above.
     const comp=(compRef&&S.items.find(it=>it.r.toUpperCase()===compRef.toUpperCase()))
-      ||(compName&&S.items.find(it=>it.n.trim().toLowerCase()===compName.toLowerCase()));
+      ||(compName&&S.items.find(it=>it.n.trim().toLowerCase()===compName.toLowerCase()))
+      ||(compName&&findItemByExternalName(compName));
     const sourceUnit=cCompUom!=null?String(row[cCompUom]||'').trim():'';
     if(!comp){unknownComponent++;unresolvedComponents.push({group:curGroup,ownerDisplay:curGroup.name,rawText:compName||compRef,qty:compQty,sourceUnit,source:'Odoo'});continue;}
     if(!isRecognizedImportUnit(sourceUnit,comp.u)){unresolvedUnitComponents.push({group:curGroup,ownerDisplay:curGroup.name,comp,compName:comp.n,rawQty:compQty,sourceUnit,targetUnit:comp.u});continue;}

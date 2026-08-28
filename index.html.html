@@ -1192,6 +1192,19 @@ td{padding:10px 13px;vertical-align:middle;}
 
 <!-- BRANCH GATE (shown after login, before entering the app, only when the
      signed-in user can access more than one branch — filtered by their role/permissions) -->
+<div class="auth-wrap" id="companyGateScreen" style="display:none">
+  <div class="auth-card" style="width:440px">
+    <div class="logo" style="justify-content:center;margin-bottom:18px">
+      <div class="logo-icon">🏢</div>
+      <div><div class="logo-name" data-i18n="اختر الشركة">اختر الشركة</div><div class="logo-sub" data-i18n="حسب صلاحياتك">حسب صلاحياتك</div></div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.8;text-align:center" data-i18n="عندك صلاحية الوصول لأكتر من شركة — اختار الشركة اللي عايز تشتغل عليها دلوقتي (تقدر تبدّل لاحقاً).">عندك صلاحية الوصول لأكتر من شركة — اختار الشركة اللي عايز تشتغل عليها دلوقتي (تقدر تبدّل لاحقاً).</p>
+    <select id="companyGateSelect" class="mod-in" style="width:100%;margin-bottom:12px"></select>
+    <button class="hbtn gold" style="width:100%;justify-content:center;padding:10px" onclick="confirmCompanyGateSelection()" data-i18n="✓ دخول">✓ دخول</button>
+    <button class="hbtn" style="width:100%;justify-content:center;padding:10px;margin-top:8px" onclick="doLogout()" data-i18n="خروج">خروج</button>
+  </div>
+</div>
+
 <div class="auth-wrap" id="branchGateScreen" style="display:none">
   <div class="auth-card" style="width:440px">
     <div class="logo" style="justify-content:center;margin-bottom:18px">
@@ -2325,6 +2338,10 @@ const I18N_EN={
   "إغلاق": "Close",
   "إلغاء": "Cancel",
   "اختر الفرع": "Choose Branch",
+  "اختر الشركة": "Choose Company",
+  "عندك صلاحية الوصول لأكتر من شركة — اختار الشركة اللي عايز تشتغل عليها دلوقتي (تقدر تبدّل لاحقاً).": "You have access to more than one company — choose the one you want to work in now (you can switch later).",
+  "الشركة الرئيسية": "Main Company",
+  "تبديل الشركة": "Switch Company",
   "اسم الشركة": "Company Name",
   "اسم الصنف *": "Item Name *",
   "اسم الصنف بالإنجليزي": "Item Name (English)",
@@ -3590,6 +3607,7 @@ function getSecondaryAuth(){
 
 function showAuthScreen(mode){
   document.getElementById('authScreen').style.display='flex';
+  document.getElementById('companyGateScreen').style.display='none';
   document.getElementById('branchGateScreen').style.display='none';
   document.getElementById('appRoot').style.display='none';
   document.getElementById('authForm').style.display=mode==='pending'?'none':'block';
@@ -3597,6 +3615,7 @@ function showAuthScreen(mode){
 }
 function hideAuthScreen(){
   document.getElementById('authScreen').style.display='none';
+  document.getElementById('companyGateScreen').style.display='none';
   document.getElementById('branchGateScreen').style.display='none';
   document.getElementById('appRoot').style.display='block';
 }
@@ -3604,6 +3623,7 @@ let branchGateResolved=false;
 let pendingOpenAllBranchesAfterBoot=false;
 function showBranchGate(keys){
   document.getElementById('authScreen').style.display='none';
+  document.getElementById('companyGateScreen').style.display='none';
   document.getElementById('appRoot').style.display='none';
   document.getElementById('branchGateScreen').style.display='flex';
   const allOpt=canViewAllReportsUI()?`<option value="__all__" data-i18n="🌐 كل الفروع (تقرير موحّد)">🌐 كل الفروع (تقرير موحّد)</option>`:'';
@@ -3673,10 +3693,12 @@ function cleanupSubscriptions(){
   unsubCatalog=unsubBranch=unsubUsers=unsubBranchesList=unsubCompany=null;
 }
 
+let curUserDoc=null;
 async function onAuthChange(user){
   cleanupSubscriptions();
   bootedUI=false;catalogReady=false;branchReady=false;
-  if(!user){curUser=null;curRole=null;showAuthScreen('login');return;}
+  S.companyId=null; // re-resolved below on every fresh login (a prior session's choice isn't remembered across sign-outs)
+  if(!user){curUser=null;curRole=null;curUserDoc=null;showAuthScreen('login');return;}
   curUser=user;
   try{
     const uref=db.collection('users').doc(user.uid);
@@ -3686,14 +3708,77 @@ async function onAuthChange(user){
     }
     uref.onSnapshot(snap=>{
       const d=snap.data();if(!d)return;
-      curRole=d.role;curUserBranch=d.branchId;curPerms=d.permissions||{};
-      if(curRole==='pending'||!curRole){showAuthScreen('pending');return;}
-      startDataSync();
+      curUserDoc=d;
+      resolveCompanyAccess();
     },e=>{showAuthScreen('login');authErr('تعذر الاتصال بقاعدة البيانات: '+e.message);});
   }catch(e){
     showAuthScreen('login');
     authErr('تعذر الاتصال بقاعدة البيانات — تأكد إن Firestore Security Rules متظبطة: '+e.message);
   }
+}
+// Decides between three outcomes every time the user doc changes (fresh
+// login, or a live update — e.g. an admin just granted/revoked access to
+// a company while this user is signed in): no usable company (pending
+// screen, unchanged from before multi-company existed), exactly one
+// (skip the gate entirely and proceed — this is the path every existing
+// single-company user always takes, so their experience is byte-for-byte
+// unchanged), or several (show the picker). 'default' only counts as
+// available when the user has a real legacy role — a bare 'pending'/
+// missing role must NOT silently grant default-company access.
+function resolveCompanyAccess(){
+  const d=curUserDoc||{};
+  const hasDefault=d.role&&d.role!=='pending';
+  const companies=[...(hasDefault?['default']:[]),...Object.keys(d.companies||{})];
+  if(!companies.length){showAuthScreen('pending');return;}
+  if(!S.companyId||!companies.includes(S.companyId)){
+    if(companies.length===1){selectCompany(companies[0]);return;}
+    showCompanyGate(companies);
+    return;
+  }
+  applyCompanyAccess();
+}
+function selectCompany(cid){
+  S.companyId=cid;
+  applyCompanyAccess();
+}
+// Reads this user's role/branch/permissions for whichever company is
+// currently selected — the 'default' company's access lives in the
+// user doc's legacy flat fields (untouched by the multi-company feature),
+// any other company's lives under companies.{cid}.
+function applyCompanyAccess(){
+  const d=curUserDoc||{};
+  const access=(S.companyId==='default')?{role:d.role,branchId:d.branchId,permissions:d.permissions}:((d.companies||{})[S.companyId]||{});
+  curRole=access.role;curUserBranch=access.branchId;curPerms=access.permissions||{};
+  if(curRole==='pending'||!curRole){showAuthScreen('pending');return;}
+  startDataSync();
+}
+// Lets a signed-in user with access to more than one company change which
+// one they're working in, without signing out. Reuses the live curUserDoc
+// (no extra Firestore read needed) and re-runs the same resolution the
+// initial login goes through.
+function switchCompany(){
+  cleanupSubscriptions();
+  bootedUI=false;catalogReady=false;branchReady=false;branchGateResolved=false;
+  S.companyId=null;
+  resolveCompanyAccess();
+}
+async function showCompanyGate(companyIds){
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('branchGateScreen').style.display='none';
+  document.getElementById('appRoot').style.display='none';
+  document.getElementById('companyGateScreen').style.display='flex';
+  const sel=document.getElementById('companyGateSelect');
+  const labeled=await Promise.all(companyIds.map(async cid=>{
+    if(cid==='default') return {cid,name:t('الشركة الرئيسية')};
+    try{ const snap=await db.collection('companies').doc(cid).get(); return {cid,name:(snap.exists&&snap.data().name)||cid}; }
+    catch(e){ return {cid,name:cid}; }
+  }));
+  sel.innerHTML=labeled.map(x=>`<option value="${x.cid}">${x.name}</option>`).join('');
+}
+function confirmCompanyGateSelection(){
+  const cid=document.getElementById('companyGateSelect').value;
+  if(!cid)return;
+  selectCompany(cid);
 }
 
 let unsubCompany=null;
@@ -9856,6 +9941,8 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
         <select id="branchSwitch" style={{maxWidth:150,fontSize:'12.5px',padding:'8px 10px'}} disabled={!canManageBranchesUI()} value={S.curBranch||''} onChange={e=>switchBranch(e.target.value)}>
           {branchEntries.map(([k,b])=><option key={k} value={k}>{b.name}</option>)}
         </select>
+        {(((curUserDoc&&curUserDoc.role&&curUserDoc.role!=='pending')?1:0)+Object.keys((curUserDoc&&curUserDoc.companies)||{}).length)>1 &&
+          <button className="hbtn" onClick={switchCompany} title={t('تبديل الشركة')} aria-label={t('تبديل الشركة')}><span>🏢</span><span className="hbtn-txt">{t('تبديل الشركة')}</span></button>}
         <div className="hdiv"></div>
         <button className="hbtn org" onClick={openAddItem} title={t('إضافة صنف')} aria-label={t('إضافة صنف')}><span>➕</span><span className="hbtn-txt">{t('إضافة صنف')}</span></button>
         <button className="hbtn grn" id="saveBtn" onClick={saveAndExport} title={t('حفظ وتصدير')} aria-label={t('حفظ وتصدير')}><span>💾</span><span className="hbtn-txt">{saveBtnFlash?'✅ '+t('تم الحفظ'):t('حفظ وتصدير')}</span></button>

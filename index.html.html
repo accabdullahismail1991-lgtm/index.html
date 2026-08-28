@@ -3375,6 +3375,7 @@ let selColor='#7a2331', selIcoVal='📦', editingCat=null, editingItem=null;
 //  STATE
 // ══════════════════════════════════════════════
 let S={
+  companyId:'default',
   branch:'',manager:'',storekeeper:'',supervisor:'',
   date:today(), sid:genSid(),
   qty:{}, notes:{},
@@ -3563,6 +3564,19 @@ function initFirebase(){
   storage=firebase.storage?firebase.storage():null;
   auth.onAuthStateChanged(onAuthChange);
 }
+// Company-scoped Firestore access. 'default' (S.companyId's initial value,
+// and every existing deployment's only company) resolves to exactly the
+// SAME top-level collections this app has always used — zero data
+// migration, zero behavior change for any user who never touches the
+// multi-company feature. Any other companyId is fully namespaced under
+// companies/{id}/... instead, so two companies' data can never mix.
+// Deliberately does NOT cover 'users' — user accounts stay global; only
+// which companies a given user can access is per-company (users/{uid}.companies).
+function cdb(sub){
+  return (S.companyId&&S.companyId!=='default')
+    ?db.collection('companies').doc(S.companyId).collection(sub)
+    :db.collection(sub);
+}
 // A second, independently-named Firebase app instance so an admin creating
 // another user's account doesn't get signed out of their own session
 // (createUserWithEmailAndPassword signs in as the new user on whatever
@@ -3692,14 +3706,14 @@ function startDataSync(){
   updateHeader();
 
   if(!unsubCompany){
-    unsubCompany=db.collection('settings').doc('company').onSnapshot(snap=>{
+    unsubCompany=cdb('settings').doc('company').onSnapshot(snap=>{
       companyInfo=snap.data()||{};
       updateCompanyBranding();
     },e=>{});
   }
 
   if(!unsubCatalog){
-    unsubCatalog=db.collection('catalog').doc('main').onSnapshot(snap=>{
+    unsubCatalog=cdb('catalog').doc('main').onSnapshot(snap=>{
       const d=snap.data();
       const hasData=d&&d.items&&d.items.length;
       S.cats=hasData&&d.cats&&Object.keys(d.cats).length?d.cats:{...DEFAULT_CATS};
@@ -3719,7 +3733,7 @@ function startDataSync(){
 
   if(canManageBranchesUI()){
     if(!unsubBranchesList){
-      unsubBranchesList=db.collection('branches').onSnapshot(snap=>{
+      unsubBranchesList=cdb('branches').onSnapshot(snap=>{
         S.branches={};snap.forEach(doc=>{S.branches[doc.id]={...doc.data()};});
         if(!S.curBranch||!S.branches[S.curBranch]){
           const keys=Object.keys(S.branches);
@@ -3757,7 +3771,7 @@ function consumePendingOpenAllBranches(){
 function switchToBranchDoc(key){
   if(unsubBranch) unsubBranch();
   S.curBranch=key;
-  unsubBranch=db.collection('branches').doc(key).onSnapshot(snap=>{
+  unsubBranch=cdb('branches').doc(key).onSnapshot(snap=>{
     const d=snap.data();if(!d)return;
     // incomingTransfers is written by OTHER branches (senders) and by our own
     // approve/reject decisions — never by scheduleBranchSave — so it's read
@@ -3804,7 +3818,7 @@ function scheduleBranchSave(){
       cycles:(S.branchData[S.curBranch]&&S.branchData[S.curBranch].cycles)||[]
     };
     lastSentBranchJSON=JSON.stringify(payload);
-    db.collection('branches').doc(S.curBranch).set(payload,{merge:true})
+    cdb('branches').doc(S.curBranch).set(payload,{merge:true})
       .catch(e=>toast(t('⚠️ خطأ في الحفظ: ')+e.message,'err'));
   },500);
 }
@@ -3818,7 +3832,7 @@ function saveCatalog(){
     if(!S.items||!S.items.length){toast(t('⚠️ تعذّر حفظ الكتالوج — قائمة الأصناف فارغة، وقد أُلغي الحفظ حمايةً لبيانات جميع الفروع'),'err');return;}
     const payload={cats:S.cats,items:S.items,menu:S.menu,uoms:S.uoms};
     lastSentCatalogJSON=JSON.stringify(payload);
-    db.collection('catalog').doc('main').set(payload,{merge:true})
+    cdb('catalog').doc('main').set(payload,{merge:true})
       .catch(e=>toast(t('⚠️ خطأ في حفظ الكتالوج: ')+e.message,'err'));
   },400);
 }
@@ -4701,7 +4715,7 @@ function createNewBranch(){
   const supervisor=document.getElementById('nb-super').value.trim();
   const btn=document.getElementById('createBranchBtn');
   btn.disabled=true;btn.textContent='⏳ جاري الإنشاء...';
-  const ref=db.collection('branches').doc();
+  const ref=cdb('branches').doc();
   ref.set({name,manager,storekeeper,supervisor,date:today(),sid:genSid(),qty:{},notes:{},reports:[],maintenance:[],employees:[],directCosts:[],beVarPctOverride:null,beDaysInMonth:30,cycles:[]})
     .then(()=>{
       toast(t('✅ تمت إضافة الفرع: ')+name,'suc');
@@ -4718,7 +4732,7 @@ function deleteBranch(key){
   const b=S.branches[key];if(!b)return;
   if(!confirm(t('هل تريد حذف الفرع "%1" وجميع بياناته (أصناف مجرودة، تقارير، دورات) نهائيًا؟').replace('%1',b.name)))return;
   const wasCurrent=S.curBranch===key;
-  db.collection('branches').doc(key).delete().then(()=>{
+  cdb('branches').doc(key).delete().then(()=>{
     toast(t('🗑️ تم حذف الفرع'),'wrn');
     if(wasCurrent){
       const nk=Object.keys(S.branches).find(k=>k!==key);
@@ -4893,7 +4907,7 @@ function saveCompanyInfo(){
   };
   if(pendingLogoDataUrl!==undefined) payload.logo=pendingLogoDataUrl||'';
   else payload.logo=companyInfo.logo||'';
-  db.collection('settings').doc('company').set(payload)
+  cdb('settings').doc('company').set(payload)
     .then(()=>{toast(t('✅ تم حفظ بيانات الشركة'),'suc');closeM('companyModal');})
     .catch(e=>toast(t('⚠️ خطأ: ')+e.message,'err'));
 }
@@ -5420,7 +5434,7 @@ function persistBranchField(branchKey,field,list){
     crossBranchRawDocs[branchKey][field]=list;
   }
   if(branchKey!==S.curBranch){
-    db.collection('branches').doc(branchKey).set({[field]:list},{merge:true}).catch(e=>toast(t('⚠️ خطأ في الحفظ: ')+e.message,'err'));
+    cdb('branches').doc(branchKey).set({[field]:list},{merge:true}).catch(e=>toast(t('⚠️ خطأ في الحفظ: ')+e.message,'err'));
   }
 }
 let employeesBranchFilter='__current__';
@@ -5526,8 +5540,8 @@ function confirmTransferEmployee(){
   if(!targetBranch||!date){toast(t('⚠️ اختر الفرع والتاريخ'),'wrn');return;}
   const sourceBranchKey=src.branchKey;
   Promise.all([
-    sourceBranchKey===S.curBranch?Promise.resolve({employees:S.employees||[]}):db.collection('branches').doc(sourceBranchKey).get().then(d=>d.data()||{}),
-    db.collection('branches').doc(targetBranch).get().then(d=>d.data()||{}),
+    sourceBranchKey===S.curBranch?Promise.resolve({employees:S.employees||[]}):cdb('branches').doc(sourceBranchKey).get().then(d=>d.data()||{}),
+    cdb('branches').doc(targetBranch).get().then(d=>d.data()||{}),
   ]).then(([srcData,targetData])=>{
     const srcList=[...(srcData.employees||[])];
     const idx=srcList.findIndex(e=>e.id===transferEmpEmployeeId);
@@ -5795,7 +5809,7 @@ function openAllBranchesReport(){
   if(!canViewAllReportsUI()){toast(t('⚠️ تقرير كل الفروع متاح للإدارة أو لمن يملك صلاحية عرض تقارير كل الفروع فقط'),'wrn');return;}
   document.getElementById('allBranchesModal').classList.add('open');
   document.getElementById('allBranchesBody').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">جاري التحميل...</div>';
-  db.collection('branches').get().then(snap=>{
+  cdb('branches').get().then(snap=>{
     allBranchesRawDocs=[];
     snap.forEach(doc=>allBranchesRawDocs.push({key:doc.id,data:doc.data()||{}}));
     populateAllBranchesFilterSelect();
@@ -6083,7 +6097,7 @@ function dashKpi(lbl,val,color,icon){
   return `<div class="dash-kpi"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div><div class="dash-kpi-lbl">${lbl}</div><div class="dash-kpi-val" style="color:${color}">${val}</div></div>${badge}</div></div>`;
 }
 function loadDashboardBranchCompare(){
-  db.collection('branches').get().then(snap=>{
+  cdb('branches').get().then(snap=>{
     const items=[];
     snap.forEach(doc=>{
       const d=doc.data()||{};
@@ -7407,10 +7421,10 @@ function sendTransferRequest(targetBranchKey,date,items,sourceCycle){
     });
     save();
   }
-  db.collection('branches').doc(targetBranchKey).get().then(d=>{
+  cdb('branches').doc(targetBranchKey).get().then(d=>{
     const data=d.data()||{};
     const list=[...(data.incomingTransfers||[]),req];
-    return db.collection('branches').doc(targetBranchKey).set({incomingTransfers:list},{merge:true});
+    return cdb('branches').doc(targetBranchKey).set({incomingTransfers:list},{merge:true});
   }).catch(e=>toast(t('⚠️ سُجِّل التحويل عندك، لكن تعذّر إرساله لفرع ')+req.toBranchName+': '+e.message,'err'));
 }
 function renderIncomingTransfersBadge(){ __moduleNavRerender(); }
@@ -7553,12 +7567,12 @@ function rejectTransferRequest(reqId){
 }
 function persistIncomingTransferDecision(reqId,status,items,rejectReason){
   if(!db||!S.curBranch) return;
-  db.collection('branches').doc(S.curBranch).get().then(d=>{
+  cdb('branches').doc(S.curBranch).get().then(d=>{
     const data=d.data()||{};
     const decidedAt=new Date().toISOString();
     const decidedBy=(curUser&&curUser.email)||'';
     const list=(data.incomingTransfers||[]).map(r=>r.id===reqId?{...r,status,items,decidedAt,decidedBy,rejectReason}:r);
-    return db.collection('branches').doc(S.curBranch).set({incomingTransfers:list},{merge:true}).then(()=>({decidedAt,decidedBy}));
+    return cdb('branches').doc(S.curBranch).set({incomingTransfers:list},{merge:true}).then(()=>({decidedAt,decidedBy}));
   }).then(({decidedAt,decidedBy})=>{
     S.incomingTransfers=(S.incomingTransfers||[]).map(r=>r.id===reqId?{...r,status,items,decidedAt,decidedBy,rejectReason}:r);
     renderIncomingTransfersBadge();
@@ -8160,7 +8174,7 @@ function exportCyclePDF(cid){
 let crossBranchRawDocs=null;
 function loadCrossBranchDocs(){
   if(crossBranchRawDocs) return Promise.resolve(crossBranchRawDocs);
-  return db.collection('branches').get().then(snap=>{
+  return cdb('branches').get().then(snap=>{
     crossBranchRawDocs={};
     snap.forEach(doc=>crossBranchRawDocs[doc.id]=doc.data()||{});
     return crossBranchRawDocs;
@@ -9748,8 +9762,8 @@ function confirmRestoreBackup(data){
 function restoreBackup(data){
   const branchKey=data.branch.key;
   if(!branchKey){toast(t('⚠️ الملف ينقصه معرّف الفرع'),'err');return;}
-  db.collection('catalog').doc('main').set(data.catalog)
-    .then(()=>db.collection('branches').doc(branchKey).set({
+  cdb('catalog').doc('main').set(data.catalog)
+    .then(()=>cdb('branches').doc(branchKey).set({
       name:data.branch.name,manager:data.branch.manager||'',storekeeper:data.branch.storekeeper||'',supervisor:data.branch.supervisor||'',
       date:data.branch.date,sid:data.branch.sid,qty:data.branch.qty||{},notes:data.branch.notes||{},reports:data.branch.reports||[],
       cycles:data.branch.cycles||[],

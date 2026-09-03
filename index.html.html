@@ -1578,6 +1578,13 @@ td{padding:10px 13px;vertical-align:middle;}
   </div>
   <div class="mod-field"><label class="mod-lbl" data-i18n="اسم الشركة *">اسم الشركة *</label><input class="mod-in" id="nco-name" placeholder="مثال: شركة الرياض للأغذية"></div>
   <p style="font-size:11.5px;color:var(--muted);margin-bottom:14px;line-height:1.7" data-i18n="هتتنشأ الشركة بكتالوج ومنيو وفروع منفصلة تمامًا عن أي شركة تانية، وهتبقى مديرها.">هتتنشأ الشركة بكتالوج ومنيو وفروع منفصلة تمامًا عن أي شركة تانية، وهتبقى مديرها.</p>
+  <label style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:14px;cursor:pointer">
+    <input type="checkbox" id="nco-demo" style="margin-top:2px">
+    <span>
+      <span style="font-weight:700;font-size:12.5px" data-i18n="🧪 ابدأ ببيانات تجريبية للتجربة">🧪 ابدأ ببيانات تجريبية للتجربة</span><br>
+      <span style="font-size:11px;color:var(--muted)" data-i18n="هيتضاف كتالوج أصناف وأقسام تجريبي عشان تجرب شاشات النظام بيه — تقدر تمسحه أو تعدّله في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك الحقيقية.">هيتضاف كتالوج أصناف وأقسام تجريبي عشان تجرب شاشات النظام بيه — تقدر تمسحه أو تعدّله في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك الحقيقية.</span>
+    </span>
+  </label>
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('newCompanyModal')" data-i18n="إلغاء">إلغاء</button>
     <button class="hbtn gold" id="createCompanyBtn" onclick="createNewCompany()">✓ إنشاء الشركة</button>
@@ -2382,6 +2389,8 @@ const I18N_EN={
   "⏳ جاري الإنشاء...": "⏳ Creating...",
   "✅ تم إنشاء الشركة: ": "✅ Company created: ",
   "✓ إنشاء الشركة": "✓ Create Company",
+  "🧪 ابدأ ببيانات تجريبية للتجربة": "🧪 Start with sample data to try it out",
+  "هيتضاف كتالوج أصناف وأقسام تجريبي عشان تجرب شاشات النظام بيه — تقدر تمسحه أو تعدّله في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك الحقيقية.": "A sample item catalog and categories will be added so you can try out the system's screens — you can delete or edit it anytime. If you don't check this, the company starts completely empty, ready for your real items.",
   "اسم الشركة": "Company Name",
   "اسم الصنف *": "Item Name *",
   "اسم الصنف بالإنجليزي": "Item Name (English)",
@@ -3848,9 +3857,13 @@ function startDataSync(){
   if(!unsubCatalog){
     unsubCatalog=cdb('catalog').doc('main').onSnapshot(snap=>{
       const d=snap.data();
-      const hasData=d&&d.items&&d.items.length;
-      S.cats=hasData&&d.cats&&Object.keys(d.cats).length?d.cats:{...DEFAULT_CATS};
-      S.items=hasData?d.items:[...DEFAULT_ITEMS];
+      // Based on the DOC EXISTING, not on items.length -- a company whose
+      // catalog was deliberately started (or later emptied) with zero
+      // items must stay zero, not get silently reseeded with the generic
+      // starter catalog below on every load.
+      const hasData=snap.exists;
+      S.cats=hasData?(d.cats||{}):{...DEFAULT_CATS};
+      S.items=hasData?(d.items||[]):[...DEFAULT_ITEMS];
       S.menu=(d&&d.menu)||[];
       const legacyUoms=d&&d.uoms&&d.uoms.length&&typeof d.uoms[0]==='string';
       S.uoms=normalizeUoms(d&&d.uoms);
@@ -4907,15 +4920,28 @@ async function renderCompaniesList(){
 }
 function openNewCompanyForm(){
   document.getElementById('nco-name').value='';
+  document.getElementById('nco-demo').checked=false;
   document.getElementById('newCompanyModal').classList.add('open');
 }
 function createNewCompany(){
   const name=document.getElementById('nco-name').value.trim();
   if(!name){toast(t('⚠️ اسم الشركة مطلوب'),'wrn');return;}
+  const demo=document.getElementById('nco-demo').checked;
   const btn=document.getElementById('createCompanyBtn');
   btn.disabled=true;btn.textContent=t('⏳ جاري الإنشاء...');
   const ref=db.collection('companies').doc();
+  // Explicitly seed the new company's own catalog/main doc (via ref.collection(...),
+  // the exact same companies/{id}/catalog path cdb() resolves to once this
+  // company is selected) BEFORE switching into it, so the very first catalog
+  // listener firing after the switch already sees a real (existing) doc —
+  // either genuinely empty (real business starts from scratch) or the demo
+  // starter catalog — instead of racing the listener's own from-scratch
+  // fallback, which always seeds the generic starter catalog regardless.
+  const initialCatalog=demo
+    ?{cats:{...DEFAULT_CATS},items:[...DEFAULT_ITEMS],menu:[],uoms:[]}
+    :{cats:{},items:[],menu:[],uoms:[]};
   ref.set({name,createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdBy:(curUser&&curUser.email)||''})
+    .then(()=>ref.collection('catalog').doc('main').set(initialCatalog))
     .then(()=>db.collection('users').doc(curUser.uid).update({['companies.'+ref.id]:{role:'admin',branchId:null,permissions:{}}}))
     .then(()=>{
       toast(t('✅ تم إنشاء الشركة: ')+name,'suc');

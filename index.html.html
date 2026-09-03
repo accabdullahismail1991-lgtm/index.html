@@ -4982,8 +4982,12 @@ function createNewCompany(){
     ?{cats:{...DEFAULT_CATS},items:[...DEFAULT_ITEMS],menu:[],uoms:[]}
     :{cats:{},items:[],menu:[],uoms:[]};
   ref.set({name,createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdBy:(curUser&&curUser.email)||''})
-    .then(()=>ref.collection('catalog').doc('main').set(initialCatalog))
+    // Grant access BEFORE writing anything inside the company -- the
+    // Firestore rule for companies/{id}/** requires the caller to already
+    // be listed in their own companies map, so seeding the catalog first
+    // (the previous order) was rejected with permission-denied.
     .then(()=>db.collection('users').doc(curUser.uid).update({['companies.'+ref.id]:{role:'admin',branchId:null,permissions:{}}}))
+    .then(()=>ref.collection('catalog').doc('main').set(initialCatalog))
     .then(()=>{
       toast(t('✅ تم إنشاء الشركة: ')+name,'suc');
       closeM('newCompanyModal');

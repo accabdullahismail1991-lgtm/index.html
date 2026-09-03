@@ -1574,11 +1574,11 @@ td{padding:10px 13px;vertical-align:middle;}
 <div class="overlay" id="newCompanyModal">
 <div class="modal">
   <div class="mod-sticky-head">
-  <div class="mod-title" data-i18n="🏢 إنشاء شركة جديدة">🏢 إنشاء شركة جديدة</div>
+  <div class="mod-title" id="nco-title" data-i18n="🏢 إنشاء شركة جديدة">🏢 إنشاء شركة جديدة</div>
   </div>
   <div class="mod-field"><label class="mod-lbl" data-i18n="اسم الشركة *">اسم الشركة *</label><input class="mod-in" id="nco-name" placeholder="مثال: شركة الرياض للأغذية"></div>
-  <p style="font-size:11.5px;color:var(--muted);margin-bottom:14px;line-height:1.7" data-i18n="هتتنشأ الشركة بكتالوج ومنيو وفروع منفصلة تمامًا عن أي شركة تانية، وهتبقى مديرها.">هتتنشأ الشركة بكتالوج ومنيو وفروع منفصلة تمامًا عن أي شركة تانية، وهتبقى مديرها.</p>
-  <label style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:14px;cursor:pointer">
+  <p id="nco-desc" style="font-size:11.5px;color:var(--muted);margin-bottom:14px;line-height:1.7" data-i18n="هتتنشأ الشركة بكتالوج ومنيو وفروع منفصلة تمامًا عن أي شركة تانية، وهتبقى مديرها.">هتتنشأ الشركة بكتالوج ومنيو وفروع منفصلة تمامًا عن أي شركة تانية، وهتبقى مديرها.</p>
+  <label id="nco-demo-wrap" style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:14px;cursor:pointer">
     <input type="checkbox" id="nco-demo" style="margin-top:2px">
     <span>
       <span style="font-weight:700;font-size:12.5px" data-i18n="🧪 ابدأ ببيانات تجريبية للتجربة">🧪 ابدأ ببيانات تجريبية للتجربة</span><br>
@@ -2391,6 +2391,13 @@ const I18N_EN={
   "✓ إنشاء الشركة": "✓ Create Company",
   "🧪 ابدأ ببيانات تجريبية للتجربة": "🧪 Start with sample data to try it out",
   "هيتضاف كتالوج أصناف وأقسام تجريبي عشان تجرب شاشات النظام بيه — تقدر تمسحه أو تعدّله في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك الحقيقية.": "A sample item catalog and categories will be added so you can try out the system's screens — you can delete or edit it anytime. If you don't check this, the company starts completely empty, ready for your real items.",
+  "تعديل اسم الشركة": "Edit Company Name",
+  "حذف الشركة": "Delete Company",
+  "✏️ تعديل اسم الشركة": "✏️ Edit Company Name",
+  "💾 حفظ التعديل": "💾 Save Changes",
+  "✅ تم تحديث اسم الشركة": "✅ Company name updated",
+  "🗑️ تم حذف الشركة نهائيًا": "🗑️ Company permanently deleted",
+  "هل تريد حذف الشركة \"%1\" نهائيًا؟ هيتحذف معاها كل بياناتها (كل الفروع وتقاريرها ودوراتها، والكتالوج) ولا يمكن التراجع عن ده أبدًا.": "Delete the company \"%1\" permanently? All its data (every branch and its reports/cycles, and the catalog) will be deleted with it, and this can never be undone.",
   "اسم الشركة": "Company Name",
   "اسم الصنف *": "Item Name *",
   "اسم الصنف بالإنجليزي": "Item Name (English)",
@@ -4906,28 +4913,62 @@ async function renderCompaniesList(){
   const hasDefault=d.role&&d.role!=='pending';
   const ids=[...(hasDefault?['default']:[]),...Object.keys(d.companies||{})];
   const labeled=await Promise.all(ids.map(async cid=>{
-    if(cid==='default') return {cid,name:t('الشركة الرئيسية')};
-    try{ const snap=await db.collection('companies').doc(cid).get(); return {cid,name:(snap.exists&&snap.data().name)||cid}; }
-    catch(e){ return {cid,name:cid}; }
+    if(cid==='default') return {cid,name:t('الشركة الرئيسية'),role:d.role};
+    const role=((d.companies||{})[cid]||{}).role;
+    try{ const snap=await db.collection('companies').doc(cid).get(); return {cid,name:(snap.exists&&snap.data().name)||cid,role}; }
+    catch(e){ return {cid,name:cid,role}; }
   }));
+  // Edit/delete only make sense for a real companies/{id} doc (not the
+  // implicit "default" company, which isn't one), and only for whoever
+  // is that specific company's admin -- not just any admin elsewhere.
   cont.innerHTML=labeled.map(x=>`
     <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid ${x.cid===S.companyId?'var(--gold)':'var(--border)'};border-radius:9px;margin-bottom:8px;${x.cid===S.companyId?'background:rgba(122,35,49,.06)':''}">
       <div style="flex:1">
         <div style="font-weight:700;font-size:13px">${x.name}${x.cid===S.companyId?` <span style="color:var(--gold);font-size:10px">(${t('الحالية')})</span>`:''}</div>
       </div>
       ${x.cid!==S.companyId?`<button class="hi-btn" style="flex:none;padding:5px 10px" onclick="closeM('companiesModal');selectCompany('${x.cid}')" data-i18n="تبديل">${t('تبديل')}</button>`:''}
+      ${x.cid!=='default'&&x.role==='admin'?`<button class="hi-btn" style="flex:none;padding:5px 8px" onclick="openEditCompanyForm('${x.cid}',${JSON.stringify(x.name)})" title="${t('تعديل اسم الشركة')}" aria-label="${t('تعديل اسم الشركة')}">✏</button>`:''}
+      ${x.cid!=='default'&&x.role==='admin'?`<button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteCompany('${x.cid}',${JSON.stringify(x.name)})" title="${t('حذف الشركة')}" aria-label="${t('حذف الشركة')}">🗑</button>`:''}
     </div>`).join('');
 }
+let editingCompanyId=null;
 function openNewCompanyForm(){
+  editingCompanyId=null;
+  document.getElementById('nco-title').textContent=t('🏢 إنشاء شركة جديدة');
+  document.getElementById('nco-desc').style.display='';
+  document.getElementById('nco-demo-wrap').style.display='flex';
   document.getElementById('nco-name').value='';
   document.getElementById('nco-demo').checked=false;
+  document.getElementById('createCompanyBtn').textContent=t('✓ إنشاء الشركة');
+  document.getElementById('newCompanyModal').classList.add('open');
+}
+function openEditCompanyForm(cid,name){
+  editingCompanyId=cid;
+  document.getElementById('nco-title').textContent=t('✏️ تعديل اسم الشركة');
+  document.getElementById('nco-desc').style.display='none';
+  document.getElementById('nco-demo-wrap').style.display='none';
+  document.getElementById('nco-name').value=name;
+  document.getElementById('createCompanyBtn').textContent=t('💾 حفظ التعديل');
   document.getElementById('newCompanyModal').classList.add('open');
 }
 function createNewCompany(){
   const name=document.getElementById('nco-name').value.trim();
   if(!name){toast(t('⚠️ اسم الشركة مطلوب'),'wrn');return;}
-  const demo=document.getElementById('nco-demo').checked;
   const btn=document.getElementById('createCompanyBtn');
+  if(editingCompanyId){
+    const cid=editingCompanyId;
+    btn.disabled=true;
+    db.collection('companies').doc(cid).update({name})
+      .then(()=>{
+        toast(t('✅ تم تحديث اسم الشركة'),'suc');
+        closeM('newCompanyModal');
+        renderCompaniesList();
+      })
+      .catch(e=>toast(t('⚠️ خطأ: ')+e.message,'err'))
+      .finally(()=>{btn.disabled=false;});
+    return;
+  }
+  const demo=document.getElementById('nco-demo').checked;
   btn.disabled=true;btn.textContent=t('⏳ جاري الإنشاء...');
   const ref=db.collection('companies').doc();
   // Explicitly seed the new company's own catalog/main doc (via ref.collection(...),
@@ -4951,6 +4992,38 @@ function createNewCompany(){
     })
     .catch(e=>toast(t('⚠️ خطأ: ')+e.message,'err'))
     .finally(()=>{btn.disabled=false;btn.textContent=t('✓ إنشاء الشركة');});
+}
+// Deletes a company and EVERYTHING under it -- every branch (with all its
+// counts/reports/cycles), the catalog, and its settings -- then removes
+// it from the current user's own access list. Irreversible, so this asks
+// for confirmation up front, same as every other destructive delete in
+// this app (deleteBranch, category/item delete, ...).
+function deleteCompany(cid,name){
+  if(!confirm(t('هل تريد حذف الشركة "%1" نهائيًا؟ هيتحذف معاها كل بياناتها (كل الفروع وتقاريرها ودوراتها، والكتالوج) ولا يمكن التراجع عن ده أبدًا.').replace('%1',name)))return;
+  const wasCurrent=S.companyId===cid;
+  // If we're deleting the company we're currently IN, detach its live
+  // listeners first -- otherwise the catalog listener reacts to the
+  // catalog doc being deleted (sees "no data", curRole is still admin)
+  // and helpfully re-seeds it right back before the rest of the delete
+  // even finishes.
+  if(wasCurrent) cleanupSubscriptions();
+  const compRef=db.collection('companies').doc(cid);
+  compRef.collection('branches').get()
+    .then(snap=>Promise.all(snap.docs.map(d=>d.ref.delete())))
+    .then(()=>compRef.collection('catalog').doc('main').delete())
+    .then(()=>compRef.collection('settings').doc('company').delete())
+    .then(()=>compRef.delete())
+    .then(()=>db.collection('users').doc(curUser.uid).update({['companies.'+cid]:firebase.firestore.FieldValue.delete()}))
+    .then(()=>{
+      toast(t('🗑️ تم حذف الشركة نهائيًا'),'wrn');
+      if(S.companyId===cid){
+        closeM('companiesModal');
+        switchCompany();
+      }else{
+        renderCompaniesList();
+      }
+    })
+    .catch(e=>toast(t('⚠️ خطأ: ')+e.message,'err'));
 }
 
 // ══════════════════════════════════════════════

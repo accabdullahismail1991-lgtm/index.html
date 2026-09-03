@@ -1,0 +1,109 @@
+rules_version = '2';
+
+// See ARCHITECTURE_DECISIONS.md §3 before changing anything in this file.
+// The core invariant of this whole backend is that inventory balances,
+// the transaction ledger, and the audit trail can NEVER be written by a
+// client under any role. Cloud Functions write them via the Admin SDK,
+// which is not subject to these rules at all — that is the intended,
+// standard way this invariant is enforced, not a gap to "fix" by adding
+// a role-gated write rule here.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function perms() {
+      return isSignedIn() && request.auth.token.permissions is list
+        ? request.auth.token.permissions
+        : [];
+    }
+
+    function hasPerm(p) {
+      return perms().hasAny([p, '*']);
+    }
+
+    // --- Server-only: ledger, balances, audit, idempotency guard ---
+    match /stockBalances/{id} {
+      allow read: if hasPerm('inventory.read');
+      allow write: if false;
+    }
+    match /inventoryTransactions/{id} {
+      allow read: if hasPerm('inventory.read');
+      allow write: if false;
+    }
+    match /auditLog/{id} {
+      allow read: if hasPerm('audit.read');
+      allow write: if false;
+    }
+    match /idempotencyKeys/{id} {
+      allow read, write: if false;
+    }
+
+    // --- Workflow entities: read for authorized staff, all writes go
+    // through callable Cloud Functions (submit/approve/ship/receive/...) ---
+    match /transfers/{id} {
+      allow read: if hasPerm('transfer.read');
+      allow write: if false;
+    }
+    match /transfers/{id}/gpsLog/{pingId} {
+      allow read: if hasPerm('transfer.read');
+      allow write: if false;
+    }
+    match /transfers/{id}/signatures/{sigId} {
+      allow read: if hasPerm('transfer.read');
+      allow write: if false;
+    }
+    match /variances/{id} {
+      allow read: if hasPerm('variance.read');
+      allow write: if false;
+    }
+    match /productionOrders/{id} {
+      allow read: if hasPerm('production.read');
+      allow write: if false;
+    }
+    match /stockSnapshots/{id} {
+      allow read: if hasPerm('reports.read');
+      allow write: if false;
+    }
+    match /counts/{id} {
+      allow read: if hasPerm('count.read');
+      allow write: if false;
+    }
+    match /approvalRules/{id} {
+      allow read: if hasPerm('approvals.manageRules');
+      allow write: if false;
+    }
+
+    // --- Identity / RBAC ---
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || hasPerm('users.manageRoles'));
+      allow write: if false;
+    }
+    match /roles/{id} {
+      allow read: if hasPerm('users.manageRoles');
+      allow write: if false;
+    }
+
+    // --- Reference/master data: read-only from the app; managed by an
+    // admin tool / seed script, never edited directly by a client ---
+    match /items/{id} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /locations/{id} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /counters/{id} {
+      allow read, write: if false;
+    }
+
+    // Deny everything not explicitly listed above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

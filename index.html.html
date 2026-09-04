@@ -3802,6 +3802,18 @@ function selectCompany(cid){
   // app keeps showing/overwriting the old company's data.
   cleanupSubscriptions();
   bootedUI=false;catalogReady=false;branchReady=false;branchGateResolved=false;
+  // Reset every branch-scoped field back to the same "nothing loaded yet"
+  // baseline S starts with on a fresh page load. Catalog fields (items/
+  // cats/menu/uoms) always get overwritten by the catalog listener
+  // regardless of whether the new company has data yet, but branch state
+  // (qty/notes/reports/curBranch/...) is only ever set by switchToBranchDoc(),
+  // which never runs for a company with ZERO branches -- so without this,
+  // creating or switching into a brand new (branch-less) company kept
+  // showing the PREVIOUS company's daily count, history and branch info.
+  S.branch='';S.manager='';S.storekeeper='';S.supervisor='';
+  S.qty={};S.notes={};S.reports=[];S.maintenance=[];S.incomingTransfers=[];
+  S.employees=[];S.directCosts=[];S.beVarPctOverride=null;S.beDaysInMonth=30;
+  S.branches={};S.curBranch='';S.branchData={};
   S.companyId=cid;
   applyCompanyAccess();
 }

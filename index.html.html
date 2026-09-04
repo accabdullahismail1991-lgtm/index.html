@@ -1582,7 +1582,7 @@ td{padding:10px 13px;vertical-align:middle;}
     <input type="checkbox" id="nco-demo" style="margin-top:2px">
     <span>
       <span style="font-weight:700;font-size:12.5px" data-i18n="🧪 ابدأ ببيانات تجريبية للتجربة">🧪 ابدأ ببيانات تجريبية للتجربة</span><br>
-      <span style="font-size:11px;color:var(--muted)" data-i18n="هيتضاف كتالوج أصناف وأقسام وفرع تجريبي عشان تقدر تجرب عمليات النظام فعليًا (جرد يومي، تقارير، دورات) وتتأكد إنها شغالة صح — تقدر تمسحها أو تعدّلها في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك وفروعك الحقيقية.">هيتضاف كتالوج أصناف وأقسام وفرع تجريبي عشان تقدر تجرب عمليات النظام فعليًا (جرد يومي، تقارير، دورات) وتتأكد إنها شغالة صح — تقدر تمسحها أو تعدّلها في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك وفروعك الحقيقية.</span>
+      <span style="font-size:11px;color:var(--muted)" data-i18n="هيتضاف كتالوج أصناف تجريبي مختلف تمامًا عن أصنافك الحقيقية، فيه أصناف نصف مصنّعة ومنيو بمكونات ووصفات مسجلة، وفرع تجريبي فيه جرد شغال جزء منه ودورة سابقة مكتملة في السجل — عشان تراجع كل عمليات النظام فعليًا (جرد، تكلفة مكونات، تقارير) وتتأكد من كفاءتها. تقدر تمسح كل ده أو تعدّله في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك وفروعك الحقيقية.">هيتضاف كتالوج أصناف تجريبي مختلف تمامًا عن أصنافك الحقيقية، فيه أصناف نصف مصنّعة ومنيو بمكونات ووصفات مسجلة، وفرع تجريبي فيه جرد شغال جزء منه ودورة سابقة مكتملة في السجل — عشان تراجع كل عمليات النظام فعليًا (جرد، تكلفة مكونات، تقارير) وتتأكد من كفاءتها. تقدر تمسح كل ده أو تعدّله في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك وفروعك الحقيقية.</span>
     </span>
   </label>
   <div class="mod-foot">
@@ -2390,7 +2390,8 @@ const I18N_EN={
   "✅ تم إنشاء الشركة: ": "✅ Company created: ",
   "✓ إنشاء الشركة": "✓ Create Company",
   "🧪 ابدأ ببيانات تجريبية للتجربة": "🧪 Start with sample data to try it out",
-  "هيتضاف كتالوج أصناف وأقسام وفرع تجريبي عشان تقدر تجرب عمليات النظام فعليًا (جرد يومي، تقارير، دورات) وتتأكد إنها شغالة صح — تقدر تمسحها أو تعدّلها في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك وفروعك الحقيقية.": "A sample item catalog, categories, and a demo branch will be added so you can actually run through the system's real operations (daily count, reports, cycles) and confirm they work — you can delete or edit any of it anytime. If you don't check this, the company starts completely empty, ready for your real items and branches.",
+  "هيتضاف كتالوج أصناف تجريبي مختلف تمامًا عن أصنافك الحقيقية، فيه أصناف نصف مصنّعة ومنيو بمكونات ووصفات مسجلة، وفرع تجريبي فيه جرد شغال جزء منه ودورة سابقة مكتملة في السجل — عشان تراجع كل عمليات النظام فعليًا (جرد، تكلفة مكونات، تقارير) وتتأكد من كفاءتها. تقدر تمسح كل ده أو تعدّله في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك وفروعك الحقيقية.": "A sample item catalog completely separate from your real items will be added — with semi-finished items and menu items that already have recipes/components defined — plus a demo branch with a partly-filled-in count and a completed prior round already in its history, so you can actually review every operation (counting, recipe costing, reports) and confirm it works well. You can delete or edit any of it anytime. If you don't check this, the company starts completely empty, ready for your real items and branches.",
+  "تسليم جديد صباح اليوم": "New delivery this morning",
   "فرع تجريبي": "Demo Branch",
   "مدير تجريبي": "Demo Manager",
   "أمين مخزن تجريبي": "Demo Storekeeper",
@@ -3434,6 +3435,45 @@ const DEFAULT_ITEMS = [
   {r:'SMM06003',n:'عجين فطيرة',e:'Pie Dough',c:'SMM',u:'Pcs',custom:false},
   {r:'SMM06012',n:'خلطة سلطة طماطم',e:'Tomato Salad Mix',c:'SMM',u:'kg',custom:false},
   {r:'SMM06011',n:'جبن حلوم 24 كجم',e:'Sweet Cheese 24kg',c:'SMM',u:'kg',custom:false},
+];
+
+// ══════════════════════════════════════════════
+//  DEMO DATA — a self-contained sample catalog for the "🧪 ابدأ ببيانات
+//  تجريبية" company-creation option. Deliberately a SEPARATE, differently-
+//  coded/named dataset from DEFAULT_CATS/DEFAULT_ITEMS above (which is
+//  what a real company's actual catalog is bootstrapped from) so a demo
+//  company never looks like a copy of anyone's real registered items.
+//  Includes costed raw items, semi-finished items WITH their own recipe
+//  (components), and finished menu items with recipes referencing both —
+//  a full costing chain to actually review, not just a flat item list.
+// ══════════════════════════════════════════════
+const DEMO_CATS={
+  DVEG:{l:'خضروات تجريبية',i:'🥕',c:'#2ee89a',seq:'01'},
+  DMEA:{l:'لحوم ودواجن تجريبية',i:'🍗',c:'#f05050',seq:'02'},
+  DDRY:{l:'مواد جافة تجريبية',i:'🌾',c:'#f0a030',seq:'03'},
+  DSEMI:{l:'نصف مصنّع تجريبي',i:'🏭',c:'#f0e040',seq:'04'},
+};
+const DEMO_ITEMS=[
+  {r:'DEMO-R01',n:'طماطم تجريبي',e:'Demo Tomato',c:'DVEG',u:'kg',cost:3,type:'raw',minStock:5,batchQty:1,custom:false,recipe:[]},
+  {r:'DEMO-R02',n:'بصل تجريبي',e:'Demo Onion',c:'DVEG',u:'kg',cost:2,type:'raw',minStock:5,batchQty:1,custom:false,recipe:[]},
+  {r:'DEMO-R03',n:'فلفل رومي تجريبي',e:'Demo Bell Pepper',c:'DVEG',u:'kg',cost:4,type:'raw',minStock:3,batchQty:1,custom:false,recipe:[]},
+  {r:'DEMO-R04',n:'دجاج كامل تجريبي',e:'Demo Whole Chicken',c:'DMEA',u:'kg',cost:15,type:'raw',minStock:10,batchQty:1,custom:false,recipe:[]},
+  {r:'DEMO-R05',n:'لحم بقري مفروم تجريبي',e:'Demo Ground Beef',c:'DMEA',u:'kg',cost:28,type:'raw',minStock:5,batchQty:1,custom:false,recipe:[]},
+  {r:'DEMO-R06',n:'أرز بسمتي تجريبي',e:'Demo Basmati Rice',c:'DDRY',u:'kg',cost:5,type:'raw',minStock:20,batchQty:1,custom:false,recipe:[]},
+  {r:'DEMO-R07',n:'طحين تجريبي',e:'Demo Flour',c:'DDRY',u:'kg',cost:3.5,type:'raw',minStock:15,batchQty:1,custom:false,recipe:[]},
+  {r:'DEMO-R08',n:'زيت طبخ تجريبي',e:'Demo Cooking Oil',c:'DDRY',u:'L',cost:8,type:'raw',minStock:10,batchQty:1,custom:false,recipe:[]},
+  {r:'DEMO-R09',n:'ملح تجريبي',e:'Demo Salt',c:'DDRY',u:'kg',cost:1,type:'raw',minStock:5,batchQty:1,custom:false,recipe:[]},
+  {r:'DEMO-R10',n:'جبن موزاريلا تجريبي',e:'Demo Mozzarella',c:'DDRY',u:'kg',cost:22,type:'raw',minStock:5,batchQty:1,custom:false,recipe:[]},
+  {r:'DEMO-S01',n:'صلصة طماطم جاهزة تجريبي',e:'Demo Tomato Sauce',c:'DSEMI',u:'kg',cost:2.82,type:'semi',minStock:2,batchQty:10,custom:false,
+    recipe:[{r:'DEMO-R01',q:8,uom:'kg'},{r:'DEMO-R02',q:2,uom:'kg'},{r:'DEMO-R09',q:0.2,uom:'kg'}]},
+  {r:'DEMO-S02',n:'خلطة توابل دجاج تجريبي',e:'Demo Chicken Spice Mix',c:'DSEMI',u:'kg',cost:0.2,type:'semi',minStock:1,batchQty:5,custom:false,
+    recipe:[{r:'DEMO-R09',q:1,uom:'kg'}]},
+];
+const DEMO_MENU=[
+  {id:'MI-DEMO01',n:'بيتزا مارجريتا تجريبي',e:'Demo Margherita Pizza',c:'',price:35,
+    recipe:[{r:'DEMO-R07',q:0.25,uom:'kg'},{r:'DEMO-S01',q:0.15,uom:'kg'},{r:'DEMO-R10',q:0.1,uom:'kg'}]},
+  {id:'MI-DEMO02',n:'دجاج مشوي بالأرز تجريبي',e:'Demo Grilled Chicken & Rice',c:'',price:42,
+    recipe:[{r:'DEMO-R04',q:0.35,uom:'kg'},{r:'DEMO-R06',q:0.2,uom:'kg'},{r:'DEMO-S02',q:0.02,uom:'kg'},{r:'DEMO-R08',q:0.03,uom:'L'}]},
 ];
 
 const PALETTE=['#7a2331','#3d8ef0','#2ee89a','#f05050','#9d6cf5','#f07830','#f0e040','#3dc8f0','#e840a0','#40c8a0','#a0b040','#c07030'];
@@ -4955,6 +4995,35 @@ async function renderCompaniesList(){
       ${x.cid!=='default'&&x.role==='admin'?`<button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteCompany('${x.cid}',${jsStrLit(x.name)})" title="${t('حذف الشركة')}" aria-label="${t('حذف الشركة')}">🗑</button>`:''}
     </div>`).join('');
 }
+// Builds the demo branch's seed payload: a PARTIAL in-progress count for
+// today (a realistic in-progress inventory movement) plus one COMPLETED
+// round from yesterday, in the exact shape saveAndExport() itself
+// produces (id/date/sid/branch/manager/.../qty/notes/savedAt/savedAtISO/
+// items/cats/meta{total,entered,zero,pct}) -- so the history screen has
+// something real to open/download immediately.
+function buildDemoBranch(){
+  const demoQty={'DEMO-R01':12,'DEMO-R02':8,'DEMO-R04':6,'DEMO-R06':25,'DEMO-R08':14,'DEMO-R09':3};
+  const demoNotes={'DEMO-R04':t('تسليم جديد صباح اليوم')};
+  const y=new Date();y.setDate(y.getDate()-1);
+  const yDate=`${y.getFullYear()}-${p2(y.getMonth()+1)}-${p2(y.getDate())}`;
+  const fullQtyValues=[10,6,4,8,3,20,12,9,2,5,1.5,0.8];
+  const fullQty={};
+  DEMO_ITEMS.forEach((it,i)=>{fullQty[it.r]=fullQtyValues[i]!=null?fullQtyValues[i]:1;});
+  const rpt={
+    id:'DEMO-RPT1',date:yDate,sid:'DEMO-RPT1',
+    branch:t('فرع تجريبي'),manager:t('مدير تجريبي'),storekeeper:t('أمين مخزن تجريبي'),supervisor:t('مشرف تجريبي'),
+    qty:fullQty,notes:{},
+    savedAt:y.toLocaleString('ar-SA'),savedAtISO:y.toISOString(),
+    items:DEMO_ITEMS.map(it=>({...it})),cats:{...DEMO_CATS},
+    meta:{total:DEMO_ITEMS.length,entered:DEMO_ITEMS.length,zero:0,pct:100},
+  };
+  return {
+    name:t('فرع تجريبي'),manager:t('مدير تجريبي'),storekeeper:t('أمين مخزن تجريبي'),supervisor:t('مشرف تجريبي'),
+    date:today(),sid:genSid(),
+    qty:demoQty,notes:demoNotes,reports:[rpt],
+    maintenance:[],employees:[],directCosts:[],beVarPctOverride:null,beDaysInMonth:30,cycles:[],
+  };
+}
 let editingCompanyId=null;
 function openNewCompanyForm(){
   editingCompanyId=null;
@@ -5002,15 +5071,21 @@ function createNewCompany(){
   // either genuinely empty (real business starts from scratch) or the demo
   // starter catalog — instead of racing the listener's own from-scratch
   // fallback, which always seeds the generic starter catalog regardless.
+  // DEMO_ITEMS/DEMO_MENU (a deliberately separate dataset from
+  // DEFAULT_ITEMS/DEFAULT_CATS -- see their own comment above) include
+  // costed raw items, semi-finished items with their own recipe, and menu
+  // items with recipes referencing both, so the recipe-costing chain is
+  // something real to review, not just a flat item list.
   const initialCatalog=demo
-    ?{cats:{...DEFAULT_CATS},items:[...DEFAULT_ITEMS],menu:[],uoms:[]}
+    ?{cats:{...DEMO_CATS},items:DEMO_ITEMS.map(it=>({...it,recipe:[...it.recipe]})),menu:DEMO_MENU.map(m=>({...m,recipe:[...m.recipe]})),uoms:[]}
     :{cats:{},items:[],menu:[],uoms:[]};
-  // Demo mode also gets ONE demo branch -- an empty catalog alone only
-  // lets you look at an item list. A real branch is what actually lets
-  // you run through the system's real operations (enter a daily count,
-  // save it, generate a report, start a new cycle) end-to-end to verify
-  // they work, which is the whole point of asking for demo data.
-  const demoBranch=demo?{name:t('فرع تجريبي'),manager:t('مدير تجريبي'),storekeeper:t('أمين مخزن تجريبي'),supervisor:t('مشرف تجريبي'),date:today(),sid:genSid(),qty:{},notes:{},reports:[],maintenance:[],employees:[],directCosts:[],beVarPctOverride:null,beDaysInMonth:30,cycles:[]}:null;
+  // Demo mode also gets ONE demo branch, with a PARTIAL in-progress daily
+  // count (some items already entered, standing in for a real inventory
+  // movement) and one COMPLETED round from yesterday already in its
+  // history -- an empty catalog alone only lets you look at an item list;
+  // this lets you actually review the count/save/report flow with real
+  // numbers, and finish and save today's count yourself to see it work.
+  const demoBranch=demo?buildDemoBranch():null;
   ref.set({name,createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdBy:(curUser&&curUser.email)||''})
     // Grant access BEFORE writing anything inside the company -- the
     // Firestore rule for companies/{id}/** requires the caller to already

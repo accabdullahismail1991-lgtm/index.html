@@ -1582,7 +1582,7 @@ td{padding:10px 13px;vertical-align:middle;}
     <input type="checkbox" id="nco-demo" style="margin-top:2px">
     <span>
       <span style="font-weight:700;font-size:12.5px" data-i18n="🧪 ابدأ ببيانات تجريبية للتجربة">🧪 ابدأ ببيانات تجريبية للتجربة</span><br>
-      <span style="font-size:11px;color:var(--muted)" data-i18n="هيتضاف كتالوج أصناف وأقسام تجريبي عشان تجرب شاشات النظام بيه — تقدر تمسحه أو تعدّله في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك الحقيقية.">هيتضاف كتالوج أصناف وأقسام تجريبي عشان تجرب شاشات النظام بيه — تقدر تمسحه أو تعدّله في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك الحقيقية.</span>
+      <span style="font-size:11px;color:var(--muted)" data-i18n="هيتضاف كتالوج أصناف وأقسام وفرع تجريبي عشان تقدر تجرب عمليات النظام فعليًا (جرد يومي، تقارير، دورات) وتتأكد إنها شغالة صح — تقدر تمسحها أو تعدّلها في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك وفروعك الحقيقية.">هيتضاف كتالوج أصناف وأقسام وفرع تجريبي عشان تقدر تجرب عمليات النظام فعليًا (جرد يومي، تقارير، دورات) وتتأكد إنها شغالة صح — تقدر تمسحها أو تعدّلها في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك وفروعك الحقيقية.</span>
     </span>
   </label>
   <div class="mod-foot">
@@ -2390,7 +2390,11 @@ const I18N_EN={
   "✅ تم إنشاء الشركة: ": "✅ Company created: ",
   "✓ إنشاء الشركة": "✓ Create Company",
   "🧪 ابدأ ببيانات تجريبية للتجربة": "🧪 Start with sample data to try it out",
-  "هيتضاف كتالوج أصناف وأقسام تجريبي عشان تجرب شاشات النظام بيه — تقدر تمسحه أو تعدّله في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك الحقيقية.": "A sample item catalog and categories will be added so you can try out the system's screens — you can delete or edit it anytime. If you don't check this, the company starts completely empty, ready for your real items.",
+  "هيتضاف كتالوج أصناف وأقسام وفرع تجريبي عشان تقدر تجرب عمليات النظام فعليًا (جرد يومي، تقارير، دورات) وتتأكد إنها شغالة صح — تقدر تمسحها أو تعدّلها في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك وفروعك الحقيقية.": "A sample item catalog, categories, and a demo branch will be added so you can actually run through the system's real operations (daily count, reports, cycles) and confirm they work — you can delete or edit any of it anytime. If you don't check this, the company starts completely empty, ready for your real items and branches.",
+  "فرع تجريبي": "Demo Branch",
+  "مدير تجريبي": "Demo Manager",
+  "أمين مخزن تجريبي": "Demo Storekeeper",
+  "مشرف تجريبي": "Demo Supervisor",
   "تعديل اسم الشركة": "Edit Company Name",
   "حذف الشركة": "Delete Company",
   "✏️ تعديل اسم الشركة": "✏️ Edit Company Name",
@@ -5001,6 +5005,12 @@ function createNewCompany(){
   const initialCatalog=demo
     ?{cats:{...DEFAULT_CATS},items:[...DEFAULT_ITEMS],menu:[],uoms:[]}
     :{cats:{},items:[],menu:[],uoms:[]};
+  // Demo mode also gets ONE demo branch -- an empty catalog alone only
+  // lets you look at an item list. A real branch is what actually lets
+  // you run through the system's real operations (enter a daily count,
+  // save it, generate a report, start a new cycle) end-to-end to verify
+  // they work, which is the whole point of asking for demo data.
+  const demoBranch=demo?{name:t('فرع تجريبي'),manager:t('مدير تجريبي'),storekeeper:t('أمين مخزن تجريبي'),supervisor:t('مشرف تجريبي'),date:today(),sid:genSid(),qty:{},notes:{},reports:[],maintenance:[],employees:[],directCosts:[],beVarPctOverride:null,beDaysInMonth:30,cycles:[]}:null;
   ref.set({name,createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdBy:(curUser&&curUser.email)||''})
     // Grant access BEFORE writing anything inside the company -- the
     // Firestore rule for companies/{id}/** requires the caller to already
@@ -5008,6 +5018,7 @@ function createNewCompany(){
     // (the previous order) was rejected with permission-denied.
     .then(()=>db.collection('users').doc(curUser.uid).update({['companies.'+ref.id]:{role:'admin',branchId:null,permissions:{}}}))
     .then(()=>ref.collection('catalog').doc('main').set(initialCatalog))
+    .then(()=>demoBranch?ref.collection('branches').doc().set(demoBranch):Promise.resolve())
     .then(()=>{
       toast(t('✅ تم إنشاء الشركة: ')+name,'suc');
       closeM('newCompanyModal');

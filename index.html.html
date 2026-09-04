@@ -2392,6 +2392,17 @@ const I18N_EN={
   "🧪 ابدأ ببيانات تجريبية للتجربة": "🧪 Start with sample data to try it out",
   "هيتضاف كتالوج أصناف تجريبي مختلف تمامًا عن أصنافك الحقيقية، فيه أصناف نصف مصنّعة ومنيو بمكونات ووصفات مسجلة، وفرع تجريبي فيه جرد شغال جزء منه ودورة سابقة مكتملة في السجل — عشان تراجع كل عمليات النظام فعليًا (جرد، تكلفة مكونات، تقارير) وتتأكد من كفاءتها. تقدر تمسح كل ده أو تعدّله في أي وقت. من غير ما تختار، الشركة هتتنشأ فاضية تمامًا وتبدأ بأصنافك وفروعك الحقيقية.": "A sample item catalog completely separate from your real items will be added — with semi-finished items and menu items that already have recipes/components defined — plus a demo branch with a partly-filled-in count and a completed prior round already in its history, so you can actually review every operation (counting, recipe costing, reports) and confirm it works well. You can delete or edit any of it anytime. If you don't check this, the company starts completely empty, ready for your real items and branches.",
   "تسليم جديد صباح اليوم": "New delivery this morning",
+  "تلف طبيعي": "Natural spoilage",
+  "استخدام داخلي": "Internal use",
+  "أحمد علي": "Ahmed Ali",
+  "طاهي": "Chef",
+  "محمد سالم": "Mohammed Salem",
+  "كاشير": "Cashier",
+  "فاطمة حسن": "Fatima Hassan",
+  "نادلة": "Waitress",
+  "إيجار المحل": "Shop Rent",
+  "كهرباء ومياه": "Electricity & Water",
+  "إنترنت واتصالات": "Internet & Communications",
   "فرع تجريبي": "Demo Branch",
   "مدير تجريبي": "Demo Manager",
   "أمين مخزن تجريبي": "Demo Storekeeper",
@@ -5046,11 +5057,44 @@ function buildDemoBranch(){
     items:DEMO_ITEMS.map(it=>({...it})),cats:{...DEMO_CATS},
     meta:{total:DEMO_ITEMS.length,entered:DEMO_ITEMS.length,zero:0,pct:100},
   };
+  // One OPEN reconciliation cycle ("الجولة اليومية") for today, with real
+  // sales/purchases/waste entries already recorded -- deliberately left
+  // OPEN rather than pre-closed: closing computes results from the exact
+  // catalog costs live at close time (computeCycleResults()), which this
+  // seed step can't replicate correctly since it runs before the demo
+  // catalog is even the active one. Closing it yourself, with real demo
+  // numbers already sitting in every tab, is itself part of the review.
+  const demoCycle={
+    id:'DEMO-CYC1',start:today(),end:today(),closed:false,
+    sales:{'MI-DEMO01':8,'MI-DEMO02':5},
+    salesAmount:null,deliverySalesAmount:null,
+    purchases:{'DEMO-R01':{qty:5,cost:15},'DEMO-R06':{qty:10,cost:50}},
+    waste:{'DEMO-R03':{qty:0.5,reason:t('تلف طبيعي')}},
+    wasteMenu:{},
+    withdrawals:{'DEMO-R09':{qty:0.2,reason:t('استخدام داخلي')}},
+    withdrawMenu:{},
+    transfersOut:{},transfersIn:{},openingOverride:{},closing:{},closingSetAt:{},result:null,
+  };
+  // Employees + direct costs feed the daily break-even calculation
+  // directly (computeBreakEvenForBranch() sums employees[].salary and
+  // directCosts[].amount as the branch's fixed costs). beVarPctOverride
+  // set here means the break-even screen shows real, complete numbers
+  // immediately -- it does NOT need a closed cycle's actual cost % at all.
+  const demoEmployees=[
+    {id:'EMP-DEMO1',name:t('أحمد علي'),role:t('طاهي'),salary:3500,transfers:[]},
+    {id:'EMP-DEMO2',name:t('محمد سالم'),role:t('كاشير'),salary:2200,transfers:[]},
+    {id:'EMP-DEMO3',name:t('فاطمة حسن'),role:t('نادلة'),salary:2000,transfers:[]},
+  ];
+  const demoDirectCosts=[
+    {id:'DC-DEMO1',name:t('إيجار المحل'),amount:6000},
+    {id:'DC-DEMO2',name:t('كهرباء ومياه'),amount:1200},
+    {id:'DC-DEMO3',name:t('إنترنت واتصالات'),amount:300},
+  ];
   return {
     name:t('فرع تجريبي'),manager:t('مدير تجريبي'),storekeeper:t('أمين مخزن تجريبي'),supervisor:t('مشرف تجريبي'),
     date:today(),sid:genSid(),
     qty:demoQty,notes:demoNotes,reports:[rpt],
-    maintenance:[],employees:[],directCosts:[],beVarPctOverride:null,beDaysInMonth:30,cycles:[],
+    maintenance:[],employees:demoEmployees,directCosts:demoDirectCosts,beVarPctOverride:32,beDaysInMonth:30,cycles:[demoCycle],
   };
 }
 let editingCompanyId=null;

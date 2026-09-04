@@ -4906,6 +4906,14 @@ async function openCompaniesMgr(){
   document.getElementById('companiesModal').classList.add('open');
   await renderCompaniesList();
 }
+// Safe to splice into an inline onclick="..." HTML attribute (itself
+// double-quoted) as a JS string-literal argument. JSON.stringify() would
+// produce a DOUBLE-quoted literal, which breaks straight out of that
+// attribute the moment the name contains a space or anything else --
+// this always yields a single-quoted, fully escaped literal instead.
+function jsStrLit(s){
+  return "'"+String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/</g,'\\x3c').replace(/\r?\n/g,'\\n')+"'";
+}
 async function renderCompaniesList(){
   const cont=document.getElementById('companiesList');
   cont.innerHTML=`<div style="text-align:center;padding:16px;color:var(--muted)">${t('جاري التحميل...')}</div>`;
@@ -4927,8 +4935,8 @@ async function renderCompaniesList(){
         <div style="font-weight:700;font-size:13px">${x.name}${x.cid===S.companyId?` <span style="color:var(--gold);font-size:10px">(${t('الحالية')})</span>`:''}</div>
       </div>
       ${x.cid!==S.companyId?`<button class="hi-btn" style="flex:none;padding:5px 10px" onclick="closeM('companiesModal');selectCompany('${x.cid}')" data-i18n="تبديل">${t('تبديل')}</button>`:''}
-      ${x.cid!=='default'&&x.role==='admin'?`<button class="hi-btn" style="flex:none;padding:5px 8px" onclick="openEditCompanyForm('${x.cid}',${JSON.stringify(x.name)})" title="${t('تعديل اسم الشركة')}" aria-label="${t('تعديل اسم الشركة')}">✏</button>`:''}
-      ${x.cid!=='default'&&x.role==='admin'?`<button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteCompany('${x.cid}',${JSON.stringify(x.name)})" title="${t('حذف الشركة')}" aria-label="${t('حذف الشركة')}">🗑</button>`:''}
+      ${x.cid!=='default'&&x.role==='admin'?`<button class="hi-btn" style="flex:none;padding:5px 8px" onclick="openEditCompanyForm('${x.cid}',${jsStrLit(x.name)})" title="${t('تعديل اسم الشركة')}" aria-label="${t('تعديل اسم الشركة')}">✏</button>`:''}
+      ${x.cid!=='default'&&x.role==='admin'?`<button class="hi-btn del" style="flex:none;padding:5px 8px" onclick="deleteCompany('${x.cid}',${jsStrLit(x.name)})" title="${t('حذف الشركة')}" aria-label="${t('حذف الشركة')}">🗑</button>`:''}
     </div>`).join('');
 }
 let editingCompanyId=null;

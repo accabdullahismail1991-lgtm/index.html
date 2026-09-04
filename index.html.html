@@ -4668,6 +4668,22 @@ function ensureArabicFont(doc){
   doc.addFont('NotoNaskhArabic.ttf','Arabic','bold');
   doc.setFont('Arabic','normal');
 }
+// Report color system -- deliberately reuses the app's OWN brand palette
+// (--gold/--gold2/--green/--red/--muted/--border in the CSS :root, the
+// same colors the live UI itself is built from) instead of the previous
+// set of four unrelated ad-hoc hues (blue/green/red/amber-gold) that
+// never matched the app's actual maroon-and-neutral identity. One accent
+// color carries the whole report; green/red are used ONLY where they
+// mean something (entered vs. a zero balance), never as decoration.
+const RPT_BRAND=[122,35,49];    // --gold (the app's real primary color)
+const RPT_BRAND2=[92,26,37];    // --gold2
+const RPT_INK=[26,32,48];       // --text
+const RPT_MUTED=[104,116,138];  // --muted
+const RPT_MUTED2=[152,163,181]; // --muted2
+const RPT_BORDER=[227,230,238]; // --border
+const RPT_CARD2=[246,243,241];  // warm-tinted --card2
+const RPT_GOOD=[31,157,104];    // --green
+const RPT_WARN=[208,69,63];     // --red
 function exportPDF(rpt){
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
@@ -4676,31 +4692,44 @@ function exportPDF(rpt){
   const H=doc.internal.pageSize.getHeight();
 
   doc.setFillColor(255,255,255);doc.rect(0,0,W,H,'F');
-  doc.setFillColor(240,192,64);doc.rect(0,0,W,20,'F');
-  doc.setTextColor(20,15,0);doc.setFontSize(13);doc.setFont('Arabic','bold');
-  doc.text('تقرير الجرد اليومي',W/2,13,{align:'center'});
-  doc.setFontSize(7);doc.setFont('Arabic','normal');
+
+  // Header band -- the app's own maroon, white type, with a thin warm
+  // accent line underneath instead of a flat hard edge.
+  doc.setFillColor(...RPT_BRAND);doc.rect(0,0,W,22,'F');
+  doc.setFillColor(...RPT_BRAND2);doc.rect(0,22,W,.6,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont('Arabic','bold');
+  doc.text('تقرير الجرد اليومي',W/2,12.5,{align:'center'});
+  doc.setFontSize(7.5);doc.setFont('Arabic','normal');doc.setTextColor(232,214,218);
   doc.text((companyInfo.name?companyInfo.name+' — ':'')+'Raseed v3.0',W/2,18,{align:'center'});
 
-  doc.setFillColor(244,245,248);doc.rect(0,20,W,16,'F');
-  doc.setDrawColor(224,226,232);doc.setLineWidth(.2);doc.line(0,36,W,36);
-  doc.setTextColor(70,80,100);doc.setFontSize(8.5);doc.setFont('Arabic','normal');
+  // Meta info bar
+  doc.setFillColor(...RPT_CARD2);doc.rect(0,22.6,W,17.4,'F');
+  doc.setDrawColor(...RPT_BORDER);doc.setLineWidth(.2);doc.line(0,40,W,40);
   const dStr=new Date(rpt.date+'T00:00:00').toLocaleDateString('en-GB');
   const col=W/4;
-  [`الفرع: ${rpt.branch}`,`التاريخ: ${dStr}`,`الجلسة: ${rpt.sid}`,`وقت الحفظ: ${rpt.savedAt}`].forEach((t,i)=>doc.text(t,14+i*col,28,{align:'left'}));
-  doc.setFontSize(7.5);
-  [`المدير: ${rpt.manager||'-'}`,`أمين المخزن: ${rpt.storekeeper||'-'}`,`المشرف: ${rpt.supervisor||'-'}`,`نسبة الإكمال: ${rpt.meta.pct}% (${rpt.meta.entered}/${rpt.meta.total})`].forEach((t,i)=>doc.text(t,14+i*col,34,{align:'left'}));
+  doc.setTextColor(...RPT_INK);doc.setFontSize(8.5);doc.setFont('Arabic','bold');
+  [`الفرع: ${rpt.branch}`,`التاريخ: ${dStr}`,`الجلسة: ${rpt.sid}`,`وقت الحفظ: ${rpt.savedAt}`].forEach((t,i)=>doc.text(t,14+i*col,31,{align:'left'}));
+  doc.setFontSize(7.5);doc.setFont('Arabic','normal');doc.setTextColor(...RPT_MUTED);
+  [`المدير: ${rpt.manager||'-'}`,`أمين المخزن: ${rpt.storekeeper||'-'}`,`المشرف: ${rpt.supervisor||'-'}`,`نسبة الإكمال: ${rpt.meta.pct}% (${rpt.meta.entered}/${rpt.meta.total})`].forEach((t,i)=>doc.text(t,14+i*col,37,{align:'left'}));
 
-  const kpis=[{l:'إجمالي الأصناف',v:rpt.meta.total,rgb:[61,142,240]},{l:'تم عدّها',v:rpt.meta.entered,rgb:[35,175,120]},{l:'رصيد صفر',v:rpt.meta.zero,rgb:[220,60,60]},{l:'نسبة الإكمال',v:rpt.meta.pct+'%',rgb:[200,150,20]}];
+  // KPI cards -- brand maroon for the two purely informational figures,
+  // green/red reserved for the two that actually carry a verdict (a zero
+  // balance is only flagged red when there IS one; zero of them is good news).
+  const kpis=[
+    {l:'إجمالي الأصناف',v:rpt.meta.total,rgb:RPT_BRAND},
+    {l:'تم عدّها',v:rpt.meta.entered,rgb:RPT_GOOD},
+    {l:'رصيد صفر',v:rpt.meta.zero,rgb:rpt.meta.zero>0?RPT_WARN:RPT_GOOD},
+    {l:'نسبة الإكمال',v:rpt.meta.pct+'%',rgb:RPT_BRAND},
+  ];
   kpis.forEach((k,i)=>{
-    const x=14+i*66,y=38;
-    doc.setFillColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setGState(doc.GState({opacity:.08}));
-    doc.roundedRect(x,y,60,14,2,2,'F');doc.setGState(doc.GState({opacity:1}));
-    doc.setDrawColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setLineWidth(.4);doc.roundedRect(x,y,60,14,2,2,'S');
-    doc.setTextColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setFontSize(14);doc.setFont('Arabic','bold');
-    doc.text(String(k.v),x+30,y+9,{align:'center'});
-    doc.setFontSize(6.5);doc.setTextColor(100,108,125);doc.setFont('Arabic','normal');
-    doc.text(k.l,x+30,y+13,{align:'center'});
+    const x=14+i*66,y=44,w=60,h=15;
+    doc.setFillColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setGState(doc.GState({opacity:.07}));
+    doc.roundedRect(x,y,w,h,2,2,'F');doc.setGState(doc.GState({opacity:1}));
+    doc.setDrawColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setLineWidth(.35);doc.roundedRect(x,y,w,h,2,2,'S');
+    doc.setTextColor(k.rgb[0],k.rgb[1],k.rgb[2]);doc.setFontSize(15);doc.setFont('Arabic','bold');
+    doc.text(String(k.v),x+w/2,y+9.5,{align:'center'});
+    doc.setFontSize(6.5);doc.setTextColor(...RPT_MUTED);doc.setFont('Arabic','normal');
+    doc.text(k.l,x+w/2,y+13,{align:'center'});
   });
 
   const cats=rpt.cats||S.cats;
@@ -4719,30 +4748,30 @@ function exportPDF(rpt){
   if(rows.length){
     doc.autoTable({
       head:[['#','المرجع','اسم الصنف','القسم','الوحدة','الكمية','النوع','ملاحظات']],
-      body:rows,startY:56,theme:'grid',
-      styles:{font:'Arabic',fontSize:7.5,cellPadding:2.5,textColor:[40,45,55],lineColor:[222,225,232],lineWidth:.25,fillColor:[255,255,255],halign:'right'},
-      headStyles:{font:'Arabic',fillColor:[240,192,64],textColor:[18,14,0],fontStyle:'bold',fontSize:8,halign:'right'},
-      alternateRowStyles:{fillColor:[247,248,250]},
+      body:rows,startY:63,theme:'grid',
+      styles:{font:'Arabic',fontSize:7.5,cellPadding:2.5,textColor:RPT_INK,lineColor:RPT_BORDER,lineWidth:.25,fillColor:[255,255,255],halign:'right'},
+      headStyles:{font:'Arabic',fillColor:RPT_BRAND,textColor:[255,255,255],fontStyle:'bold',fontSize:8,halign:'right'},
+      alternateRowStyles:{fillColor:RPT_CARD2},
       columnStyles:{
-        0:{cellWidth:9,halign:'center',textColor:[130,138,150]},
-        1:{cellWidth:26,textColor:[110,120,135],fontSize:7,halign:'center'},
+        0:{cellWidth:9,halign:'center',textColor:RPT_MUTED2},
+        1:{cellWidth:26,textColor:RPT_MUTED,fontSize:7,halign:'center'},
         2:{cellWidth:60},
-        3:{cellWidth:28,textColor:[90,98,112]},
-        4:{cellWidth:14,halign:'center',textColor:[61,142,240]},
+        3:{cellWidth:28,textColor:RPT_MUTED},
+        4:{cellWidth:14,halign:'center',textColor:RPT_BRAND},
         5:{cellWidth:18,halign:'center',fontStyle:'bold'},
-        6:{cellWidth:18,halign:'center',textColor:[210,110,40],fontSize:7},
-        7:{cellWidth:55,textColor:[100,108,122],fontSize:7},
+        6:{cellWidth:18,halign:'center',textColor:RPT_BRAND,fontSize:7},
+        7:{cellWidth:55,textColor:RPT_MUTED,fontSize:7},
       },
-      didParseCell:(d)=>{if(d.section==='body'&&d.column.index===5){d.cell.styles.textColor=parseFloat(d.cell.raw)===0?[210,60,60]:[30,150,100];}},
+      didParseCell:(d)=>{if(d.section==='body'&&d.column.index===5){d.cell.styles.textColor=parseFloat(d.cell.raw)===0?RPT_WARN:RPT_GOOD;}},
       margin:{left:14,right:14},
     });
   }
 
   for(let p=1;p<=doc.internal.getNumberOfPages();p++){
     doc.setPage(p);
-    doc.setFillColor(244,245,248);doc.rect(0,H-9,W,9,'F');
-    doc.setDrawColor(224,226,232);doc.setLineWidth(.3);doc.line(0,H-9,W,H-9);
-    doc.setFontSize(7);doc.setTextColor(120,128,140);doc.setFont('Arabic','normal');
+    doc.setFillColor(...RPT_CARD2);doc.rect(0,H-9,W,9,'F');
+    doc.setFillColor(...RPT_BRAND);doc.rect(0,H-9,W,.6,'F');
+    doc.setFontSize(7);doc.setTextColor(...RPT_MUTED);doc.setFont('Arabic','normal');
     doc.text(`Raseed v3.0 | ${rpt.branch} | ${dStr} | ${rpt.sid}`,14,H-3.5);
     doc.text(`صفحة ${p} من ${doc.internal.getNumberOfPages()}`,W-14,H-3.5,{align:'right'});
   }

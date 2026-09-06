@@ -478,6 +478,32 @@ td{padding:10px 13px;vertical-align:middle;}
   color:var(--text);font-family:var(--font);font-size:13.5px;outline:none;transition:border .15s;
 }
 .mod-in:focus{border-color:var(--gold);}
+
+/* CYCLE/REPORTS VIEWS AS POPUPS — same .overlay full-screen popup every
+   other screen in the app already uses (open/close animation, global
+   "رجوع" back button), instead of the old permanent style.display toggle.
+   .layout's own margin-right:230px reserved room for the persistent
+   module-nav rail, which .overlay's z-index:300 now covers completely
+   (same as every other modal already does) — so that reserved gutter
+   would just be empty background space and needs clearing here. */
+#cycleView.overlay,#reportsView.overlay{margin-right:0;overflow-y:auto;}
+
+/* QUICK BILLING (POS-STYLE MENU) TILES */
+.pos-tile{
+  background:var(--card);border:1px solid var(--border);border-radius:11px;
+  padding:10px;cursor:pointer;transition:all .13s;user-select:none;
+  display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;
+}
+.pos-tile:hover{border-color:var(--gold);box-shadow:0 3px 12px rgba(20,30,50,.08);transform:translateY(-1px);}
+.pos-tile:active{transform:translateY(0);}
+.pos-tile-img{
+  width:100%;aspect-ratio:1/1;border-radius:8px;background:var(--tint);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:30px;
+}
+.pos-tile-img img{width:100%;height:100%;object-fit:cover;}
+.pos-tile-name{font-size:12px;font-weight:700;line-height:1.35;}
+.pos-tile-price{font-size:11.5px;color:var(--gold);font-family:var(--mono);font-weight:700;}
+
 .isearch{position:relative;}
 .isearch-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;left:0;max-height:220px;overflow-y:auto;background:var(--card);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 20px rgba(20,30,50,.15);z-index:60;}
 .isearch-menu.open{display:block;}
@@ -1257,7 +1283,7 @@ td{padding:10px 13px;vertical-align:middle;}
 </div>
 
 <!-- CYCLE (RECONCILIATION) VIEW -->
-<div class="layout" id="cycleView" style="display:none">
+<div class="layout overlay" id="cycleView">
 <div class="sidebar">
   <span class="sb-label" data-i18n="دورات التسوية">دورات التسوية</span>
   <div class="sb-item sb-item-pinned" onclick="openNewCycle()" title="بدء الجولة اليومية الجديدة" aria-label="بدء الجولة اليومية الجديدة" data-i18n-title="بدء الجولة اليومية الجديدة"><span class="sb-ico">➕</span><span data-i18n="بدء الجولة اليومية">بدء الجولة اليومية</span></div>
@@ -1281,7 +1307,7 @@ td{padding:10px 13px;vertical-align:middle;}
 <!-- REPORTS HUB VIEW — a dedicated landing page grouping every report into
      labeled cards (icon + one-click open), instead of only being reachable
      one at a time from the module-nav rail's flat dropdown list -->
-<div class="layout" id="reportsView" style="display:none">
+<div class="layout overlay" id="reportsView">
 <main style="width:100%">
   <div id="reactReportsHubRoot"></div>
 </main>
@@ -1657,6 +1683,15 @@ td{padding:10px 13px;vertical-align:middle;}
     <select class="mod-in" id="mi-cat"><option value="" data-i18n="بدون قسم">بدون قسم</option></select>
   </div>
   <div class="mod-field">
+    <label class="mod-lbl" data-i18n="صورة الصنف (اختياري)">صورة الصنف (اختياري)</label>
+    <div style="display:flex;align-items:center;gap:10px">
+      <img id="mi-image-preview" style="width:56px;height:56px;border-radius:8px;object-fit:cover;border:1px solid var(--border);display:none;flex-shrink:0" alt="">
+      <input type="file" accept="image/*" class="mod-in" style="flex:1" id="mi-image-file" onchange="handleMenuItemImageSelected(event)">
+      <button class="hi-btn del" style="display:none;flex-shrink:0" id="mi-image-remove-btn" onclick="removeMenuItemImage()" title="حذف الصورة" aria-label="حذف الصورة">🗑</button>
+    </div>
+    <div style="font-size:10.5px;color:var(--muted);margin-top:5px">تظهر هذه الصورة في شاشة الفوترة السريعة عند اختيار الصنف من المنيو.</div>
+  </div>
+  <div class="mod-field">
     <label class="mod-lbl" data-i18n="مقادير الوصفة (المكوّنات من المخزون)">مقادير الوصفة (المكوّنات من المخزون)</label>
     <div id="miRecipeRows" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
     <button class="hbtn" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="addRecipeRow()" data-i18n="➕ إضافة مكوّن">➕ إضافة مكوّن</button>
@@ -1664,6 +1699,42 @@ td{padding:10px 13px;vertical-align:middle;}
   <div class="mod-foot">
     <button class="hbtn" onclick="closeM('menuItemModal')" data-i18n="إلغاء">إلغاء</button>
     <button class="hbtn gold" onclick="saveMenuItem()" id="miSaveBtn">✓ حفظ الصنف</button>
+  </div>
+</div>
+</div>
+
+<!-- QUICK BILLING (POS-STYLE MENU) MODAL — pick items from an image-tile
+     menu grid exactly like a restaurant cashier screen, build a cart, then
+     post the ticket's quantities straight into the open reconciliation
+     cycle's Sales tab (same c.sales[menuId] tally the manual entry table
+     and the external POS-import both already feed) instead of typing every
+     quantity by hand. -->
+<div class="overlay" id="posModal">
+<div class="modal" style="max-width:100%">
+  <div class="mod-sticky-head">
+    <div class="mod-title" data-i18n="🧾 فوترة سريعة">🧾 فوترة سريعة</div>
+  </div>
+  <div id="posCycleWarning" style="display:none;background:rgba(240,80,80,.08);border:1px solid rgba(240,80,80,.25);color:var(--red);border-radius:8px;padding:10px 14px;font-size:12.5px;margin-bottom:14px"></div>
+  <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+    <div style="flex:2;min-width:280px">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <input type="text" class="mod-in" style="flex:1;min-width:160px" id="posSearch" placeholder="🔍 ابحث عن صنف..." oninput="renderPosGrid()">
+        <select class="mod-in" style="flex:none;width:auto" id="posCatFilter" onchange="renderPosGrid()"><option value="" data-i18n="كل الأقسام">كل الأقسام</option></select>
+      </div>
+      <div id="posGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px"></div>
+    </div>
+    <div style="width:300px;flex:none;position:sticky;top:0;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:10px" data-i18n="🛒 الفاتورة الحالية">🛒 الفاتورة الحالية</div>
+      <div id="posCartRows" style="max-height:calc(100vh - 420px);overflow-y:auto;margin-bottom:10px"></div>
+      <div style="border-top:1px solid var(--border);padding-top:10px">
+        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;margin-bottom:12px"><span data-i18n="الإجمالي">الإجمالي</span><span id="posCartTotal">0.00</span></div>
+        <button class="hbtn gold" style="width:100%;justify-content:center;padding:10px" id="posCheckoutBtn" onclick="posCheckout()" data-i18n="✓ تسجيل الفاتورة">✓ تسجيل الفاتورة</button>
+        <button class="hbtn" style="width:100%;justify-content:center;padding:8px;margin-top:8px" onclick="posClearCart()" data-i18n="🗑️ إفراغ السلة">🗑️ إفراغ السلة</button>
+      </div>
+    </div>
+  </div>
+  <div class="mod-foot">
+    <button class="hbtn" onclick="closeM('posModal')" data-i18n="إغلاق">إغلاق</button>
   </div>
 </div>
 </div>
@@ -2948,6 +3019,22 @@ const I18N_EN={
   "استعادة نسخة احتياطية بتاريخ %1\n\nسيتم استبدال:\n- كتالوج الأصناف والمنيو بالكامل (%2 صنف)\n- جميع بيانات الفرع \"%3\" (الجرد، التقارير، %4 دورة تسوية)\n\nأي بيانات حالية لنفس الفرع أو الكتالوج ستُحذف نهائيًا وتُستبدل بمحتوى الملف. هذا إجراء لا يمكن التراجع عنه. هل أنت متأكد من رغبتك في المتابعة؟": "Restoring a backup dated %1\n\nThis will replace:\n- The entire items & menu catalog (%2 items)\n- All data for branch \"%3\" (inventory, reports, %4 reconciliation cycles)\n\nAny current data for the same branch or catalog will be permanently deleted and replaced with the file's content. This action cannot be undone. Are you sure you want to continue?",
   "الموظف": "the employee",
   "غير معروف": "Unknown",
+  "🧾 فوترة سريعة": "🧾 Quick Billing",
+  "🛒 الفاتورة الحالية": "🛒 Current Ticket",
+  "الإجمالي": "Total",
+  "✓ تسجيل الفاتورة": "✓ Record Ticket",
+  "🗑️ إفراغ السلة": "🗑️ Clear Cart",
+  "السلة فارغة — اضغط على صنف من المنيو لإضافته": "Cart is empty — tap an item from the menu to add it",
+  "لا توجد أصناف مطابقة": "No matching items",
+  "إضافة للسلة": "Add to cart",
+  "⚠️ لا توجد جولة يومية مفتوحة تغطي اليوم — افتح الجولة اليومية أولًا لتسجيل المبيعات": "⚠️ No open daily cycle covers today — open the daily cycle first to record sales",
+  "⚠️ لا توجد جولة يومية مفتوحة تغطي اليوم": "⚠️ No open daily cycle covers today",
+  "✅ تم تسجيل الفاتورة على الجولة اليومية": "✅ Ticket recorded on the daily cycle",
+  "⚠️ لا توجد أصناف مباعة معرّفة بعد — أضفها من شاشة المنيو أولًا": "⚠️ No menu items defined yet — add them from the menu screen first",
+  "صورة الصنف (اختياري)": "Item image (optional)",
+  "تظهر هذه الصورة في شاشة الفوترة السريعة عند اختيار الصنف من المنيو.": "This image shows in the Quick Billing screen when picking the item from the menu.",
+  "⚠️ الصورة كبيرة الحجم (أكبر من 2MB) — اختر صورة أصغر": "⚠️ Image too large (over 2MB) — choose a smaller image",
+  "⚠️ فشل رفع صورة الصنف: ": "⚠️ Failed to upload item image: ",
 };
 
 
@@ -4909,9 +4996,8 @@ function clearQty(){
 // ══════════════════════════════════════════════
 function showView(v){
   curView=v;
-  document.getElementById('dailyView').style.display=v==='daily'?'':'none';
-  document.getElementById('cycleView').style.display=v==='cycle'?'':'none';
-  document.getElementById('reportsView').style.display=v==='reports'?'':'none';
+  document.getElementById('cycleView').classList.toggle('open',v==='cycle');
+  document.getElementById('reportsView').classList.toggle('open',v==='reports');
   __moduleNavRerender();
   if(v==='cycle'){
     if(!curCycleId) selectLatestCycle();
@@ -6603,7 +6689,12 @@ document.addEventListener('click',e=>{
 // ══════════════════════════════════════════════
 function closeCurrentOverlay(){
   const overlay=[...document.querySelectorAll('.overlay.open')].pop();
-  if(overlay&&!overlay.classList.contains('overlay-nodismiss')) overlay.classList.remove('open');
+  if(!overlay||overlay.classList.contains('overlay-nodismiss')) return;
+  // cycleView/reportsView are popups over the daily view rather than
+  // independent modals -- closing them needs to restore curView (and its
+  // daily-view-dependent nav/render logic) too, not just hide the div.
+  if(overlay.id==='cycleView'||overlay.id==='reportsView'){ showView('daily'); return; }
+  overlay.classList.remove('open');
 }
 function updateGlobalModalCloseBtn(){
   const btn=document.getElementById('globalModalCloseBtn');
@@ -6680,6 +6771,11 @@ function printCurrentReport(){
 //  MENU ITEMS & RECIPES (BOM)
 // ══════════════════════════════════════════════
 let curRecipeRows=[], editingMenuId=null;
+// curMenuItemImageFile: a picked-but-not-yet-uploaded File, uploaded only on
+// save (so cancelling the modal never uploads anything). curMenuItemImageUrl
+// mirrors what m.img will end up being; curMenuItemImageRemoved marks an
+// existing image explicitly cleared by the user (distinct from "untouched").
+let curMenuItemImageFile=null, curMenuItemImageUrl=null, curMenuItemImageRemoved=false;
 
 function recipeCost(recipe){
   const flat=flattenMenuRecipe(recipe);
@@ -6806,7 +6902,9 @@ function renderMenuList(){
     const pct=m.price>0?Math.round(cost/netOfVat(m.price)*100):0;
     const catInfo=m.c?S.cats[m.c]:null;
     const catBadge=catInfo?`<span style="font-size:10px;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:1px 6px;margin-right:6px">${catInfo.i||''} ${catInfo.l}</span>`:'';
+    const thumb=m.img?`<img src="${m.img.replace(/"/g,'&quot;')}" alt="" style="width:42px;height:42px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border)">`:`<div style="width:42px;height:42px;border-radius:8px;flex-shrink:0;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:18px">🍽️</div>`;
     return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px">
+      ${thumb}
       <div style="flex:1">
         <div style="font-weight:700;font-size:13.5px">${m.n}${m.e?`<span style="font-size:11px;color:var(--muted);margin-right:6px">${m.e}</span>`:''}${catBadge}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:3px">السعر: ${fmt(m.price)} (شامل الضريبة) · تكلفة الوصفة: ${fmt(cost)} (${pct}% من صافي السعر) · ${(m.recipe||[]).length} مكوّن</div>
@@ -6974,6 +7072,41 @@ function addRecipeRow(){
   curRecipeRows.push({r:S.items[0].r,q:0,uom:S.items[0].u});
   renderRecipeRows();
 }
+function resetMenuItemImageUI(){
+  curMenuItemImageFile=null;curMenuItemImageUrl=null;curMenuItemImageRemoved=false;
+  document.getElementById('mi-image-file').value='';
+  const prev=document.getElementById('mi-image-preview');
+  prev.src='';prev.style.display='none';
+  document.getElementById('mi-image-remove-btn').style.display='none';
+}
+function handleMenuItemImageSelected(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  if(file.size>2*1024*1024){toast(t('⚠️ الصورة كبيرة الحجم (أكبر من 2MB) — اختر صورة أصغر'),'wrn');e.target.value='';return;}
+  curMenuItemImageFile=file;curMenuItemImageRemoved=false;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const prev=document.getElementById('mi-image-preview');
+    prev.src=ev.target.result;prev.style.display='';
+    document.getElementById('mi-image-remove-btn').style.display='';
+  };
+  reader.readAsDataURL(file);
+}
+function removeMenuItemImage(){
+  curMenuItemImageFile=null;curMenuItemImageUrl=null;curMenuItemImageRemoved=true;
+  document.getElementById('mi-image-file').value='';
+  const prev=document.getElementById('mi-image-preview');
+  prev.src='';prev.style.display='none';
+  document.getElementById('mi-image-remove-btn').style.display='none';
+}
+function uploadMenuItemImage(id,file){
+  if(!storage){toast(t('⚠️ رفع الصور غير متاح حاليًا — يُرجى المحاولة لاحقًا'),'wrn');return;}
+  const path=`menuImages/${S.companyId||'default'}/${id}_${Date.now()}_${file.name}`;
+  storage.ref(path).put(file).then(snap=>snap.ref.getDownloadURL()).then(url=>{
+    const m=S.menu.find(x=>x.id===id);
+    if(m){ m.img=url; save(); renderMenuList(); if(document.getElementById('posModal').classList.contains('open')) renderPosGrid(); }
+  }).catch(err=>toast(t('⚠️ فشل رفع صورة الصنف: ')+err.message,'err'));
+}
 function openAddMenuItem(){
   if(!canManageMenuUI()){toast(t('⚠️ إدارة المنيو متاحة للإدارة أو لمن يملك صلاحية إدارة المنيو فقط'),'wrn');return;}
   editingMenuId=null;curRecipeRows=[];
@@ -6983,6 +7116,7 @@ function openAddMenuItem(){
   document.getElementById('mi-price').value='';
   document.getElementById('mi-name-en').value='';
   document.getElementById('mi-cat').value='';
+  resetMenuItemImageUI();
   renderRecipeRows();
   document.getElementById('menuItemModal').classList.add('open');
 }
@@ -7005,6 +7139,13 @@ function openEditMenuItem(id){
   document.getElementById('mi-price').value=m.price;
   document.getElementById('mi-name-en').value=m.e||'';
   document.getElementById('mi-cat').value=m.c||'';
+  resetMenuItemImageUI();
+  if(m.img){
+    curMenuItemImageUrl=m.img;
+    const prev=document.getElementById('mi-image-preview');
+    prev.src=m.img;prev.style.display='';
+    document.getElementById('mi-image-remove-btn').style.display='';
+  }
   renderRecipeRows();
   document.getElementById('menuItemModal').classList.add('open');
 }
@@ -7027,20 +7168,135 @@ function saveMenuItem(){
     // typed one number and see a different one looking back at them.
     return {r:row.r,q:convertQty(row.q,displayUom,baseUnit),uom:displayUom};
   });
+  const imageFile=curMenuItemImageFile,imageRemoved=curMenuItemImageRemoved;
+  let savedId;
   if(editingMenuId){
     const idx=S.menu.findIndex(x=>x.id===editingMenuId);
     S.menu[idx]={...S.menu[idx],n,e,c,price,recipe};
+    if(imageRemoved) S.menu[idx].img=null;
+    savedId=editingMenuId;
     toast(t('✅ تم تعديل الصنف'),'suc');
   }else{
-    S.menu.push({id:'MI'+Date.now().toString(36).toUpperCase(),n,e,c,price,recipe});
+    savedId='MI'+Date.now().toString(36).toUpperCase();
+    S.menu.push({id:savedId,n,e,c,price,recipe});
     toast(t('✅ تمت إضافة الصنف'),'suc');
   }
   save();renderMenuList();closeM('menuItemModal');
+  if(imageFile) uploadMenuItemImage(savedId,imageFile);
 }
 function deleteMenuItem(id){
   if(!canManageMenuUI()){toast(t('⚠️ إدارة المنيو متاحة للإدارة أو لمن يملك صلاحية إدارة المنيو فقط'),'wrn');return;}
   if(!confirm(t('هل تريد حذف هذا الصنف من المنيو؟')))return;
   S.menu=S.menu.filter(x=>x.id!==id);save();renderMenuList();toast(t('🗑️ تم الحذف'),'wrn');
+}
+
+// ══════════════════════════════════════════════
+//  QUICK BILLING (POS-STYLE MENU) — pick items from an image-tile grid like
+//  a restaurant cashier screen, build a cart, then post the ticket straight
+//  into the open cycle's Sales tab (same c.sales[menuId] tally the manual
+//  entry table and the external POS-import both already feed into).
+// ══════════════════════════════════════════════
+let posCart={};
+function posTargetCycle(){
+  const todayStr=new Date().toISOString().slice(0,10);
+  let c=curCycleId?getCycle(curCycleId):null;
+  if(!c||c.closed) c=findCycleForDate(todayStr);
+  return (c&&!c.closed)?c:null;
+}
+function openPosBilling(){
+  if(!S.menu.length){toast(t('⚠️ لا توجد أصناف مباعة معرّفة بعد — أضفها من شاشة المنيو أولًا'),'wrn');return;}
+  posCart={};
+  const search=document.getElementById('posSearch');if(search) search.value='';
+  populatePosCatFilter();
+  renderPosGrid();
+  renderPosCart();
+  document.getElementById('posModal').classList.add('open');
+}
+function populatePosCatFilter(){
+  const sel=document.getElementById('posCatFilter');
+  const opts=[`<option value="">${t('كل الأقسام')}</option>`];
+  Object.keys(S.cats||{}).forEach(cid=>{
+    const cat=S.cats[cid];
+    opts.push(`<option value="${cid}">${cat.i||''} ${cat.l}</option>`);
+  });
+  sel.innerHTML=opts.join('');
+}
+function renderPosGrid(){
+  const cont=document.getElementById('posGrid');if(!cont)return;
+  const term=(document.getElementById('posSearch').value||'').trim().toLowerCase();
+  const catFilter=document.getElementById('posCatFilter').value;
+  let list=S.menu;
+  if(term) list=list.filter(m=>m.n.toLowerCase().includes(term)||(m.e||'').toLowerCase().includes(term));
+  if(catFilter) list=list.filter(m=>m.c===catFilter);
+  if(!list.length){cont.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted)">${t('لا توجد أصناف مطابقة')}</div>`;return;}
+  cont.innerHTML=list.map(m=>`
+    <div class="pos-tile" onclick="posAddToCart('${m.id}')" title="${t('إضافة للسلة')}">
+      <div class="pos-tile-img">${m.img?`<img src="${m.img.replace(/"/g,'&quot;')}" alt="">`:'<span>🍽️</span>'}</div>
+      <div class="pos-tile-name">${m.n}</div>
+      <div class="pos-tile-price">${fmt(m.price)}</div>
+    </div>`).join('');
+}
+function posAddToCart(mid){
+  posCart[mid]=(posCart[mid]||0)+1;
+  renderPosCart();
+}
+function posChangeQty(mid,delta){
+  if(!posCart[mid]) return;
+  posCart[mid]+=delta;
+  if(posCart[mid]<=0) delete posCart[mid];
+  renderPosCart();
+}
+function posRemoveFromCart(mid){ delete posCart[mid]; renderPosCart(); }
+function posClearCart(){ posCart={}; renderPosCart(); }
+function posCartTotal(){
+  return Object.entries(posCart).reduce((sum,[mid,qty])=>{
+    const m=S.menu.find(x=>x.id===mid);
+    return sum+(m?m.price*qty:0);
+  },0);
+}
+function renderPosCart(){
+  const cont=document.getElementById('posCartRows');if(!cont)return;
+  const entries=Object.entries(posCart);
+  if(!entries.length){
+    cont.innerHTML=`<div style="text-align:center;color:var(--muted);padding:20px;font-size:12px">${t('السلة فارغة — اضغط على صنف من المنيو لإضافته')}</div>`;
+  }else{
+    cont.innerHTML=entries.map(([mid,qty])=>{
+      const m=S.menu.find(x=>x.id===mid);if(!m)return'';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;font-size:12.5px">${m.n}</div>
+        <div class="qty-wrap">
+          <button class="qbtn" onclick="posChangeQty('${mid}',-1)">−</button>
+          <span style="min-width:20px;text-align:center;font-family:var(--mono)">${qty}</span>
+          <button class="qbtn" onclick="posChangeQty('${mid}',1)">+</button>
+        </div>
+        <div style="width:56px;text-align:left;font-family:var(--mono);font-size:11.5px">${fmt(m.price*qty)}</div>
+        <button class="row-del" onclick="posRemoveFromCart('${mid}')">✕</button>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('posCartTotal').textContent=fmt(posCartTotal());
+  const warnEl=document.getElementById('posCycleWarning');
+  const btn=document.getElementById('posCheckoutBtn');
+  if(!posTargetCycle()){
+    warnEl.style.display='';
+    warnEl.textContent=t('⚠️ لا توجد جولة يومية مفتوحة تغطي اليوم — افتح الجولة اليومية أولًا لتسجيل المبيعات');
+    btn.disabled=true;
+  }else{
+    warnEl.style.display='none';
+    btn.disabled=!entries.length;
+  }
+}
+function posCheckout(){
+  const entries=Object.entries(posCart);
+  if(!entries.length) return;
+  const c=posTargetCycle();
+  if(!c){toast(t('⚠️ لا توجد جولة يومية مفتوحة تغطي اليوم'),'err');return;}
+  entries.forEach(([mid,qty])=>{ c.sales[mid]=(c.sales[mid]||0)+qty; });
+  save();
+  posCart={};
+  renderPosCart();
+  if(curCycleId===c.id&&curCycleTab==='sales') renderCycleBody();
+  toast(t('✅ تم تسجيل الفاتورة على الجولة اليومية'),'suc');
 }
 
 // ══════════════════════════════════════════════
@@ -10376,6 +10632,9 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
       </div>
       <div className={`mn-view-btn${curView==='reports'?' active':''}`} id="vnReports" onClick={()=>showView('reports')}>
         <span>{t('📊 مركز التقارير')}</span>
+      </div>
+      <div className="mn-view-btn" id="vnPos" onClick={openPosBilling}>
+        <span>{t('🧾 فوترة سريعة')}</span>
       </div>
       <div className="mn-div"></div>
 

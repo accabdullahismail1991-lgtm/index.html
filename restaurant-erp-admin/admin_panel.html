@@ -1,0 +1,1879 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Restaurant ERP — لوحة التحكم</title>
+<!-- Vendored locally (not loaded from a CDN) so the app's own offline
+     support doesn't itself depend on reaching the internet the very
+     first time it's opened -- some of the environments this is meant to
+     work offline in (a restaurant's back office, a factory floor) may
+     block arbitrary external hosts entirely. -->
+<script src="./dexie.min.js"></script>
+<style>
+  :root{
+    --ink:#1a2030; --muted:#68748a; --border:#e3e6ee; --bg:#f2f3f8; --card:#ffffff;
+    --brand:#3730a3; --brand-dark:#2b2680; --danger:#d0453f; --ok:#1f9d68; --card2:#f5f6fa;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);}
+  .hidden{display:none !important;}
+
+  /* ---- login screen ---- */
+  #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .login-card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 30px rgba(20,20,40,.08);
+    width:100%;max-width:400px;padding:32px 28px;}
+  .login-card h1{font-size:18px;margin:0 0 20px;}
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--ink);margin:12px 0 6px;}
+  input,select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;
+    background:#fafbfe;color:var(--ink);font-family:inherit;}
+  input:focus,select:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:var(--brand);}
+  button{padding:9px 16px;border:none;border-radius:8px;background:var(--brand);color:#fff;
+    font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+  button:hover{background:var(--brand-dark);}
+  button.ghost{background:none;color:var(--brand);border:1px solid var(--brand);}
+  button.danger{background:var(--danger);}
+  button:disabled{opacity:.6;cursor:default;}
+  .full{width:100%;margin-top:16px;}
+  .msg{margin-top:14px;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.7;display:none;}
+  .msg.err{display:block;background:rgba(208,69,63,.08);border:1px solid rgba(208,69,63,.35);color:#a5322d;}
+  .msg.ok{display:block;background:rgba(31,157,104,.08);border:1px solid rgba(31,157,104,.35);color:#0f6b45;}
+
+  /* ---- app shell ---- */
+  #appScreen{min-height:100vh;display:flex;flex-direction:column;}
+  header{background:var(--brand);color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;}
+  header h1{font-size:16px;margin:0;}
+  header .who{font-size:12px;opacity:.85;}
+  nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:2px;padding:6px 20px;position:sticky;top:0;z-index:5;}
+  nav button{background:none;color:var(--muted);border:none;border-radius:6px;padding:10px 14px;font-weight:600;font-size:13px;border-bottom:2px solid transparent;white-space:nowrap;}
+  nav button.active{color:var(--brand);background:var(--card2);border-bottom-color:var(--brand);}
+  nav button:hover{background:var(--card2);}
+  main{flex:1;padding:24px;max-width:1320px;width:100%;margin:0 auto;}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px;box-shadow:0 1px 3px rgba(20,20,40,.04);}
+  .panel h2{font-size:14.5px;margin:0 0 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .table-wrap{overflow-x:auto;}
+  .table-wrap table{min-width:520px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
+  th{color:var(--muted);font-weight:600;font-size:12px;}
+  tr:last-child td{border-bottom:none;}
+  tbody tr:hover td{background:var(--card2);}
+  .row-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:10px;}
+  .row-form > div{flex:1;min-width:140px;}
+  .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+  .pill.raw{background:rgba(55,48,163,.1);color:var(--brand);}
+  .pill.semi{background:rgba(31,157,104,.1);color:var(--ok);}
+  .pill.inactive{background:rgba(104,116,138,.12);color:var(--muted);}
+  .link-btn{background:none;border:none;color:var(--brand);font-size:12px;font-weight:700;cursor:pointer;padding:0;}
+  .link-btn:hover{text-decoration:underline;}
+  .link-btn.danger-link{color:var(--danger);}
+  .recipe-box{margin-top:10px;background:var(--card2);border-radius:8px;padding:12px;}
+  .recipe-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;}
+  .recipe-row select{flex:2;min-width:120px;}
+  .recipe-row input{flex:1;min-width:80px;}
+  .empty{color:var(--muted);font-size:12.5px;padding:10px 0;white-space:normal;}
+  .hint{color:var(--muted);font-size:12px;margin-top:10px;}
+  .stats-row{display:flex;flex-wrap:wrap;gap:12px;}
+  .stat-tile{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:130px;}
+  .stat-tile .label{font-size:11.5px;color:var(--muted);margin-bottom:4px;}
+  .stat-tile .value{font-size:19px;font-weight:700;}
+  #apiBaseRow{font-size:11px;color:rgba(255,255,255,.75);}
+  #apiBaseRow input{width:180px;padding:4px 8px;font-size:11px;background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff;}
+
+  /* menu grid picker (Sales -- new order), same idea as a restaurant
+     cashier screen: browse a tile per item instead of a name in a
+     dropdown list, tap a tile to add/increment it in the order below. */
+  .menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;max-height:360px;overflow-y:auto;padding:2px;}
+  .menu-tile{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px;cursor:pointer;transition:all .12s;text-align:center;user-select:none;}
+  .menu-tile:hover{border-color:var(--brand);box-shadow:0 2px 8px rgba(20,20,40,.08);}
+  .menu-tile:active{transform:scale(.97);}
+  .menu-tile-img{width:100%;aspect-ratio:1/1;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden;margin-bottom:6px;}
+  .menu-tile-img img{width:100%;height:100%;object-fit:cover;}
+  .menu-tile-name{font-size:11.5px;font-weight:600;line-height:1.3;margin-bottom:2px;}
+  .menu-tile-price{font-size:11px;color:var(--brand);font-weight:700;}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h1>🍽️ Restaurant ERP — لوحة التحكم</h1>
+    <label>عنوان الـ API</label>
+    <input id="apiBase" value="http://localhost:3000">
+    <label>رقم الجوال</label>
+    <input id="phone" value="+966500000000">
+    <label>كلمة المرور</label>
+    <input id="password" type="password" value="ChangeMe123!">
+    <button class="full" id="loginBtn" onclick="doLogin()">تسجيل الدخول</button>
+    <div id="loginMsg" class="msg"></div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="appScreen" class="hidden">
+  <header>
+    <h1>🍽️ Restaurant ERP</h1>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span class="who" id="whoAmI"></span>
+      <button class="ghost" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.4)" onclick="doLogout()">خروج</button>
+    </div>
+  </header>
+  <div id="offlineBanner" class="msg" style="display:none;margin:12px 20px 0"></div>
+  <nav>
+    <button id="tab-branches" class="active" onclick="switchTab('branches')">🏢 الفروع</button>
+    <button id="tab-ingredients" onclick="switchTab('ingredients')">🥕 الأصناف الخام والنصف مصنّعة</button>
+    <button id="tab-items" onclick="switchTab('items')">📋 أصناف المنيو</button>
+    <button id="tab-inventory" onclick="switchTab('inventory')">📦 المخزون</button>
+    <button id="tab-sales" onclick="switchTab('sales')">🧾 المبيعات</button>
+    <button id="tab-purchasing" onclick="switchTab('purchasing')">🛒 المشتريات</button>
+    <button id="tab-production" onclick="switchTab('production')">🏭 الإنتاج</button>
+    <button id="tab-transfers" onclick="switchTab('transfers')">🚚 التحويلات</button>
+    <button id="tab-promotions" onclick="switchTab('promotions')">🎁 العروض</button>
+    <button id="tab-customers" onclick="switchTab('customers')">👤 العملاء</button>
+    <button id="tab-analytics" onclick="switchTab('analytics')">📊 التقارير</button>
+  </nav>
+  <main>
+    <div id="globalMsg" class="msg" style="margin-bottom:14px"></div>
+
+    <!-- BRANCHES -->
+    <div id="view-branches" class="view">
+      <div class="panel">
+        <h2>الفروع الحالية</h2>
+        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>الحالة</th></tr></thead>
+          <tbody id="branchesTable"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>➕ إضافة فرع جديد</h2>
+        <div class="row-form">
+          <div><label>الاسم</label><input id="b-name" placeholder="فرع الرياض"></div>
+          <div><label>النوع</label>
+            <select id="b-type">
+              <option value="BRANCH">فرع</option>
+              <option value="CENTRAL_KITCHEN">مطبخ مركزي</option>
+              <option value="WAREHOUSE">مستودع</option>
+            </select>
+          </div>
+          <div><label>العنوان (اختياري)</label><input id="b-address" placeholder="شارع الملك فهد"></div>
+          <div><label>الرقم الضريبي (اختياري -- لازم لفوترة ZATCA)</label><input id="b-vat" placeholder="15 رقمًا، يبدأ وينتهي بـ 3" maxlength="15"></div>
+          <div><button onclick="createBranch()">إضافة</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INGREDIENTS -->
+    <div id="view-ingredients" class="view hidden">
+      <div class="panel">
+        <h2>الأصناف الحالية</h2>
+        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الوحدة</th><th>النوع</th><th>حد أدنى</th><th></th></tr></thead>
+          <tbody id="ingredientsTable"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>➕ إضافة صنف جديد</h2>
+        <div class="row-form">
+          <div><label>الاسم</label><input id="i-name" placeholder="طماطم"></div>
+          <div><label>الوحدة</label>
+            <select id="i-unit">
+              <option value="g">جرام (g)</option>
+              <option value="kg">كجم (kg)</option>
+              <option value="ml">ملليلتر (ml)</option>
+              <option value="l">لتر (l)</option>
+              <option value="pcs">قطعة (pcs)</option>
+            </select>
+          </div>
+          <div><label>النوع</label>
+            <select id="i-kind">
+              <option value="RAW_MATERIAL">خامة</option>
+              <option value="SEMI_FINISHED">نصف مصنّع</option>
+            </select>
+          </div>
+          <div><label>الحد الأدنى للتنبيه</label><input id="i-threshold" type="number" value="0"></div>
+          <div><button onclick="createIngredient()">إضافة</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ITEMS -->
+    <div id="view-items" class="view hidden">
+      <div class="panel">
+        <h2>أصناف المنيو الحالية</h2>
+        <div class="table-wrap"><table><thead><tr><th>الصورة</th><th>الاسم</th><th>القسم</th><th>السعر</th><th>التكلفة الحالية</th><th>الحالة</th><th></th></tr></thead>
+          <tbody id="itemsTable"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>➕ إضافة صنف منيو جديد</h2>
+        <div class="row-form">
+          <div><label>الاسم</label><input id="m-name" placeholder="بيتزا مارجريتا"></div>
+          <div><label>القسم</label><input id="m-category" placeholder="رئيسي"></div>
+          <div><label>السعر</label><input id="m-price" type="number" step="0.01" placeholder="35"></div>
+          <div><button onclick="createItem()">إضافة</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVENTORY -->
+    <div id="view-inventory" class="view hidden">
+      <div class="panel">
+        <h2>الأرصدة الحالية</h2>
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>تصفية حسب الموقع</label>
+            <select id="inv-filter-location" onchange="loadInventoryBalances()"><option value="">كل المواقع</option></select>
+          </div>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>الموقع</th><th>الصنف</th><th>الرصيد</th></tr></thead>
+          <tbody id="inventoryTable"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>➕ استلام / تسوية مخزون</h2>
+        <div class="row-form">
+          <div><label>الموقع</label><select id="inv-r-location"></select></div>
+          <div><label>الصنف</label><select id="inv-r-ingredient"></select></div>
+          <div><label>الكمية</label><input id="inv-r-qty" type="number" step="0.001" placeholder="100"></div>
+          <div><label>تكلفة الوحدة</label><input id="inv-r-cost" type="number" step="0.0001" placeholder="5"></div>
+          <div><button onclick="receiveInventory()">استلام</button></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>🗑️ تسجيل تالف (Waste)</h2>
+        <div class="row-form">
+          <div><label>الموقع</label><select id="inv-w-location"></select></div>
+          <div><label>الصنف</label><select id="inv-w-ingredient"></select></div>
+          <div><label>الكمية</label><input id="inv-w-qty" type="number" step="0.001" placeholder="5"></div>
+          <div><button class="danger" onclick="recordWaste()">تسجيل تالف</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SALES -->
+    <div id="view-sales" class="view hidden">
+      <div class="panel">
+        <h2>الورديات</h2>
+        <div class="table-wrap"><table><thead><tr><th>الموقع</th><th>الحالة</th><th>رأس المال</th><th>المتوقع</th><th>المعدود</th><th>الفرق</th><th></th></tr></thead>
+          <tbody id="shiftsTable"></tbody>
+        </table></div>
+        <div class="row-form">
+          <div><label>الموقع</label><select id="sh-location"></select></div>
+          <div><label>رأس المال الافتتاحي</label><input id="sh-float" type="number" step="0.01" value="200"></div>
+          <div><button onclick="openShift()">فتح وردية</button></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>➕ طلب جديد</h2>
+        <div class="row-form">
+          <div><label>الوردية المفتوحة</label><select id="ord-shift"></select></div>
+          <div><label>القناة</label>
+            <select id="ord-channel">
+              <option value="DINE_IN">صالة</option>
+              <option value="TAKEAWAY">تيك أواي</option>
+              <option value="DRIVE_THRU">Drive-thru</option>
+              <option value="DELIVERY_PARTNER">توصيل خارجي</option>
+              <option value="BRAND_APP">تطبيق العلامة</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <label>اختر من المنيو (اضغط على الصنف لإضافته)</label>
+          <input type="text" placeholder="🔍 ابحث عن صنف..." style="margin-bottom:8px" oninput="renderOrderMenuGrid(this.value)">
+          <div id="ord-menu-grid" class="menu-grid"></div>
+        </div>
+        <div id="ord-lines" style="margin-top:14px"></div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button class="ghost" onclick="addOrderLineRow()">➕ صنف (يدويًا)</button>
+          <button onclick="createOrder()">إنشاء الطلب</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>الطلبات</h2>
+        <div class="table-wrap"><table><thead><tr><th>الموقع</th><th>القناة</th><th>الحالة</th><th>الإجمالي</th><th></th></tr></thead>
+          <tbody id="ordersTable"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- PURCHASING -->
+    <div id="view-purchasing" class="view hidden">
+      <div class="panel">
+        <h2>الموردون</h2>
+        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الجوال</th><th>النطاق</th></tr></thead>
+          <tbody id="suppliersTable"></tbody>
+        </table></div>
+        <div class="row-form">
+          <div><label>الاسم</label><input id="sup-name" placeholder="مورد الخضار"></div>
+          <div><label>الجوال (اختياري)</label><input id="sup-phone" placeholder="+9665..."></div>
+          <div><label>مخصص لموقع (اختياري)</label><select id="sup-location"><option value="">كل المواقع</option></select></div>
+          <div><button onclick="createSupplier()">إضافة</button></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>مصفوفة الموافقات (Approval Matrix)</h2>
+        <div class="table-wrap"><table><thead><tr><th>النوع</th><th>الحد الأقصى</th><th>الدور المطلوب (Role ID)</th><th>الموقع</th><th></th></tr></thead>
+          <tbody id="approvalRulesTable"></tbody>
+        </table></div>
+        <div class="row-form">
+          <div><label>الحد الأقصى (اتركه فارغ = بلا حد)</label><input id="rule-max" type="number" step="0.01" placeholder="5000"></div>
+          <div><label>Role ID المطلوب للاعتماد</label><input id="rule-role" placeholder="الصق معرّف الدور"></div>
+          <div><label>مخصص لموقع (اختياري)</label><select id="rule-location"><option value="">كل المواقع</option></select></div>
+          <div><button onclick="createApprovalRule()">إضافة قاعدة</button></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>➕ أمر شراء جديد</h2>
+        <div class="row-form">
+          <div><label>الموقع</label><select id="po-location"></select></div>
+          <div><label>المورد</label><select id="po-supplier"></select></div>
+        </div>
+        <div id="po-lines"></div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button class="ghost" onclick="addPoLineRow()">➕ مكوّن</button>
+          <button onclick="createPurchaseOrder()">إنشاء أمر الشراء</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>أوامر الشراء</h2>
+        <div class="table-wrap"><table><thead><tr><th>المورد</th><th>الموقع</th><th>الحالة</th><th>الإجمالي</th><th></th></tr></thead>
+          <tbody id="purchaseOrdersTable"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- PRODUCTION -->
+    <div id="view-production" class="view hidden">
+      <div class="panel">
+        <h2>➕ أمر إنتاج جديد</h2>
+        <div class="row-form">
+          <div><label>الموقع</label><select id="prod-location"></select></div>
+          <div><label>الصنف الناتج (نصف مصنّع)</label><select id="prod-output"></select></div>
+          <div><label>الكمية المطلوب إنتاجها</label><input id="prod-qty" type="number" step="0.001" placeholder="100"></div>
+          <div><label><input type="checkbox" id="prod-override" style="width:auto;display:inline" onchange="toggleProdOverride()"> تخصيص المكوّنات يدويًا</label></div>
+          <div><button onclick="createProductionOrder()">إنشاء</button></div>
+        </div>
+        <div id="prod-lines" class="hidden"></div>
+        <div id="prod-lines-actions" class="hidden" style="margin-top:8px">
+          <button class="ghost" onclick="addProdLineRow()">➕ مكوّن</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>أوامر الإنتاج</h2>
+        <div class="table-wrap"><table><thead><tr><th>الموقع</th><th>الصنف الناتج</th><th>الكمية</th><th>الحالة</th><th></th></tr></thead>
+          <tbody id="productionOrdersTable"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- TRANSFERS -->
+    <div id="view-transfers" class="view hidden">
+      <div class="panel">
+        <h2>➕ تحويل جديد (إرسال)</h2>
+        <div class="row-form">
+          <div><label>من موقع</label><select id="tr-from"></select></div>
+          <div><label>إلى موقع</label><select id="tr-to"></select></div>
+        </div>
+        <div id="tr-lines"></div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button class="ghost" onclick="addTransferLineRow()">➕ مكوّن</button>
+          <button onclick="createTransfer()">إرسال التحويل</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>التحويلات</h2>
+        <div class="table-wrap"><table><thead><tr><th>من</th><th>إلى</th><th>الحالة</th><th></th></tr></thead>
+          <tbody id="transfersTable"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- PROMOTIONS -->
+    <div id="view-promotions" class="view hidden">
+      <div class="panel">
+        <h2>العروض الحالية</h2>
+        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>النوع</th><th>القيمة</th><th>القناة</th><th>الفترة</th><th>الحالة</th><th></th></tr></thead>
+          <tbody id="promotionsTable"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>➕ عرض جديد</h2>
+        <div class="row-form">
+          <div><label>الاسم</label><input id="promo-name" placeholder="خصم الافتتاح"></div>
+          <div><label>النوع</label>
+            <select id="promo-type">
+              <option value="PERCENTAGE_DISCOUNT">نسبة مئوية</option>
+              <option value="FIXED_DISCOUNT">مبلغ ثابت</option>
+            </select>
+          </div>
+          <div><label>القيمة (% أو ر.س حسب النوع)</label><input id="promo-value" type="number" step="0.01" placeholder="10"></div>
+          <div><label>مخصص لقناة (اختياري)</label>
+            <select id="promo-channel">
+              <option value="">كل القنوات</option>
+              <option value="DINE_IN">صالة</option>
+              <option value="TAKEAWAY">تيك أواي</option>
+              <option value="DRIVE_THRU">Drive-thru</option>
+              <option value="DELIVERY_PARTNER">توصيل خارجي</option>
+              <option value="BRAND_APP">تطبيق العلامة</option>
+            </select>
+          </div>
+          <div><label>يبدأ (اختياري)</label><input id="promo-starts" type="datetime-local"></div>
+          <div><label>ينتهي (اختياري)</label><input id="promo-ends" type="datetime-local"></div>
+          <div><button onclick="createPromotion()">إضافة</button></div>
+        </div>
+        <div class="hint">* أنواع "اشترِ واحصل على" و"الكومبو" غير مدعومة بعد في محرك تطبيق العروض تلقائيًا.</div>
+      </div>
+    </div>
+
+    <!-- CUSTOMERS / LOYALTY -->
+    <div id="view-customers" class="view hidden">
+      <div class="panel">
+        <h2>العملاء</h2>
+        <div class="row-form" style="margin-bottom:10px">
+          <div><label>بحث بالجوال</label><input id="cust-search" placeholder="+9665..." oninput="loadCustomers()"></div>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الجوال</th><th>النقاط</th><th></th></tr></thead>
+          <tbody id="customersTable"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>➕ عميل جديد</h2>
+        <div class="row-form">
+          <div><label>الجوال</label><input id="cust-phone" placeholder="+9665..."></div>
+          <div><label>الاسم (اختياري)</label><input id="cust-name" placeholder="اسم العميل"></div>
+          <div><button onclick="createCustomer()">إضافة</button></div>
+        </div>
+        <div class="hint">* نقطة واحدة لكل 10 ر.س من إجمالي الفاتورة عند الدفع، وقيمة النقطة عند الاستبدال 0.10 ر.س.</div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS / BI -->
+    <div id="view-analytics" class="view hidden">
+      <div class="panel">
+        <h2>عوامل التصفية</h2>
+        <div class="row-form">
+          <div><label>الموقع</label><select id="an-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="an-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="an-to" type="date"></div>
+          <div><button onclick="loadAnalytics()">تحديث التقارير</button></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>ملخص المبيعات</h2>
+        <div id="an-summary-cards" class="stats-row"></div>
+        <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>القناة</th><th>عدد الطلبات</th><th>الإيراد</th></tr></thead>
+          <tbody id="an-channel-table"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>الأصناف الأكثر مبيعًا</h2>
+        <div class="table-wrap"><table><thead><tr><th>الصنف</th><th>الكمية</th><th>الإيراد</th></tr></thead>
+          <tbody id="an-topitems-table"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>تكلفة الطعام (Food Cost)</h2>
+        <div id="an-foodcost-cards" class="stats-row"></div>
+        <div class="hint">* التكلفة محسوبة من التكلفة الفعلية لدفعات المخزون التي استُهلكت فعليًا، وليست تقديرًا نظريًا من الوصفة.</div>
+      </div>
+      <div class="panel">
+        <h2>تقييم المخزون الحالي</h2>
+        <div class="table-wrap"><table><thead><tr><th>الخامة</th><th>الكمية</th><th>القيمة</th></tr></thead>
+          <tbody id="an-valuation-table"></tbody>
+        </table></div>
+        <div id="an-valuation-total" style="margin-top:8px;font-weight:700"></div>
+      </div>
+      <div class="panel">
+        <h2>تنبيهات انخفاض المخزون</h2>
+        <div class="table-wrap"><table><thead><tr><th>الخامة</th><th>الموقع</th><th>الكمية الحالية</th><th>الحد الأدنى</th></tr></thead>
+          <tbody id="an-lowstock-table"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>تصدير التقارير (Excel / PDF)</h2>
+        <div class="hint">يستخدم نفس فلتر الموقع والفترة أعلاه. التقرير المُولَّد يبقى محفوظًا هنا للتحميل لاحقًا -- بما فيها النسخة التي تتولّد تلقائيًا كل يوم لكل فرع (docs/DECISIONS.md).</div>
+        <div class="row-form">
+          <div><label>الصيغة</label>
+            <select id="rp-format">
+              <option value="XLSX">Excel (XLSX)</option>
+              <option value="PDF">PDF</option>
+              <option value="BOTH">Excel + PDF</option>
+            </select>
+          </div>
+          <div><button onclick="generateReportNow()" id="rp-generate-btn">📄 توليد تقرير الآن</button></div>
+          <div><button class="ghost" onclick="generateAllReportsNow()" id="rp-generate-all-btn">🗓️ توليد دفعة اليوم لكل الفروع</button></div>
+        </div>
+        <div id="rp-msg" class="msg"></div>
+        <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>النوع</th><th>الصيغة</th><th>الموقع</th><th>الفترة</th><th>تاريخ التوليد</th><th></th></tr></thead>
+          <tbody id="rp-list-table"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+let accessToken = null;
+let ingredientsCache = [];
+let locationsCache = [];
+let menuItemsCache = [];
+
+// Remembers the API URL across visits (e.g. a deployed Render URL) so it
+// doesn't need retyping every time -- login itself still isn't persisted,
+// same session-only behavior as before.
+(function restoreApiBase() {
+  try {
+    const saved = localStorage.getItem('restaurant_erp_admin_api_base');
+    if (saved) document.getElementById('apiBase').value = saved;
+  } catch (e) { /* private browsing or storage disabled -- just keeps the default */ }
+})();
+document.getElementById('apiBase').addEventListener('change', (e) => {
+  try { localStorage.setItem('restaurant_erp_admin_api_base', e.target.value.trim()); } catch (err) { /* ignore */ }
+});
+
+// App-shell caching only (see service-worker.js) -- requires a secure
+// context (https or localhost), same browser restriction Service Workers
+// always have; silently does nothing under file:// or plain http.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => { /* not a secure context -- app still works fully online */ });
+  });
+}
+
+const UNIT_OPTIONS = [
+  { value: 'g', label: 'جرام (g)' },
+  { value: 'kg', label: 'كجم (kg)' },
+  { value: 'ml', label: 'ملليلتر (ml)' },
+  { value: 'l', label: 'لتر (l)' },
+  { value: 'pcs', label: 'قطعة (pcs)' },
+];
+function unitOptionsHtml(selected) {
+  return UNIT_OPTIONS.map((u) => `<option value="${u.value}" ${u.value === selected ? 'selected' : ''}>${u.label}</option>`).join('');
+}
+function locationOptions() { return locationsCache.map((l) => `<option value="${l.id}">${l.name}</option>`).join(''); }
+function ingredientOptions(filterFn) {
+  const list = filterFn ? ingredientsCache.filter(filterFn) : ingredientsCache;
+  return list.map((i) => `<option value="${i.id}">${i.name} (${i.unit})</option>`).join('');
+}
+async function ensureIngredientsCache() { if (!ingredientsCache.length) ingredientsCache = await api('/ingredients'); }
+async function ensureMenuItemsCache() { if (!menuItemsCache.length) menuItemsCache = await api('/items'); }
+
+function apiBase() { return document.getElementById('apiBase').value.trim().replace(/\/$/, ''); }
+
+// ---------------- Offline support ----------------
+// Unlike apps/pos-web's offline layer (a bespoke LocalOrder queue for one
+// well-understood action: sell/pay/void an order), this admin panel spans
+// ten unrelated domains with dozens of mutating endpoints -- a bespoke
+// queue entry type per action isn't practical here. Instead this is a
+// GENERIC request-replay queue (method+path+body, whatever they are) that
+// every existing load*/create*/update*/delete* function gets for free by
+// going through api(), with no per-function changes anywhere else in this
+// file. Same core distinction as pos-web's isNetworkError though: fetch()
+// rejects with a TypeError specifically when the request never reached a
+// server (offline/DNS/connection-refused) -- a real 4xx/5xx means the
+// server WAS reached and must never be queued (e.g. a genuine validation
+// error shouldn't silently retry forever).
+const offlineDb = new Dexie('restaurant_erp_admin_offline_v1');
+offlineDb.version(1).stores({ cache: 'key', queue: '++id, ts' });
+
+function isNetworkError(e) { return e instanceof TypeError; }
+
+async function updateOfflineBanner() {
+  const el = document.getElementById('offlineBanner');
+  if (!el) return;
+  const pending = await offlineDb.queue.count();
+  if (!navigator.onLine) {
+    el.className = 'msg err';
+    el.style.display = 'block';
+    el.textContent = '🔌 غير متصل بالإنترنت -- البيانات المعروضة من آخر نسخة محفوظة محليًا'
+      + (pending ? `، و${pending} عملية بانتظار المزامنة عند عودة الاتصال` : '');
+  } else if (pending) {
+    el.className = 'msg ok';
+    el.style.display = 'block';
+    el.textContent = `🔄 جارٍ مزامنة ${pending} عملية كانت معلّقة أثناء انقطاع الاتصال...`;
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// Replays every queued mutation in the order it was made -- exactly as if
+// the user had been online the whole time -- stopping at the first REAL
+// network failure (still offline) so ordering is preserved for the next
+// attempt. A real server rejection once back online (e.g. the underlying
+// resource changed or was deleted meanwhile) is not silently retried
+// forever: it's dropped and surfaced via the global banner for a human to
+// review and redo, same "don't guess a business decision" principle
+// pos-web's syncEngine documents for its own sync_failed state.
+let syncingQueue = false;
+async function replayOfflineQueue() {
+  if (syncingQueue || !navigator.onLine) return;
+  syncingQueue = true;
+  try {
+    const items = await offlineDb.queue.orderBy('ts').toArray();
+    for (const item of items) {
+      try {
+        const res = await fetch(apiBase() + item.path, {
+          method: item.method,
+          headers: Object.assign({ 'Content-Type': 'application/json' }, accessToken ? { Authorization: 'Bearer ' + accessToken } : {}),
+          body: item.body,
+        });
+        if (!res.ok) {
+          let msg = 'HTTP ' + res.status;
+          try { const j = await res.json(); if (j && j.message) msg = Array.isArray(j.message) ? j.message.join('، ') : j.message; } catch (e) { /* no body */ }
+          await offlineDb.queue.delete(item.id);
+          flashGlobal('⚠️ فشلت عملية كانت بانتظار المزامنة ولم تُطبَّق (' + item.method + ' ' + item.path + '): ' + msg, 'err');
+          continue;
+        }
+        await offlineDb.queue.delete(item.id);
+      } catch (e) {
+        if (isNetworkError(e)) return; // offline again -- stop, next 'online'/interval retries the rest
+        throw e;
+      }
+    }
+  } finally {
+    syncingQueue = false;
+    await updateOfflineBanner();
+    // Refresh whatever tab is currently open so anything that just synced
+    // actually shows up instead of only appearing after a manual reload.
+    const activeTab = TABS.find((t) => !document.getElementById('view-' + t).classList.contains('hidden'));
+    if (activeTab) switchTab(activeTab);
+  }
+}
+window.addEventListener('online', () => { updateOfflineBanner(); replayOfflineQueue(); });
+window.addEventListener('offline', updateOfflineBanner);
+setInterval(replayOfflineQueue, 20000); // safety net, same cadence as pos-web's syncEngine
+
+async function api(path, options) {
+  options = options || {};
+  const method = (options.method || 'GET').toUpperCase();
+  options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+  if (accessToken) options.headers['Authorization'] = 'Bearer ' + accessToken;
+
+  if (method === 'GET') {
+    try {
+      const res = await fetch(apiBase() + path, options);
+      let data = null;
+      try { data = await res.json(); } catch (e) { /* empty body */ }
+      if (!res.ok) {
+        if (res.status === 401) { doLogout('انتهت صلاحية الجلسة، سجّل الدخول تاني'); }
+        throw new Error((data && data.message) ? (Array.isArray(data.message) ? data.message.join('، ') : data.message) : ('HTTP ' + res.status));
+      }
+      await offlineDb.cache.put({ key: path, data, cachedAt: new Date().toISOString() });
+      return data;
+    } catch (e) {
+      if (isNetworkError(e)) {
+        const cached = await offlineDb.cache.get(path);
+        if (cached) { updateOfflineBanner(); return cached.data; }
+      }
+      throw e;
+    }
+  }
+
+  try {
+    const res = await fetch(apiBase() + path, options);
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* empty body */ }
+    if (!res.ok) {
+      if (res.status === 401) { doLogout('انتهت صلاحية الجلسة، سجّل الدخول تاني'); }
+      throw new Error((data && data.message) ? (Array.isArray(data.message) ? data.message.join('، ') : data.message) : ('HTTP ' + res.status));
+    }
+    return data;
+  } catch (e) {
+    if (isNetworkError(e)) {
+      await offlineDb.queue.add({ method, path, body: options.body || null, ts: Date.now() });
+      await updateOfflineBanner();
+      // Every existing call site already wraps its api() call in
+      // try/catch and shows e.message via flashGlobal/showMsg -- reusing
+      // that exact path here (rather than a fake success return every
+      // caller would need special-casing for) is what lets every existing
+      // create*/update*/delete* function gain offline queueing for free,
+      // with zero changes to any of them. The form/list simply doesn't
+      // update until the real sync completes -- an intentional, honest
+      // scope boundary rather than a generic optimistic-merge this
+      // request shape can't support safely across ten unrelated domains.
+      throw new Error('لا يوجد اتصال بالإنترنت -- تم حفظ هذه العملية محليًا وستُطبَّق تلقائيًا عند عودة الاتصال.');
+    }
+    throw e;
+  }
+}
+
+function showMsg(id, text, kind) {
+  const el = document.getElementById(id);
+  el.className = 'msg ' + kind;
+  el.textContent = text;
+  if (kind === 'ok') setTimeout(() => { el.className = 'msg'; }, 4000);
+}
+
+async function doLogin() {
+  const phone = document.getElementById('phone').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'جارٍ الدخول...';
+  try {
+    const res = await fetch(apiBase() + '/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
+    accessToken = data.accessToken;
+    document.getElementById('whoAmI').textContent = phone;
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('appScreen').classList.remove('hidden');
+    updateOfflineBanner();
+    switchTab('branches');
+  } catch (e) {
+    showMsg('loginMsg', '❌ ' + e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'تسجيل الدخول';
+  }
+}
+
+function doLogout(message) {
+  accessToken = null;
+  document.getElementById('appScreen').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  if (message) showMsg('loginMsg', 'ℹ️ ' + message, 'err');
+}
+
+const TABS = ['branches', 'ingredients', 'items', 'inventory', 'sales', 'purchasing', 'production', 'transfers', 'promotions', 'customers', 'analytics'];
+function switchTab(name) {
+  // An error banner from whatever the user was doing on the PREVIOUS tab
+  // (e.g. a permission error trying to save an Approval Matrix rule under
+  // Purchasing) otherwise stays on screen forever -- showMsg() only
+  // auto-clears 'ok' messages, never 'err' ones, and nothing else ever
+  // resets it -- so it kept showing on top of whichever unrelated tab the
+  // user switched to next, looking like an error caused by THAT tab.
+  document.getElementById('globalMsg').className = 'msg';
+  TABS.forEach((t) => {
+    document.getElementById('tab-' + t).classList.toggle('active', t === name);
+    document.getElementById('view-' + t).classList.toggle('hidden', t !== name);
+  });
+  if (name === 'branches') loadBranches();
+  if (name === 'ingredients') loadIngredients();
+  if (name === 'items') loadItems();
+  if (name === 'inventory') loadInventoryTab();
+  if (name === 'sales') loadSalesTab();
+  if (name === 'purchasing') loadPurchasingTab();
+  if (name === 'production') loadProductionTab();
+  if (name === 'transfers') loadTransfersTab();
+  if (name === 'promotions') loadPromotions();
+  if (name === 'customers') loadCustomers();
+  if (name === 'analytics') { document.getElementById('an-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadAnalytics(); }
+}
+
+function flashGlobal(text, kind) { showMsg('globalMsg', text, kind); }
+
+/* ---------------- Branches ---------------- */
+async function loadBranches() {
+  try {
+    const branches = await api('/locations');
+    locationsCache = branches;
+    const typeLabel = { BRANCH: 'فرع', CENTRAL_KITCHEN: 'مطبخ مركزي', WAREHOUSE: 'مستودع' };
+    document.getElementById('branchesTable').innerHTML = branches.length
+      ? branches.map((b) => `<tr><td>${b.name}</td><td>${typeLabel[b.type] || b.type}</td><td>${b.address || '-'}</td><td>${b.vatNumber || '-'}</td><td>${b.isActive ? '✅ نشط' : '⛔ معطّل'}</td></tr>`).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد فروع بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function createBranch() {
+  const name = document.getElementById('b-name').value.trim();
+  const type = document.getElementById('b-type').value;
+  const address = document.getElementById('b-address').value.trim();
+  const vatNumber = document.getElementById('b-vat').value.trim();
+  if (!name) { flashGlobal('⚠️ اكتب اسم الفرع', 'err'); return; }
+  try {
+    const body = { name, type };
+    if (address) body.address = address;
+    if (vatNumber) body.vatNumber = vatNumber;
+    await api('/locations', { method: 'POST', body: JSON.stringify(body) });
+    document.getElementById('b-name').value = ''; document.getElementById('b-address').value = ''; document.getElementById('b-vat').value = '';
+    flashGlobal('✅ تمت إضافة الفرع', 'ok');
+    loadBranches();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ---------------- Ingredients ---------------- */
+async function loadIngredients() {
+  try {
+    ingredientsCache = await api('/ingredients');
+    renderIngredientsTable();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+function renderIngredientsTable() {
+  document.getElementById('ingredientsTable').innerHTML = ingredientsCache.length
+    ? ingredientsCache.map((i) => `
+      <tr>
+        <td>${i.name}</td><td>${i.unit}</td>
+        <td><span class="pill ${i.kind === 'SEMI_FINISHED' ? 'semi' : 'raw'}">${i.kind === 'SEMI_FINISHED' ? 'نصف مصنّع' : 'خامة'}</span></td>
+        <td>${i.lowStockThreshold}</td>
+        <td>
+          <button class="link-btn" onclick="toggleIngredientEdit('${i.id}')">✏️ تعديل</button>
+          ${i.kind === 'SEMI_FINISHED' ? `<button class="link-btn" onclick="toggleIngredientRecipe('${i.id}')">📋 الوصفة</button>` : ''}
+        </td>
+      </tr>
+      <tr id="edit-ing-row-${i.id}" class="hidden"><td colspan="5"><div class="recipe-box" id="edit-ing-box-${i.id}"></div></td></tr>
+      ${i.kind === 'SEMI_FINISHED' ? `<tr id="recipe-row-${i.id}" class="hidden"><td colspan="5"><div class="recipe-box" id="recipe-box-${i.id}"></div></td></tr>` : ''}
+    `).join('')
+    : `<tr><td colspan="5" class="empty">لا توجد أصناف بعد</td></tr>`;
+}
+async function createIngredient() {
+  const name = document.getElementById('i-name').value.trim();
+  const unit = document.getElementById('i-unit').value;
+  const kind = document.getElementById('i-kind').value;
+  const lowStockThreshold = parseFloat(document.getElementById('i-threshold').value) || 0;
+  if (!name) { flashGlobal('⚠️ اكتب اسم الصنف', 'err'); return; }
+  try {
+    const created = await api('/ingredients', { method: 'POST', body: JSON.stringify({ name, unit, kind, lowStockThreshold }) });
+    document.getElementById('i-name').value = '';
+    flashGlobal('✅ تمت إضافة الصنف', 'ok');
+    await loadIngredients();
+    // Guide the user straight to defining its recipe when it's a
+    // semi-finished item -- that's the whole point of adding one.
+    if (created && created.kind === 'SEMI_FINISHED') {
+      toggleIngredientRecipe(created.id);
+      document.getElementById('recipe-row-' + created.id).scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+function toggleIngredientEdit(id) {
+  const row = document.getElementById('edit-ing-row-' + id);
+  const box = document.getElementById('edit-ing-box-' + id);
+  const opening = row.classList.contains('hidden');
+  row.classList.toggle('hidden');
+  if (!opening) return;
+  const ing = ingredientsCache.find((i) => i.id === id);
+  box.innerHTML = `
+    <div class="row-form" style="margin-top:0">
+      <div><label>الاسم</label><input class="ei-name" value="${ing.name}"></div>
+      <div><label>الوحدة</label><select class="ei-unit">${unitOptionsHtml(ing.unit)}</select></div>
+      <div><label>النوع</label>
+        <select class="ei-kind">
+          <option value="RAW_MATERIAL" ${ing.kind === 'RAW_MATERIAL' ? 'selected' : ''}>خامة</option>
+          <option value="SEMI_FINISHED" ${ing.kind === 'SEMI_FINISHED' ? 'selected' : ''}>نصف مصنّع</option>
+        </select>
+      </div>
+      <div><label>الحد الأدنى للتنبيه</label><input class="ei-threshold" type="number" value="${ing.lowStockThreshold}"></div>
+      <div><button onclick="saveIngredientEdit('${id}')">💾 حفظ</button></div>
+    </div>
+  `;
+}
+async function saveIngredientEdit(id) {
+  const box = document.getElementById('edit-ing-box-' + id);
+  const name = box.querySelector('.ei-name').value.trim();
+  const unit = box.querySelector('.ei-unit').value;
+  const kind = box.querySelector('.ei-kind').value;
+  const lowStockThreshold = parseFloat(box.querySelector('.ei-threshold').value) || 0;
+  if (!name) { flashGlobal('⚠️ اكتب اسم الصنف', 'err'); return; }
+  try {
+    await api('/ingredients/' + id, { method: 'PATCH', body: JSON.stringify({ name, unit, kind, lowStockThreshold }) });
+    flashGlobal('✅ تم حفظ التعديل', 'ok');
+    document.getElementById('edit-ing-row-' + id).classList.add('hidden');
+    loadIngredients();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+async function toggleIngredientRecipe(id) {
+  const row = document.getElementById('recipe-row-' + id);
+  const box = document.getElementById('recipe-box-' + id);
+  const opening = row.classList.contains('hidden');
+  row.classList.toggle('hidden');
+  if (!opening) return;
+  box.innerHTML = '<div class="empty">جارٍ التحميل...</div>';
+  try {
+    const lines = await api('/ingredients/' + id + '/recipe');
+    renderRecipeEditor(box, id, lines, 'ingredient');
+  } catch (e) { box.innerHTML = '❌ ' + e.message; }
+}
+
+/* ---------------- Items ---------------- */
+let itemsCache = [];
+async function loadItems() {
+  try {
+    if (!ingredientsCache.length) ingredientsCache = await api('/ingredients');
+    itemsCache = await api('/items');
+
+    // Best-effort: cost is gated behind analytics.view (commercially
+    // sensitive, same as every other cost/margin number in this app),
+    // unlike the item list itself which any logged-in user can see. A
+    // user without that permission still sees the item catalog fine --
+    // just a '-' in the cost column instead of the whole tab breaking.
+    let costByItem = {};
+    try {
+      const costs = await api('/analytics/menu-item-costs');
+      costByItem = Object.fromEntries(costs.map((c) => [c.menuItemId, c]));
+    } catch (e) { /* no analytics.view -- costByItem stays empty, rendered as '-' below */ }
+
+    document.getElementById('itemsTable').innerHTML = itemsCache.length
+      ? itemsCache.map((m) => {
+          const c = costByItem[m.id];
+          const costCell = c
+            ? `${c.cost.toFixed(2)} <span style="color:var(--muted);font-size:11px">(${c.costPercent.toFixed(0)}% من السعر)</span>`
+            : '<span class="empty">-</span>';
+          const thumb = m.hasImage
+            ? `<img id="item-thumb-${m.id}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;background:var(--bg)">`
+            : `<div style="width:40px;height:40px;border-radius:6px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:16px">🍽️</div>`;
+          return `
+        <tr>
+          <td>${thumb}</td>
+          <td>${m.name}</td><td>${m.category}</td><td>${Number(m.price).toFixed(2)}</td>
+          <td>${costCell}</td>
+          <td><span class="pill ${m.isActive ? 'semi' : 'inactive'}">${m.isActive ? 'نشط' : 'غير نشط'}</span></td>
+          <td>
+            <button class="link-btn" onclick="toggleItemEdit('${m.id}')">✏️ تعديل</button>
+            <button class="link-btn" onclick="toggleItemRecipe('${m.id}')">📋 الوصفة</button>
+          </td>
+        </tr>
+        <tr id="edit-item-row-${m.id}" class="hidden"><td colspan="7"><div class="recipe-box" id="edit-item-box-${m.id}"></div></td></tr>
+        <tr id="mrecipe-row-${m.id}" class="hidden"><td colspan="7"><div class="recipe-box" id="mrecipe-box-${m.id}"></div></td></tr>
+      `;
+        }).join('')
+      : `<tr><td colspan="7" class="empty">لا توجد أصناف منيو بعد</td></tr>`;
+
+    // Thumbnails need an Authorization header (same as every other API
+    // call), which a plain <img src> can't send -- fetched as a blob and
+    // turned into a throwaway object URL instead, same pattern already
+    // used for downloading a generated report's file.
+    itemsCache.filter((m) => m.hasImage).forEach((m) => loadItemThumbnail(m.id));
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function loadItemThumbnail(id) {
+  const img = document.getElementById('item-thumb-' + id);
+  if (!img) return;
+  try {
+    const res = await fetch(apiBase() + '/items/' + id + '/image', { headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {} });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    img.src = URL.createObjectURL(blob);
+  } catch (e) { /* offline/cache-miss -- thumbnail just stays the emoji placeholder */ }
+}
+async function createItem() {
+  const name = document.getElementById('m-name').value.trim();
+  const category = document.getElementById('m-category').value.trim();
+  const price = parseFloat(document.getElementById('m-price').value);
+  if (!name || !category || !price) { flashGlobal('⚠️ اكتب الاسم والقسم والسعر', 'err'); return; }
+  try {
+    const created = await api('/items', { method: 'POST', body: JSON.stringify({ name, category, price }) });
+    document.getElementById('m-name').value = ''; document.getElementById('m-category').value = ''; document.getElementById('m-price').value = '';
+    flashGlobal('✅ تمت إضافة الصنف', 'ok');
+    await loadItems();
+    // Go straight to defining the recipe -- adding a menu item without one
+    // means it can never be sold (nothing to deduct from stock).
+    if (created) {
+      toggleItemRecipe(created.id);
+      document.getElementById('mrecipe-row-' + created.id).scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+function toggleItemEdit(id) {
+  const row = document.getElementById('edit-item-row-' + id);
+  const box = document.getElementById('edit-item-box-' + id);
+  const opening = row.classList.contains('hidden');
+  row.classList.toggle('hidden');
+  if (!opening) return;
+  const item = itemsCache.find((m) => m.id === id);
+  box.innerHTML = `
+    <div class="row-form" style="margin-top:0">
+      <div><label>الاسم</label><input class="em-name" value="${item.name}"></div>
+      <div><label>القسم</label><input class="em-category" value="${item.category}"></div>
+      <div><label>السعر</label><input class="em-price" type="number" step="0.01" value="${item.price}"></div>
+      <div><label><input type="checkbox" class="em-active" style="width:auto;display:inline" ${item.isActive ? 'checked' : ''}> نشط (متاح للبيع)</label></div>
+      <div><button onclick="saveItemEdit('${id}')">💾 حفظ</button></div>
+    </div>
+    <div class="row-form" style="margin-top:10px;align-items:center">
+      <div style="flex:none"><img id="em-image-preview-${id}" style="width:64px;height:64px;border-radius:8px;object-fit:cover;background:var(--bg);display:${item.hasImage ? '' : 'none'}"></div>
+      <div><label>صورة الصنف (JPG/PNG/WEBP، حتى 2 ميجابايت)</label><input type="file" accept="image/jpeg,image/png,image/webp" class="em-image-file" onchange="uploadItemImage('${id}', this)"></div>
+      ${item.hasImage ? `<div><button class="ghost" onclick="removeItemImage('${id}')">🗑️ حذف الصورة</button></div>` : ''}
+    </div>
+    <div class="msg" id="em-image-msg-${id}"></div>
+  `;
+  if (item.hasImage) loadEditPreviewImage(id);
+}
+async function loadEditPreviewImage(id) {
+  const img = document.getElementById('em-image-preview-' + id);
+  if (!img) return;
+  try {
+    const res = await fetch(apiBase() + '/items/' + id + '/image', { headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {} });
+    if (!res.ok) return;
+    img.src = URL.createObjectURL(await res.blob());
+  } catch (e) { /* leave the preview hidden */ }
+}
+async function uploadItemImage(id, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    // FormData sets its own multipart Content-Type (with the boundary) --
+    // api() would otherwise force 'application/json' on every request, so
+    // this bypasses it with a direct fetch, same as every other binary
+    // call in this file (report download, thumbnails).
+    const res = await fetch(apiBase() + '/items/' + id + '/image', {
+      method: 'POST',
+      headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {},
+      body: form,
+    });
+    if (!res.ok) {
+      let msg = 'HTTP ' + res.status;
+      try { const j = await res.json(); if (j && j.message) msg = Array.isArray(j.message) ? j.message.join('، ') : j.message; } catch (e) { /* no body */ }
+      throw new Error(msg);
+    }
+    // loadItems() re-renders the whole table (destroying and recreating
+    // em-image-msg-{id} along with everything else), so the success
+    // message has to be set on the FRESH element after that, not before --
+    // otherwise it's written to a node that's already gone by the time
+    // anyone could see it.
+    await loadItems();
+    toggleItemEdit(id);
+    showMsg('em-image-msg-' + id, '✅ تم رفع الصورة', 'ok');
+  } catch (e) { showMsg('em-image-msg-' + id, '❌ ' + e.message, 'err'); }
+}
+async function removeItemImage(id) {
+  try {
+    await api('/items/' + id + '/image', { method: 'DELETE' });
+    await loadItems();
+    toggleItemEdit(id);
+    flashGlobal('🗑️ تم حذف صورة الصنف', 'ok');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function saveItemEdit(id) {
+  const box = document.getElementById('edit-item-box-' + id);
+  const name = box.querySelector('.em-name').value.trim();
+  const category = box.querySelector('.em-category').value.trim();
+  const price = parseFloat(box.querySelector('.em-price').value);
+  const isActive = box.querySelector('.em-active').checked;
+  if (!name || !category || !price) { flashGlobal('⚠️ اكمل كل الحقول', 'err'); return; }
+  try {
+    await api('/items/' + id, { method: 'PATCH', body: JSON.stringify({ name, category, price, isActive }) });
+    flashGlobal('✅ تم حفظ التعديل', 'ok');
+    document.getElementById('edit-item-row-' + id).classList.add('hidden');
+    loadItems();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function toggleItemRecipe(id) {
+  const row = document.getElementById('mrecipe-row-' + id);
+  const box = document.getElementById('mrecipe-box-' + id);
+  const opening = row.classList.contains('hidden');
+  row.classList.toggle('hidden');
+  if (!opening) return;
+  box.innerHTML = '<div class="empty">جارٍ التحميل...</div>';
+  try {
+    const lines = await api('/items/' + id + '/recipe');
+    renderRecipeEditor(box, id, lines, 'item');
+  } catch (e) { box.innerHTML = '❌ ' + e.message; }
+}
+
+/* ---------------- Shared recipe editor (used by both ingredients & items) ---------------- */
+function renderRecipeEditor(box, parentId, lines, parentKind) {
+  const options = ingredientsCache.map((i) => `<option value="${i.id}">${i.name} (${i.unit})</option>`).join('');
+  const rowsHtml = (lines.length ? lines : [{ ingredient: { id: '' }, quantity: '' }]).map((l) => `
+    <div class="recipe-row">
+      <select class="rq-ing">${options}</select>
+      <input class="rq-qty" type="number" step="0.001" value="${l.quantity || ''}" placeholder="الكمية">
+      <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>
+    </div>
+  `).join('');
+  box.innerHTML = `
+    <div id="rows-${parentId}">${rowsHtml}</div>
+    <div style="margin-top:8px;display:flex;gap:8px">
+      <button class="ghost" onclick="addRecipeRow('${parentId}')">➕ مكوّن</button>
+      <button onclick="saveRecipe('${parentId}','${parentKind}')">💾 حفظ الوصفة</button>
+    </div>
+  `;
+  // pre-select the saved ingredient for each existing line
+  const rowEls = box.querySelectorAll('.recipe-row');
+  lines.forEach((l, idx) => { if (rowEls[idx] && l.ingredient) rowEls[idx].querySelector('.rq-ing').value = l.ingredient.id; });
+}
+function addRecipeRow(parentId) {
+  const options = ingredientsCache.map((i) => `<option value="${i.id}">${i.name} (${i.unit})</option>`).join('');
+  const container = document.getElementById('rows-' + parentId);
+  const div = document.createElement('div');
+  div.className = 'recipe-row';
+  div.innerHTML = `<select class="rq-ing">${options}</select><input class="rq-qty" type="number" step="0.001" placeholder="الكمية"><button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+  container.appendChild(div);
+}
+async function saveRecipe(parentId, parentKind) {
+  const container = document.getElementById('rows-' + parentId);
+  const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => ({
+    ingredientId: row.querySelector('.rq-ing').value,
+    quantity: parseFloat(row.querySelector('.rq-qty').value),
+  })).filter((l) => l.ingredientId && l.quantity > 0);
+  const path = (parentKind === 'ingredient' ? '/ingredients/' : '/items/') + parentId + '/recipe';
+  try {
+    await api(path, { method: 'PUT', body: JSON.stringify({ lines }) });
+    flashGlobal('✅ تم حفظ الوصفة', 'ok');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ================= Inventory ================= */
+async function loadInventoryTab() {
+  await ensureIngredientsCache();
+  const opts = locationOptions();
+  document.getElementById('inv-r-location').innerHTML = opts;
+  document.getElementById('inv-w-location').innerHTML = opts;
+  const filterSel = document.getElementById('inv-filter-location');
+  filterSel.innerHTML = '<option value="">كل المواقع</option>' + opts;
+  document.getElementById('inv-r-ingredient').innerHTML = ingredientOptions();
+  document.getElementById('inv-w-ingredient').innerHTML = ingredientOptions();
+  loadInventoryBalances();
+}
+async function loadInventoryBalances() {
+  try {
+    const locationId = document.getElementById('inv-filter-location').value;
+    const balances = await api('/inventory/balances' + (locationId ? '?locationId=' + locationId : ''));
+    const ingName = (id) => (ingredientsCache.find((i) => i.id === id) || {}).name || id;
+    document.getElementById('inventoryTable').innerHTML = balances.length
+      ? balances.map((b) => `<tr><td>${(b.location || {}).name || '-'}</td><td>${ingName(b.ingredientId)}</td><td>${Number(b.quantity)}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="empty">لا توجد أرصدة بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function receiveInventory() {
+  const locationId = document.getElementById('inv-r-location').value;
+  const ingredientId = document.getElementById('inv-r-ingredient').value;
+  const quantity = parseFloat(document.getElementById('inv-r-qty').value);
+  const unitCost = parseFloat(document.getElementById('inv-r-cost').value);
+  if (!locationId || !ingredientId || !quantity || !unitCost) { flashGlobal('⚠️ اكمل كل الحقول', 'err'); return; }
+  try {
+    await api('/inventory/adjustments', { method: 'POST', body: JSON.stringify({ locationId, ingredientId, quantity, unitCost }) });
+    flashGlobal('✅ تم الاستلام', 'ok');
+    document.getElementById('inv-r-qty').value = ''; document.getElementById('inv-r-cost').value = '';
+    loadInventoryBalances();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function recordWaste() {
+  const locationId = document.getElementById('inv-w-location').value;
+  const ingredientId = document.getElementById('inv-w-ingredient').value;
+  const quantity = parseFloat(document.getElementById('inv-w-qty').value);
+  if (!locationId || !ingredientId || !quantity) { flashGlobal('⚠️ اكمل كل الحقول', 'err'); return; }
+  try {
+    await api('/inventory/waste', { method: 'POST', body: JSON.stringify({ locationId, ingredientId, quantity }) });
+    flashGlobal('✅ تم تسجيل التالف', 'ok');
+    document.getElementById('inv-w-qty').value = '';
+    loadInventoryBalances();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ================= Sales ================= */
+async function loadSalesTab() {
+  // Always fresh here (unlike ensureMenuItemsCache()'s once-per-session
+  // guard) -- the menu grid picker below needs to reflect an item just
+  // added, priced, or photographed in the "أصناف المنيو" tab without
+  // requiring a full page reload first.
+  menuItemsCache = await api('/items');
+  document.getElementById('sh-location').innerHTML = locationOptions();
+  renderOrderMenuGrid('');
+  await loadShifts();
+  await loadOrders();
+}
+
+let orderMenuImageCache = {}; // menuItemId -> blob object URL, filled lazily per grid render
+function renderOrderMenuGrid(term) {
+  const grid = document.getElementById('ord-menu-grid');
+  if (!grid) return;
+  const t = (term || '').trim().toLowerCase();
+  const list = t ? menuItemsCache.filter((m) => m.name.toLowerCase().includes(t)) : menuItemsCache;
+  if (!list.length) { grid.innerHTML = `<div class="empty">${menuItemsCache.length ? 'لا توجد أصناف مطابقة' : 'لا توجد أصناف منيو بعد'}</div>`; return; }
+  grid.innerHTML = list.map((m) => `
+    <div class="menu-tile" onclick="addMenuTileToOrder('${m.id}')" title="إضافة للطلب">
+      <div class="menu-tile-img" id="ord-tile-img-${m.id}">${m.hasImage ? '' : '🍽️'}</div>
+      <div class="menu-tile-name">${m.name}</div>
+      <div class="menu-tile-price">${Number(m.price).toFixed(2)}</div>
+    </div>
+  `).join('');
+  list.filter((m) => m.hasImage).forEach((m) => {
+    if (orderMenuImageCache[m.id]) {
+      const el = document.getElementById('ord-tile-img-' + m.id);
+      if (el) el.innerHTML = `<img src="${orderMenuImageCache[m.id]}">`;
+      return;
+    }
+    fetch(apiBase() + '/items/' + m.id + '/image', { headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {} })
+      .then((res) => (res.ok ? res.blob() : null))
+      .then((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        orderMenuImageCache[m.id] = url;
+        const el = document.getElementById('ord-tile-img-' + m.id);
+        if (el) el.innerHTML = `<img src="${url}">`;
+      })
+      .catch(() => { /* tile just keeps the emoji placeholder */ });
+  });
+}
+// Clicking a tile behaves like "➕ صنف" but pre-picks that item -- reuses
+// the exact same .recipe-row/.ol-item/.ol-qty structure createOrder()
+// already scrapes, so tapping a tile and typing a row by hand stay fully
+// interchangeable ways to build the same order.
+function addMenuTileToOrder(menuItemId) {
+  const container = document.getElementById('ord-lines');
+  const existingRow = Array.from(container.querySelectorAll('.recipe-row')).find((row) => row.querySelector('.ol-item').value === menuItemId);
+  if (existingRow) {
+    const qtyInput = existingRow.querySelector('.ol-qty');
+    qtyInput.value = (parseInt(qtyInput.value, 10) || 0) + 1;
+    return;
+  }
+  addOrderLineRow();
+  const rows = container.querySelectorAll('.recipe-row');
+  rows[rows.length - 1].querySelector('.ol-item').value = menuItemId;
+}
+let shiftsCache = [];
+async function loadShifts() {
+  try {
+    const shifts = await api('/shifts');
+    shiftsCache = shifts;
+    const locName = (id) => (locationsCache.find((l) => l.id === id) || {}).name || id;
+    document.getElementById('shiftsTable').innerHTML = shifts.length
+      ? shifts.map((s) => `
+        <tr>
+          <td>${locName(s.locationId)}</td>
+          <td>${s.closedAt ? '⛔ مغلقة' : '✅ مفتوحة'}</td>
+          <td>${Number(s.openingFloat).toFixed(2)}</td>
+          <td>${s.expectedCash != null ? Number(s.expectedCash).toFixed(2) : '-'}</td>
+          <td>${s.closingCounted != null ? Number(s.closingCounted).toFixed(2) : '-'}</td>
+          <td>${s.variance != null ? Number(s.variance).toFixed(2) : '-'}</td>
+          <td>${s.closedAt ? '' : `<button class="link-btn" onclick="closeShiftPrompt('${s.id}')">إغلاق</button>`}</td>
+        </tr>
+      `).join('')
+      : `<tr><td colspan="7" class="empty">لا توجد ورديات بعد</td></tr>`;
+    const openShifts = shifts.filter((s) => !s.closedAt);
+    document.getElementById('ord-shift').innerHTML = openShifts.length
+      ? openShifts.map((s) => `<option value="${s.id}">${locName(s.locationId)} -- ${s.id.slice(-6)}</option>`).join('')
+      : '<option value="">لا توجد وردية مفتوحة</option>';
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function openShift() {
+  const locationId = document.getElementById('sh-location').value;
+  const openingFloat = parseFloat(document.getElementById('sh-float').value);
+  if (!locationId || isNaN(openingFloat)) { flashGlobal('⚠️ اختر الموقع واكتب رأس المال', 'err'); return; }
+  try {
+    await api('/shifts', { method: 'POST', body: JSON.stringify({ locationId, openingFloat }) });
+    flashGlobal('✅ تم فتح الوردية', 'ok');
+    loadShifts();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function closeShiftPrompt(id) {
+  const closingCounted = parseFloat(window.prompt('المبلغ المعدود فعليًا في الدرج؟'));
+  if (isNaN(closingCounted)) return;
+  try {
+    await api(`/shifts/${id}/close`, { method: 'POST', body: JSON.stringify({ closingCounted }) });
+    flashGlobal('✅ تم إغلاق الوردية', 'ok');
+    loadShifts();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+function addOrderLineRow() {
+  const container = document.getElementById('ord-lines');
+  const div = document.createElement('div');
+  div.className = 'recipe-row';
+  div.innerHTML = `<select class="ol-item">${menuItemsCache.map((m) => `<option value="${m.id}">${m.name} (${Number(m.price).toFixed(2)})</option>`).join('')}</select>
+    <input class="ol-qty" type="number" min="1" step="1" value="1" placeholder="الكمية">
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+  container.appendChild(div);
+}
+async function createOrder() {
+  const shiftId = document.getElementById('ord-shift').value;
+  const channel = document.getElementById('ord-channel').value;
+  const container = document.getElementById('ord-lines');
+  const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => ({
+    menuItemId: row.querySelector('.ol-item').value,
+    quantity: parseInt(row.querySelector('.ol-qty').value, 10),
+  })).filter((l) => l.menuItemId && l.quantity > 0);
+  if (!shiftId) { flashGlobal('⚠️ افتح وردية أولًا', 'err'); return; }
+  if (!lines.length) { flashGlobal('⚠️ أضف صنف واحد على الأقل', 'err'); return; }
+  try {
+    const shift = shiftsCache.find((s) => s.id === shiftId);
+    await api('/orders', { method: 'POST', body: JSON.stringify({ locationId: shift.locationId, shiftId, channel, lines }) });
+    container.innerHTML = '';
+    flashGlobal('✅ تم إنشاء الطلب', 'ok');
+    loadOrders(); loadShifts();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function loadOrders() {
+  try {
+    const orders = await api('/orders');
+    const locName = (id) => (locationsCache.find((l) => l.id === id) || {}).name || id;
+    const channelLabel = { DINE_IN: 'صالة', TAKEAWAY: 'تيك أواي', DRIVE_THRU: 'Drive-thru', DELIVERY_PARTNER: 'توصيل خارجي', BRAND_APP: 'تطبيق' };
+    document.getElementById('ordersTable').innerHTML = orders.length
+      ? orders.map((o) => `
+        <tr>
+          <td>${locName(o.locationId)}</td><td>${channelLabel[o.channel] || o.channel}</td><td>${o.status}</td>
+          <td>${Number(o.grandTotal).toFixed(2)}</td>
+          <td>
+            ${o.status === 'SENT_TO_KITCHEN' ? `<button class="link-btn" onclick="payOrderCash('${o.id}', ${o.grandTotal})">💵 دفع كاش</button> <button class="link-btn" onclick="voidOrder('${o.id}')">إلغاء</button>` : ''}
+          </td>
+        </tr>
+      `).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد طلبات بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function payOrderCash(id, amount) {
+  try {
+    await api(`/orders/${id}/pay`, { method: 'POST', body: JSON.stringify({ payments: [{ method: 'CASH', mode: 'MANUAL', amount }] }) });
+    flashGlobal('✅ تم الدفع', 'ok');
+    loadOrders();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function voidOrder(id) {
+  try {
+    await api(`/orders/${id}/void`, { method: 'POST' });
+    flashGlobal('✅ تم إلغاء الطلب', 'ok');
+    loadOrders();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ================= Purchasing ================= */
+async function loadPurchasingTab() {
+  await ensureIngredientsCache();
+  const opts = locationOptions();
+  document.getElementById('po-location').innerHTML = opts;
+  document.getElementById('sup-location').innerHTML = '<option value="">كل المواقع</option>' + opts;
+  document.getElementById('rule-location').innerHTML = '<option value="">كل المواقع</option>' + opts;
+  await loadSuppliers();
+  await loadApprovalRules();
+  await loadPurchaseOrders();
+}
+async function loadSuppliers() {
+  try {
+    const suppliers = await api('/suppliers');
+    const locName = (id) => (locationsCache.find((l) => l.id === id) || {}).name || id;
+    document.getElementById('suppliersTable').innerHTML = suppliers.length
+      ? suppliers.map((s) => `<tr><td>${s.name}</td><td>${s.phone || '-'}</td><td>${s.scopeLocationId ? locName(s.scopeLocationId) : 'كل المواقع'}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="empty">لا يوجد موردون بعد</td></tr>`;
+    document.getElementById('po-supplier').innerHTML = suppliers.map((s) => `<option value="${s.id}">${s.name}</option>`).join('');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function createSupplier() {
+  const name = document.getElementById('sup-name').value.trim();
+  const phone = document.getElementById('sup-phone').value.trim();
+  const scopeLocationId = document.getElementById('sup-location').value;
+  if (!name) { flashGlobal('⚠️ اكتب اسم المورد', 'err'); return; }
+  try {
+    const body = { name };
+    if (phone) body.phone = phone;
+    if (scopeLocationId) body.scopeLocationId = scopeLocationId;
+    await api('/suppliers', { method: 'POST', body: JSON.stringify(body) });
+    document.getElementById('sup-name').value = ''; document.getElementById('sup-phone').value = '';
+    flashGlobal('✅ تمت إضافة المورد', 'ok');
+    loadSuppliers();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function loadApprovalRules() {
+  try {
+    const rules = await api('/approval-rules');
+    const locName = (id) => (locationsCache.find((l) => l.id === id) || {}).name || id;
+    document.getElementById('approvalRulesTable').innerHTML = rules.length
+      ? rules.map((r) => `
+        <tr>
+          <td>${r.documentType}</td><td>${r.maxAmount != null ? Number(r.maxAmount).toFixed(2) : 'بلا حد'}</td>
+          <td style="font-size:11px">${r.requiredRoleId}</td>
+          <td>${r.scopeLocationId ? locName(r.scopeLocationId) : 'كل المواقع'}</td>
+          <td><button class="link-btn" onclick="deleteApprovalRule('${r.id}')">حذف</button></td>
+        </tr>
+      `).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد قواعد بعد -- كل أمر شراء يُعتمد تلقائيًا</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function createApprovalRule() {
+  const maxAmountRaw = document.getElementById('rule-max').value;
+  const requiredRoleId = document.getElementById('rule-role').value.trim();
+  const scopeLocationId = document.getElementById('rule-location').value;
+  if (!requiredRoleId) { flashGlobal('⚠️ اكتب Role ID', 'err'); return; }
+  try {
+    const body = { documentType: 'PURCHASE_ORDER', requiredRoleId };
+    if (maxAmountRaw) body.maxAmount = parseFloat(maxAmountRaw);
+    if (scopeLocationId) body.scopeLocationId = scopeLocationId;
+    await api('/approval-rules', { method: 'POST', body: JSON.stringify(body) });
+    document.getElementById('rule-max').value = ''; document.getElementById('rule-role').value = '';
+    flashGlobal('✅ تمت إضافة القاعدة', 'ok');
+    loadApprovalRules();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function deleteApprovalRule(id) {
+  try {
+    await api('/approval-rules/' + id, { method: 'DELETE' });
+    flashGlobal('✅ تم حذف القاعدة', 'ok');
+    loadApprovalRules();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+function addPoLineRow() {
+  const container = document.getElementById('po-lines');
+  const div = document.createElement('div');
+  div.className = 'recipe-row';
+  div.innerHTML = `<select class="po-ing">${ingredientOptions()}</select>
+    <input class="po-qty" type="number" step="0.001" placeholder="الكمية">
+    <input class="po-cost" type="number" step="0.0001" placeholder="تكلفة الوحدة">
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+  container.appendChild(div);
+}
+async function createPurchaseOrder() {
+  const locationId = document.getElementById('po-location').value;
+  const supplierId = document.getElementById('po-supplier').value;
+  const container = document.getElementById('po-lines');
+  const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => ({
+    ingredientId: row.querySelector('.po-ing').value,
+    quantity: parseFloat(row.querySelector('.po-qty').value),
+    unitCost: parseFloat(row.querySelector('.po-cost').value),
+  })).filter((l) => l.ingredientId && l.quantity > 0 && l.unitCost > 0);
+  if (!locationId || !supplierId) { flashGlobal('⚠️ اختر الموقع والمورد', 'err'); return; }
+  if (!lines.length) { flashGlobal('⚠️ أضف مكوّن واحد على الأقل بكمية وتكلفة', 'err'); return; }
+  try {
+    await api('/purchase-orders', { method: 'POST', body: JSON.stringify({ locationId, supplierId, lines }) });
+    container.innerHTML = '';
+    flashGlobal('✅ تم إنشاء أمر الشراء (مسودة)', 'ok');
+    loadPurchaseOrders();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function loadPurchaseOrders() {
+  try {
+    const pos = await api('/purchase-orders');
+    const suppliers = await api('/suppliers');
+    const locName = (id) => (locationsCache.find((l) => l.id === id) || {}).name || id;
+    const supName = (id) => (suppliers.find((s) => s.id === id) || {}).name || id;
+    const actionsFor = (po) => {
+      const btns = [];
+      if (po.status === 'DRAFT') btns.push(`<button class="link-btn" onclick="submitPO('${po.id}')">تقديم</button>`);
+      if (po.status === 'PENDING_APPROVAL') {
+        btns.push(`<button class="link-btn" onclick="approvePO('${po.id}')">اعتماد</button>`);
+        btns.push(`<button class="link-btn" onclick="rejectPO('${po.id}')">رفض</button>`);
+      }
+      if (po.status === 'APPROVED') btns.push(`<button class="link-btn" onclick="sendPO('${po.id}')">إرسال للمورد</button>`);
+      if (po.status === 'APPROVED' || po.status === 'SENT_TO_SUPPLIER') btns.push(`<button class="link-btn" onclick="receivePO('${po.id}')">استلام</button>`);
+      if (!['RECEIVED', 'CANCELLED'].includes(po.status)) btns.push(`<button class="link-btn" onclick="cancelPO('${po.id}')">إلغاء</button>`);
+      return btns.join(' ');
+    };
+    document.getElementById('purchaseOrdersTable').innerHTML = pos.length
+      ? pos.map((po) => `<tr><td>${supName(po.supplierId)}</td><td>${locName(po.locationId)}</td><td>${po.status}</td><td>${Number(po.totalAmount).toFixed(2)}</td><td>${actionsFor(po)}</td></tr>`).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد أوامر شراء بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function poAction(id, action, method) {
+  try {
+    await api(`/purchase-orders/${id}/${action}`, { method: method || 'POST' });
+    flashGlobal('✅ تم', 'ok');
+    loadPurchaseOrders(); loadInventoryBalances();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+function submitPO(id) { poAction(id, 'submit'); }
+function approvePO(id) { poAction(id, 'approve'); }
+function rejectPO(id) { poAction(id, 'reject'); }
+function sendPO(id) { poAction(id, 'send'); }
+function receivePO(id) { poAction(id, 'receive'); }
+function cancelPO(id) { poAction(id, 'cancel'); }
+
+/* ================= Production ================= */
+async function loadProductionTab() {
+  await ensureIngredientsCache();
+  document.getElementById('prod-location').innerHTML = locationOptions();
+  document.getElementById('prod-output').innerHTML = ingredientOptions((i) => i.kind === 'SEMI_FINISHED');
+  await loadProductionOrders();
+}
+function toggleProdOverride() {
+  const on = document.getElementById('prod-override').checked;
+  document.getElementById('prod-lines').classList.toggle('hidden', !on);
+  document.getElementById('prod-lines-actions').classList.toggle('hidden', !on);
+}
+function addProdLineRow() {
+  const container = document.getElementById('prod-lines');
+  const div = document.createElement('div');
+  div.className = 'recipe-row';
+  div.innerHTML = `<select class="pr-ing">${ingredientOptions()}</select>
+    <input class="pr-qty" type="number" step="0.001" placeholder="الكمية">
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+  container.appendChild(div);
+}
+async function createProductionOrder() {
+  const locationId = document.getElementById('prod-location').value;
+  const outputIngredientId = document.getElementById('prod-output').value;
+  const outputQuantity = parseFloat(document.getElementById('prod-qty').value);
+  if (!locationId || !outputIngredientId || !outputQuantity) { flashGlobal('⚠️ اكمل كل الحقول', 'err'); return; }
+  const body = { locationId, outputIngredientId, outputQuantity };
+  if (document.getElementById('prod-override').checked) {
+    const container = document.getElementById('prod-lines');
+    body.lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => ({
+      ingredientId: row.querySelector('.pr-ing').value,
+      quantity: parseFloat(row.querySelector('.pr-qty').value),
+    })).filter((l) => l.ingredientId && l.quantity > 0);
+    if (!body.lines.length) { flashGlobal('⚠️ أضف مكوّن واحد على الأقل', 'err'); return; }
+  }
+  try {
+    await api('/production-orders', { method: 'POST', body: JSON.stringify(body) });
+    document.getElementById('prod-qty').value = '';
+    flashGlobal('✅ تم إنشاء أمر الإنتاج', 'ok');
+    loadProductionOrders();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function loadProductionOrders() {
+  try {
+    const orders = await api('/production-orders');
+    const locName = (id) => (locationsCache.find((l) => l.id === id) || {}).name || id;
+    const ingName = (id) => (ingredientsCache.find((i) => i.id === id) || {}).name || id;
+    const actionsFor = (o) => {
+      const btns = [];
+      if (o.status === 'PLANNED') btns.push(`<button class="link-btn" onclick="startProd('${o.id}')">بدء</button>`);
+      if (o.status === 'IN_PROGRESS') btns.push(`<button class="link-btn" onclick="completeProd('${o.id}')">اكتمال</button>`);
+      if (!['COMPLETED', 'CANCELLED'].includes(o.status)) btns.push(`<button class="link-btn" onclick="cancelProd('${o.id}')">إلغاء</button>`);
+      return btns.join(' ');
+    };
+    document.getElementById('productionOrdersTable').innerHTML = orders.length
+      ? orders.map((o) => `<tr><td>${locName(o.locationId)}</td><td>${ingName(o.outputIngredientId)}</td><td>${Number(o.outputQuantity)}</td><td>${o.status}</td><td>${actionsFor(o)}</td></tr>`).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد أوامر إنتاج بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function prodAction(id, action) {
+  try {
+    await api(`/production-orders/${id}/${action}`, { method: 'POST' });
+    flashGlobal('✅ تم', 'ok');
+    loadProductionOrders(); loadInventoryBalances();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+function startProd(id) { prodAction(id, 'start'); }
+function completeProd(id) { prodAction(id, 'complete'); }
+function cancelProd(id) { prodAction(id, 'cancel'); }
+
+/* ================= Transfers ================= */
+let transfersCache = [];
+async function loadTransfersTab() {
+  await ensureIngredientsCache();
+  const opts = locationOptions();
+  document.getElementById('tr-from').innerHTML = opts;
+  document.getElementById('tr-to').innerHTML = opts;
+  await loadTransfers();
+}
+function addTransferLineRow() {
+  const container = document.getElementById('tr-lines');
+  const div = document.createElement('div');
+  div.className = 'recipe-row';
+  div.innerHTML = `<select class="tl-ing">${ingredientOptions()}</select>
+    <input class="tl-qty" type="number" step="0.001" placeholder="الكمية">
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+  container.appendChild(div);
+}
+async function createTransfer() {
+  const fromLocationId = document.getElementById('tr-from').value;
+  const toLocationId = document.getElementById('tr-to').value;
+  const container = document.getElementById('tr-lines');
+  const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => ({
+    ingredientId: row.querySelector('.tl-ing').value,
+    quantity: parseFloat(row.querySelector('.tl-qty').value),
+  })).filter((l) => l.ingredientId && l.quantity > 0);
+  if (!fromLocationId || !toLocationId) { flashGlobal('⚠️ اختر موقعي المصدر والوجهة', 'err'); return; }
+  if (!lines.length) { flashGlobal('⚠️ أضف مكوّن واحد على الأقل', 'err'); return; }
+  try {
+    await api('/transfers', { method: 'POST', body: JSON.stringify({ fromLocationId, toLocationId, lines }) });
+    container.innerHTML = '';
+    flashGlobal('✅ تم إرسال التحويل', 'ok');
+    loadTransfers(); loadInventoryBalances();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function loadTransfers() {
+  try {
+    transfersCache = await api('/transfers');
+    const locName = (id) => (locationsCache.find((l) => l.id === id) || {}).name || id;
+    document.getElementById('transfersTable').innerHTML = transfersCache.length
+      ? transfersCache.map((t) => `
+        <tr>
+          <td>${locName(t.fromLocationId)}</td><td>${locName(t.toLocationId)}</td><td>${t.status}</td>
+          <td>${t.status === 'DISPATCHED' ? `<button class="link-btn" onclick="toggleTransferReceive('${t.id}')">📥 استلام</button>` : ''}</td>
+        </tr>
+        ${t.status === 'DISPATCHED' ? `<tr id="tr-receive-row-${t.id}" class="hidden"><td colspan="4"><div class="recipe-box" id="tr-receive-box-${t.id}"></div></td></tr>` : ''}
+      `).join('')
+      : `<tr><td colspan="4" class="empty">لا توجد تحويلات بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function toggleTransferReceive(id) {
+  const row = document.getElementById('tr-receive-row-' + id);
+  const box = document.getElementById('tr-receive-box-' + id);
+  const opening = row.classList.contains('hidden');
+  row.classList.toggle('hidden');
+  if (!opening) return;
+  box.innerHTML = '<div class="empty">جارٍ التحميل...</div>';
+  const ingName = (ingId) => (ingredientsCache.find((i) => i.id === ingId) || {}).name || ingId;
+  try {
+    // GET /transfers list doesn't include line detail -- fetch this one
+    // transfer's full record (which does) rather than assuming the
+    // cached list row already has it.
+    const transfer = await api('/transfers/' + id);
+    box.innerHTML = `
+      <div id="tr-receive-rows-${id}">
+        ${transfer.lines.map((l) => `
+          <div class="recipe-row" data-ingredient-id="${l.ingredientId}">
+            <span style="flex:2">${ingName(l.ingredientId)} (أُرسل: ${Number(l.quantitySent)})</span>
+            <input class="tr-recv-qty" type="number" step="0.001" value="${Number(l.quantitySent)}" style="flex:1">
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin-top:8px"><button onclick="confirmTransferReceive('${id}')">✅ تأكيد الاستلام</button></div>
+    `;
+  } catch (e) { box.innerHTML = '❌ ' + e.message; }
+}
+async function confirmTransferReceive(id) {
+  const container = document.getElementById('tr-receive-rows-' + id);
+  const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => ({
+    ingredientId: row.dataset.ingredientId,
+    quantityReceived: parseFloat(row.querySelector('.tr-recv-qty').value),
+  }));
+  try {
+    await api(`/transfers/${id}/receive`, { method: 'POST', body: JSON.stringify({ lines }) });
+    flashGlobal('✅ تم استلام التحويل', 'ok');
+    loadTransfers(); loadInventoryBalances();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ---------------- Promotions ---------------- */
+const PROMO_TYPE_LABEL = { PERCENTAGE_DISCOUNT: 'نسبة مئوية', FIXED_DISCOUNT: 'مبلغ ثابت', BOGO: 'اشترِ واحصل على', COMBO: 'كومبو' };
+const PROMO_CHANNEL_LABEL = { DINE_IN: 'صالة', TAKEAWAY: 'تيك أواي', DRIVE_THRU: 'Drive-thru', DELIVERY_PARTNER: 'توصيل خارجي', BRAND_APP: 'تطبيق العلامة' };
+async function loadPromotions() {
+  try {
+    const promotions = await api('/promotions');
+    document.getElementById('promotionsTable').innerHTML = promotions.length
+      ? promotions.map((p) => {
+          const valueLabel = p.type === 'PERCENTAGE_DISCOUNT' ? `${Number(p.value)}%` : `${Number(p.value).toFixed(2)} ر.س`;
+          const period = [p.startsAt ? new Date(p.startsAt).toLocaleDateString('ar-SA') : null, p.endsAt ? new Date(p.endsAt).toLocaleDateString('ar-SA') : null]
+            .filter(Boolean).join(' → ') || 'بلا حدود';
+          return `
+            <tr>
+              <td>${p.name}</td>
+              <td>${PROMO_TYPE_LABEL[p.type] || p.type}</td>
+              <td>${valueLabel}</td>
+              <td>${p.channelLimit ? (PROMO_CHANNEL_LABEL[p.channelLimit] || p.channelLimit) : 'كل القنوات'}</td>
+              <td>${period}</td>
+              <td>${p.isActive ? '✅ فعّال' : '⛔ معطّل'}</td>
+              <td><button class="link-btn" onclick="togglePromotion('${p.id}', ${!p.isActive})">${p.isActive ? 'تعطيل' : 'تفعيل'}</button></td>
+            </tr>
+          `;
+        }).join('')
+      : `<tr><td colspan="7" class="empty">لا توجد عروض بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function createPromotion() {
+  const name = document.getElementById('promo-name').value.trim();
+  const type = document.getElementById('promo-type').value;
+  const valueRaw = document.getElementById('promo-value').value;
+  const channelLimit = document.getElementById('promo-channel').value;
+  const startsAt = document.getElementById('promo-starts').value;
+  const endsAt = document.getElementById('promo-ends').value;
+  if (!name) { flashGlobal('⚠️ اكتب اسم العرض', 'err'); return; }
+  if (!valueRaw) { flashGlobal('⚠️ اكتب قيمة الخصم', 'err'); return; }
+  try {
+    const body = { name, type, value: parseFloat(valueRaw) };
+    if (channelLimit) body.channelLimit = channelLimit;
+    if (startsAt) body.startsAt = new Date(startsAt).toISOString();
+    if (endsAt) body.endsAt = new Date(endsAt).toISOString();
+    await api('/promotions', { method: 'POST', body: JSON.stringify(body) });
+    document.getElementById('promo-name').value = '';
+    document.getElementById('promo-value').value = '';
+    document.getElementById('promo-starts').value = '';
+    document.getElementById('promo-ends').value = '';
+    flashGlobal('✅ تمت إضافة العرض', 'ok');
+    loadPromotions();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function togglePromotion(id, isActive) {
+  try {
+    await api('/promotions/' + id, { method: 'PATCH', body: JSON.stringify({ isActive }) });
+    flashGlobal(isActive ? '✅ تم تفعيل العرض' : '✅ تم تعطيل العرض', 'ok');
+    loadPromotions();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ---------------- Customers / Loyalty ---------------- */
+let customersCache = [];
+async function loadCustomers() {
+  try {
+    const phone = document.getElementById('cust-search').value.trim();
+    customersCache = await api('/customers' + (phone ? '?phone=' + encodeURIComponent(phone) : ''));
+    document.getElementById('customersTable').innerHTML = customersCache.length
+      ? customersCache.map((c) => `
+        <tr>
+          <td>${c.name || '-'}</td><td>${c.phone}</td><td>${c.points}</td>
+          <td><button class="link-btn" onclick="toggleCustomerDetail('${c.id}')">التفاصيل</button></td>
+        </tr>
+        <tr id="cust-detail-row-${c.id}" class="hidden"><td colspan="4"><div class="recipe-box" id="cust-detail-box-${c.id}"></div></td></tr>
+      `).join('')
+      : `<tr><td colspan="4" class="empty">لا يوجد عملاء بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function createCustomer() {
+  const phone = document.getElementById('cust-phone').value.trim();
+  const name = document.getElementById('cust-name').value.trim();
+  if (!phone) { flashGlobal('⚠️ اكتب رقم جوال العميل', 'err'); return; }
+  try {
+    const body = { phone };
+    if (name) body.name = name;
+    await api('/customers', { method: 'POST', body: JSON.stringify(body) });
+    document.getElementById('cust-phone').value = ''; document.getElementById('cust-name').value = '';
+    flashGlobal('✅ تمت إضافة العميل', 'ok');
+    loadCustomers();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+const LOYALTY_REASON_LABEL = { ORDER_EARN: 'كسب من طلب', REDEEM: 'استبدال', MANUAL_ADJUST: 'تعديل يدوي' };
+async function toggleCustomerDetail(id) {
+  const row = document.getElementById('cust-detail-row-' + id);
+  const box = document.getElementById('cust-detail-box-' + id);
+  const opening = row.classList.contains('hidden');
+  row.classList.toggle('hidden');
+  if (!opening) return;
+  box.innerHTML = '<div class="empty">جارٍ التحميل...</div>';
+  try {
+    const ledger = await api(`/customers/${id}/ledger`);
+    box.innerHTML = `
+      <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>النقاط</th><th>السبب</th></tr></thead>
+        <tbody>
+          ${ledger.length ? ledger.map((t) => `
+            <tr><td>${new Date(t.createdAt).toLocaleString('ar-SA')}</td><td>${t.points > 0 ? '+' : ''}${t.points}</td><td>${LOYALTY_REASON_LABEL[t.reason] || t.reason}</td></tr>
+          `).join('') : `<tr><td colspan="3" class="empty">لا توجد حركات نقاط بعد</td></tr>`}
+        </tbody>
+      </table></div>
+      <div class="row-form" style="margin-top:10px">
+        <div><label>استبدال نقاط</label><input id="cust-redeem-${id}" type="number" min="1" placeholder="عدد النقاط"></div>
+        <div><button onclick="redeemCustomerPoints('${id}')">استبدال</button></div>
+      </div>
+    `;
+  } catch (e) { box.innerHTML = '❌ ' + e.message; }
+}
+async function redeemCustomerPoints(id) {
+  const input = document.getElementById('cust-redeem-' + id);
+  const points = parseInt(input.value, 10);
+  if (!points || points <= 0) { flashGlobal('⚠️ اكتب عدد نقاط صحيحًا', 'err'); return; }
+  try {
+    const res = await api(`/customers/${id}/redeem`, { method: 'POST', body: JSON.stringify({ points }) });
+    flashGlobal(`✅ تم استبدال ${res.pointsRedeemed} نقطة بقيمة ${res.cashValue.toFixed(2)} ر.س`, 'ok');
+    loadCustomers();
+    toggleCustomerDetail(id); toggleCustomerDetail(id); // close then reopen to refresh the ledger box
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ---------------- Analytics / BI ---------------- */
+const AN_CHANNEL_LABEL = { DINE_IN: 'صالة', TAKEAWAY: 'تيك أواي', DRIVE_THRU: 'Drive-thru', DELIVERY_PARTNER: 'توصيل خارجي', BRAND_APP: 'تطبيق العلامة' };
+function anQuery() {
+  const locationId = document.getElementById('an-location').value;
+  const from = document.getElementById('an-from').value;
+  const to = document.getElementById('an-to').value;
+  const params = new URLSearchParams();
+  if (locationId) params.set('locationId', locationId);
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  return params.toString();
+}
+function statTile(label, value) { return `<div class="stat-tile"><div class="label">${label}</div><div class="value">${value}</div></div>`; }
+async function loadAnalytics() {
+  const qs = anQuery();
+  try {
+    const [summary, topItems, foodCost, valuation, lowStock] = await Promise.all([
+      api('/analytics/sales-summary?' + qs),
+      api('/analytics/top-items?' + qs),
+      api('/analytics/food-cost?' + qs),
+      api('/analytics/inventory-valuation?' + (document.getElementById('an-location').value ? 'locationId=' + document.getElementById('an-location').value : '')),
+      api('/analytics/low-stock?' + (document.getElementById('an-location').value ? 'locationId=' + document.getElementById('an-location').value : '')),
+    ]);
+
+    document.getElementById('an-summary-cards').innerHTML = [
+      statTile('عدد الطلبات', summary.orderCount),
+      statTile('الإيراد', summary.revenue.toFixed(2)),
+      statTile('صافي المبيعات', summary.netSales.toFixed(2)),
+      statTile('ضريبة القيمة المضافة', summary.vatCollected.toFixed(2)),
+      statTile('الخصومات', summary.discountGiven.toFixed(2)),
+      statTile('متوسط الطلب', summary.averageOrderValue.toFixed(2)),
+    ].join('');
+    document.getElementById('an-channel-table').innerHTML = summary.byChannel.length
+      ? summary.byChannel.map((c) => `<tr><td>${AN_CHANNEL_LABEL[c.channel] || c.channel}</td><td>${c.orderCount}</td><td>${c.revenue.toFixed(2)}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+
+    document.getElementById('an-topitems-table').innerHTML = topItems.length
+      ? topItems.map((i) => `<tr><td>${i.name}</td><td>${i.quantity}</td><td>${i.revenue.toFixed(2)}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+
+    document.getElementById('an-foodcost-cards').innerHTML = [
+      statTile('صافي المبيعات', foodCost.netSales.toFixed(2)),
+      statTile('تكلفة البضاعة المباعة', foodCost.cogs.toFixed(2)),
+      statTile('هامش الربح', foodCost.grossMargin.toFixed(2)),
+      statTile('نسبة تكلفة الطعام', foodCost.foodCostPercent.toFixed(1) + '%'),
+      statTile('نسبة هامش الربح', foodCost.grossMarginPercent.toFixed(1) + '%'),
+    ].join('');
+
+    document.getElementById('an-valuation-table').innerHTML = valuation.lines.length
+      ? valuation.lines.map((l) => `<tr><td>${l.name}</td><td>${l.quantity} ${l.unit}</td><td>${l.value.toFixed(2)}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="empty">لا يوجد مخزون بعد</td></tr>`;
+    document.getElementById('an-valuation-total').textContent = 'الإجمالي: ' + valuation.totalValue.toFixed(2) + ' ر.س';
+
+    document.getElementById('an-lowstock-table').innerHTML = lowStock.length
+      ? lowStock.map((r) => `<tr><td>${r.name}</td><td>${r.locationName}</td><td>${r.quantity} ${r.unit}</td><td>${r.lowStockThreshold} ${r.unit}</td></tr>`).join('')
+      : `<tr><td colspan="4" class="empty">لا توجد تنبيهات انخفاض مخزون</td></tr>`;
+
+    loadReportsList();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ---------------- Reports export (Excel/PDF) ---------------- */
+async function loadReportsList() {
+  try {
+    const locationId = document.getElementById('an-location').value;
+    const reports = await api('/reports' + (locationId ? '?locationId=' + locationId : ''));
+    const typeLabel = { DAILY_BUNDLE: 'حزمة يومية' };
+    document.getElementById('rp-list-table').innerHTML = reports.length
+      ? reports.map((r) => `<tr>
+          <td>${typeLabel[r.type] || r.type}</td>
+          <td>${r.format}</td>
+          <td>${r.locationId ? (locationsCache.find((l) => l.id === r.locationId) || {}).name || r.locationId : 'كل المواقع'}</td>
+          <td>${r.periodStart.slice(0, 10)} → ${r.periodEnd.slice(0, 10)}</td>
+          <td>${new Date(r.createdAt).toLocaleString('ar-SA')}</td>
+          <td><button class="link-btn" onclick="downloadReport('${r.id}', '${r.fileName.replace(/'/g, "\\'")}')">⬇️ تحميل</button></td>
+        </tr>`).join('')
+      : `<tr><td colspan="6" class="empty">لا توجد تقارير مولَّدة بعد</td></tr>`;
+  } catch (e) { showMsg('rp-msg', '❌ ' + e.message, 'err'); }
+}
+
+async function generateReportNow() {
+  const btn = document.getElementById('rp-generate-btn');
+  btn.disabled = true;
+  try {
+    const locationId = document.getElementById('an-location').value;
+    const from = document.getElementById('an-from').value;
+    const to = document.getElementById('an-to').value;
+    const format = document.getElementById('rp-format').value;
+    if (!from || !to) { showMsg('rp-msg', '⚠️ حدد "من تاريخ" و"إلى تاريخ" في عوامل التصفية أعلاه أولًا', 'err'); return; }
+    const body = { from: new Date(from).toISOString(), to: new Date(to + 'T23:59:59').toISOString(), format };
+    if (locationId) body.locationId = locationId;
+    await api('/reports/generate', { method: 'POST', body: JSON.stringify(body) });
+    showMsg('rp-msg', '✅ تم توليد التقرير', 'ok');
+    loadReportsList();
+  } catch (e) { showMsg('rp-msg', '❌ ' + e.message, 'err'); }
+  finally { btn.disabled = false; }
+}
+
+async function generateAllReportsNow() {
+  if (!confirm('توليد دفعة تقارير اليوم لكل الفروع النشطة (Excel + PDF)؟ هذا نفس الإجراء الذي يعمل تلقائيًا كل يوم الساعة 1 صباحًا.')) return;
+  const btn = document.getElementById('rp-generate-all-btn');
+  btn.disabled = true;
+  try {
+    const now = new Date();
+    const from = new Date(now); from.setHours(0, 0, 0, 0);
+    const to = new Date(now); to.setHours(23, 59, 59, 999);
+    await api('/reports/generate-all', { method: 'POST', body: JSON.stringify({ from: from.toISOString(), to: to.toISOString() }) });
+    showMsg('rp-msg', '✅ تم توليد دفعة تقارير اليوم لكل الفروع', 'ok');
+    loadReportsList();
+  } catch (e) { showMsg('rp-msg', '❌ ' + e.message, 'err'); }
+  finally { btn.disabled = false; }
+}
+
+// api() always parses the response as JSON, which would corrupt a binary
+// XLSX/PDF file -- this bypasses it with a raw fetch + blob() instead, same
+// auth header, then triggers the browser's native save dialog via a
+// throwaway <a download> link (no server-side storage path needed).
+async function downloadReport(id, fileName) {
+  try {
+    const res = await fetch(apiBase() + '/reports/' + id + '/download', {
+      headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {},
+    });
+    if (!res.ok) {
+      let msg = 'HTTP ' + res.status;
+      try { const j = await res.json(); if (j && j.message) msg = j.message; } catch (e) { /* not JSON */ }
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) { showMsg('rp-msg', '❌ فشل تحميل التقرير: ' + e.message, 'err'); }
+}
+</script>
+</body>
+</html>

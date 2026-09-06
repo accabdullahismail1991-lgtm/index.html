@@ -2450,6 +2450,7 @@ const I18N_EN={
   "الشركة الرئيسية": "Main Company",
   "تبديل الشركة": "Switch Company",
   "🏢 إدارة الشركات": "🏢 Manage Companies",
+  "🍽️ نظام إدارة المطاعم (Restaurant ERP)": "🍽️ Restaurant ERP System",
   "➕ إنشاء شركة جديدة": "➕ Create New Company",
   "🏢 إنشاء شركة جديدة": "🏢 Create New Company",
   "اسم الشركة *": "Company Name *",
@@ -10693,6 +10694,7 @@ window.addEventListener('beforeunload',e=>{if(unsaved){e.preventDefault();e.retu
         <Item id="ddUsersItem" show={canManageUsersUI()} onClick={openUsersMgr} i18n="👤 المستخدمين والصلاحيات" />
         <Item id="ddCompanyItem" show={canManageCompanyUI()} onClick={openCompanyMgr} i18n="🏢 بيانات الشركة" />
         <Item id="ddCompaniesItem" show={curRole==='admin'} onClick={openCompaniesMgr} i18n="🏢 إدارة الشركات" />
+        <Item onClick={() => window.open('./restaurant-erp-admin/admin_panel.html', '_blank')} i18n="🍽️ نظام إدارة المطاعم (Restaurant ERP)" />
       </Group>
       <div style={{textAlign:'center',fontSize:10.5,color:'var(--muted)',padding:'14px 8px 6px'}}>{t('© جميع الحقوق محفوظة - عبدالله اسماعيل')}</div>
     </React.Fragment>);

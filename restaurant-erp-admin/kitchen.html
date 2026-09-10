@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>شاشة المطبخ — Restaurant ERP</title>
+<style>
+  :root{
+    --ink:#1a2030; --muted:#68748a; --border:#e3e6ee; --bg:#f2f3f8; --card:#ffffff;
+    --brand:#3730a3; --danger:#d0453f; --ok:#1f9d68;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);}
+  .hidden{display:none !important;}
+
+  /* ---- login screen (same idea as admin_panel.html's, kept minimal) ---- */
+  #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .login-card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 30px rgba(20,20,40,.08);
+    width:100%;max-width:420px;padding:32px 28px;}
+  .login-card h1{font-size:20px;margin:0 0 20px;}
+  label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:14px 0 6px;}
+  input,select{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-size:15px;
+    background:#fafbfe;color:var(--ink);font-family:inherit;}
+  input:focus,select:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:var(--brand);}
+  button{padding:12px 18px;border:none;border-radius:8px;background:var(--brand);color:#fff;
+    font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;}
+  button:hover{background:#2b2680;}
+  button:disabled{opacity:.6;cursor:default;}
+  .full{width:100%;margin-top:18px;}
+  .msg{margin-top:14px;padding:10px 12px;border-radius:8px;font-size:13px;line-height:1.7;display:none;}
+  .msg.err{display:block;background:rgba(208,69,63,.08);border:1px solid rgba(208,69,63,.35);color:#a5322d;}
+  .msg.ok{display:block;background:rgba(31,157,104,.08);border:1px solid rgba(31,157,104,.35);color:#0f6b45;}
+
+  /* ---- board ---- */
+  #boardScreen{min-height:100vh;display:flex;flex-direction:column;}
+  header{background:var(--brand);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  header h1{font-size:20px;margin:0;display:flex;align-items:center;gap:8px;}
+  header select{width:auto;min-width:200px;background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff;font-size:14px;padding:8px 12px;}
+  header select option{color:#000;}
+  .header-right{display:flex;align-items:center;gap:12px;}
+  #clock{font-size:15px;font-variant-numeric:tabular-nums;opacity:.9;}
+  .icon-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);width:40px;height:40px;border-radius:8px;font-size:16px;padding:0;}
+  .icon-btn:hover{background:rgba(255,255,255,.22);}
+  main{flex:1;padding:20px;}
+  .board-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+  .ticket{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(20,20,40,.05);}
+  .ticket-head{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:16px;margin-bottom:10px;padding-bottom:10px;border-bottom:2px solid var(--border);}
+  .ticket-head .age{font-size:13px;color:var(--muted);font-weight:600;}
+  .ticket-line{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .ticket-line:last-child{border-bottom:none;}
+  .ticket-line .name{font-size:16px;font-weight:600;}
+  .status-pill{font-size:13px;padding:4px 10px;border-radius:12px;font-weight:700;white-space:nowrap;}
+  .status-QUEUED{background:rgba(104,116,138,.15);color:var(--muted);}
+  .status-PREPARING{background:rgba(219,150,0,.18);color:#a66b00;}
+  .status-READY{background:rgba(31,157,104,.15);color:var(--ok);}
+  .status-SERVED{background:rgba(55,48,163,.1);color:var(--brand);}
+  .bump-btn{padding:10px 16px;font-size:14px;}
+  .empty-board{text-align:center;color:var(--muted);font-size:20px;padding:80px 20px;}
+  /* Longer a ticket sits without being touched, the more it stands out --
+     a real kitchen screen needs "this one's been waiting" to be visible
+     from across the pass, not just readable up close. */
+  .ticket.aging{border-color:#e0a100;box-shadow:0 0 0 2px rgba(224,161,0,.25);}
+  .ticket.stale{border-color:var(--danger);box-shadow:0 0 0 2px rgba(208,69,63,.3);}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h1>🍳 شاشة المطبخ</h1>
+    <label>عنوان الـ API</label>
+    <input id="apiBase" value="http://localhost:3000">
+    <label>رقم الجوال</label>
+    <input id="phone" value="+966500000000">
+    <label>كلمة المرور</label>
+    <input id="password" type="password" value="ChangeMe123!">
+    <button class="full" id="loginBtn" onclick="doLogin()">تسجيل الدخول</button>
+    <div id="loginMsg" class="msg"></div>
+  </div>
+</div>
+
+<!-- ============ BOARD ============ -->
+<div id="boardScreen" class="hidden">
+  <header>
+    <h1>🍳 المطبخ <select id="kt-location" onchange="onLocationChange()"></select></h1>
+    <div class="header-right">
+      <span id="clock"></span>
+      <button class="icon-btn" onclick="doLogout()" title="خروج">⎋</button>
+    </div>
+  </header>
+  <main>
+    <div id="board" class="board-grid"></div>
+  </main>
+</div>
+
+<script>
+let accessToken = null;
+let locationsCache = [];
+let pollTimer = null;
+
+const STORAGE_KEY = 'kitchen_display_session_v1';
+
+function apiBase() { return document.getElementById('apiBase').value.trim().replace(/\/$/, ''); }
+
+async function api(path, options) {
+  options = options || {};
+  options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+  if (accessToken) options.headers['Authorization'] = 'Bearer ' + accessToken;
+  const res = await fetch(apiBase() + path, options);
+  let data = null;
+  try { data = await res.json(); } catch (e) { /* empty body */ }
+  if (!res.ok) {
+    if (res.status === 401) doLogout('انتهت صلاحية الجلسة، سجّل الدخول تاني');
+    throw new Error((data && data.message) ? (Array.isArray(data.message) ? data.message.join('، ') : data.message) : ('HTTP ' + res.status));
+  }
+  return data;
+}
+
+function showMsg(id, text, kind) {
+  const el = document.getElementById(id);
+  el.className = 'msg ' + kind;
+  el.textContent = text;
+}
+
+// This is a fixed kiosk display, not a shared browser -- unlike
+// admin_panel.html (session-only token, many different people may use the
+// same machine), a kitchen tablet is meant to stay logged in permanently
+// so nobody has to type credentials again after every reboot.
+function saveSession() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ apiBase: apiBase(), accessToken, locationId: document.getElementById('kt-location').value }));
+  } catch (e) { /* private browsing -- session just won't survive a reload */ }
+}
+function loadSession() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch (e) { return null; }
+}
+function clearSession() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+}
+
+async function doLogin() {
+  const phone = document.getElementById('phone').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'جارٍ الدخول...';
+  try {
+    const res = await fetch(apiBase() + '/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
+    accessToken = data.accessToken;
+    saveSession();
+    await enterBoard();
+  } catch (e) {
+    showMsg('loginMsg', '❌ ' + e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'تسجيل الدخول';
+  }
+}
+
+function doLogout(message) {
+  accessToken = null;
+  clearSession();
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  document.getElementById('boardScreen').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  if (message) showMsg('loginMsg', 'ℹ️ ' + message, 'err');
+}
+
+async function enterBoard() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('boardScreen').classList.remove('hidden');
+  locationsCache = await api('/locations');
+  const saved = loadSession();
+  document.getElementById('kt-location').innerHTML = locationsCache.map((l) => `<option value="${l.id}">${l.name}</option>`).join('');
+  if (saved && saved.locationId && locationsCache.some((l) => l.id === saved.locationId)) {
+    document.getElementById('kt-location').value = saved.locationId;
+  }
+  startClock();
+  await loadBoard();
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(loadBoard, 6000);
+}
+
+function onLocationChange() {
+  saveSession();
+  loadBoard();
+}
+
+function startClock() {
+  const tick = () => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('ar-SA'); };
+  tick();
+  setInterval(tick, 1000);
+}
+
+const STATUS_LABEL = { QUEUED: 'قيد الانتظار', PREPARING: 'قيد التحضير', READY: 'جاهز', SERVED: 'تم التسليم' };
+const CHANNEL_LABEL = { DINE_IN: 'صالة', TAKEAWAY: 'تيك أواي', DRIVE_THRU: 'Drive-thru', DELIVERY_PARTNER: 'توصيل خارجي', BRAND_APP: 'تطبيق' };
+const AGING_MINUTES = 10; // amber past this
+const STALE_MINUTES = 20; // red past this
+
+async function loadBoard() {
+  const locationId = document.getElementById('kt-location').value;
+  const board = document.getElementById('board');
+  if (!locationId) { board.innerHTML = '<div class="empty-board">لا توجد فروع بعد</div>'; return; }
+  try {
+    const orders = await api('/kitchen/queue?locationId=' + locationId);
+    if (!orders.length) {
+      board.innerHTML = '<div class="empty-board">🎉 لا توجد طلبات قيد التحضير حاليًا</div>';
+      return;
+    }
+    const now = Date.now();
+    board.innerHTML = orders.map((o) => {
+      const ageMin = (now - new Date(o.createdAt).getTime()) / 60000;
+      const ageClass = ageMin >= STALE_MINUTES ? 'stale' : ageMin >= AGING_MINUTES ? 'aging' : '';
+      return `
+      <div class="ticket ${ageClass}">
+        <div class="ticket-head">
+          <span>${CHANNEL_LABEL[o.channel] || o.channel}${o.tableLabel ? ' -- ' + o.tableLabel : ''}</span>
+          <span class="age">${Math.floor(ageMin)} د</span>
+        </div>
+        ${o.lines.map((l) => `
+          <div class="ticket-line">
+            <span class="name">${l.menuItemName} × ${l.quantity}</span>
+            <span class="status-pill status-${l.kitchenStatus}">${STATUS_LABEL[l.kitchenStatus]}</span>
+            ${l.kitchenStatus !== 'SERVED' ? `<button class="bump-btn" onclick="bump('${l.lineId}')">تقدّم ▶</button>` : ''}
+          </div>
+        `).join('')}
+      </div>`;
+    }).join('');
+  } catch (e) { /* a transient network hiccup shouldn't blank the board -- keep showing the last successful render */ }
+}
+
+async function bump(lineId) {
+  try {
+    await api(`/kitchen/lines/${lineId}/advance`, { method: 'POST' });
+    await loadBoard();
+  } catch (e) { /* swallow -- the board's next poll will reflect the true state either way */ }
+}
+
+// Resume a persisted kiosk session automatically -- see saveSession()'s
+// comment on why this display intentionally doesn't stay session-only.
+(function restoreSession() {
+  const saved = loadSession();
+  if (saved && saved.accessToken) {
+    document.getElementById('apiBase').value = saved.apiBase;
+    accessToken = saved.accessToken;
+    enterBoard().catch(() => doLogout());
+  }
+})();
+</script>
+</body>
+</html>

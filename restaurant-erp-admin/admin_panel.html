@@ -92,6 +92,18 @@
   .menu-tile-name{font-size:11.5px;font-weight:600;line-height:1.3;margin-bottom:2px;}
   .menu-tile-price{font-size:11px;color:var(--brand);font-weight:700;}
 
+  /* ---- kitchen display (live queue tickets) ---- */
+  .kitchen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+  .kt-ticket{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;}
+  .kt-ticket-head{display:flex;justify-content:space-between;font-weight:700;font-size:13px;margin-bottom:8px;color:var(--muted);}
+  .kt-line{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .kt-line:last-child{border-bottom:none;}
+  .kt-status-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;white-space:nowrap;}
+  .kt-status-QUEUED{background:rgba(104,116,138,.15);color:var(--muted);}
+  .kt-status-PREPARING{background:rgba(219,150,0,.18);color:#a66b00;}
+  .kt-status-READY{background:rgba(31,157,104,.15);color:var(--ok);}
+  .kt-status-SERVED{background:rgba(55,48,163,.1);color:var(--brand);}
+
   /* ---- home dashboard (landing screen behind the popups) ---- */
   .home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
   .home-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 14px;
@@ -161,6 +173,7 @@
     <button id="tab-inventory" onclick="switchTab('inventory')">📦 المخزون</button>
     <button id="tab-sales" onclick="switchTab('sales')">🧾 المبيعات</button>
     <button id="tab-returns" onclick="switchTab('returns')">↩️ المرتجعات</button>
+    <button id="tab-kitchen" onclick="switchTab('kitchen')">🍳 المطبخ</button>
     <button id="tab-purchasing" onclick="switchTab('purchasing')">🛒 المشتريات</button>
     <button id="tab-production" onclick="switchTab('production')">🏭 الإنتاج</button>
     <button id="tab-transfers" onclick="switchTab('transfers')">🚚 التحويلات</button>
@@ -416,6 +429,21 @@
         <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>الموقع</th><th>الأصناف</th><th>السبب</th><th>الاسترداد</th></tr></thead>
           <tbody id="returnsTable"></tbody>
         </table></div>
+      </div>
+     </div></div>
+    </div>
+
+    <!-- KITCHEN -->
+    <div id="view-kitchen" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>🍳 المطبخ</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <h2>قائمة التحضير الحية</h2>
+        <div class="hint">لشاشة تابلت مخصّصة تُعرض دائمًا في المطبخ (خطوط أكبر، تسجيل دخول دائم لا يُطلب في كل مرة)، افتح
+          <a href="./kitchen.html" target="_blank">شاشة المطبخ المستقلة ↗</a>.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="kt-location" onchange="loadKitchenQueue()"></select></div>
+        </div>
+        <div id="kt-queue" class="kitchen-grid"></div>
       </div>
      </div></div>
     </div>
@@ -911,6 +939,7 @@ const TAB_META = {
   inventory: { icon: '📦', label: 'المخزون' },
   sales: { icon: '🧾', label: 'المبيعات' },
   returns: { icon: '↩️', label: 'المرتجعات' },
+  kitchen: { icon: '🍳', label: 'المطبخ' },
   purchasing: { icon: '🛒', label: 'المشتريات' },
   production: { icon: '🏭', label: 'الإنتاج' },
   transfers: { icon: '🚚', label: 'التحويلات' },
@@ -935,6 +964,7 @@ function closeView() {
     document.getElementById('tab-' + t).classList.remove('active');
     document.getElementById('view-' + t).classList.remove('open');
   });
+  stopKitchenPolling();
 }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeView(); });
 
@@ -961,12 +991,14 @@ function switchTab(name) {
     document.getElementById('tab-' + t).classList.toggle('active', t === name);
     document.getElementById('view-' + t).classList.toggle('open', t === name);
   });
+  stopKitchenPolling(); // only the currently-open tab, if it's Kitchen, restarts it below
   if (name === 'branches') { switchSubview('br', ['list', 'add'], 'list'); loadBranches(); }
   if (name === 'ingredients') { switchSubview('ing', ['list', 'add'], 'list'); loadIngredients(); }
   if (name === 'items') { switchSubview('mi', ['list', 'add', 'channels'], 'list'); loadItems(); }
   if (name === 'inventory') { switchSubview('inv', ['balances', 'receive', 'waste'], 'balances'); loadInventoryTab(); }
   if (name === 'sales') { switchSubview('sl', ['shifts', 'new', 'orders'], 'shifts'); loadSalesTab(); }
   if (name === 'returns') { switchSubview('rt', ['new', 'history'], 'new'); loadReturnsTab(); }
+  if (name === 'kitchen') loadKitchenTab();
   if (name === 'purchasing') { switchSubview('pu', ['suppliers', 'matrix', 'new', 'orders'], 'suppliers'); loadPurchasingTab(); }
   if (name === 'production') { switchSubview('pr', ['new', 'orders'], 'new'); loadProductionTab(); }
   if (name === 'transfers') { switchSubview('tf', ['new', 'list'], 'new'); loadTransfersTab(); }
@@ -1716,6 +1748,55 @@ async function loadReturnsHistory() {
         </tr>
       `).join('')
       : `<tr><td colspan="5" class="empty">لا توجد مرتجعات بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ================= Kitchen (KDS) ================= */
+const KITCHEN_STATUS_LABEL = { QUEUED: 'قيد الانتظار', PREPARING: 'قيد التحضير', READY: 'جاهز', SERVED: 'تم التسليم' };
+const KITCHEN_CHANNEL_LABEL = { DINE_IN: 'صالة', TAKEAWAY: 'تيك أواي', DRIVE_THRU: 'Drive-thru', DELIVERY_PARTNER: 'توصيل خارجي', BRAND_APP: 'تطبيق' };
+let kitchenPollTimer = null;
+function stopKitchenPolling() {
+  if (kitchenPollTimer) { clearInterval(kitchenPollTimer); kitchenPollTimer = null; }
+}
+async function loadKitchenTab() {
+  document.getElementById('kt-location').innerHTML = locationOptions();
+  await loadKitchenQueue();
+  // A real KDS screen is meant to stay open and up to date on its own --
+  // polling (not a push subscription, which this backend doesn't expose)
+  // every 8s while the popup is open; stopKitchenPolling() above/below
+  // ensures only one timer ever runs and it stops the moment the popup
+  // isn't the Kitchen one anymore.
+  kitchenPollTimer = setInterval(loadKitchenQueue, 8000);
+}
+async function loadKitchenQueue() {
+  const locationId = document.getElementById('kt-location').value;
+  const grid = document.getElementById('kt-queue');
+  if (!locationId) { grid.innerHTML = '<div class="empty">لا توجد مواقع بعد</div>'; return; }
+  try {
+    const orders = await api('/kitchen/queue?locationId=' + locationId);
+    grid.innerHTML = orders.length
+      ? orders.map((o) => `
+        <div class="kt-ticket">
+          <div class="kt-ticket-head">
+            <span>${KITCHEN_CHANNEL_LABEL[o.channel] || o.channel}${o.tableLabel ? ' -- ' + o.tableLabel : ''}</span>
+            <span>${new Date(o.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+          ${o.lines.map((l) => `
+            <div class="kt-line">
+              <span>${l.menuItemName} × ${l.quantity}</span>
+              <span class="kt-status-badge kt-status-${l.kitchenStatus}">${KITCHEN_STATUS_LABEL[l.kitchenStatus]}</span>
+              ${l.kitchenStatus !== 'SERVED' ? `<button class="link-btn" onclick="advanceKitchenLine('${l.lineId}')">تقدّم ▶</button>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `).join('')
+      : '<div class="empty">لا توجد طلبات قيد التحضير حاليًا 🎉</div>';
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function advanceKitchenLine(lineId) {
+  try {
+    await api(`/kitchen/lines/${lineId}/advance`, { method: 'POST' });
+    await loadKitchenQueue();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 

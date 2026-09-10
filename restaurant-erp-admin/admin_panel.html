@@ -160,6 +160,7 @@
     <button id="tab-items" onclick="switchTab('items')">📋 أصناف المنيو</button>
     <button id="tab-inventory" onclick="switchTab('inventory')">📦 المخزون</button>
     <button id="tab-sales" onclick="switchTab('sales')">🧾 المبيعات</button>
+    <button id="tab-returns" onclick="switchTab('returns')">↩️ المرتجعات</button>
     <button id="tab-purchasing" onclick="switchTab('purchasing')">🛒 المشتريات</button>
     <button id="tab-production" onclick="switchTab('production')">🏭 الإنتاج</button>
     <button id="tab-transfers" onclick="switchTab('transfers')">🚚 التحويلات</button>
@@ -385,6 +386,35 @@
         <h2>الطلبات</h2>
         <div class="table-wrap"><table><thead><tr><th>الموقع</th><th>القناة</th><th>الحالة</th><th>الإجمالي</th><th></th></tr></thead>
           <tbody id="ordersTable"></tbody>
+        </table></div>
+      </div>
+     </div></div>
+    </div>
+
+    <!-- RETURNS -->
+    <div id="view-returns" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>↩️ المرتجعات</h2><button class="view-close" onclick="closeView()">✕</button></div>
+      <div class="subnav">
+        <button id="rt-tab-new" class="active" onclick="switchSubview('rt',['new','history'],'new')">➕ مرتجع جديد</button>
+        <button id="rt-tab-history" onclick="switchSubview('rt',['new','history'],'history')">📋 سجل المرتجعات</button>
+      </div>
+      <div class="view-body">
+      <div class="panel subview" id="rt-sub-new">
+        <h2>➕ مرتجع جديد</h2>
+        <div class="row-form">
+          <div><label>الطلب المدفوع</label><select id="rt-order" onchange="loadReturnableLines()"><option value="">اختر طلبًا...</option></select></div>
+          <div><label>سبب المرتجع (اختياري)</label><input id="rt-reason" placeholder="مثال: العميل غيّر رأيه"></div>
+        </div>
+        <div id="rt-lines-wrap" style="margin-top:14px"></div>
+        <div style="margin-top:10px">
+          <button onclick="submitReturn()" id="rt-submit-btn" disabled>تسجيل المرتجع</button>
+        </div>
+        <div id="rt-msg" class="msg"></div>
+      </div>
+      <div class="panel subview hidden" id="rt-sub-history">
+        <h2>سجل المرتجعات</h2>
+        <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>الموقع</th><th>الأصناف</th><th>السبب</th><th>الاسترداد</th></tr></thead>
+          <tbody id="returnsTable"></tbody>
         </table></div>
       </div>
      </div></div>
@@ -880,6 +910,7 @@ const TAB_META = {
   items: { icon: '📋', label: 'أصناف المنيو' },
   inventory: { icon: '📦', label: 'المخزون' },
   sales: { icon: '🧾', label: 'المبيعات' },
+  returns: { icon: '↩️', label: 'المرتجعات' },
   purchasing: { icon: '🛒', label: 'المشتريات' },
   production: { icon: '🏭', label: 'الإنتاج' },
   transfers: { icon: '🚚', label: 'التحويلات' },
@@ -935,6 +966,7 @@ function switchTab(name) {
   if (name === 'items') { switchSubview('mi', ['list', 'add', 'channels'], 'list'); loadItems(); }
   if (name === 'inventory') { switchSubview('inv', ['balances', 'receive', 'waste'], 'balances'); loadInventoryTab(); }
   if (name === 'sales') { switchSubview('sl', ['shifts', 'new', 'orders'], 'shifts'); loadSalesTab(); }
+  if (name === 'returns') { switchSubview('rt', ['new', 'history'], 'new'); loadReturnsTab(); }
   if (name === 'purchasing') { switchSubview('pu', ['suppliers', 'matrix', 'new', 'orders'], 'suppliers'); loadPurchasingTab(); }
   if (name === 'production') { switchSubview('pr', ['new', 'orders'], 'new'); loadProductionTab(); }
   if (name === 'transfers') { switchSubview('tf', ['new', 'list'], 'new'); loadTransfersTab(); }
@@ -1609,6 +1641,81 @@ async function voidOrder(id) {
     await api(`/orders/${id}/void`, { method: 'POST' });
     flashGlobal('✅ تم إلغاء الطلب', 'ok');
     loadOrders();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ================= Returns ================= */
+let returnableOrdersCache = [];
+async function loadReturnsTab() {
+  document.getElementById('rt-order').innerHTML = '<option value="">اختر طلبًا...</option>';
+  document.getElementById('rt-lines-wrap').innerHTML = '';
+  document.getElementById('rt-submit-btn').disabled = true;
+  try {
+    // Only PAID orders are returnable -- the server enforces this too,
+    // this is just so the dropdown doesn't offer orders that would 400.
+    const orders = await api('/orders');
+    returnableOrdersCache = orders.filter((o) => o.status === 'PAID');
+    const locName = (id) => (locationsCache.find((l) => l.id === id) || {}).name || id;
+    document.getElementById('rt-order').innerHTML =
+      '<option value="">اختر طلبًا...</option>' +
+      returnableOrdersCache.map((o) => `<option value="${o.id}">${locName(o.locationId)} -- ${o.id.slice(-6)} -- ${Number(o.grandTotal).toFixed(2)}</option>`).join('');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+  await loadReturnsHistory();
+}
+async function loadReturnableLines() {
+  const orderId = document.getElementById('rt-order').value;
+  const wrap = document.getElementById('rt-lines-wrap');
+  document.getElementById('rt-submit-btn').disabled = true;
+  if (!orderId) { wrap.innerHTML = ''; return; }
+  try {
+    const lines = await api(`/returns/order/${orderId}/returnable-lines`);
+    const returnable = lines.filter((l) => l.remaining > 0);
+    if (!returnable.length) {
+      wrap.innerHTML = '<div class="empty">كل أصناف هذا الطلب مُرجَعة بالكامل بالفعل</div>';
+      return;
+    }
+    wrap.innerHTML = `<div class="table-wrap"><table><thead><tr><th>الصنف</th><th>الكمية المباعة</th><th>مُرجَع سابقًا</th><th>المتبقي</th><th>الكمية المطلوب إرجاعها</th></tr></thead>
+      <tbody>${returnable.map((l) => `
+        <tr>
+          <td>${l.menuItemName}</td><td>${l.quantity}</td><td>${l.alreadyReturned}</td><td>${l.remaining}</td>
+          <td><input type="number" min="0" max="${l.remaining}" step="1" value="0" class="rt-qty" data-line-id="${l.orderLineId}" style="width:70px"></td>
+        </tr>
+      `).join('')}</tbody>
+    </table></div>`;
+    document.getElementById('rt-submit-btn').disabled = false;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); wrap.innerHTML = ''; }
+}
+async function submitReturn() {
+  const orderId = document.getElementById('rt-order').value;
+  const reason = document.getElementById('rt-reason').value.trim() || undefined;
+  const lines = Array.from(document.querySelectorAll('.rt-qty'))
+    .map((el) => ({ orderLineId: el.dataset.lineId, quantity: parseInt(el.value, 10) }))
+    .filter((l) => l.quantity > 0);
+  if (!orderId) { showMsg('rt-msg', '⚠️ اختر طلبًا', 'err'); return; }
+  if (!lines.length) { showMsg('rt-msg', '⚠️ حدد كمية صنف واحد على الأقل لإرجاعه', 'err'); return; }
+  try {
+    const ret = await api('/returns', { method: 'POST', body: JSON.stringify({ orderId, reason, lines }) });
+    showMsg('rt-msg', `✅ تم تسجيل المرتجع -- مبلغ الاسترداد: ${Number(ret.refundTotal).toFixed(2)}`, 'ok');
+    document.getElementById('rt-reason').value = '';
+    await loadReturnableLines();
+    await loadReturnsHistory();
+  } catch (e) { showMsg('rt-msg', '❌ ' + e.message, 'err'); }
+}
+async function loadReturnsHistory() {
+  try {
+    const returns = await api('/returns');
+    const locName = (id) => (locationsCache.find((l) => l.id === id) || {}).name || id;
+    document.getElementById('returnsTable').innerHTML = returns.length
+      ? returns.map((r) => `
+        <tr>
+          <td>${new Date(r.createdAt).toLocaleString('ar-SA')}</td>
+          <td>${locName(r.order.locationId)}</td>
+          <td>${r.lines.map((l) => `${l.orderLine.menuItem.name} × ${l.quantity}`).join('، ')}</td>
+          <td>${r.reason || '-'}</td>
+          <td>${Number(r.refundTotal).toFixed(2)}</td>
+        </tr>
+      `).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد مرتجعات بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 

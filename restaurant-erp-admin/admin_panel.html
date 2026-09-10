@@ -10,6 +10,7 @@
      work offline in (a restaurant's back office, a factory floor) may
      block arbitrary external hosts entirely. -->
 <script src="./dexie.min.js"></script>
+<script src="./vendor-qrcode.min.js"></script>
 <style>
   :root{
     --ink:#1a2030; --muted:#68748a; --border:#e3e6ee; --bg:#f2f3f8; --card:#ffffff;
@@ -146,6 +147,33 @@
   .subnav button.active{color:var(--brand);border-bottom-color:var(--brand);}
   .subnav button:hover{color:var(--ink);}
   .subview.hidden{display:none;}
+
+  /* ---- ZATCA-style invoice view/print ---- */
+  .invoice-box{max-width:420px;margin:0 auto;background:#fff;padding:16px;font-size:12.5px;color:#000;}
+  .invoice-box .biz-name{font-weight:800;font-size:15px;text-align:center;}
+  .invoice-box .biz-meta{text-align:center;color:#444;font-size:11.5px;margin-bottom:6px;}
+  .invoice-title{text-align:center;font-weight:700;font-size:13px;margin:8px 0;padding:4px 0;
+    border-top:1px dashed #999;border-bottom:1px dashed #999;}
+  .invoice-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;font-size:11.5px;margin:8px 0;}
+  .invoice-meta-grid .k{color:#555;}
+  .invoice-box table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px;}
+  .invoice-box th,.invoice-box td{padding:4px 2px;text-align:right;}
+  .invoice-box thead th{border-bottom:1px solid #000;}
+  .invoice-box tbody tr{border-bottom:1px dotted #ccc;}
+  .invoice-totals{margin-top:8px;border-top:1px dashed #999;padding-top:6px;font-size:12px;}
+  .invoice-totals .row{display:flex;justify-content:space-between;padding:2px 0;}
+  .invoice-totals .grand{font-weight:800;font-size:14px;border-top:1px solid #000;margin-top:4px;padding-top:4px;}
+  .invoice-qr{display:flex;flex-direction:column;align-items:center;margin-top:14px;gap:6px;}
+  .invoice-note{font-size:10.5px;color:#666;text-align:center;margin-top:8px;line-height:1.6;}
+  .invoice-pending-note{background:#fff8e1;border:1px solid #f0d060;border-radius:8px;padding:10px;font-size:12px;margin-bottom:12px;}
+
+  @media print{
+    body *{visibility:hidden;}
+    #view-invoice, #view-invoice *{visibility:visible;}
+    #view-invoice{position:absolute;inset:0;background:#fff;}
+    .no-print{display:none !important;}
+    .view-card{box-shadow:none;}
+  }
 </style>
 </head>
 <body>
@@ -890,6 +918,20 @@
       </div>
      </div></div>
     </div>
+
+    <!-- INVOICE (ZATCA-compliant view/print) -->
+    <div id="view-invoice" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card">
+      <div class="view-head no-print"><h2>🧾 الفاتورة</h2>
+        <div style="display:flex;gap:8px">
+          <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
+          <button class="view-close" onclick="closeView()">✕</button>
+        </div>
+      </div>
+      <div class="view-body">
+        <div id="inv-content"></div>
+      </div>
+     </div></div>
   </main>
 </div>
 
@@ -1379,9 +1421,7 @@ const REPORT_POPUPS = {
   'payment-methods': loadPaymentMethodsReport,
 };
 function openReportPopup(key) {
-  document.querySelectorAll('.view.open').forEach((v) => v.classList.remove('open'));
-  TABS.forEach((t) => document.getElementById('tab-' + t).classList.remove('active'));
-  stopKitchenPolling();
+  closeView();
   document.getElementById('view-report-' + key).classList.add('open');
   REPORT_POPUPS[key]();
 }
@@ -2128,6 +2168,7 @@ async function loadOrders() {
               <button class="link-btn" onclick="payOrder('${o.id}', ${o.grandTotal})">💰 دفع</button>
               <button class="link-btn" onclick="voidOrder('${o.id}')">إلغاء</button>
             ` : ''}
+            ${o.status === 'PAID' ? `<button class="link-btn" onclick="openInvoicePopup('${o.id}')">🧾 الفاتورة</button>` : ''}
           </td>
         </tr>
       `).join('')
@@ -2148,6 +2189,92 @@ async function voidOrder(id) {
     flashGlobal('✅ تم إلغاء الطلب', 'ok');
     loadOrders();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ================= Invoice (ZATCA-compliant view/print) ================= */
+// Same flat VAT rate re-declared client-side as every backend file already
+// does per docs/DECISIONS.md #3 (orders.service.ts, zatca.service.ts) --
+// only used here to show a per-LINE VAT/total breakdown for readability;
+// the order-level subtotal/vatTotal/grandTotal actually charged always
+// come straight from the API, never recomputed from lines client-side.
+const INVOICE_VAT_RATE = 0.15;
+
+async function openInvoicePopup(orderId) {
+  closeView();
+  document.getElementById('view-invoice').classList.add('open');
+  document.getElementById('inv-content').innerHTML = '<div class="empty">جارِ التحميل...</div>';
+  try {
+    const order = await api('/orders/' + orderId);
+    renderInvoice(order);
+  } catch (e) {
+    document.getElementById('inv-content').innerHTML = '<div class="empty">❌ ' + e.message + '</div>';
+  }
+}
+
+function renderInvoice(o) {
+  const loc = o.location || {};
+  const round2 = (n) => Math.round(n * 100) / 100;
+
+  const linesHtml = o.lines.map((l) => {
+    const lineSubtotal = Number(l.unitPrice) * l.quantity;
+    const lineVat = round2(lineSubtotal * INVOICE_VAT_RATE);
+    const lineTotal = round2(lineSubtotal + lineVat);
+    return `<tr>
+      <td>${l.menuItem ? l.menuItem.name : l.menuItemId}</td>
+      <td>${l.quantity}</td>
+      <td>${Number(l.unitPrice).toFixed(2)}</td>
+      <td>${lineVat.toFixed(2)}</td>
+      <td>${lineTotal.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+
+  const paymentsText = o.payments && o.payments.length
+    ? o.payments.map((p) => `${PAYMENT_METHOD_LABEL[p.method] || p.method}: ${Number(p.amount).toFixed(2)}`).join('، ')
+    : '-';
+
+  const pendingNote = o.zatcaSyncStatus === 'PENDING'
+    ? `<div class="invoice-pending-note">⚠️ لا يوجد رقم ضريبي مُعدّ لهذا الفرع، لذا لم تُولَّد فاتورة إلكترونية موقّعة (لا رمز QR). أضف الرقم الضريبي من تبويب "🏢 الفروع" لتفعيل الفوترة الإلكترونية المتوافقة مع "فاتورة" لهذا الفرع.</div>`
+    : '';
+
+  document.getElementById('inv-content').innerHTML = `
+    <div class="invoice-box">
+      ${pendingNote}
+      <div class="biz-name">${loc.name || '-'}</div>
+      ${loc.vatNumber ? `<div class="biz-meta">الرقم الضريبي / VAT No: ${loc.vatNumber}</div>` : ''}
+      ${loc.address ? `<div class="biz-meta">${loc.address}</div>` : ''}
+      <div class="invoice-title">فاتورة ضريبية مبسّطة<br>Simplified Tax Invoice</div>
+      <div class="invoice-meta-grid">
+        <div><span class="k">رقم الفاتورة:</span> ${o.id.slice(-10)}</div>
+        <div><span class="k">التسلسل (ICV):</span> ${o.zatcaInvoiceCounter ?? '-'}</div>
+        <div><span class="k">التاريخ والوقت:</span> ${o.paidAt ? new Date(o.paidAt).toLocaleString('ar-SA') : '-'}</div>
+        <div><span class="k">الكاشير:</span> ${o.servedBy ? o.servedBy.name : '-'}</div>
+        ${o.customer ? `<div><span class="k">العميل:</span> ${o.customer.name || o.customer.phone}</div>` : ''}
+        <div><span class="k">طريقة الدفع:</span> ${paymentsText}</div>
+      </div>
+      <table>
+        <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الضريبة</th><th>الإجمالي</th></tr></thead>
+        <tbody>${linesHtml}</tbody>
+      </table>
+      <div class="invoice-totals">
+        <div class="row"><span>الإجمالي قبل الضريبة</span><span>${Number(o.subtotal).toFixed(2)}</span></div>
+        ${Number(o.discountTotal) > 0 ? `<div class="row"><span>الخصم</span><span>-${Number(o.discountTotal).toFixed(2)}</span></div>` : ''}
+        <div class="row"><span>ضريبة القيمة المضافة (15%)</span><span>${Number(o.vatTotal).toFixed(2)}</span></div>
+        <div class="row grand"><span>الإجمالي شامل الضريبة</span><span>${Number(o.grandTotal).toFixed(2)} ر.س</span></div>
+      </div>
+      ${o.zatcaQrCode ? `
+        <div class="invoice-qr">
+          <canvas id="inv-qr-canvas"></canvas>
+          <div class="invoice-note">امسح الرمز للتحقق من الفاتورة عبر تطبيق "فاتورة" التابع لهيئة الزكاة والضريبة والجمارك</div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  if (o.zatcaQrCode && window.QRCode) {
+    QRCode.toCanvas(document.getElementById('inv-qr-canvas'), o.zatcaQrCode, { width: 160, margin: 1 }, (err) => {
+      if (err) console.error('QR render failed', err);
+    });
+  }
 }
 async function loadSalesReport() {
   const sel = document.getElementById('slr-location');

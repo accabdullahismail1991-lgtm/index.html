@@ -203,8 +203,9 @@
     <!-- BRANCHES -->
     <div id="view-branches" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>🏢 الفروع</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
-        <button id="br-tab-list" class="active" onclick="switchSubview('br',['list','add'],'list')">الفروع الحالية</button>
-        <button id="br-tab-add" class="" onclick="switchSubview('br',['list','add'],'add')">➕ إضافة فرع</button>
+        <button id="br-tab-list" class="active" onclick="switchSubview('br',['list','add','import'],'list')">الفروع الحالية</button>
+        <button id="br-tab-add" class="" onclick="switchSubview('br',['list','add','import'],'add')">➕ إضافة فرع</button>
+        <button id="br-tab-import" class="" onclick="switchSubview('br',['list','add','import'],'import'); renderImportExportPanel('br-sub-import','branches')">📥 استيراد / تصدير</button>
       </div>
       <div class="view-body">
 
@@ -230,14 +231,16 @@
           <div><button onclick="createBranch()">إضافة</button></div>
         </div>
       </div>
+      <div class="panel subview hidden" id="br-sub-import"></div>
      </div></div>
     </div>
 
     <!-- INGREDIENTS -->
     <div id="view-ingredients" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>🥕 الأصناف الخام والنصف مصنّعة</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
-        <button id="ing-tab-list" class="active" onclick="switchSubview('ing',['list','add'],'list')">الأصناف الحالية</button>
-        <button id="ing-tab-add" class="" onclick="switchSubview('ing',['list','add'],'add')">➕ إضافة صنف</button>
+        <button id="ing-tab-list" class="active" onclick="switchSubview('ing',['list','add','import'],'list')">الأصناف الحالية</button>
+        <button id="ing-tab-add" class="" onclick="switchSubview('ing',['list','add','import'],'add')">➕ إضافة صنف</button>
+        <button id="ing-tab-import" class="" onclick="switchSubview('ing',['list','add','import'],'import'); renderImportExportPanel('ing-sub-import','ingredients')">📥 استيراد / تصدير</button>
       </div>
       <div class="view-body">
 
@@ -270,6 +273,7 @@
           <div><button onclick="createIngredient()">إضافة</button></div>
         </div>
       </div>
+      <div class="panel subview hidden" id="ing-sub-import"></div>
      </div></div>
     </div>
 
@@ -277,10 +281,11 @@
     <div id="view-items" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>📋 أصناف المنيو</h2><button class="view-close" onclick="closeView()">✕</button></div>
       <div class="subnav">
-        <button id="mi-tab-list" class="active" onclick="switchSubview('mi',['list','add','channels','report'],'list')">الأصناف الحالية</button>
-        <button id="mi-tab-add" onclick="switchSubview('mi',['list','add','channels','report'],'add')">➕ إضافة صنف</button>
-        <button id="mi-tab-channels" onclick="switchSubview('mi',['list','add','channels','report'],'channels')">💲 قوائم تسعير القنوات</button>
-        <button id="mi-tab-report" onclick="switchSubview('mi',['list','add','channels','report'],'report'); loadItemsReport()">📊 التقرير</button>
+        <button id="mi-tab-list" class="active" onclick="switchSubview('mi',['list','add','channels','report','import'],'list')">الأصناف الحالية</button>
+        <button id="mi-tab-add" onclick="switchSubview('mi',['list','add','channels','report','import'],'add')">➕ إضافة صنف</button>
+        <button id="mi-tab-channels" onclick="switchSubview('mi',['list','add','channels','report','import'],'channels')">💲 قوائم تسعير القنوات</button>
+        <button id="mi-tab-report" onclick="switchSubview('mi',['list','add','channels','report','import'],'report'); loadItemsReport()">📊 التقرير</button>
+        <button id="mi-tab-import" onclick="switchSubview('mi',['list','add','channels','report','import'],'import'); renderImportExportPanel('mi-sub-import','items')">📥 استيراد / تصدير</button>
       </div>
       <div class="view-body">
       <div class="panel subview" id="mi-sub-list">
@@ -329,6 +334,7 @@
           <tbody id="mir-costs-table"></tbody>
         </table></div>
       </div>
+      <div class="panel subview hidden" id="mi-sub-import"></div>
      </div></div>
     </div>
 
@@ -545,11 +551,12 @@
     <!-- PURCHASING -->
     <div id="view-purchasing" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>🛒 المشتريات</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
-        <button id="pu-tab-suppliers" class="active" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report'],'suppliers')">الموردون</button>
-        <button id="pu-tab-matrix" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report'],'matrix')">مصفوفة الموافقات</button>
-        <button id="pu-tab-new" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report'],'new')">➕ أمر شراء</button>
-        <button id="pu-tab-orders" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report'],'orders')">أوامر الشراء</button>
-        <button id="pu-tab-report" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report'],'report'); loadPurchasingReport()">📊 التقرير</button>
+        <button id="pu-tab-suppliers" class="active" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report','import'],'suppliers')">الموردون</button>
+        <button id="pu-tab-matrix" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report','import'],'matrix')">مصفوفة الموافقات</button>
+        <button id="pu-tab-new" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report','import'],'new')">➕ أمر شراء</button>
+        <button id="pu-tab-orders" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report','import'],'orders')">أوامر الشراء</button>
+        <button id="pu-tab-report" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report','import'],'report'); loadPurchasingReport()">📊 التقرير</button>
+        <button id="pu-tab-import" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report','import'],'import'); renderImportExportPanel('pu-sub-import','suppliers')">📥 استيراد الموردين</button>
       </div>
       <div class="view-body">
 
@@ -614,6 +621,7 @@
           <tbody id="pur-suppliers-table"></tbody>
         </table></div>
       </div>
+      <div class="panel subview hidden" id="pu-sub-import"></div>
      </div></div>
     </div>
 
@@ -724,8 +732,9 @@
     <!-- CUSTOMERS / LOYALTY -->
     <div id="view-customers" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>👤 العملاء</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
-        <button id="cu-tab-list" class="active" onclick="switchSubview('cu',['list','add'],'list')">العملاء</button>
-        <button id="cu-tab-add" class="" onclick="switchSubview('cu',['list','add'],'add')">➕ عميل جديد</button>
+        <button id="cu-tab-list" class="active" onclick="switchSubview('cu',['list','add','import'],'list')">العملاء</button>
+        <button id="cu-tab-add" class="" onclick="switchSubview('cu',['list','add','import'],'add')">➕ عميل جديد</button>
+        <button id="cu-tab-import" class="" onclick="switchSubview('cu',['list','add','import'],'import'); renderImportExportPanel('cu-sub-import','customers')">📥 استيراد / تصدير</button>
       </div>
       <div class="view-body">
 
@@ -747,6 +756,7 @@
         </div>
         <div class="hint">* نقطة واحدة لكل 10 ر.س من إجمالي الفاتورة عند الدفع، وقيمة النقطة عند الاستبدال 0.10 ر.س.</div>
       </div>
+      <div class="panel subview hidden" id="cu-sub-import"></div>
      </div></div>
     </div>
 
@@ -1009,6 +1019,211 @@ function showMsg(id, text, kind) {
   if (kind === 'ok') setTimeout(() => { el.className = 'msg'; }, 4000);
 }
 
+/* ================= Bulk Import / Export (Phase G) ================= */
+// One shared CSV import/export panel definition per master-data module --
+// each module's own admin panel tab renders this same generic UI (template
+// download, file picker + preview, import with per-row results, export of
+// what's currently loaded) instead of hand-duplicating near-identical
+// markup and JS five times over.
+const IMPORT_MODULES = {
+  branches: {
+    label: 'الفروع',
+    endpoint: '/locations/bulk-import',
+    cache: () => locationsCache,
+    fields: [
+      { key: 'name', label: 'الاسم', required: true, example: 'فرع الرياض' },
+      { key: 'type', label: 'النوع (BRANCH / CENTRAL_KITCHEN / WAREHOUSE)', required: true, example: 'BRANCH' },
+      { key: 'address', label: 'العنوان' },
+      { key: 'vatNumber', label: 'الرقم الضريبي' },
+    ],
+    afterImport: () => loadBranches(),
+  },
+  ingredients: {
+    label: 'الأصناف الخام والنصف مصنّعة',
+    endpoint: '/ingredients/bulk-import',
+    cache: () => ingredientsCache,
+    fields: [
+      { key: 'name', label: 'الاسم', required: true, example: 'طماطم' },
+      { key: 'unit', label: 'الوحدة (g/kg/ml/l/pcs)', required: true, example: 'g' },
+      { key: 'kind', label: 'النوع (RAW_MATERIAL / SEMI_FINISHED)', required: true, example: 'RAW_MATERIAL' },
+      { key: 'lowStockThreshold', label: 'الحد الأدنى للتنبيه', required: true, numeric: true, example: '10' },
+      { key: 'shelfLifeDays', label: 'مدة الصلاحية (أيام)', numeric: true },
+    ],
+    afterImport: () => loadIngredients(),
+  },
+  items: {
+    label: 'أصناف المنيو',
+    endpoint: '/items/bulk-import',
+    cache: () => itemsCache,
+    fields: [
+      { key: 'name', label: 'الاسم', required: true, example: 'بيتزا مارجريتا' },
+      { key: 'category', label: 'القسم', required: true, example: 'رئيسي' },
+      { key: 'price', label: 'السعر', required: true, numeric: true, example: '35' },
+    ],
+    afterImport: () => loadItems(),
+  },
+  suppliers: {
+    label: 'الموردون',
+    endpoint: '/suppliers/bulk-import',
+    cache: () => suppliersCache,
+    fields: [
+      { key: 'name', label: 'الاسم', required: true, example: 'مورد الخضار' },
+      { key: 'phone', label: 'الجوال' },
+    ],
+    afterImport: () => loadSuppliers(),
+  },
+  customers: {
+    label: 'العملاء',
+    endpoint: '/customers/bulk-import',
+    cache: () => customersCache,
+    fields: [
+      { key: 'phone', label: 'الجوال', required: true, example: '+966500000001' },
+      { key: 'name', label: 'الاسم' },
+    ],
+    afterImport: () => loadCustomers(),
+  },
+};
+let importPreviewRows = {};
+
+function csvParseText(text) {
+  // Minimal RFC4180-ish parser: handles quoted fields with embedded
+  // commas/newlines/escaped "" quotes -- enough for a spreadsheet export
+  // re-imported here, without pulling in a parsing library for 5 small forms.
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; } }
+      else field += c;
+    } else if (c === '"') { inQuotes = true; }
+    else if (c === ',') { row.push(field); field = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(field); field = '';
+      if (row.length > 1 || row[0] !== '') rows.push(row);
+      row = [];
+    } else field += c;
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  if (!rows.length) return [];
+  const headers = rows[0].map((h) => h.trim());
+  return rows.slice(1).map((r) => {
+    const obj = {};
+    headers.forEach((h, idx) => { obj[h] = r[idx] !== undefined ? r[idx].trim() : ''; });
+    return obj;
+  });
+}
+function csvCell(value) {
+  const s = value === null || value === undefined ? '' : String(value);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function csvStringify(headers, rows) {
+  const lines = [headers.join(',')];
+  for (const row of rows) lines.push(headers.map((h) => csvCell(row[h])).join(','));
+  return lines.join('\r\n');
+}
+function downloadTextFile(filename, text) {
+  const blob = new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function downloadImportTemplate(moduleKey) {
+  const cfg = IMPORT_MODULES[moduleKey];
+  const headers = cfg.fields.map((f) => f.key);
+  const example = {};
+  cfg.fields.forEach((f) => { example[f.key] = f.example || ''; });
+  downloadTextFile(`${moduleKey}-import-template.csv`, csvStringify(headers, [example]));
+}
+function importExportFieldsHint(fields) {
+  return fields.map((f) => `${f.label}${f.required ? ' *' : ''}`).join('، ');
+}
+
+function renderImportExportPanel(containerId, moduleKey) {
+  const cfg = IMPORT_MODULES[moduleKey];
+  document.getElementById(containerId).innerHTML = `
+    <h2>📥 استيراد ${cfg.label} (CSV)</h2>
+    <div class="hint">الأعمدة: ${importExportFieldsHint(cfg.fields)} (* إلزامي). حمّل النموذج، عبّئه في إكسل أو أي محرر CSV، ثم ارفعه هنا.</div>
+    <div class="row-form" style="margin-top:10px">
+      <div><button class="ghost" onclick="downloadImportTemplate('${moduleKey}')">⬇️ تحميل نموذج CSV</button></div>
+      <div><label>ملف CSV</label><input type="file" accept=".csv" onchange="onImportFileSelected('${moduleKey}', this)"></div>
+    </div>
+    <div id="imp-preview-${moduleKey}"></div>
+    <div id="imp-result-${moduleKey}" class="msg"></div>
+    <h2 style="margin-top:22px">📤 تصدير البيانات الحالية</h2>
+    <div class="row-form" style="margin-top:0">
+      <div><button onclick="exportModuleCsv('${moduleKey}')">⬇️ تصدير كـ CSV</button></div>
+    </div>
+  `;
+}
+
+function onImportFileSelected(moduleKey, inputEl) {
+  const file = inputEl.files && inputEl.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    importPreviewRows[moduleKey] = csvParseText(String(reader.result));
+    renderImportPreview(moduleKey);
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function renderImportPreview(moduleKey) {
+  const cfg = IMPORT_MODULES[moduleKey];
+  const rows = importPreviewRows[moduleKey] || [];
+  const previewEl = document.getElementById('imp-preview-' + moduleKey);
+  if (!rows.length) { previewEl.innerHTML = '<div class="empty">لا توجد صفوف في الملف</div>'; return; }
+  const headers = cfg.fields.map((f) => f.key);
+  previewEl.innerHTML = `
+    <div class="hint" style="margin-top:10px">تمت قراءة ${rows.length} صف. معاينة أول ${Math.min(10, rows.length)}:</div>
+    <div class="table-wrap"><table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.slice(0, 10).map((r) => `<tr>${headers.map((h) => `<td>${r[h] || ''}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table></div>
+    <div style="margin-top:10px"><button onclick="submitBulkImport('${moduleKey}')">📥 استيراد ${rows.length} صف</button></div>
+  `;
+}
+
+async function submitBulkImport(moduleKey) {
+  const cfg = IMPORT_MODULES[moduleKey];
+  const rawRows = importPreviewRows[moduleKey] || [];
+  const numericKeys = new Set(cfg.fields.filter((f) => f.numeric).map((f) => f.key));
+  const rows = rawRows.map((r) => {
+    const out = {};
+    for (const f of cfg.fields) {
+      const v = r[f.key];
+      if (v === undefined || v === '') continue;
+      out[f.key] = numericKeys.has(f.key) ? parseFloat(v) : v;
+    }
+    return out;
+  });
+  const resultEl = document.getElementById('imp-result-' + moduleKey);
+  try {
+    const res = await api(cfg.endpoint, { method: 'POST', body: JSON.stringify({ rows }) });
+    resultEl.className = 'msg ' + (res.errorCount ? 'err' : 'ok');
+    resultEl.innerHTML = `✅ تم استيراد ${res.successCount} صف بنجاح.` +
+      (res.errorCount
+        ? `<br>⚠️ ${res.errorCount} صف بها أخطاء:<br>` + res.errors.map((e) => `صف ${e.row}: ${e.message}`).join('<br>')
+        : '');
+    if (cfg.afterImport) cfg.afterImport();
+  } catch (e) {
+    resultEl.className = 'msg err';
+    resultEl.textContent = '❌ ' + e.message;
+  }
+}
+
+function exportModuleCsv(moduleKey) {
+  const cfg = IMPORT_MODULES[moduleKey];
+  const list = cfg.cache() || [];
+  const headers = cfg.fields.map((f) => f.key);
+  downloadTextFile(`${moduleKey}-export-${new Date().toISOString().slice(0, 10)}.csv`, csvStringify(headers, list));
+}
+
 async function doLogin() {
   const phone = document.getElementById('phone').value.trim();
   const password = document.getElementById('password').value;
@@ -1107,19 +1322,19 @@ function switchTab(name) {
     document.getElementById('view-' + t).classList.toggle('open', t === name);
   });
   stopKitchenPolling(); // only the currently-open tab, if it's Kitchen, restarts it below
-  if (name === 'branches') { switchSubview('br', ['list', 'add'], 'list'); loadBranches(); }
-  if (name === 'ingredients') { switchSubview('ing', ['list', 'add'], 'list'); loadIngredients(); }
-  if (name === 'items') { switchSubview('mi', ['list', 'add', 'channels'], 'list'); loadItems(); }
-  if (name === 'inventory') { switchSubview('inv', ['balances', 'receive', 'waste'], 'balances'); loadInventoryTab(); }
-  if (name === 'sales') { switchSubview('sl', ['shifts', 'new', 'orders'], 'shifts'); loadSalesTab(); }
-  if (name === 'returns') { switchSubview('rt', ['new', 'history'], 'new'); loadReturnsTab(); }
+  if (name === 'branches') { switchSubview('br', ['list', 'add', 'import'], 'list'); loadBranches(); }
+  if (name === 'ingredients') { switchSubview('ing', ['list', 'add', 'import'], 'list'); loadIngredients(); }
+  if (name === 'items') { switchSubview('mi', ['list', 'add', 'channels', 'report', 'import'], 'list'); loadItems(); }
+  if (name === 'inventory') { switchSubview('inv', ['balances', 'receive', 'waste', 'report'], 'balances'); loadInventoryTab(); }
+  if (name === 'sales') { switchSubview('sl', ['shifts', 'new', 'orders', 'report'], 'shifts'); loadSalesTab(); }
+  if (name === 'returns') { switchSubview('rt', ['new', 'history', 'report'], 'new'); loadReturnsTab(); }
   if (name === 'kitchen') loadKitchenTab();
   if (name === 'alerts') { document.getElementById('al-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadAlerts(); }
-  if (name === 'purchasing') { switchSubview('pu', ['suppliers', 'matrix', 'new', 'orders'], 'suppliers'); loadPurchasingTab(); }
+  if (name === 'purchasing') { switchSubview('pu', ['suppliers', 'matrix', 'new', 'orders', 'report', 'import'], 'suppliers'); loadPurchasingTab(); }
   if (name === 'production') { switchSubview('pr', ['new', 'orders'], 'new'); loadProductionTab(); }
   if (name === 'transfers') { switchSubview('tf', ['new', 'list'], 'new'); loadTransfersTab(); }
   if (name === 'promotions') { switchSubview('pm', ['list', 'add'], 'list'); loadPromotions(); }
-  if (name === 'customers') { switchSubview('cu', ['list', 'add'], 'list'); loadCustomers(); }
+  if (name === 'customers') { switchSubview('cu', ['list', 'add', 'import'], 'list'); loadCustomers(); }
   if (name === 'analytics') { document.getElementById('an-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadAnalytics(); }
 }
 
@@ -2039,9 +2254,11 @@ async function loadPurchasingTab() {
   await loadApprovalRules();
   await loadPurchaseOrders();
 }
+let suppliersCache = [];
 async function loadSuppliers() {
   try {
     const suppliers = await api('/suppliers');
+    suppliersCache = suppliers;
     const locName = (id) => (locationsCache.find((l) => l.id === id) || {}).name || id;
     document.getElementById('suppliersTable').innerHTML = suppliers.length
       ? suppliers.map((s) => `<tr><td>${s.name}</td><td>${s.phone || '-'}</td><td>${s.scopeLocationId ? locName(s.scopeLocationId) : 'كل المواقع'}</td></tr>`).join('')

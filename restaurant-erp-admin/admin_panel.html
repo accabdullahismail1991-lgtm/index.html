@@ -277,9 +277,10 @@
     <div id="view-items" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>📋 أصناف المنيو</h2><button class="view-close" onclick="closeView()">✕</button></div>
       <div class="subnav">
-        <button id="mi-tab-list" class="active" onclick="switchSubview('mi',['list','add','channels'],'list')">الأصناف الحالية</button>
-        <button id="mi-tab-add" onclick="switchSubview('mi',['list','add','channels'],'add')">➕ إضافة صنف</button>
-        <button id="mi-tab-channels" onclick="switchSubview('mi',['list','add','channels'],'channels')">💲 قوائم تسعير القنوات</button>
+        <button id="mi-tab-list" class="active" onclick="switchSubview('mi',['list','add','channels','report'],'list')">الأصناف الحالية</button>
+        <button id="mi-tab-add" onclick="switchSubview('mi',['list','add','channels','report'],'add')">➕ إضافة صنف</button>
+        <button id="mi-tab-channels" onclick="switchSubview('mi',['list','add','channels','report'],'channels')">💲 قوائم تسعير القنوات</button>
+        <button id="mi-tab-report" onclick="switchSubview('mi',['list','add','channels','report'],'report'); loadItemsReport()">📊 التقرير</button>
       </div>
       <div class="view-body">
       <div class="panel subview" id="mi-sub-list">
@@ -310,6 +311,24 @@
         </table></div>
         <div id="sc-matrix-wrap" class="table-wrap" style="margin-top:16px"></div>
       </div>
+      <div class="panel subview hidden" id="mi-sub-report">
+        <h2>📊 تقرير الأصناف</h2>
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>الموقع</label><select id="mir-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="mir-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="mir-to" type="date"></div>
+          <div><button onclick="loadItemsReport()">تحديث</button></div>
+        </div>
+        <h3>الأصناف الأكثر مبيعًا</h3>
+        <div class="table-wrap"><table><thead><tr><th>الصنف</th><th>الكمية</th><th>الإيراد</th></tr></thead>
+          <tbody id="mir-topitems-table"></tbody>
+        </table></div>
+        <h3 style="margin-top:16px">التكلفة النظرية مقابل السعر (حسب الوصفة)</h3>
+        <div class="hint">* الأصناف بلا وصفة تظهر بتكلفة صفر -- أضف وصفة لها من تبويب "الأصناف الحالية" لتظهر تكلفتها الحقيقية.</div>
+        <div class="table-wrap"><table><thead><tr><th>الصنف</th><th>السعر</th><th>التكلفة النظرية</th><th>نسبة التكلفة</th><th>هامش الربح</th></tr></thead>
+          <tbody id="mir-costs-table"></tbody>
+        </table></div>
+      </div>
      </div></div>
     </div>
 
@@ -317,9 +336,10 @@
     <div id="view-inventory" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>📦 المخزون</h2><button class="view-close" onclick="closeView()">✕</button></div>
       <div class="subnav">
-        <button id="inv-tab-balances" class="active" onclick="switchSubview('inv',['balances','receive','waste'],'balances')">الأرصدة الحالية</button>
-        <button id="inv-tab-receive" onclick="switchSubview('inv',['balances','receive','waste'],'receive')">➕ استلام / تسوية</button>
-        <button id="inv-tab-waste" onclick="switchSubview('inv',['balances','receive','waste'],'waste')">🗑️ تسجيل تالف</button>
+        <button id="inv-tab-balances" class="active" onclick="switchSubview('inv',['balances','receive','waste','report'],'balances')">الأرصدة الحالية</button>
+        <button id="inv-tab-receive" onclick="switchSubview('inv',['balances','receive','waste','report'],'receive')">➕ استلام / تسوية</button>
+        <button id="inv-tab-waste" onclick="switchSubview('inv',['balances','receive','waste','report'],'waste')">🗑️ تسجيل تالف</button>
+        <button id="inv-tab-report" onclick="switchSubview('inv',['balances','receive','waste','report'],'report'); loadInventoryReport()">📊 التقرير</button>
       </div>
       <div class="view-body">
       <div class="panel subview" id="inv-sub-balances">
@@ -352,15 +372,32 @@
           <div><button class="danger" onclick="recordWaste()">تسجيل تالف</button></div>
         </div>
       </div>
+      <div class="panel subview hidden" id="inv-sub-report">
+        <h2>📊 تقرير المخزون</h2>
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>الموقع</label><select id="ivr-location"><option value="">كل المواقع</option></select></div>
+          <div><button onclick="loadInventoryReport()">تحديث</button></div>
+        </div>
+        <h3>تقييم المخزون الحالي</h3>
+        <div class="table-wrap"><table><thead><tr><th>الخامة</th><th>الكمية</th><th>القيمة</th></tr></thead>
+          <tbody id="ivr-valuation-table"></tbody>
+        </table></div>
+        <div id="ivr-valuation-total" style="margin-top:8px;font-weight:700"></div>
+        <h3 style="margin-top:16px">تنبيهات انخفاض المخزون</h3>
+        <div class="table-wrap"><table><thead><tr><th>الخامة</th><th>الموقع</th><th>الكمية الحالية</th><th>الحد الأدنى</th></tr></thead>
+          <tbody id="ivr-lowstock-table"></tbody>
+        </table></div>
+      </div>
      </div></div>
     </div>
 
     <!-- SALES -->
     <div id="view-sales" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>🧾 المبيعات</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
-        <button id="sl-tab-shifts" class="active" onclick="switchSubview('sl',['shifts','new','orders'],'shifts')">الورديات</button>
-        <button id="sl-tab-new" class="" onclick="switchSubview('sl',['shifts','new','orders'],'new')">➕ طلب جديد</button>
-        <button id="sl-tab-orders" class="" onclick="switchSubview('sl',['shifts','new','orders'],'orders')">الطلبات</button>
+        <button id="sl-tab-shifts" class="active" onclick="switchSubview('sl',['shifts','new','orders','report'],'shifts')">الورديات</button>
+        <button id="sl-tab-new" class="" onclick="switchSubview('sl',['shifts','new','orders','report'],'new')">➕ طلب جديد</button>
+        <button id="sl-tab-orders" class="" onclick="switchSubview('sl',['shifts','new','orders','report'],'orders')">الطلبات</button>
+        <button id="sl-tab-report" class="" onclick="switchSubview('sl',['shifts','new','orders','report'],'report'); loadSalesReport()">📊 التقرير</button>
       </div>
       <div class="view-body">
 
@@ -411,6 +448,24 @@
           <tbody id="ordersTable"></tbody>
         </table></div>
       </div>
+      <div class="panel subview hidden" id="sl-sub-report">
+        <h2>📊 تقرير المبيعات</h2>
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>الموقع</label><select id="slr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="slr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="slr-to" type="date"></div>
+          <div><button onclick="loadSalesReport()">تحديث</button></div>
+        </div>
+        <div id="slr-summary-cards" class="stats-row"></div>
+        <h3 style="margin-top:16px">حسب القناة</h3>
+        <div class="table-wrap"><table><thead><tr><th>القناة</th><th>عدد الطلبات</th><th>الإيراد</th></tr></thead>
+          <tbody id="slr-channel-table"></tbody>
+        </table></div>
+        <h3 style="margin-top:16px">الأصناف الأكثر مبيعًا</h3>
+        <div class="table-wrap"><table><thead><tr><th>الصنف</th><th>الكمية</th><th>الإيراد</th></tr></thead>
+          <tbody id="slr-topitems-table"></tbody>
+        </table></div>
+      </div>
      </div></div>
     </div>
 
@@ -418,8 +473,9 @@
     <div id="view-returns" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>↩️ المرتجعات</h2><button class="view-close" onclick="closeView()">✕</button></div>
       <div class="subnav">
-        <button id="rt-tab-new" class="active" onclick="switchSubview('rt',['new','history'],'new')">➕ مرتجع جديد</button>
-        <button id="rt-tab-history" onclick="switchSubview('rt',['new','history'],'history')">📋 سجل المرتجعات</button>
+        <button id="rt-tab-new" class="active" onclick="switchSubview('rt',['new','history','report'],'new')">➕ مرتجع جديد</button>
+        <button id="rt-tab-history" onclick="switchSubview('rt',['new','history','report'],'history')">📋 سجل المرتجعات</button>
+        <button id="rt-tab-report" onclick="switchSubview('rt',['new','history','report'],'report'); loadReturnsReport()">📊 التقرير</button>
       </div>
       <div class="view-body">
       <div class="panel subview" id="rt-sub-new">
@@ -438,6 +494,20 @@
         <h2>سجل المرتجعات</h2>
         <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>الموقع</th><th>الأصناف</th><th>السبب</th><th>الاسترداد</th></tr></thead>
           <tbody id="returnsTable"></tbody>
+        </table></div>
+      </div>
+      <div class="panel subview hidden" id="rt-sub-report">
+        <h2>📊 تقرير المرتجعات</h2>
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>الموقع</label><select id="rtr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="rtr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="rtr-to" type="date"></div>
+          <div><button onclick="loadReturnsReport()">تحديث</button></div>
+        </div>
+        <div id="rtr-cards" class="stats-row"></div>
+        <h3 style="margin-top:16px">الأصناف الأكثر إرجاعًا</h3>
+        <div class="table-wrap"><table><thead><tr><th>الصنف</th><th>الكمية المرتجعة</th></tr></thead>
+          <tbody id="rtr-topitems-table"></tbody>
         </table></div>
       </div>
      </div></div>
@@ -475,10 +545,11 @@
     <!-- PURCHASING -->
     <div id="view-purchasing" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>🛒 المشتريات</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
-        <button id="pu-tab-suppliers" class="active" onclick="switchSubview('pu',['suppliers','matrix','new','orders'],'suppliers')">الموردون</button>
-        <button id="pu-tab-matrix" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders'],'matrix')">مصفوفة الموافقات</button>
-        <button id="pu-tab-new" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders'],'new')">➕ أمر شراء</button>
-        <button id="pu-tab-orders" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders'],'orders')">أوامر الشراء</button>
+        <button id="pu-tab-suppliers" class="active" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report'],'suppliers')">الموردون</button>
+        <button id="pu-tab-matrix" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report'],'matrix')">مصفوفة الموافقات</button>
+        <button id="pu-tab-new" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report'],'new')">➕ أمر شراء</button>
+        <button id="pu-tab-orders" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report'],'orders')">أوامر الشراء</button>
+        <button id="pu-tab-report" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','report'],'report'); loadPurchasingReport()">📊 التقرير</button>
       </div>
       <div class="view-body">
 
@@ -522,6 +593,25 @@
         <h2>أوامر الشراء</h2>
         <div class="table-wrap"><table><thead><tr><th>المورد</th><th>الموقع</th><th>الحالة</th><th>الإجمالي</th><th></th></tr></thead>
           <tbody id="purchaseOrdersTable"></tbody>
+        </table></div>
+      </div>
+      <div class="panel subview hidden" id="pu-sub-report">
+        <h2>📊 تقرير المشتريات</h2>
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>الموقع</label><select id="pur-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="pur-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="pur-to" type="date"></div>
+          <div><button onclick="loadPurchasingReport()">تحديث</button></div>
+        </div>
+        <div id="pur-cards" class="stats-row"></div>
+        <div class="hint">* الإنفاق الفعلي يحتسب فقط أوامر الشراء المعتمدة/المرسلة للمورد/المستلمة -- المسودات والملغاة لا تُحتسب.</div>
+        <h3 style="margin-top:16px">حسب الحالة</h3>
+        <div class="table-wrap"><table><thead><tr><th>الحالة</th><th>عدد الأوامر</th></tr></thead>
+          <tbody id="pur-status-table"></tbody>
+        </table></div>
+        <h3 style="margin-top:16px">أعلى الموردين إنفاقًا</h3>
+        <div class="table-wrap"><table><thead><tr><th>المورد</th><th>الإنفاق</th></tr></thead>
+          <tbody id="pur-suppliers-table"></tbody>
         </table></div>
       </div>
      </div></div>
@@ -1292,6 +1382,31 @@ async function setChannelPriceCell(menuItemId, channelId, value) {
   } catch (e) { showMsg('sc-msg', '❌ ' + e.message, 'err'); }
 }
 
+async function loadItemsReport() {
+  const sel = document.getElementById('mir-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('mir-from').value;
+    const to = document.getElementById('mir-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const qs = params.toString();
+    const [topItems, costs] = await Promise.all([
+      api('/analytics/top-items?' + qs),
+      api('/analytics/menu-item-costs' + (locationId ? '?locationId=' + locationId : '')),
+    ]);
+    document.getElementById('mir-topitems-table').innerHTML = topItems.length
+      ? topItems.map((i) => `<tr><td>${i.name}</td><td>${i.quantity}</td><td>${i.revenue.toFixed(2)}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+    document.getElementById('mir-costs-table').innerHTML = costs.length
+      ? costs.map((c) => `<tr><td>${c.name}${c.hasRecipe ? '' : ' ⚠️'}</td><td>${c.price.toFixed(2)}</td><td>${c.cost.toFixed(2)}</td><td>${c.costPercent.toFixed(1)}%</td><td>${c.grossMargin.toFixed(2)}</td></tr>`).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد أصناف بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
 async function loadItemThumbnail(id) {
   const img = document.getElementById('item-thumb-' + id);
   if (!img) return;
@@ -1508,6 +1623,22 @@ async function recordWaste() {
     loadInventoryBalances();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+async function loadInventoryReport() {
+  const sel = document.getElementById('ivr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const qs = locationId ? '?locationId=' + locationId : '';
+    const [valuation, lowStock] = await Promise.all([api('/analytics/inventory-valuation' + qs), api('/analytics/low-stock' + qs)]);
+    document.getElementById('ivr-valuation-table').innerHTML = valuation.lines.length
+      ? valuation.lines.map((l) => `<tr><td>${l.name}</td><td>${l.quantity} ${l.unit}</td><td>${l.value.toFixed(2)}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="empty">لا يوجد مخزون بعد</td></tr>`;
+    document.getElementById('ivr-valuation-total').textContent = 'الإجمالي: ' + valuation.totalValue.toFixed(2) + ' ر.س';
+    document.getElementById('ivr-lowstock-table').innerHTML = lowStock.length
+      ? lowStock.map((r) => `<tr><td>${r.name}</td><td>${r.locationName}</td><td>${r.quantity} ${r.unit}</td><td>${r.lowStockThreshold} ${r.unit}</td></tr>`).join('')
+      : `<tr><td colspan="4" class="empty">لا توجد تنبيهات انخفاض مخزون</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
 
 /* ================= Sales ================= */
 let salesChannelsCache = [];
@@ -1701,6 +1832,35 @@ async function voidOrder(id) {
     loadOrders();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+async function loadSalesReport() {
+  const sel = document.getElementById('slr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('slr-from').value;
+    const to = document.getElementById('slr-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const qs = params.toString();
+    const [summary, topItems] = await Promise.all([api('/analytics/sales-summary?' + qs), api('/analytics/top-items?' + qs)]);
+    document.getElementById('slr-summary-cards').innerHTML = [
+      statTile('عدد الطلبات', summary.orderCount),
+      statTile('الإيراد', summary.revenue.toFixed(2)),
+      statTile('صافي المبيعات', summary.netSales.toFixed(2)),
+      statTile('ضريبة القيمة المضافة', summary.vatCollected.toFixed(2)),
+      statTile('الخصومات', summary.discountGiven.toFixed(2)),
+      statTile('متوسط الطلب', summary.averageOrderValue.toFixed(2)),
+    ].join('');
+    document.getElementById('slr-channel-table').innerHTML = summary.byChannel.length
+      ? summary.byChannel.map((c) => `<tr><td>${AN_CHANNEL_LABEL[c.channel] || c.channel}</td><td>${c.orderCount}</td><td>${c.revenue.toFixed(2)}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+    document.getElementById('slr-topitems-table').innerHTML = topItems.length
+      ? topItems.map((i) => `<tr><td>${i.name}</td><td>${i.quantity}</td><td>${i.revenue.toFixed(2)}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
 
 /* ================= Returns ================= */
 let returnableOrdersCache = [];
@@ -1774,6 +1934,27 @@ async function loadReturnsHistory() {
         </tr>
       `).join('')
       : `<tr><td colspan="5" class="empty">لا توجد مرتجعات بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function loadReturnsReport() {
+  const sel = document.getElementById('rtr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('rtr-from').value;
+    const to = document.getElementById('rtr-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/analytics/returns-summary?' + params.toString());
+    document.getElementById('rtr-cards').innerHTML = [
+      statTile('عدد المرتجعات', res.returnCount),
+      statTile('إجمالي المسترد', res.totalRefund.toFixed(2)),
+    ].join('');
+    document.getElementById('rtr-topitems-table').innerHTML = res.topReturnedItems.length
+      ? res.topReturnedItems.map((i) => `<tr><td>${i.name}</td><td>${i.quantity}</td></tr>`).join('')
+      : `<tr><td colspan="2" class="empty">لا توجد مرتجعات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
@@ -1985,6 +2166,32 @@ function rejectPO(id) { poAction(id, 'reject'); }
 function sendPO(id) { poAction(id, 'send'); }
 function receivePO(id) { poAction(id, 'receive'); }
 function cancelPO(id) { poAction(id, 'cancel'); }
+
+const PO_STATUS_LABEL = { DRAFT: 'مسودة', PENDING_APPROVAL: 'بانتظار الاعتماد', APPROVED: 'معتمد', SENT_TO_SUPPLIER: 'مُرسل للمورد', RECEIVED: 'مُستلم', REJECTED: 'مرفوض', CANCELLED: 'ملغى' };
+async function loadPurchasingReport() {
+  const sel = document.getElementById('pur-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('pur-from').value;
+    const to = document.getElementById('pur-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/analytics/purchasing-summary?' + params.toString());
+    document.getElementById('pur-cards').innerHTML = [
+      statTile('عدد الأوامر', res.orderCount),
+      statTile('الإنفاق الفعلي', res.totalSpend.toFixed(2)),
+    ].join('');
+    document.getElementById('pur-status-table').innerHTML = res.byStatus.length
+      ? res.byStatus.map((s) => `<tr><td>${PO_STATUS_LABEL[s.status] || s.status}</td><td>${s.count}</td></tr>`).join('')
+      : `<tr><td colspan="2" class="empty">لا توجد أوامر شراء في هذه الفترة</td></tr>`;
+    document.getElementById('pur-suppliers-table').innerHTML = res.topSuppliers.length
+      ? res.topSuppliers.map((s) => `<tr><td>${s.supplierName}</td><td>${s.spend.toFixed(2)}</td></tr>`).join('')
+      : `<tr><td colspan="2" class="empty">لا يوجد إنفاق في هذه الفترة</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
 
 /* ================= Production ================= */
 async function loadProductionTab() {

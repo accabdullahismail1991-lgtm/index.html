@@ -104,6 +104,15 @@
   .kt-status-READY{background:rgba(31,157,104,.15);color:var(--ok);}
   .kt-status-SERVED{background:rgba(55,48,163,.1);color:var(--brand);}
 
+  /* ---- alerts feed ---- */
+  .alert-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);margin-bottom:8px;}
+  .alert-card .ic{font-size:20px;}
+  .alert-card .title{font-weight:700;font-size:13.5px;}
+  .alert-card .detail{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .alert-danger{background:rgba(208,69,63,.06);border-color:rgba(208,69,63,.3);}
+  .alert-warning{background:rgba(219,150,0,.08);border-color:rgba(219,150,0,.3);}
+  .alert-info{background:rgba(55,48,163,.05);border-color:rgba(55,48,163,.2);}
+
   /* ---- home dashboard (landing screen behind the popups) ---- */
   .home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
   .home-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 14px;
@@ -174,6 +183,7 @@
     <button id="tab-sales" onclick="switchTab('sales')">🧾 المبيعات</button>
     <button id="tab-returns" onclick="switchTab('returns')">↩️ المرتجعات</button>
     <button id="tab-kitchen" onclick="switchTab('kitchen')">🍳 المطبخ</button>
+    <button id="tab-alerts" onclick="switchTab('alerts')">🔔 التنبيهات</button>
     <button id="tab-purchasing" onclick="switchTab('purchasing')">🛒 المشتريات</button>
     <button id="tab-production" onclick="switchTab('production')">🏭 الإنتاج</button>
     <button id="tab-transfers" onclick="switchTab('transfers')">🚚 التحويلات</button>
@@ -444,6 +454,20 @@
           <div><label>الموقع</label><select id="kt-location" onchange="loadKitchenQueue()"></select></div>
         </div>
         <div id="kt-queue" class="kitchen-grid"></div>
+      </div>
+     </div></div>
+    </div>
+
+    <!-- ALERTS -->
+    <div id="view-alerts" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>🔔 التنبيهات</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <h2>كل التنبيهات الحالية</h2>
+        <div class="hint">مخزون منخفض، أصناف قاربت الصلاحية (خلال 3 أيام)، وأوامر شراء أو جرد بانتظار الاعتماد -- كلها مُشتقّة من البيانات الحالية مباشرة، لا سجل منفصل.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="al-location" onchange="loadAlerts()"><option value="">كل المواقع</option></select></div>
+        </div>
+        <div id="al-list"></div>
       </div>
      </div></div>
     </div>
@@ -940,6 +964,7 @@ const TAB_META = {
   sales: { icon: '🧾', label: 'المبيعات' },
   returns: { icon: '↩️', label: 'المرتجعات' },
   kitchen: { icon: '🍳', label: 'المطبخ' },
+  alerts: { icon: '🔔', label: 'التنبيهات' },
   purchasing: { icon: '🛒', label: 'المشتريات' },
   production: { icon: '🏭', label: 'الإنتاج' },
   transfers: { icon: '🚚', label: 'التحويلات' },
@@ -999,6 +1024,7 @@ function switchTab(name) {
   if (name === 'sales') { switchSubview('sl', ['shifts', 'new', 'orders'], 'shifts'); loadSalesTab(); }
   if (name === 'returns') { switchSubview('rt', ['new', 'history'], 'new'); loadReturnsTab(); }
   if (name === 'kitchen') loadKitchenTab();
+  if (name === 'alerts') { document.getElementById('al-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadAlerts(); }
   if (name === 'purchasing') { switchSubview('pu', ['suppliers', 'matrix', 'new', 'orders'], 'suppliers'); loadPurchasingTab(); }
   if (name === 'production') { switchSubview('pr', ['new', 'orders'], 'new'); loadProductionTab(); }
   if (name === 'transfers') { switchSubview('tf', ['new', 'list'], 'new'); loadTransfersTab(); }
@@ -1797,6 +1823,27 @@ async function advanceKitchenLine(lineId) {
   try {
     await api(`/kitchen/lines/${lineId}/advance`, { method: 'POST' });
     await loadKitchenQueue();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ================= Alerts ================= */
+const ALERT_ICON = { LOW_STOCK: '📦', EXPIRING_BATCH: '⏳', PO_PENDING_APPROVAL: '🛒', STOCKTAKE_PENDING_APPROVAL: '📋' };
+async function loadAlerts() {
+  const locationId = document.getElementById('al-location').value;
+  const list = document.getElementById('al-list');
+  try {
+    const alerts = await api('/alerts' + (locationId ? '?locationId=' + locationId : ''));
+    list.innerHTML = alerts.length
+      ? alerts.map((a) => `
+        <div class="alert-card alert-${a.severity}">
+          <div class="ic">${ALERT_ICON[a.type] || '🔔'}</div>
+          <div>
+            <div class="title">${a.title}</div>
+            <div class="detail">${a.detail}</div>
+          </div>
+        </div>
+      `).join('')
+      : '<div class="empty">لا توجد تنبيهات حاليًا 🎉</div>';
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 

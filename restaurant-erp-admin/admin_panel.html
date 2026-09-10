@@ -251,14 +251,20 @@
 
     <!-- ITEMS -->
     <div id="view-items" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📋 أصناف المنيو</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
-      <div class="panel">
+     <div class="view-card"><div class="view-head"><h2>📋 أصناف المنيو</h2><button class="view-close" onclick="closeView()">✕</button></div>
+      <div class="subnav">
+        <button id="mi-tab-list" class="active" onclick="switchSubview('mi',['list','add','channels'],'list')">الأصناف الحالية</button>
+        <button id="mi-tab-add" onclick="switchSubview('mi',['list','add','channels'],'add')">➕ إضافة صنف</button>
+        <button id="mi-tab-channels" onclick="switchSubview('mi',['list','add','channels'],'channels')">💲 قوائم تسعير القنوات</button>
+      </div>
+      <div class="view-body">
+      <div class="panel subview" id="mi-sub-list">
         <h2>أصناف المنيو الحالية</h2>
         <div class="table-wrap"><table><thead><tr><th>الصورة</th><th>الاسم</th><th>القسم</th><th>السعر</th><th>التكلفة الحالية</th><th>الحالة</th><th></th></tr></thead>
           <tbody id="itemsTable"></tbody>
         </table></div>
       </div>
-      <div class="panel">
+      <div class="panel subview hidden" id="mi-sub-add">
         <h2>➕ إضافة صنف منيو جديد</h2>
         <div class="row-form">
           <div><label>الاسم</label><input id="m-name" placeholder="بيتزا مارجريتا"></div>
@@ -266,6 +272,19 @@
           <div><label>السعر</label><input id="m-price" type="number" step="0.01" placeholder="35"></div>
           <div><button onclick="createItem()">إضافة</button></div>
         </div>
+      </div>
+      <div class="panel subview hidden" id="mi-sub-channels">
+        <h2>💲 قوائم تسعير القنوات</h2>
+        <div class="hint">أضف قناة بيع لكل تطبيق توصيل تتعامل معه (هنجر ستيشن، جاهز، مرسول...)، وحدد سعر مختلف لكل صنف على كل قناة -- اترك الخانة فارغة لاستخدام السعر الأساسي.</div>
+        <div class="row-form" style="margin-top:10px">
+          <div><label>قناة جديدة</label><input id="sc-new-name" placeholder="مثال: هنجر ستيشن"></div>
+          <div><button onclick="createSalesChannel()">➕ إضافة قناة</button></div>
+        </div>
+        <div id="sc-msg" class="msg"></div>
+        <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>القناة</th><th>الحالة</th><th></th></tr></thead>
+          <tbody id="sc-channels-table"></tbody>
+        </table></div>
+        <div id="sc-matrix-wrap" class="table-wrap" style="margin-top:16px"></div>
       </div>
      </div></div>
     </div>
@@ -343,6 +362,11 @@
               <option value="DRIVE_THRU">Drive-thru</option>
               <option value="DELIVERY_PARTNER">توصيل خارجي</option>
               <option value="BRAND_APP">تطبيق العلامة</option>
+            </select>
+          </div>
+          <div><label>قائمة الأسعار (اختياري)</label>
+            <select id="ord-sales-channel" onchange="onOrderSalesChannelChange()">
+              <option value="">السعر الأساسي</option>
             </select>
           </div>
         </div>
@@ -908,7 +932,7 @@ function switchTab(name) {
   });
   if (name === 'branches') { switchSubview('br', ['list', 'add'], 'list'); loadBranches(); }
   if (name === 'ingredients') { switchSubview('ing', ['list', 'add'], 'list'); loadIngredients(); }
-  if (name === 'items') loadItems();
+  if (name === 'items') { switchSubview('mi', ['list', 'add', 'channels'], 'list'); loadItems(); }
   if (name === 'inventory') { switchSubview('inv', ['balances', 'receive', 'waste'], 'balances'); loadInventoryTab(); }
   if (name === 'sales') { switchSubview('sl', ['shifts', 'new', 'orders'], 'shifts'); loadSalesTab(); }
   if (name === 'purchasing') { switchSubview('pu', ['suppliers', 'matrix', 'new', 'orders'], 'suppliers'); loadPurchasingTab(); }
@@ -1092,8 +1116,92 @@ async function loadItems() {
     // turned into a throwaway object URL instead, same pattern already
     // used for downloading a generated report's file.
     itemsCache.filter((m) => m.hasImage).forEach((m) => loadItemThumbnail(m.id));
+
+    await loadSalesChannelsMatrix();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+
+/* ---- Sales channel price lists (قوائم تسعير القنوات) ---- */
+let channelsAdminCache = [];
+async function loadSalesChannelsMatrix() {
+  channelsAdminCache = await api('/sales-channels');
+  document.getElementById('sc-channels-table').innerHTML = channelsAdminCache.length
+    ? channelsAdminCache.map((c) => `
+      <tr>
+        <td>${c.name}</td>
+        <td><span class="pill ${c.isActive ? 'semi' : 'inactive'}">${c.isActive ? 'مفعّلة' : 'معطّلة'}</span></td>
+        <td>
+          <button class="link-btn" onclick="toggleSalesChannel('${c.id}', ${!c.isActive})">${c.isActive ? 'تعطيل' : 'تفعيل'}</button>
+          <button class="link-btn danger-link" onclick="deleteSalesChannel('${c.id}')">حذف</button>
+        </td>
+      </tr>
+    `).join('')
+    : `<tr><td colspan="3" class="empty">لا توجد قنوات بعد -- أضف واحدة أعلاه</td></tr>`;
+  renderChannelMatrix();
+}
+async function createSalesChannel() {
+  const name = document.getElementById('sc-new-name').value.trim();
+  if (!name) { showMsg('sc-msg', '⚠️ اكتب اسم القناة', 'err'); return; }
+  try {
+    await api('/sales-channels', { method: 'POST', body: JSON.stringify({ name }) });
+    document.getElementById('sc-new-name').value = '';
+    showMsg('sc-msg', '✅ تمت إضافة القناة', 'ok');
+    await loadSalesChannelsMatrix();
+  } catch (e) { showMsg('sc-msg', '❌ ' + e.message, 'err'); }
+}
+async function toggleSalesChannel(id, isActive) {
+  try {
+    await api(`/sales-channels/${id}`, { method: 'PATCH', body: JSON.stringify({ isActive }) });
+    await loadSalesChannelsMatrix();
+  } catch (e) { showMsg('sc-msg', '❌ ' + e.message, 'err'); }
+}
+async function deleteSalesChannel(id) {
+  if (!window.confirm('حذف هذه القناة نهائيًا؟')) return;
+  try {
+    await api(`/sales-channels/${id}`, { method: 'DELETE' });
+    showMsg('sc-msg', '✅ تم الحذف', 'ok');
+    await loadSalesChannelsMatrix();
+  } catch (e) { showMsg('sc-msg', '❌ ' + e.message, 'err'); }
+}
+// One matrix table -- rows are menu items, one column per active channel,
+// each cell an editable price input. Fetches each channel's whole
+// item-price list in one call (not one call per item per channel).
+async function renderChannelMatrix() {
+  const wrap = document.getElementById('sc-matrix-wrap');
+  const activeChannels = channelsAdminCache.filter((c) => c.isActive);
+  if (!activeChannels.length) {
+    wrap.innerHTML = '<div class="empty">فعّل قناة واحدة على الأقل لتظهر مصفوفة الأسعار</div>';
+    return;
+  }
+  if (!itemsCache.length) { wrap.innerHTML = '<div class="empty">لا توجد أصناف منيو بعد</div>'; return; }
+  const perChannel = await Promise.all(activeChannels.map((c) => api(`/sales-channels/${c.id}/item-prices`)));
+  const priceMaps = activeChannels.map((c, i) => new Map(perChannel[i].map((r) => [r.menuItemId, r])));
+  const header = '<th>الصنف</th><th>الأساسي</th>' + activeChannels.map((c) => `<th>${c.name}</th>`).join('');
+  const rows = itemsCache.map((item) => {
+    const cells = activeChannels.map((c, i) => {
+      const row = priceMaps[i].get(item.id);
+      const val = row && row.isOverridden ? Number(row.price).toFixed(2) : '';
+      return `<td><input type="number" step="0.01" min="0" style="width:90px" placeholder="${Number(item.price).toFixed(2)}"
+        value="${val}" onchange="setChannelPriceCell('${item.id}','${c.id}',this.value)"></td>`;
+    }).join('');
+    return `<tr><td>${item.name}</td><td>${Number(item.price).toFixed(2)}</td>${cells}</tr>`;
+  }).join('');
+  wrap.innerHTML = `<table><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table>
+    <div class="hint">اترك الخانة فارغة لاستخدام السعر الأساسي لهذا الصنف على هذه القناة.</div>`;
+}
+async function setChannelPriceCell(menuItemId, channelId, value) {
+  try {
+    if (value === '' || value == null) {
+      await api(`/items/${menuItemId}/channel-prices/${channelId}`, { method: 'DELETE' });
+    } else {
+      const price = parseFloat(value);
+      if (isNaN(price) || price < 0) { showMsg('sc-msg', '⚠️ سعر غير صالح', 'err'); return; }
+      await api(`/items/${menuItemId}/channel-prices/${channelId}`, { method: 'PUT', body: JSON.stringify({ price }) });
+    }
+    showMsg('sc-msg', '✅ تم الحفظ', 'ok');
+  } catch (e) { showMsg('sc-msg', '❌ ' + e.message, 'err'); }
+}
+
 async function loadItemThumbnail(id) {
   const img = document.getElementById('item-thumb-' + id);
   if (!img) return;
@@ -1312,16 +1420,43 @@ async function recordWaste() {
 }
 
 /* ================= Sales ================= */
+let salesChannelsCache = [];
+// menuItemId -> effective price for the currently selected قائمة الأسعار
+// (sales channel), or null when "السعر الأساسي" is selected -- read by
+// renderOrderMenuGrid() to show the tile price the order will actually be
+// priced at, without touching the manual "➕ صنف" dropdown (which always
+// shows base prices; the server computes the real total from
+// salesChannelId regardless of what any UI happened to display).
+let orderChannelPriceMap = null;
+
 async function loadSalesTab() {
   // Always fresh here (unlike ensureMenuItemsCache()'s once-per-session
   // guard) -- the menu grid picker below needs to reflect an item just
   // added, priced, or photographed in the "أصناف المنيو" tab without
   // requiring a full page reload first.
   menuItemsCache = await api('/items');
+  salesChannelsCache = await api('/sales-channels');
+  const activeChannels = salesChannelsCache.filter((c) => c.isActive);
+  document.getElementById('ord-sales-channel').innerHTML =
+    '<option value="">السعر الأساسي</option>' + activeChannels.map((c) => `<option value="${c.id}">${c.name}</option>`).join('');
+  orderChannelPriceMap = null;
   document.getElementById('sh-location').innerHTML = locationOptions();
   renderOrderMenuGrid('');
   await loadShifts();
   await loadOrders();
+}
+
+async function onOrderSalesChannelChange() {
+  const channelId = document.getElementById('ord-sales-channel').value;
+  if (!channelId) {
+    orderChannelPriceMap = null;
+  } else {
+    try {
+      const rows = await api(`/sales-channels/${channelId}/item-prices`);
+      orderChannelPriceMap = new Map(rows.map((r) => [r.menuItemId, r.price]));
+    } catch (e) { flashGlobal('❌ ' + e.message, 'err'); orderChannelPriceMap = null; }
+  }
+  renderOrderMenuGrid(document.querySelector('#sl-sub-new input[type="text"]').value);
 }
 
 let orderMenuImageCache = {}; // menuItemId -> blob object URL, filled lazily per grid render
@@ -1335,7 +1470,7 @@ function renderOrderMenuGrid(term) {
     <div class="menu-tile" onclick="addMenuTileToOrder('${m.id}')" title="إضافة للطلب">
       <div class="menu-tile-img" id="ord-tile-img-${m.id}">${m.hasImage ? '' : '🍽️'}</div>
       <div class="menu-tile-name">${m.name}</div>
-      <div class="menu-tile-price">${Number(m.price).toFixed(2)}</div>
+      <div class="menu-tile-price">${Number(orderChannelPriceMap && orderChannelPriceMap.has(m.id) ? orderChannelPriceMap.get(m.id) : m.price).toFixed(2)}</div>
     </div>
   `).join('');
   list.filter((m) => m.hasImage).forEach((m) => {
@@ -1428,6 +1563,7 @@ function addOrderLineRow() {
 async function createOrder() {
   const shiftId = document.getElementById('ord-shift').value;
   const channel = document.getElementById('ord-channel').value;
+  const salesChannelId = document.getElementById('ord-sales-channel').value || undefined;
   const container = document.getElementById('ord-lines');
   const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => ({
     menuItemId: row.querySelector('.ol-item').value,
@@ -1437,7 +1573,7 @@ async function createOrder() {
   if (!lines.length) { flashGlobal('⚠️ أضف صنف واحد على الأقل', 'err'); return; }
   try {
     const shift = shiftsCache.find((s) => s.id === shiftId);
-    await api('/orders', { method: 'POST', body: JSON.stringify({ locationId: shift.locationId, shiftId, channel, lines }) });
+    await api('/orders', { method: 'POST', body: JSON.stringify({ locationId: shift.locationId, shiftId, channel, salesChannelId, lines }) });
     container.innerHTML = '';
     flashGlobal('✅ تم إنشاء الطلب', 'ok');
     loadOrders(); loadShifts();

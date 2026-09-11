@@ -235,14 +235,23 @@
   .subview.hidden{display:none;}
 
   /* ---- ZATCA-style invoice view/print ---- */
+  .invoice-template-picker{display:flex;gap:4px;}
+  .tmpl-btn{padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);cursor:pointer;font-size:12px;}
+  .tmpl-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700;}
   .invoice-box{max-width:420px;margin:0 auto;background:#fff;padding:16px;font-size:12.5px;color:#000;}
+  .invoice-box.thermal{max-width:302px;font-size:11px;padding:8px;}
+  .invoice-box .biz-logo{display:block;max-width:120px;max-height:80px;margin:0 auto 6px;object-fit:contain;}
+  .invoice-box.thermal .biz-logo{max-width:90px;max-height:60px;}
   .invoice-box .biz-name{font-weight:800;font-size:15px;text-align:center;}
   .invoice-box .biz-meta{text-align:center;color:#444;font-size:11.5px;margin-bottom:6px;}
+  .invoice-box .invoice-header-note,.invoice-box .invoice-footer-note{text-align:center;font-size:11px;color:#333;margin:6px 0;line-height:1.6;white-space:pre-line;}
   .invoice-title{text-align:center;font-weight:700;font-size:13px;margin:8px 0;padding:4px 0;
     border-top:1px dashed #999;border-bottom:1px dashed #999;}
   .invoice-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;font-size:11.5px;margin:8px 0;}
+  .invoice-box.thermal .invoice-meta-grid{grid-template-columns:1fr;}
   .invoice-meta-grid .k{color:#555;}
   .invoice-box table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px;}
+  .invoice-box.thermal table{font-size:10px;}
   .invoice-box th,.invoice-box td{padding:4px 2px;text-align:right;}
   .invoice-box thead th{border-bottom:1px solid #000;}
   .invoice-box tbody tr{border-bottom:1px dotted #ccc;}
@@ -1069,7 +1078,15 @@
     <div id="view-invoice" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card">
       <div class="view-head no-print"><h2>🧾 الفاتورة</h2>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="invoice-template-picker">
+            <button type="button" class="tmpl-btn active" data-dim="size" data-val="A4" onclick="setInvoiceTemplateOption('size','A4',this)">A4</button>
+            <button type="button" class="tmpl-btn" data-dim="size" data-val="THERMAL" onclick="setInvoiceTemplateOption('size','THERMAL',this)">حراري 80مم</button>
+          </div>
+          <div class="invoice-template-picker">
+            <button type="button" class="tmpl-btn active" data-dim="detail" data-val="FULL" onclick="setInvoiceTemplateOption('detail','FULL',this)">كامل</button>
+            <button type="button" class="tmpl-btn" data-dim="detail" data-val="BRIEF" onclick="setInvoiceTemplateOption('detail','BRIEF',this)">مختصر</button>
+          </div>
           <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
           <button class="view-close" onclick="closeView()">✕</button>
         </div>
@@ -1878,9 +1895,56 @@ function toggleBranchEdit(id) {
       <div><label>العنوان</label><input class="eb-address" value="${b.address || ''}"></div>
       <div><label>الرقم الضريبي (15 رقمًا، يبدأ وينتهي بـ 3)</label><input class="eb-vat" value="${b.vatNumber || ''}" maxlength="15"></div>
       <div><label><input type="checkbox" class="eb-active" style="width:auto;display:inline" ${b.isActive ? 'checked' : ''}> نشط</label></div>
+      <div><label>نص أعلى الفاتورة (اختياري)</label><textarea class="eb-header-note" rows="2">${b.invoiceHeaderNote || ''}</textarea></div>
+      <div><label>نص أسفل الفاتورة (اختياري)</label><textarea class="eb-footer-note" rows="2">${b.invoiceFooterNote || ''}</textarea></div>
       <div><button onclick="saveBranchEdit('${id}')">💾 حفظ</button></div>
     </div>
+    <div class="row-form" style="margin-top:10px;align-items:center">
+      <div style="flex:none"><img id="eb-logo-preview-${id}" style="width:64px;height:64px;border-radius:8px;object-fit:contain;background:var(--bg);display:${b.hasLogo ? '' : 'none'}"></div>
+      <div><label>شعار الفرع (JPG/PNG/WEBP، حتى 2 ميجابايت)</label><input type="file" accept="image/jpeg,image/png,image/webp" class="eb-logo-file" onchange="uploadBranchLogo('${id}', this)"></div>
+      ${b.hasLogo ? `<div><button class="ghost" onclick="removeBranchLogo('${id}')">🗑️ حذف الشعار</button></div>` : ''}
+    </div>
+    <div class="msg" id="eb-logo-msg-${id}"></div>
   `;
+  if (b.hasLogo) loadBranchLogoPreview(id);
+}
+async function loadBranchLogoPreview(id) {
+  const img = document.getElementById('eb-logo-preview-' + id);
+  if (!img) return;
+  try {
+    const res = await fetch(apiBase() + '/locations/' + id + '/logo', { headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {} });
+    if (!res.ok) return;
+    img.src = URL.createObjectURL(await res.blob());
+  } catch (e) { /* leave the preview hidden */ }
+}
+async function uploadBranchLogo(id, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const res = await fetch(apiBase() + '/locations/' + id + '/logo', {
+      method: 'POST',
+      headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {},
+      body: form,
+    });
+    if (!res.ok) {
+      let msg = 'HTTP ' + res.status;
+      try { const j = await res.json(); if (j && j.message) msg = Array.isArray(j.message) ? j.message.join('، ') : j.message; } catch (e) { /* no body */ }
+      throw new Error(msg);
+    }
+    await loadBranches();
+    toggleBranchEdit(id);
+    showMsg('eb-logo-msg-' + id, '✅ تم رفع الشعار', 'ok');
+  } catch (e) { showMsg('eb-logo-msg-' + id, '❌ ' + e.message, 'err'); }
+}
+async function removeBranchLogo(id) {
+  try {
+    await api('/locations/' + id + '/logo', { method: 'DELETE' });
+    await loadBranches();
+    toggleBranchEdit(id);
+    flashGlobal('🗑️ تم حذف شعار الفرع', 'ok');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function saveBranchEdit(id) {
   const box = document.getElementById('edit-branch-box-' + id);
@@ -1889,9 +1953,11 @@ async function saveBranchEdit(id) {
   const address = box.querySelector('.eb-address').value.trim();
   const vatNumber = box.querySelector('.eb-vat').value.trim();
   const isActive = box.querySelector('.eb-active').checked;
+  const invoiceHeaderNote = box.querySelector('.eb-header-note').value.trim();
+  const invoiceFooterNote = box.querySelector('.eb-footer-note').value.trim();
   if (!name) { flashGlobal('⚠️ اكتب اسم الفرع', 'err'); return; }
   try {
-    const body = { name, type, address, isActive };
+    const body = { name, type, address, isActive, invoiceHeaderNote, invoiceFooterNote };
     if (vatNumber) body.vatNumber = vatNumber;
     await api('/locations/' + id, { method: 'PATCH', body: JSON.stringify(body) });
     flashGlobal('✅ تم حفظ التعديل', 'ok');
@@ -2833,6 +2899,14 @@ async function voidOrder(id) {
 }
 
 /* ================= Invoice (ZATCA-compliant view/print) ================= */
+let invoiceTemplate = { size: 'A4', detail: 'FULL' };
+let invoiceRenderCache = null; // last-loaded order, so toggling size/detail re-renders without refetching
+function setInvoiceTemplateOption(dim, val, btn) {
+  invoiceTemplate[dim] = val;
+  document.querySelectorAll(`.invoice-template-picker .tmpl-btn[data-dim="${dim}"]`).forEach((b) => b.classList.toggle('active', b === btn));
+  if (invoiceRenderCache) renderInvoice(invoiceRenderCache);
+}
+
 async function openInvoicePopup(orderId) {
   closeView();
   document.getElementById('view-invoice').classList.add('open');
@@ -2840,6 +2914,7 @@ async function openInvoicePopup(orderId) {
   try {
     await ensurePaymentMethodsCache();
     const order = await api('/orders/' + orderId);
+    invoiceRenderCache = order;
     renderInvoice(order);
   } catch (e) {
     document.getElementById('inv-content').innerHTML = '<div class="empty">❌ ' + e.message + '</div>';
@@ -2848,6 +2923,8 @@ async function openInvoicePopup(orderId) {
 
 function renderInvoice(o) {
   const loc = o.location || {};
+  const sizeClass = invoiceTemplate.size === 'THERMAL' ? 'thermal' : '';
+  const full = invoiceTemplate.detail !== 'BRIEF';
   const round2 = (n) => Math.round(n * 100) / 100;
   // Per-branch rate (Location.vatRate, a percentage) -- only used here to
   // show a per-LINE VAT/total breakdown for readability; the order-level
@@ -2877,25 +2954,30 @@ function renderInvoice(o) {
     : '';
 
   document.getElementById('inv-content').innerHTML = `
-    <div class="invoice-box">
+    <div class="invoice-box ${sizeClass}">
       ${pendingNote}
+      <div class="biz-logo-slot" id="inv-logo-slot"></div>
       <div class="biz-name">${loc.name || '-'}</div>
       ${loc.vatNumber ? `<div class="biz-meta">الرقم الضريبي / VAT No: ${loc.vatNumber}</div>` : ''}
       ${loc.address ? `<div class="biz-meta">${loc.address}</div>` : ''}
+      ${loc.invoiceHeaderNote ? `<div class="invoice-header-note">${loc.invoiceHeaderNote}</div>` : ''}
       <div class="invoice-title">فاتورة ضريبية مبسّطة<br>Simplified Tax Invoice</div>
       <div class="invoice-meta-grid">
-        <div><span class="k">رقم الفاتورة:</span> ${o.id.slice(-10)}</div>
-        <div><span class="k">التسلسل (ICV):</span> ${o.zatcaInvoiceCounter ?? '-'}</div>
+        <div><span class="k">رقم فاتورة الوردية:</span> #${o.shiftSequence ?? '-'}</div>
+        <div><span class="k">الرقم اليومي:</span> #${o.dailySequence ?? '-'}</div>
+        <div><span class="k">التسلسل الضريبي (ICV):</span> ${o.zatcaInvoiceCounter ?? '-'}</div>
         <div><span class="k">التاريخ والوقت:</span> ${o.paidAt ? new Date(o.paidAt).toLocaleString('ar-SA') : '-'}</div>
         <div><span class="k">الكاشير:</span> ${o.servedBy ? o.servedBy.name : '-'}</div>
         ${o.customer ? `<div><span class="k">العميل:</span> ${o.customer.name || o.customer.phone}</div>` : ''}
         <div><span class="k">نوع الفاتورة:</span> ${INVOICE_TYPE_LABEL[o.invoiceType] || o.invoiceType}</div>
         <div><span class="k">طريقة الدفع:</span> ${paymentsText}</div>
       </div>
-      <table>
-        <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الضريبة</th><th>الإجمالي</th></tr></thead>
-        <tbody>${linesHtml}</tbody>
-      </table>
+      ${full ? `
+        <table>
+          <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الضريبة</th><th>الإجمالي</th></tr></thead>
+          <tbody>${linesHtml}</tbody>
+        </table>
+      ` : ''}
       <div class="invoice-totals">
         <div class="row"><span>الإجمالي قبل الضريبة</span><span>${Number(o.subtotal).toFixed(2)}</span></div>
         ${Number(o.discountTotal) > 0 ? `<div class="row"><span>الخصم</span><span>-${Number(o.discountTotal).toFixed(2)}</span></div>` : ''}
@@ -2908,6 +2990,7 @@ function renderInvoice(o) {
           <div class="invoice-note">امسح الرمز للتحقق من الفاتورة عبر تطبيق "فاتورة" التابع لهيئة الزكاة والضريبة والجمارك</div>
         </div>
       ` : ''}
+      ${loc.invoiceFooterNote ? `<div class="invoice-footer-note">${loc.invoiceFooterNote}</div>` : ''}
     </div>
   `;
 
@@ -2915,6 +2998,16 @@ function renderInvoice(o) {
     QRCode.toCanvas(document.getElementById('inv-qr-canvas'), o.zatcaQrCode, { width: 160, margin: 1 }, (err) => {
       if (err) console.error('QR render failed', err);
     });
+  }
+  if (loc.logoMimeType) {
+    fetch(apiBase() + '/locations/' + o.locationId + '/logo', { headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {} })
+      .then((res) => (res.ok ? res.blob() : null))
+      .then((blob) => {
+        if (!blob) return;
+        const slot = document.getElementById('inv-logo-slot');
+        if (slot) slot.innerHTML = `<img class="biz-logo" src="${URL.createObjectURL(blob)}">`;
+      })
+      .catch(() => { /* invoice still prints fine without the logo */ });
   }
 }
 async function loadSalesReport() {

@@ -127,19 +127,21 @@
   .home-card .ic{font-size:26px;margin-bottom:8px;}
   .home-card .lb{font-size:12.5px;font-weight:700;}
 
-  /* ---- every module opens as its own popup overlay, not an inline swap ---- */
-  .view{display:none;position:fixed;inset:0;background:rgba(20,22,35,.5);z-index:60;
-    align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto;}
+  /* ---- every module opens as its own popup overlay, not an inline swap --
+     full-screen (not a centered card floating over a visible backdrop) so
+     there's no dead-click zone around the edges that could be mistaken for
+     "inside" the popup. ---- */
+  .view{display:none;position:fixed;inset:0;background:var(--bg);z-index:60;
+    flex-direction:column;overflow-y:auto;}
   .view.open{display:flex;}
-  .view-card{background:var(--bg);border-radius:14px;max-width:1200px;width:100%;
-    box-shadow:0 24px 60px rgba(0,0,0,.3);overflow:hidden;margin-bottom:32px;}
+  .view-card{background:var(--bg);width:100%;min-height:100%;display:flex;flex-direction:column;flex:1;}
   .view-head{background:var(--card);border-bottom:1px solid var(--border);padding:14px 20px;
     display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2;}
   .view-head h2{margin:0;font-size:15.5px;}
   .view-close{background:none;color:var(--muted);border:1px solid var(--border);border-radius:8px;
     width:32px;height:32px;padding:0;font-size:15px;line-height:1;}
   .view-close:hover{background:var(--card2);color:var(--ink);}
-  .view-body{padding:20px;}
+  .view-body{padding:20px;flex:1;width:100%;max-width:1320px;margin:0 auto;box-sizing:border-box;}
 
   /* ---- sub-tabs inside a popup that bundles more than one distinct
      record type (e.g. Inventory's balances/receive/waste) -- splits them
@@ -1050,9 +1052,19 @@ async function updateOfflineBanner() {
 let syncingQueue = false;
 async function replayOfflineQueue() {
   if (syncingQueue || !navigator.onLine) return;
+  const items = await offlineDb.queue.orderBy('ts').toArray();
+  // Nothing queued -- by far the common case since this also runs on a
+  // plain 20s timer even when the user has been online the whole time.
+  // Bailing out here BEFORE touching syncingQueue/the finally block below
+  // is what stops switchTab(activeTab) from firing on every tick: that
+  // call resets whatever sub-view is open back to its default (e.g. an
+  // "add ingredient"/"open shift" form the user is mid-typing in gets
+  // silently swapped back to the list view) and was firing constantly
+  // even with an empty queue, which is what made every add-form across
+  // the app look like it "closed itself" at random during normal typing.
+  if (!items.length) return;
   syncingQueue = true;
   try {
-    const items = await offlineDb.queue.orderBy('ts').toArray();
     for (const item of items) {
       try {
         const res = await fetch(apiBase() + item.path, {

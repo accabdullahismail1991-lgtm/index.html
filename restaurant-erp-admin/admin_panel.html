@@ -95,20 +95,54 @@
   .menu-tile-name{font-size:11.5px;font-weight:600;line-height:1.3;margin-bottom:2px;}
   .menu-tile-price{font-size:11px;color:var(--brand);font-weight:700;}
 
-  /* ---- New Order screen: category / items / cart matrix (POS-style) ----
-     Categories pick the item grid's filter; the cart is always visible
-     alongside it instead of scrolled far below, so adding an item and
-     seeing it land in the order happen in the same glance. ---- */
-  .order-matrix{display:grid;grid-template-columns:130px 1fr 300px;gap:14px;margin-top:10px;align-items:start;}
-  @media (max-width:900px){.order-matrix{grid-template-columns:1fr;}}
-  .order-categories{display:flex;flex-direction:column;gap:4px;max-height:420px;overflow-y:auto;}
-  .order-cat-btn{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;
-    font-size:12.5px;font-weight:600;text-align:right;cursor:pointer;color:var(--ink);}
-  .order-cat-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);}
-  .order-cat-btn:hover:not(.active){border-color:var(--brand);}
-  .order-cart{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:420px;overflow-y:auto;}
-  .order-cart h3{margin:0 0 8px;font-size:13px;}
-  .order-cart .empty{font-size:12px;}
+  /* ---- New Order screen: warm POS-terminal look lifted from
+     prototypes/pos_prototype.html (the original cashier mockup) --
+     category pills across the top, item cards + cart below, scoped to
+     #sl-sub-new only via .pos-theme so the rest of the admin panel keeps
+     its own palette. Colors/values copied straight from that prototype's
+     :root, not reinvented, so this is proven to work together. ---- */
+  .pos-theme{
+    --pos-paper:#FAF7F0; --pos-ink:#211F1C; --pos-ink-soft:#5B564C;
+    --pos-primary:#2F5233; --pos-primary-ink:#F4F8F1; --pos-accent:#C9932A;
+    --pos-card:#F1ECDD; --pos-card-border:#E0D8C2; --pos-line:#D9D0B8;
+    background:var(--pos-paper);color:var(--pos-ink);border-radius:10px;
+    padding:16px;margin-top:14px;
+  }
+  .pos-cat-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .pos-cat-row button{font-family:inherit;background:var(--pos-card);border:1px solid var(--pos-card-border);
+    color:var(--pos-ink);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+  .pos-cat-row button.active{background:var(--pos-ink);color:var(--pos-paper);border-color:var(--pos-ink);}
+  .pos-cat-row button:hover:not(.active){border-color:var(--pos-primary);}
+
+  .order-matrix{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;}
+  @media (max-width:820px){.order-matrix{grid-template-columns:1fr;}}
+
+  .menu-tile{background:var(--pos-card);border:1px solid var(--pos-card-border);border-radius:10px;
+    padding:14px 12px;cursor:pointer;transition:transform .1s,border-color .15s;text-align:center;user-select:none;}
+  .menu-tile:hover{border-color:var(--pos-primary);}
+  .menu-tile:active{transform:scale(.98);}
+  .menu-tile-img{width:100%;aspect-ratio:1/1;border-radius:8px;background:var(--pos-paper);display:flex;
+    align-items:center;justify-content:center;font-size:26px;overflow:hidden;margin-bottom:6px;}
+  .menu-tile-img:empty{display:none;}
+  .menu-tile-img img{width:100%;height:100%;object-fit:cover;}
+  .menu-tile-name{font-size:13.5px;font-weight:600;line-height:1.3;margin-bottom:6px;}
+  .menu-tile-price{font-size:13px;color:var(--pos-primary);font-weight:700;}
+
+  .order-cart{background:var(--pos-card);border:1px solid var(--pos-card-border);border-radius:10px;
+    padding:16px;position:sticky;top:16px;}
+  .order-cart h3{margin:0 0 12px;font-size:15px;display:flex;justify-content:space-between;align-items:center;}
+  .order-cart h3 .count{font-size:12px;color:var(--pos-ink-soft);font-weight:500;}
+  .order-cart .empty{color:var(--pos-ink-soft);font-size:13px;text-align:center;padding:20px 0;}
+  .order-cart-totals{margin-top:12px;padding-top:12px;border-top:2px solid var(--pos-ink);font-size:13.5px;}
+  .order-cart-totals .row{display:flex;justify-content:space-between;margin-bottom:6px;color:var(--pos-ink-soft);}
+  .order-cart-totals .row.grand{font-size:17px;font-weight:700;margin-top:8px;color:var(--pos-ink);}
+  .order-checkout-btn{width:100%;padding:13px;border:none;border-radius:9px;background:var(--pos-primary);
+    color:var(--pos-primary-ink);font-family:inherit;font-weight:700;font-size:15px;cursor:pointer;margin-top:12px;}
+  .order-checkout-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .order-clear-btn{width:100%;padding:8px;border:none;background:transparent;color:var(--pos-ink-soft);
+    font-family:inherit;font-size:12.5px;cursor:pointer;margin-top:4px;text-decoration:underline;}
+  .order-manual-btn{width:100%;padding:9px;border:1.5px solid var(--pos-card-border);border-radius:9px;
+    background:var(--pos-paper);color:var(--pos-ink);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;}
 
   /* ---- kitchen display (live queue tickets) ---- */
   .kitchen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
@@ -472,20 +506,25 @@
         </div>
         <div id="ord-customer-required-note" class="msg err hidden" style="margin-top:8px">⚠️ هذا الفرع يُلزم اختيار عميل لإنشاء الطلب</div>
 
-        <div class="order-matrix">
-          <div class="order-categories" id="ord-categories"></div>
+        <div class="pos-theme">
+          <div class="pos-cat-row" id="ord-categories"></div>
+          <div class="order-matrix">
+            <div>
+              <input type="text" placeholder="🔍 ابحث عن صنف..." style="margin-bottom:8px" oninput="onOrderMenuSearch(this.value)">
+              <div id="ord-menu-grid" class="menu-grid"></div>
+            </div>
 
-          <div>
-            <input type="text" placeholder="🔍 ابحث عن صنف..." style="margin-bottom:8px" oninput="onOrderMenuSearch(this.value)">
-            <div id="ord-menu-grid" class="menu-grid"></div>
-          </div>
-
-          <div class="order-cart">
-            <h3>🛒 الطلب الحالي</h3>
-            <div id="ord-lines"></div>
-            <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
-              <button class="ghost" onclick="addOrderLineRow()">➕ صنف (يدويًا)</button>
-              <button onclick="createOrder()">✅ إنشاء الطلب</button>
+            <div class="order-cart">
+              <h3>الطلب الحالي <span class="count" id="ord-cart-count">0 صنف</span></h3>
+              <div id="ord-lines"></div>
+              <div class="order-cart-totals">
+                <div class="row"><span>المجموع الفرعي</span><span id="ord-subtotal">0.00</span></div>
+                <div class="row"><span id="ord-vat-label">ضريبة القيمة المضافة (15%)</span><span id="ord-vat">0.00</span></div>
+                <div class="row grand"><span>الإجمالي</span><span id="ord-grand-total">0.00</span></div>
+              </div>
+              <button class="order-manual-btn" onclick="addOrderLineRow()" style="margin-top:12px">➕ صنف (يدويًا)</button>
+              <button class="order-checkout-btn" onclick="createOrder()">✅ إنشاء الطلب</button>
+              <button class="order-clear-btn" onclick="clearCurrentOrder()">إفراغ الطلب</button>
             </div>
           </div>
         </div>
@@ -2323,6 +2362,7 @@ async function loadSalesTab() {
   await loadShifts();
   await loadOrders();
   await loadOrderCustomerOptions();
+  updateOrderCartTotals();
 }
 // Falls back to the raw code for a method created/renamed after the page's
 // cache was last loaded (e.g. mid-session by another admin) rather than
@@ -2357,6 +2397,7 @@ function onOrderShiftChange() {
   const required = !!(location && location.requireCustomerForOrders);
   document.getElementById('ord-customer-required-note').classList.toggle('hidden', !required);
   document.getElementById('ord-customer-label').textContent = required ? 'العميل (إلزامي لهذا الفرع)' : 'العميل (اختياري)';
+  updateOrderCartTotals();
 }
 
 async function onOrderSalesChannelChange() {
@@ -2384,7 +2425,7 @@ function renderOrderCategories() {
   const categories = [...new Set(menuItemsCache.map((m) => m.category).filter(Boolean))].sort();
   if (orderSelectedCategory && !categories.includes(orderSelectedCategory)) orderSelectedCategory = '';
   wrap.innerHTML = [{ key: '', label: 'الكل' }, ...categories.map((c) => ({ key: c, label: c }))].map((c) =>
-    `<button class="order-cat-btn ${c.key === orderSelectedCategory ? 'active' : ''}" onclick="selectOrderCategory('${c.key.replace(/'/g, "\\'")}')">${c.label}</button>`
+    `<button class="${c.key === orderSelectedCategory ? 'active' : ''}" onclick="selectOrderCategory('${c.key.replace(/'/g, "\\'")}')">${c.label}</button>`
   ).join('');
 }
 function selectOrderCategory(category) {
@@ -2439,11 +2480,66 @@ function addMenuTileToOrder(menuItemId) {
   if (existingRow) {
     const qtyInput = existingRow.querySelector('.ol-qty');
     qtyInput.value = (parseInt(qtyInput.value, 10) || 0) + 1;
+    updateOrderCartTotals();
     return;
   }
   addOrderLineRow();
   const rows = container.querySelectorAll('.recipe-row');
   rows[rows.length - 1].querySelector('.ol-item').value = menuItemId;
+  updateOrderCartTotals();
+}
+// menuItemsCache/orderChannelPriceMap-aware price lookup shared by the
+// menu grid tiles and the cart totals below, so both always agree.
+function effectiveOrderItemPrice(menuItemId) {
+  const m = menuItemsCache.find((x) => x.id === menuItemId);
+  if (!m) return 0;
+  return Number(orderChannelPriceMap && orderChannelPriceMap.has(menuItemId) ? orderChannelPriceMap.get(menuItemId) : m.price);
+}
+// Recomputes subtotal/VAT/grand total from whatever's currently in the
+// cart, using the selected shift's branch vatRate (Location.vatRate) --
+// falls back to 15% only when no shift/location is selected yet, purely
+// for a sane preview before that choice is made.
+function updateOrderCartTotals() {
+  const container = document.getElementById('ord-lines');
+  if (!container) return;
+  const rows = Array.from(container.querySelectorAll('.recipe-row'));
+  let itemCount = 0;
+  let subtotal = 0;
+  rows.forEach((row) => {
+    const menuItemId = row.querySelector('.ol-item') ? row.querySelector('.ol-item').value : '';
+    const qty = parseInt(row.querySelector('.ol-qty').value, 10) || 0;
+    if (menuItemId && qty > 0) {
+      itemCount += qty;
+      subtotal += effectiveOrderItemPrice(menuItemId) * qty;
+    }
+  });
+  const placeholder = container.querySelector('.order-empty-placeholder');
+  if (!rows.length && !placeholder) {
+    container.innerHTML = '<div class="empty order-empty-placeholder">لم تتم إضافة أصناف بعد</div>';
+  } else if (rows.length && placeholder) {
+    placeholder.remove();
+  }
+
+  const shiftId = document.getElementById('ord-shift') ? document.getElementById('ord-shift').value : '';
+  const shift = shiftsCache.find((s) => s.id === shiftId);
+  const location = shift ? locationsCache.find((l) => l.id === shift.locationId) : null;
+  const vatRate = location ? Number(location.vatRate) : 15;
+  const vat = Math.round(subtotal * (vatRate / 100) * 100) / 100;
+  const grand = Math.round((subtotal + vat) * 100) / 100;
+
+  const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+  setText('ord-cart-count', itemCount + ' صنف');
+  setText('ord-subtotal', subtotal.toFixed(2));
+  setText('ord-vat-label', `ضريبة القيمة المضافة (${vatRate}%)`);
+  setText('ord-vat', vat.toFixed(2));
+  setText('ord-grand-total', grand.toFixed(2));
+  const checkoutBtn = document.querySelector('#sl-sub-new .order-checkout-btn');
+  if (checkoutBtn) checkoutBtn.disabled = itemCount === 0;
+}
+function clearCurrentOrder() {
+  const container = document.getElementById('ord-lines');
+  if (container) container.innerHTML = '';
+  updateOrderCartTotals();
 }
 let shiftsCache = [];
 async function loadShifts() {
@@ -2496,10 +2592,11 @@ function addOrderLineRow() {
   const container = document.getElementById('ord-lines');
   const div = document.createElement('div');
   div.className = 'recipe-row';
-  div.innerHTML = `<select class="ol-item">${menuItemsCache.map((m) => `<option value="${m.id}">${m.name} (${Number(m.price).toFixed(2)})</option>`).join('')}</select>
-    <input class="ol-qty" type="number" min="1" step="1" value="1" placeholder="الكمية">
-    <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+  div.innerHTML = `<select class="ol-item" onchange="updateOrderCartTotals()">${menuItemsCache.map((m) => `<option value="${m.id}">${m.name} (${Number(m.price).toFixed(2)})</option>`).join('')}</select>
+    <input class="ol-qty" type="number" min="1" step="1" value="1" placeholder="الكمية" oninput="updateOrderCartTotals()">
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateOrderCartTotals();">✕</button>`;
   container.appendChild(div);
+  updateOrderCartTotals();
 }
 async function createOrder() {
   const shiftId = document.getElementById('ord-shift').value;
@@ -2522,6 +2619,7 @@ async function createOrder() {
   try {
     await api('/orders', { method: 'POST', body: JSON.stringify({ locationId: shift.locationId, shiftId, channel, salesChannelId, customerId, lines }) });
     container.innerHTML = '';
+    updateOrderCartTotals();
     document.getElementById('ord-customer').value = '';
     flashGlobal('✅ تم إنشاء الطلب', 'ok');
     loadOrders(); loadShifts();

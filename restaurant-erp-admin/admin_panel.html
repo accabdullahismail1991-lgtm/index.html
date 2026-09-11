@@ -73,6 +73,7 @@
   .recipe-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;}
   .recipe-row select{flex:2;min-width:120px;}
   .recipe-row input{flex:1;min-width:80px;}
+  .recipe-row select.rq-unit,.recipe-row select.po-unit{flex:0 0 90px;min-width:90px;}
   .empty{color:var(--muted);font-size:12.5px;padding:10px 0;white-space:normal;}
   .hint{color:var(--muted);font-size:12px;margin-top:10px;}
   .stats-row{display:flex;flex-wrap:wrap;gap:12px;}
@@ -93,6 +94,21 @@
   .menu-tile-img img{width:100%;height:100%;object-fit:cover;}
   .menu-tile-name{font-size:11.5px;font-weight:600;line-height:1.3;margin-bottom:2px;}
   .menu-tile-price{font-size:11px;color:var(--brand);font-weight:700;}
+
+  /* ---- New Order screen: category / items / cart matrix (POS-style) ----
+     Categories pick the item grid's filter; the cart is always visible
+     alongside it instead of scrolled far below, so adding an item and
+     seeing it land in the order happen in the same glance. ---- */
+  .order-matrix{display:grid;grid-template-columns:130px 1fr 300px;gap:14px;margin-top:10px;align-items:start;}
+  @media (max-width:900px){.order-matrix{grid-template-columns:1fr;}}
+  .order-categories{display:flex;flex-direction:column;gap:4px;max-height:420px;overflow-y:auto;}
+  .order-cat-btn{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;
+    font-size:12.5px;font-weight:600;text-align:right;cursor:pointer;color:var(--ink);}
+  .order-cat-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .order-cat-btn:hover:not(.active){border-color:var(--brand);}
+  .order-cart{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:420px;overflow-y:auto;}
+  .order-cart h3{margin:0 0 8px;font-size:13px;}
+  .order-cart .empty{font-size:12px;}
 
   /* ---- kitchen display (live queue tickets) ---- */
   .kitchen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
@@ -143,6 +159,29 @@
   .view-close:hover{background:var(--card2);color:var(--ink);}
   .view-body{padding:20px;flex:1;width:100%;max-width:1320px;margin:0 auto;box-sizing:border-box;}
 
+  /* ---- small focused dialogs (e.g. recording a payment) -- deliberately
+     NOT full-screen like .view: a quick, self-contained action on top of
+     whatever's already open, not a whole module to navigate into.
+     Highest z-index so it can sit on top of a full-screen .view too. ---- */
+  .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(20,22,35,.55);z-index:200;
+    align-items:center;justify-content:center;padding:16px;overflow-y:auto;}
+  .modal-backdrop.open{display:flex;}
+  .modal-box{background:var(--bg);border-radius:14px;max-width:440px;width:100%;
+    box-shadow:0 24px 60px rgba(0,0,0,.35);max-height:90vh;overflow-y:auto;}
+  .modal-head{background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px;
+    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;}
+  .modal-head h3{margin:0;font-size:14.5px;}
+  .modal-body{padding:16px;}
+  .pay-line{display:flex;gap:6px;align-items:center;margin-bottom:8px;}
+  .pay-line select{flex:0 0 100px;}
+  .pay-line input[type=number]{flex:0 0 90px;}
+  .pay-line input[type=text]{flex:1;min-width:0;}
+  .pay-remaining{font-weight:700;font-size:14px;margin:10px 0;padding:8px 10px;border-radius:8px;background:var(--card2);}
+  .pay-remaining.zero{color:#0a7a3d;}
+  .pay-remaining.negative{color:#b3261e;}
+  .activity-log{font-size:12px;color:var(--muted);margin-top:10px;border-top:1px solid var(--border);padding-top:8px;}
+  .activity-log .entry{margin-bottom:4px;}
+
   /* ---- sub-tabs inside a popup that bundles more than one distinct
      record type (e.g. Inventory's balances/receive/waste) -- splits them
      into separate screens instead of a long stacked scroll, same "one
@@ -174,10 +213,14 @@
   .invoice-note{font-size:10.5px;color:#666;text-align:center;margin-top:8px;line-height:1.6;}
   .invoice-pending-note{background:#fff8e1;border:1px solid #f0d060;border-radius:8px;padding:10px;font-size:12px;margin-bottom:12px;}
 
+  /* Generic: whichever popup is currently open (.view.open) prints on its
+     own, full-page -- not just the invoice. Works for every module/report
+     screen for free since they all share this same open/close mechanism,
+     instead of hand-wiring print support into each one individually. */
   @media print{
     body *{visibility:hidden;}
-    #view-invoice, #view-invoice *{visibility:visible;}
-    #view-invoice{position:absolute;inset:0;background:#fff;}
+    .view.open, .view.open *{visibility:visible;}
+    .view.open{position:absolute;inset:0;background:#fff;}
     .no-print{display:none !important;}
     .view-card{box-shadow:none;}
   }
@@ -231,7 +274,7 @@
 
       <div class="panel subview" id="br-sub-list">
         <h2>الفروع الحالية</h2>
-        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>الحالة</th><th>إلزام اختيار العميل</th></tr></thead>
+        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>نسبة الضريبة</th><th>الحالة</th><th>إلزام اختيار العميل</th><th>البيع بالسالب</th></tr></thead>
           <tbody id="branchesTable"></tbody>
         </table></div>
       </div>
@@ -248,7 +291,9 @@
           </div>
           <div><label>العنوان (اختياري)</label><input id="b-address" placeholder="شارع الملك فهد"></div>
           <div><label>الرقم الضريبي (اختياري -- لازم لفوترة ZATCA)</label><input id="b-vat" placeholder="15 رقمًا، يبدأ وينتهي بـ 3" maxlength="15"></div>
+          <div><label>نسبة الضريبة %</label><input id="b-vat-rate" type="number" step="0.01" min="0" max="100" value="15"></div>
           <div><label><input type="checkbox" id="b-require-customer" style="width:auto;display:inline"> إلزام اختيار العميل عند إنشاء الطلب</label></div>
+          <div><label><input type="checkbox" id="b-allow-negative-stock" style="width:auto;display:inline"> السماح بالبيع بالسالب (تجاوز نقص المخزون)</label></div>
           <div><button onclick="createBranch()">إضافة</button></div>
         </div>
       </div>
@@ -367,7 +412,7 @@
           <div><label>الصنف</label><select id="inv-r-ingredient"></select></div>
           <div><label>الكمية</label><input id="inv-r-qty" type="number" step="0.001" placeholder="100"></div>
           <div><label>تكلفة الوحدة</label><input id="inv-r-cost" type="number" step="0.0001" placeholder="5"></div>
-          <div><button onclick="receiveInventory()">استلام</button></div>
+          <div><button onclick="receiveInventory()">📥 استلام المخزون</button></div>
         </div>
       </div>
       <div class="panel subview hidden" id="inv-sub-waste">
@@ -376,7 +421,7 @@
           <div><label>الموقع</label><select id="inv-w-location"></select></div>
           <div><label>الصنف</label><select id="inv-w-ingredient"></select></div>
           <div><label>الكمية</label><input id="inv-w-qty" type="number" step="0.001" placeholder="5"></div>
-          <div><button class="danger" onclick="recordWaste()">تسجيل تالف</button></div>
+          <div><button class="danger" onclick="recordWaste()">🗑️ تسجيل التالف</button></div>
         </div>
       </div>
      </div></div>
@@ -426,15 +471,23 @@
           </div>
         </div>
         <div id="ord-customer-required-note" class="msg err hidden" style="margin-top:8px">⚠️ هذا الفرع يُلزم اختيار عميل لإنشاء الطلب</div>
-        <div style="margin-top:14px">
-          <label>اختر من المنيو (اضغط على الصنف لإضافته)</label>
-          <input type="text" placeholder="🔍 ابحث عن صنف..." style="margin-bottom:8px" oninput="renderOrderMenuGrid(this.value)">
-          <div id="ord-menu-grid" class="menu-grid"></div>
-        </div>
-        <div id="ord-lines" style="margin-top:14px"></div>
-        <div style="margin-top:8px;display:flex;gap:8px">
-          <button class="ghost" onclick="addOrderLineRow()">➕ صنف (يدويًا)</button>
-          <button onclick="createOrder()">إنشاء الطلب</button>
+
+        <div class="order-matrix">
+          <div class="order-categories" id="ord-categories"></div>
+
+          <div>
+            <input type="text" placeholder="🔍 ابحث عن صنف..." style="margin-bottom:8px" oninput="onOrderMenuSearch(this.value)">
+            <div id="ord-menu-grid" class="menu-grid"></div>
+          </div>
+
+          <div class="order-cart">
+            <h3>🛒 الطلب الحالي</h3>
+            <div id="ord-lines"></div>
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+              <button class="ghost" onclick="addOrderLineRow()">➕ صنف (يدويًا)</button>
+              <button onclick="createOrder()">✅ إنشاء الطلب</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="panel subview hidden" id="sl-sub-orders">
@@ -603,7 +656,7 @@
       </div>
       <div class="panel subview hidden" id="pr-sub-orders">
         <h2>أوامر الإنتاج</h2>
-        <div class="table-wrap"><table><thead><tr><th>الموقع</th><th>الصنف الناتج</th><th>الكمية</th><th>الحالة</th><th></th></tr></thead>
+        <div class="table-wrap"><table><thead><tr><th>الموقع</th><th>الصنف الناتج</th><th>الكمية</th><th>الحالة</th><th>التكلفة الفعلية</th><th></th></tr></thead>
           <tbody id="productionOrdersTable"></tbody>
         </table></div>
       </div>
@@ -627,7 +680,7 @@
         <div id="tr-lines"></div>
         <div style="margin-top:8px;display:flex;gap:8px">
           <button class="ghost" onclick="addTransferLineRow()">➕ مكوّن</button>
-          <button onclick="createTransfer()">إرسال التحويل</button>
+          <button onclick="createTransfer()">🚚 إرسال التحويل</button>
         </div>
       </div>
       <div class="panel subview hidden" id="tf-sub-list">
@@ -752,6 +805,7 @@
           <div class="home-card" onclick="openReportPopup('purchase-returns')"><div class="ic">🔄</div><div class="lb">تقرير مرتجعات المشتريات</div></div>
           <div class="home-card" onclick="openReportPopup('shifts')"><div class="ic">🧑‍💼</div><div class="lb">تقرير الورديات والكاشيرات</div></div>
           <div class="home-card" onclick="openReportPopup('payment-methods')"><div class="ic">💳</div><div class="lb">تقرير طرق الدفع</div></div>
+          <div class="home-card" onclick="openReportPopup('production')"><div class="ic">🏭</div><div class="lb">تقرير الإنتاج والتكاليف</div></div>
         </div>
       </div>
       <div class="panel">
@@ -940,6 +994,25 @@
      </div></div>
     </div>
 
+    <div id="view-report-production" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>🏭 تقرير الإنتاج والتكاليف</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="hint">التكلفة الفعلية مأخوذة من الدفعات الحقيقية التي استُهلكت عند بدء كل أمر إنتاج (start) -- ليست تقديرًا من الوصفة. أوامر لا تزال "مخطط" (لم تبدأ بعد) غير محتسبة.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="pdr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="pdr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="pdr-to" type="date"></div>
+          <div><button onclick="loadProductionReport()">تحديث</button></div>
+        </div>
+        <div id="pdr-cards" class="stats-row"></div>
+        <h3 style="margin-top:16px">حسب الصنف الناتج</h3>
+        <div class="table-wrap"><table><thead><tr><th>الصنف</th><th>عدد الأوامر</th><th>إجمالي الكمية المنتجة</th><th>التكلفة الإجمالية</th><th>متوسط تكلفة الوحدة</th></tr></thead>
+          <tbody id="pdr-output-table"></tbody>
+        </table></div>
+      </div>
+     </div></div>
+    </div>
+
     <!-- INVOICE (ZATCA-compliant view/print) -->
     <div id="view-invoice" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card">
@@ -953,6 +1026,25 @@
         <div id="inv-content"></div>
       </div>
      </div></div>
+
+    <!-- PAYMENT DIALOG (small, focused -- not a full-screen view) -->
+    <div id="paymentDialog" class="modal-backdrop" onclick="if(event.target===this) closePaymentDialog()">
+      <div class="modal-box">
+        <div class="modal-head"><h3>💰 دفع الفاتورة</h3><button class="view-close" onclick="closePaymentDialog()">✕</button></div>
+        <div class="modal-body">
+          <div id="pay-order-summary" style="margin-bottom:10px;font-size:13px"></div>
+          <div id="pay-lines"></div>
+          <button class="ghost" onclick="addPaymentLine()" style="margin-bottom:8px">➕ إضافة طريقة دفع</button>
+          <div id="pay-remaining" class="pay-remaining"></div>
+          <div id="pay-msg" class="msg"></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button onclick="confirmPayment()">✅ تأكيد الدفع</button>
+            <button class="ghost" onclick="holdOrderFromDialog()">🅿️ تعليق الفاتورة</button>
+          </div>
+          <div id="pay-activity-log" class="activity-log hidden"></div>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -993,6 +1085,55 @@ const UNIT_OPTIONS = [
 ];
 function unitOptionsHtml(selected) {
   return UNIT_OPTIONS.map((u) => `<option value="${u.value}" ${u.value === selected ? 'selected' : ''}>${u.label}</option>`).join('');
+}
+
+/* ================= Unit conversion (recipes + purchasing) =================
+   Lets a quantity be ENTERED in any unit compatible with an ingredient's own
+   stock unit (same family: mass, volume or count) and auto-converts it to
+   that stock unit before the value is sent to the API -- the backend only
+   ever sees numbers already in the ingredient's own unit, so no schema or
+   service changes were needed for this. */
+const UNIT_FAMILIES = {
+  mass: { g: 1, kg: 1000 },
+  volume: { ml: 1, l: 1000 },
+  count: { pcs: 1 },
+};
+function unitFamily(unit) {
+  for (const fam of Object.keys(UNIT_FAMILIES)) if (unit in UNIT_FAMILIES[fam]) return fam;
+  return null;
+}
+function compatibleUnitsFor(baseUnit) {
+  const fam = unitFamily(baseUnit);
+  return fam ? Object.keys(UNIT_FAMILIES[fam]) : [baseUnit];
+}
+function unitLabel(unit) { return (UNIT_OPTIONS.find((u) => u.value === unit) || {}).label || unit; }
+// quantity entered in `fromUnit` -> the equivalent quantity in `ingredient.unit`.
+function convertToIngredientUnit(ingredientId, quantity, fromUnit) {
+  const ing = ingredientsCache.find((i) => i.id === ingredientId);
+  if (!ing || !fromUnit || fromUnit === ing.unit) return quantity;
+  const fam = unitFamily(ing.unit);
+  if (!fam || unitFamily(fromUnit) !== fam) return quantity; // incompatible/unrecognized -- leave as entered
+  return quantity * (UNIT_FAMILIES[fam][fromUnit] / UNIT_FAMILIES[fam][ing.unit]);
+}
+// unitCost entered per `fromUnit` -> the equivalent cost per `ingredient.unit`
+// (inverse factor of the quantity conversion, so quantity*unitCost -- the
+// total actually paid -- is unchanged by the unit chosen).
+function convertUnitCostToIngredientUnit(ingredientId, unitCost, fromUnit) {
+  const ing = ingredientsCache.find((i) => i.id === ingredientId);
+  if (!ing || !fromUnit || fromUnit === ing.unit) return unitCost;
+  const fam = unitFamily(ing.unit);
+  if (!fam || unitFamily(fromUnit) !== fam) return unitCost;
+  return unitCost * (UNIT_FAMILIES[fam][ing.unit] / UNIT_FAMILIES[fam][fromUnit]);
+}
+// Repopulates a row's .*-unit <select> to match whichever ingredient is now
+// selected in its .*-ing <select> -- called on load and on ingredient change.
+function syncRowUnitOptions(ingSelect) {
+  const row = ingSelect.closest('.recipe-row');
+  const unitSelect = row && row.querySelector('select[class$="-unit"]');
+  if (!unitSelect) return;
+  const ing = ingredientsCache.find((i) => i.id === ingSelect.value);
+  const baseUnit = ing ? ing.unit : 'g';
+  unitSelect.innerHTML = compatibleUnitsFor(baseUnit).map((u) => `<option value="${u}" ${u === baseUnit ? 'selected' : ''}>${unitLabel(u)}</option>`).join('');
 }
 function locationOptions() { return locationsCache.map((l) => `<option value="${l.id}">${l.name}</option>`).join(''); }
 function ingredientOptions(filterFn) {
@@ -1383,6 +1524,7 @@ async function doLogin() {
     updateOfflineBanner();
     renderNav();
     renderHomeGrid();
+    injectViewToolbars();
     // Loaded quietly (no popup opened) since locationsCache feeds the
     // location dropdowns in several other modules' forms -- those need it
     // populated from the moment the user opens ANY module, not only after
@@ -1470,6 +1612,55 @@ function renderNav() {
   }).join('');
 }
 
+// Every module/report popup gets the same "🖨️ طباعة"/"⬇️ تصدير CSV" pair
+// for free by injecting it once into each .view-head next to its close
+// button, instead of hand-adding it to ~20 near-identical markup blocks.
+// #view-invoice is skipped -- it already has its own dedicated print
+// button and isn't a plain table to CSV-export.
+function injectViewToolbars() {
+  document.querySelectorAll('.view').forEach((view) => {
+    if (view.id === 'view-invoice') return;
+    const head = view.querySelector('.view-head');
+    const closeBtn = head ? head.querySelector('.view-close') : null;
+    if (!head || !closeBtn || head.querySelector('.view-toolbar')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'view-toolbar no-print';
+    wrap.style.cssText = 'display:flex;gap:8px;align-items:center';
+    wrap.innerHTML = '<button class="ghost" onclick="printCurrentView()">🖨️ طباعة</button><button class="ghost" onclick="exportCurrentViewCsv(this)">⬇️ تصدير CSV</button>';
+    head.insertBefore(wrap, closeBtn);
+    wrap.appendChild(closeBtn);
+  });
+}
+function printCurrentView() { window.print(); }
+// Exports every <table> visible in the currently open .view to one CSV
+// file -- generic (walks whatever tables that screen happens to render)
+// rather than a per-screen column list that would drift out of sync.
+function exportCurrentViewCsv(btn) {
+  const view = btn.closest('.view');
+  if (!view) return;
+  const tables = view.querySelectorAll('table');
+  if (!tables.length) { flashGlobal('⚠️ لا يوجد جدول لتصديره في هذه الشاشة', 'err'); return; }
+  const rows = [];
+  tables.forEach((table, i) => {
+    if (tables.length > 1) rows.push([`--- جدول ${i + 1} ---`]);
+    table.querySelectorAll('tr').forEach((tr) => {
+      const cells = Array.from(tr.querySelectorAll('th,td')).map((cell) => '"' + cell.textContent.trim().replace(/"/g, '""') + '"');
+      if (cells.length) rows.push(cells);
+    });
+  });
+  const csv = String.fromCharCode(0xFEFF) + rows.map((r) => r.join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const titleEl = view.querySelector('.view-head h2');
+  a.download = (titleEl ? titleEl.textContent.trim() : 'تصدير') + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 function closeView() {
   // Closes WHATEVER is open, not just a TABS member -- report popups
   // (view-report-*) are reachable only from the Reports hub, deliberately
@@ -1492,6 +1683,7 @@ const REPORT_POPUPS = {
   'purchase-returns': loadPurchaseReturnsReport,
   shifts: loadShiftsReport,
   'payment-methods': loadPaymentMethodsReport,
+  production: loadProductionReport,
 };
 function openReportPopup(key) {
   closeView();
@@ -1551,10 +1743,12 @@ async function loadBranches() {
     document.getElementById('branchesTable').innerHTML = branches.length
       ? branches.map((b) => `<tr>
           <td>${b.name}</td><td>${typeLabel[b.type] || b.type}</td><td>${b.address || '-'}</td><td>${b.vatNumber || '-'}</td>
+          <td>${Number(b.vatRate).toFixed(2)}% <button class="link-btn" onclick="editVatRate('${b.id}', ${Number(b.vatRate)})">✏️</button></td>
           <td>${b.isActive ? '✅ نشط' : '⛔ معطّل'}</td>
           <td><button class="link-btn" onclick="toggleRequireCustomer('${b.id}', ${!b.requireCustomerForOrders})">${b.requireCustomerForOrders ? '✅ إلزامي' : '⛔ اختياري'}</button></td>
+          <td><button class="link-btn" onclick="toggleAllowNegativeStock('${b.id}', ${!b.allowNegativeStock})">${b.allowNegativeStock ? '✅ مسموح' : '⛔ ممنوع'}</button></td>
         </tr>`).join('')
-      : `<tr><td colspan="6" class="empty">لا توجد فروع بعد</td></tr>`;
+      : `<tr><td colspan="8" class="empty">لا توجد فروع بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function createBranch() {
@@ -1562,15 +1756,20 @@ async function createBranch() {
   const type = document.getElementById('b-type').value;
   const address = document.getElementById('b-address').value.trim();
   const vatNumber = document.getElementById('b-vat').value.trim();
+  const vatRate = parseFloat(document.getElementById('b-vat-rate').value);
   const requireCustomerForOrders = document.getElementById('b-require-customer').checked;
+  const allowNegativeStock = document.getElementById('b-allow-negative-stock').checked;
   if (!name) { flashGlobal('⚠️ اكتب اسم الفرع', 'err'); return; }
   try {
-    const body = { name, type, requireCustomerForOrders };
+    const body = { name, type, requireCustomerForOrders, allowNegativeStock };
     if (address) body.address = address;
     if (vatNumber) body.vatNumber = vatNumber;
+    if (!isNaN(vatRate)) body.vatRate = vatRate;
     await api('/locations', { method: 'POST', body: JSON.stringify(body) });
     document.getElementById('b-name').value = ''; document.getElementById('b-address').value = ''; document.getElementById('b-vat').value = '';
+    document.getElementById('b-vat-rate').value = '15';
     document.getElementById('b-require-customer').checked = false;
+    document.getElementById('b-allow-negative-stock').checked = false;
     flashGlobal('✅ تمت إضافة الفرع', 'ok');
     loadBranches();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
@@ -1579,6 +1778,24 @@ async function toggleRequireCustomer(id, value) {
   try {
     await api(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify({ requireCustomerForOrders: value }) });
     flashGlobal('✅ تم التحديث', 'ok');
+    loadBranches();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function toggleAllowNegativeStock(id, value) {
+  try {
+    await api(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify({ allowNegativeStock: value }) });
+    flashGlobal('✅ تم التحديث', 'ok');
+    loadBranches();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function editVatRate(id, current) {
+  const input = window.prompt('نسبة الضريبة الجديدة % لهذا الفرع؟', current);
+  if (input === null) return;
+  const vatRate = parseFloat(input);
+  if (isNaN(vatRate) || vatRate < 0 || vatRate > 100) { flashGlobal('⚠️ نسبة غير صالحة (0-100)', 'err'); return; }
+  try {
+    await api(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify({ vatRate }) });
+    flashGlobal('✅ تم تحديث نسبة الضريبة', 'ok');
     loadBranches();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -1969,8 +2186,9 @@ function renderRecipeEditor(box, parentId, lines, parentKind) {
   const options = ingredientsCache.map((i) => `<option value="${i.id}">${i.name} (${i.unit})</option>`).join('');
   const rowsHtml = (lines.length ? lines : [{ ingredient: { id: '' }, quantity: '' }]).map((l) => `
     <div class="recipe-row">
-      <select class="rq-ing">${options}</select>
+      <select class="rq-ing" onchange="syncRowUnitOptions(this)">${options}</select>
       <input class="rq-qty" type="number" step="0.001" value="${l.quantity || ''}" placeholder="الكمية">
+      <select class="rq-unit"></select>
       <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>
     </div>
   `).join('');
@@ -1981,24 +2199,30 @@ function renderRecipeEditor(box, parentId, lines, parentKind) {
       <button onclick="saveRecipe('${parentId}','${parentKind}')">💾 حفظ الوصفة</button>
     </div>
   `;
-  // pre-select the saved ingredient for each existing line
+  // pre-select the saved ingredient for each existing line -- already
+  // stored in that ingredient's own unit, so its unit select just defaults
+  // to that same unit (no conversion needed for an unchanged saved line).
   const rowEls = box.querySelectorAll('.recipe-row');
   lines.forEach((l, idx) => { if (rowEls[idx] && l.ingredient) rowEls[idx].querySelector('.rq-ing').value = l.ingredient.id; });
+  rowEls.forEach((row) => syncRowUnitOptions(row.querySelector('.rq-ing')));
 }
 function addRecipeRow(parentId) {
   const options = ingredientsCache.map((i) => `<option value="${i.id}">${i.name} (${i.unit})</option>`).join('');
   const container = document.getElementById('rows-' + parentId);
   const div = document.createElement('div');
   div.className = 'recipe-row';
-  div.innerHTML = `<select class="rq-ing">${options}</select><input class="rq-qty" type="number" step="0.001" placeholder="الكمية"><button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+  div.innerHTML = `<select class="rq-ing" onchange="syncRowUnitOptions(this)">${options}</select><input class="rq-qty" type="number" step="0.001" placeholder="الكمية"><select class="rq-unit"></select><button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
   container.appendChild(div);
+  syncRowUnitOptions(div.querySelector('.rq-ing'));
 }
 async function saveRecipe(parentId, parentKind) {
   const container = document.getElementById('rows-' + parentId);
-  const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => ({
-    ingredientId: row.querySelector('.rq-ing').value,
-    quantity: parseFloat(row.querySelector('.rq-qty').value),
-  })).filter((l) => l.ingredientId && l.quantity > 0);
+  const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => {
+    const ingredientId = row.querySelector('.rq-ing').value;
+    const enteredQty = parseFloat(row.querySelector('.rq-qty').value);
+    const unit = row.querySelector('.rq-unit').value;
+    return { ingredientId, quantity: convertToIngredientUnit(ingredientId, enteredQty, unit) };
+  }).filter((l) => l.ingredientId && l.quantity > 0);
   const path = (parentKind === 'ingredient' ? '/ingredients/' : '/items/') + parentId + '/recipe';
   try {
     await api(path, { method: 'PUT', body: JSON.stringify({ lines }) });
@@ -2092,6 +2316,7 @@ async function loadSalesTab() {
     '<option value="">السعر الأساسي</option>' + activeChannels.map((c) => `<option value="${c.id}">${c.name}</option>`).join('');
   orderChannelPriceMap = null;
   document.getElementById('sh-location').innerHTML = locationOptions();
+  renderOrderCategories();
   renderOrderMenuGrid('');
   paymentMethodsCache = await api('/payment-methods?activeOnly=true');
   await loadShifts();
@@ -2143,15 +2368,40 @@ async function onOrderSalesChannelChange() {
       orderChannelPriceMap = new Map(rows.map((r) => [r.menuItemId, r.price]));
     } catch (e) { flashGlobal('❌ ' + e.message, 'err'); orderChannelPriceMap = null; }
   }
-  renderOrderMenuGrid(document.querySelector('#sl-sub-new input[type="text"]').value);
+  renderOrderMenuGrid();
 }
 
 let orderMenuImageCache = {}; // menuItemId -> blob object URL, filled lazily per grid render
+let orderSelectedCategory = ''; // '' = كل الأقسام
+let orderMenuSearchTerm = '';
+// Rebuilds the category sidebar from whatever categories exist in the menu
+// right now -- never a fixed list, so a newly-added category (from "أصناف
+// المنيو") shows up here without any other change.
+function renderOrderCategories() {
+  const wrap = document.getElementById('ord-categories');
+  if (!wrap) return;
+  const categories = [...new Set(menuItemsCache.map((m) => m.category).filter(Boolean))].sort();
+  if (orderSelectedCategory && !categories.includes(orderSelectedCategory)) orderSelectedCategory = '';
+  wrap.innerHTML = [{ key: '', label: 'الكل' }, ...categories.map((c) => ({ key: c, label: c }))].map((c) =>
+    `<button class="order-cat-btn ${c.key === orderSelectedCategory ? 'active' : ''}" onclick="selectOrderCategory('${c.key.replace(/'/g, "\\'")}')">${c.label}</button>`
+  ).join('');
+}
+function selectOrderCategory(category) {
+  orderSelectedCategory = category;
+  renderOrderCategories();
+  renderOrderMenuGrid();
+}
+function onOrderMenuSearch(term) {
+  orderMenuSearchTerm = term;
+  renderOrderMenuGrid();
+}
 function renderOrderMenuGrid(term) {
   const grid = document.getElementById('ord-menu-grid');
   if (!grid) return;
-  const t = (term || '').trim().toLowerCase();
-  const list = t ? menuItemsCache.filter((m) => m.name.toLowerCase().includes(t)) : menuItemsCache;
+  if (term !== undefined) orderMenuSearchTerm = term;
+  const t = (orderMenuSearchTerm || '').trim().toLowerCase();
+  let list = t ? menuItemsCache.filter((m) => m.name.toLowerCase().includes(t)) : menuItemsCache;
+  if (orderSelectedCategory) list = list.filter((m) => m.category === orderSelectedCategory);
   if (!list.length) { grid.innerHTML = `<div class="empty">${menuItemsCache.length ? 'لا توجد أصناف مطابقة' : 'لا توجد أصناف منيو بعد'}</div>`; return; }
   grid.innerHTML = list.map((m) => `
     <div class="menu-tile" onclick="addMenuTileToOrder('${m.id}')" title="إضافة للطلب">
@@ -2290,11 +2540,8 @@ async function loadOrders() {
           <td>${Number(o.grandTotal).toFixed(2)}</td>
           <td>${o.payments && o.payments.length ? o.payments.map((p) => paymentMethodLabel(p.method)).join('، ') : '-'}</td>
           <td>
-            ${o.status === 'SENT_TO_KITCHEN' ? `
-              <select id="pay-method-${o.id}" style="width:110px;display:inline-block">
-                ${paymentMethodsCache.map((m) => `<option value="${m.code}">${m.name}</option>`).join('')}
-              </select>
-              <button class="link-btn" onclick="payOrder('${o.id}', ${o.grandTotal})">💰 دفع</button>
+            ${(o.status === 'SENT_TO_KITCHEN' || o.status === 'READY' || o.status === 'OPEN') ? `
+              <button class="link-btn" onclick="openPaymentDialog('${o.id}')">💰 دفع${o._count && o._count.activityLog ? ' 🅿️' : ''}</button>
               <button class="link-btn" onclick="voidOrder('${o.id}')">إلغاء</button>
             ` : ''}
             ${o.status === 'PAID' ? `<button class="link-btn" onclick="openInvoicePopup('${o.id}')">🧾 الفاتورة</button>` : ''}
@@ -2304,14 +2551,99 @@ async function loadOrders() {
       : `<tr><td colspan="7" class="empty">لا توجد طلبات بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
-async function payOrder(id, amount) {
-  const method = document.getElementById('pay-method-' + id).value;
+
+/* ================= Payment dialog (split payment + hold) ================= */
+let paymentDialogOrder = null;
+let paymentDialogLines = [];
+
+async function openPaymentDialog(orderId) {
   try {
-    await api(`/orders/${id}/pay`, { method: 'POST', body: JSON.stringify({ payments: [{ method, mode: 'MANUAL', amount }] }) });
-    flashGlobal('✅ تم الدفع', 'ok');
-    loadOrders();
+    await ensurePaymentMethodsCache();
+    paymentDialogOrder = await api('/orders/' + orderId);
+    const defaultMethod = (paymentMethodsCache.find((m) => m.isActive) || paymentMethodsCache[0] || {}).code || 'CASH';
+    paymentDialogLines = [{ method: defaultMethod, amount: Number(paymentDialogOrder.grandTotal), terminalRef: '' }];
+    document.getElementById('pay-msg').className = 'msg';
+    document.getElementById('paymentDialog').classList.add('open');
+    renderPaymentDialog();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+function closePaymentDialog() {
+  document.getElementById('paymentDialog').classList.remove('open');
+  paymentDialogOrder = null;
+  paymentDialogLines = [];
+}
+function paymentRemaining() {
+  const paid = paymentDialogLines.reduce((s, l) => s + (Number(l.amount) || 0), 0);
+  return Math.round((Number(paymentDialogOrder.grandTotal) - paid) * 100) / 100;
+}
+function renderPaymentDialog() {
+  const o = paymentDialogOrder;
+  const itemCount = o.lines ? o.lines.reduce((s, l) => s + l.quantity, 0) : 0;
+  document.getElementById('pay-order-summary').innerHTML =
+    `<div>طلب #${o.id.slice(-8)} -- ${itemCount} صنف${o.customer ? ' -- العميل: ' + (o.customer.name || o.customer.phone) : ''}</div>
+     <div style="font-weight:700;font-size:16px;margin-top:4px">الإجمالي: ${Number(o.grandTotal).toFixed(2)}</div>`;
+
+  document.getElementById('pay-lines').innerHTML = paymentDialogLines.map((l, i) => `
+    <div class="pay-line">
+      <select onchange="updatePaymentLine(${i}, 'method', this.value)">
+        ${paymentMethodsCache.map((m) => `<option value="${m.code}" ${m.code === l.method ? 'selected' : ''}>${m.name}</option>`).join('')}
+      </select>
+      <input type="number" step="0.01" value="${l.amount}" oninput="updatePaymentLine(${i}, 'amount', this.value)" placeholder="المبلغ">
+      <input type="text" value="${l.terminalRef}" oninput="updatePaymentLine(${i}, 'terminalRef', this.value)" placeholder="رقم العملية / المرجع (اختياري)">
+      ${paymentDialogLines.length > 1 ? `<button class="link-btn" onclick="removePaymentLine(${i})">✕</button>` : ''}
+    </div>
+  `).join('');
+
+  const remaining = paymentRemaining();
+  const remainingEl = document.getElementById('pay-remaining');
+  remainingEl.textContent = remaining === 0 ? '✅ المبلغ مطابق تمامًا' : `المتبقي: ${remaining.toFixed(2)}`;
+  remainingEl.className = 'pay-remaining ' + (remaining === 0 ? 'zero' : remaining < 0 ? 'negative' : '');
+
+  const logEl = document.getElementById('pay-activity-log');
+  if (o.activityLog && o.activityLog.length) {
+    logEl.classList.remove('hidden');
+    logEl.innerHTML = '<div style="font-weight:700;margin-bottom:4px">سجل الحركة</div>' + o.activityLog.map((a) =>
+      `<div class="entry">🅿️ عُلّقت بواسطة ${a.createdBy ? a.createdBy.name : '-'} في ${new Date(a.createdAt).toLocaleString('ar-SA')}${a.note ? ' -- ' + a.note : ''}</div>`
+    ).join('');
+  } else {
+    logEl.classList.add('hidden');
+  }
+}
+function addPaymentLine() {
+  const defaultMethod = (paymentMethodsCache.find((m) => m.isActive) || paymentMethodsCache[0] || {}).code || 'CASH';
+  paymentDialogLines.push({ method: defaultMethod, amount: Math.max(paymentRemaining(), 0), terminalRef: '' });
+  renderPaymentDialog();
+}
+function removePaymentLine(i) {
+  paymentDialogLines.splice(i, 1);
+  renderPaymentDialog();
+}
+function updatePaymentLine(i, field, value) {
+  paymentDialogLines[i][field] = field === 'amount' ? parseFloat(value) || 0 : value;
+  renderPaymentDialog();
+}
+async function confirmPayment() {
+  if (paymentRemaining() !== 0) { showMsg('pay-msg', '⚠️ يجب أن يساوي مجموع طرق الدفع إجمالي الفاتورة بالضبط', 'err'); return; }
+  try {
+    const payments = paymentDialogLines.map((l) => ({
+      method: l.method, mode: 'MANUAL', amount: Number(l.amount), terminalRef: l.terminalRef ? l.terminalRef.trim() || undefined : undefined,
+    }));
+    await api(`/orders/${paymentDialogOrder.id}/pay`, { method: 'POST', body: JSON.stringify({ payments }) });
+    flashGlobal('✅ تم الدفع', 'ok');
+    closePaymentDialog();
+    loadOrders();
+  } catch (e) { showMsg('pay-msg', '❌ ' + e.message, 'err'); }
+}
+async function holdOrderFromDialog() {
+  const note = window.prompt('ملاحظة تعليق الفاتورة (اختياري)؟', '') || undefined;
+  try {
+    await api(`/orders/${paymentDialogOrder.id}/hold`, { method: 'POST', body: JSON.stringify({ note }) });
+    flashGlobal('🅿️ تم تعليق الفاتورة', 'ok');
+    closePaymentDialog();
+    loadOrders();
+  } catch (e) { showMsg('pay-msg', '❌ ' + e.message, 'err'); }
+}
+
 async function voidOrder(id) {
   try {
     await api(`/orders/${id}/void`, { method: 'POST' });
@@ -2321,13 +2653,6 @@ async function voidOrder(id) {
 }
 
 /* ================= Invoice (ZATCA-compliant view/print) ================= */
-// Same flat VAT rate re-declared client-side as every backend file already
-// does per docs/DECISIONS.md #3 (orders.service.ts, zatca.service.ts) --
-// only used here to show a per-LINE VAT/total breakdown for readability;
-// the order-level subtotal/vatTotal/grandTotal actually charged always
-// come straight from the API, never recomputed from lines client-side.
-const INVOICE_VAT_RATE = 0.15;
-
 async function openInvoicePopup(orderId) {
   closeView();
   document.getElementById('view-invoice').classList.add('open');
@@ -2344,10 +2669,15 @@ async function openInvoicePopup(orderId) {
 function renderInvoice(o) {
   const loc = o.location || {};
   const round2 = (n) => Math.round(n * 100) / 100;
+  // Per-branch rate (Location.vatRate, a percentage) -- only used here to
+  // show a per-LINE VAT/total breakdown for readability; the order-level
+  // subtotal/vatTotal/grandTotal actually charged always come straight
+  // from the API, never recomputed from lines client-side.
+  const vatRate = Number(loc.vatRate ?? 15) / 100;
 
   const linesHtml = o.lines.map((l) => {
     const lineSubtotal = Number(l.unitPrice) * l.quantity;
-    const lineVat = round2(lineSubtotal * INVOICE_VAT_RATE);
+    const lineVat = round2(lineSubtotal * vatRate);
     const lineTotal = round2(lineSubtotal + lineVat);
     return `<tr>
       <td>${l.menuItem ? l.menuItem.name : l.menuItemId}</td>
@@ -2682,21 +3012,33 @@ function addPoLineRow() {
   const container = document.getElementById('po-lines');
   const div = document.createElement('div');
   div.className = 'recipe-row';
-  div.innerHTML = `<select class="po-ing">${ingredientOptions()}</select>
+  div.innerHTML = `<select class="po-ing" onchange="syncRowUnitOptions(this)">${ingredientOptions()}</select>
     <input class="po-qty" type="number" step="0.001" placeholder="الكمية">
-    <input class="po-cost" type="number" step="0.0001" placeholder="تكلفة الوحدة">
+    <select class="po-unit"></select>
+    <input class="po-cost" type="number" step="0.0001" placeholder="تكلفة الوحدة (بوحدة الشراء المختارة)">
     <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
   container.appendChild(div);
+  syncRowUnitOptions(div.querySelector('.po-ing'));
 }
 async function createPurchaseOrder() {
   const locationId = document.getElementById('po-location').value;
   const supplierId = document.getElementById('po-supplier').value;
   const container = document.getElementById('po-lines');
-  const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => ({
-    ingredientId: row.querySelector('.po-ing').value,
-    quantity: parseFloat(row.querySelector('.po-qty').value),
-    unitCost: parseFloat(row.querySelector('.po-cost').value),
-  })).filter((l) => l.ingredientId && l.quantity > 0 && l.unitCost > 0);
+  // Purchase unit can differ from the ingredient's stock unit (e.g. buying
+  // by the kg for an ingredient tracked in g) -- quantity AND unitCost both
+  // convert to the stock unit so quantity*unitCost (what's actually paid)
+  // is unchanged regardless of which unit was picked at entry time.
+  const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => {
+    const ingredientId = row.querySelector('.po-ing').value;
+    const unit = row.querySelector('.po-unit').value;
+    const enteredQty = parseFloat(row.querySelector('.po-qty').value);
+    const enteredCost = parseFloat(row.querySelector('.po-cost').value);
+    return {
+      ingredientId,
+      quantity: convertToIngredientUnit(ingredientId, enteredQty, unit),
+      unitCost: convertUnitCostToIngredientUnit(ingredientId, enteredCost, unit),
+    };
+  }).filter((l) => l.ingredientId && l.quantity > 0 && l.unitCost > 0);
   if (!locationId || !supplierId) { flashGlobal('⚠️ اختر الموقع والمورد', 'err'); return; }
   if (!lines.length) { flashGlobal('⚠️ أضف مكوّن واحد على الأقل بكمية وتكلفة', 'err'); return; }
   try {
@@ -2714,14 +3056,14 @@ async function loadPurchaseOrders() {
     const supName = (id) => (suppliers.find((s) => s.id === id) || {}).name || id;
     const actionsFor = (po) => {
       const btns = [];
-      if (po.status === 'DRAFT') btns.push(`<button class="link-btn" onclick="submitPO('${po.id}')">تقديم</button>`);
+      if (po.status === 'DRAFT') btns.push(`<button class="link-btn" onclick="submitPO('${po.id}')">📤 تقديم للاعتماد</button>`);
       if (po.status === 'PENDING_APPROVAL') {
-        btns.push(`<button class="link-btn" onclick="approvePO('${po.id}')">اعتماد</button>`);
-        btns.push(`<button class="link-btn" onclick="rejectPO('${po.id}')">رفض</button>`);
+        btns.push(`<button class="link-btn" onclick="approvePO('${po.id}')">✅ اعتماد</button>`);
+        btns.push(`<button class="link-btn danger-link" onclick="rejectPO('${po.id}')">✖️ رفض</button>`);
       }
-      if (po.status === 'APPROVED') btns.push(`<button class="link-btn" onclick="sendPO('${po.id}')">إرسال للمورد</button>`);
-      if (po.status === 'APPROVED' || po.status === 'SENT_TO_SUPPLIER') btns.push(`<button class="link-btn" onclick="receivePO('${po.id}')">استلام</button>`);
-      if (!['RECEIVED', 'CANCELLED'].includes(po.status)) btns.push(`<button class="link-btn" onclick="cancelPO('${po.id}')">إلغاء</button>`);
+      if (po.status === 'APPROVED') btns.push(`<button class="link-btn" onclick="sendPO('${po.id}')">📤 إرسال للمورد</button>`);
+      if (po.status === 'APPROVED' || po.status === 'SENT_TO_SUPPLIER') btns.push(`<button class="link-btn" onclick="receivePO('${po.id}')">📥 استلام الطلبية</button>`);
+      if (!['RECEIVED', 'CANCELLED'].includes(po.status)) btns.push(`<button class="link-btn danger-link" onclick="cancelPO('${po.id}')">✖️ إلغاء</button>`);
       return btns.join(' ');
     };
     document.getElementById('purchaseOrdersTable').innerHTML = pos.length
@@ -2759,6 +3101,7 @@ async function loadPurchasingReport() {
     document.getElementById('pur-cards').innerHTML = [
       statTile('عدد الأوامر', res.orderCount),
       statTile('الإنفاق الفعلي', res.totalSpend.toFixed(2)),
+      statTile('ضريبة مدخلات مقدّرة', res.estimatedVat.toFixed(2)),
     ].join('');
     document.getElementById('pur-status-table').innerHTML = res.byStatus.length
       ? res.byStatus.map((s) => `<tr><td>${PO_STATUS_LABEL[s.status] || s.status}</td><td>${s.count}</td></tr>`).join('')
@@ -2906,6 +3249,27 @@ async function loadPaymentMethodsReport() {
       : `<tr><td colspan="3" class="empty">لا توجد مدفوعات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+async function loadProductionReport() {
+  const sel = document.getElementById('pdr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('pdr-from').value;
+    const to = document.getElementById('pdr-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/analytics/production-summary?' + params.toString());
+    document.getElementById('pdr-cards').innerHTML = [
+      statTile('عدد الأوامر (بدأت أو اكتملت)', res.ordersCount),
+      statTile('إجمالي التكلفة الفعلية', res.totalCost.toFixed(2)),
+    ].join('');
+    document.getElementById('pdr-output-table').innerHTML = res.byOutput.length
+      ? res.byOutput.map((o) => `<tr><td>${o.name}</td><td>${o.ordersCount}</td><td>${o.totalOutputQuantity} ${o.unit}</td><td>${o.totalCost.toFixed(2)}</td><td>${o.avgUnitCost.toFixed(4)}</td></tr>`).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد أوامر إنتاج بدأت في هذه الفترة</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
 
 /* ================= Production ================= */
 async function loadProductionTab() {
@@ -2949,21 +3313,26 @@ async function createProductionOrder() {
     loadProductionOrders();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+const PRODUCTION_STATUS_LABEL = { PLANNED: 'مخطط', IN_PROGRESS: 'قيد التنفيذ', COMPLETED: 'مكتمل', CANCELLED: 'ملغى' };
 async function loadProductionOrders() {
   try {
     const orders = await api('/production-orders');
     const locName = (id) => (locationsCache.find((l) => l.id === id) || {}).name || id;
     const ingName = (id) => (ingredientsCache.find((i) => i.id === id) || {}).name || id;
+    // Consistent primary/secondary/destructive styling per action across
+    // this table -- not three visually-identical link-btns the user has
+    // to read to tell apart.
     const actionsFor = (o) => {
       const btns = [];
-      if (o.status === 'PLANNED') btns.push(`<button class="link-btn" onclick="startProd('${o.id}')">بدء</button>`);
-      if (o.status === 'IN_PROGRESS') btns.push(`<button class="link-btn" onclick="completeProd('${o.id}')">اكتمال</button>`);
-      if (!['COMPLETED', 'CANCELLED'].includes(o.status)) btns.push(`<button class="link-btn" onclick="cancelProd('${o.id}')">إلغاء</button>`);
+      if (o.status === 'PLANNED') btns.push(`<button onclick="startProd('${o.id}')">▶️ بدء الإنتاج</button>`);
+      if (o.status === 'IN_PROGRESS') btns.push(`<button onclick="completeProd('${o.id}')">✅ إكمال الإنتاج</button>`);
+      if (!['COMPLETED', 'CANCELLED'].includes(o.status)) btns.push(`<button class="danger" onclick="cancelProd('${o.id}')">✖️ إلغاء الأمر</button>`);
       return btns.join(' ');
     };
+    const costCell = (o) => (o.status === 'PLANNED' ? '<span class="empty">-</span>' : Number(o.totalInputCost ?? 0).toFixed(2));
     document.getElementById('productionOrdersTable').innerHTML = orders.length
-      ? orders.map((o) => `<tr><td>${locName(o.locationId)}</td><td>${ingName(o.outputIngredientId)}</td><td>${Number(o.outputQuantity)}</td><td>${o.status}</td><td>${actionsFor(o)}</td></tr>`).join('')
-      : `<tr><td colspan="5" class="empty">لا توجد أوامر إنتاج بعد</td></tr>`;
+      ? orders.map((o) => `<tr><td>${locName(o.locationId)}</td><td>${ingName(o.outputIngredientId)}</td><td>${Number(o.outputQuantity)}</td><td>${PRODUCTION_STATUS_LABEL[o.status] || o.status}</td><td>${costCell(o)}</td><td>${actionsFor(o)}</td></tr>`).join('')
+      : `<tr><td colspan="6" class="empty">لا توجد أوامر إنتاج بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function prodAction(id, action) {
@@ -3012,6 +3381,7 @@ async function createTransfer() {
     loadTransfers(); loadInventoryBalances();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+const TRANSFER_STATUS_LABEL = { DISPATCHED: 'قيد الشحن', RECEIVED: 'مُستلَم' };
 async function loadTransfers() {
   try {
     transfersCache = await api('/transfers');
@@ -3019,7 +3389,7 @@ async function loadTransfers() {
     document.getElementById('transfersTable').innerHTML = transfersCache.length
       ? transfersCache.map((t) => `
         <tr>
-          <td>${locName(t.fromLocationId)}</td><td>${locName(t.toLocationId)}</td><td>${t.status}</td>
+          <td>${locName(t.fromLocationId)}</td><td>${locName(t.toLocationId)}</td><td>${TRANSFER_STATUS_LABEL[t.status] || t.status}</td>
           <td>${t.status === 'DISPATCHED' ? `<button class="link-btn" onclick="toggleTransferReceive('${t.id}')">📥 استلام</button>` : ''}</td>
         </tr>
         ${t.status === 'DISPATCHED' ? `<tr id="tr-receive-row-${t.id}" class="hidden"><td colspan="4"><div class="recipe-box" id="tr-receive-box-${t.id}"></div></td></tr>` : ''}

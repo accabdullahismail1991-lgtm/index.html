@@ -206,8 +206,10 @@
     display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;}
   .modal-head h3{margin:0;font-size:14.5px;}
   .modal-body{padding:16px;}
-  .pay-line{display:flex;gap:6px;align-items:center;margin-bottom:8px;}
-  .pay-line select{flex:0 0 100px;}
+  .pay-line{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
+  .pay-method-picker{display:flex;gap:6px;flex-wrap:wrap;flex:1 0 100%;}
+  .pay-method-btn{padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);cursor:pointer;font-size:13px;}
+  .pay-method-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700;}
   .pay-line input[type=number]{flex:0 0 90px;}
   .pay-line input[type=text]{flex:1;min-width:0;}
   .pay-remaining{font-weight:700;font-size:14px;margin:10px 0;padding:8px 10px;border-radius:8px;background:var(--card2);}
@@ -308,7 +310,7 @@
 
       <div class="panel subview" id="br-sub-list">
         <h2>الفروع الحالية</h2>
-        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>نسبة الضريبة</th><th>الحالة</th><th>إلزام اختيار العميل</th><th>البيع بالسالب</th></tr></thead>
+        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>نسبة الضريبة</th><th>الحالة</th><th>إلزام اختيار العميل</th><th>البيع بالسالب</th><th>الإجراءات</th></tr></thead>
           <tbody id="branchesTable"></tbody>
         </table></div>
       </div>
@@ -1787,8 +1789,10 @@ async function loadBranches() {
           <td>${b.isActive ? '✅ نشط' : '⛔ معطّل'}</td>
           <td><button class="link-btn" onclick="toggleRequireCustomer('${b.id}', ${!b.requireCustomerForOrders})">${b.requireCustomerForOrders ? '✅ إلزامي' : '⛔ اختياري'}</button></td>
           <td><button class="link-btn" onclick="toggleAllowNegativeStock('${b.id}', ${!b.allowNegativeStock})">${b.allowNegativeStock ? '✅ مسموح' : '⛔ ممنوع'}</button></td>
-        </tr>`).join('')
-      : `<tr><td colspan="8" class="empty">لا توجد فروع بعد</td></tr>`;
+          <td><button class="link-btn" onclick="toggleBranchEdit('${b.id}')">✏️ تعديل</button></td>
+        </tr>
+        <tr id="edit-branch-row-${b.id}" class="hidden"><td colspan="9"><div class="recipe-box" id="edit-branch-box-${b.id}"></div></td></tr>`).join('')
+      : `<tr><td colspan="9" class="empty">لا توجد فروع بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function createBranch() {
@@ -1836,6 +1840,51 @@ async function editVatRate(id, current) {
   try {
     await api(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify({ vatRate }) });
     flashGlobal('✅ تم تحديث نسبة الضريبة', 'ok');
+    loadBranches();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+// Full edit form for a branch's core data (name/type/address/tax number/
+// active state) -- the row already has single-purpose buttons for
+// vatRate/requireCustomer/allowNegativeStock, so this form only covers
+// what had NO way to change at all after creation.
+function toggleBranchEdit(id) {
+  const row = document.getElementById('edit-branch-row-' + id);
+  const box = document.getElementById('edit-branch-box-' + id);
+  const opening = row.classList.contains('hidden');
+  row.classList.toggle('hidden');
+  if (!opening) return;
+  const b = locationsCache.find((x) => x.id === id);
+  box.innerHTML = `
+    <div class="row-form" style="margin-top:0">
+      <div><label>الاسم</label><input class="eb-name" value="${b.name}"></div>
+      <div><label>النوع</label>
+        <select class="eb-type">
+          <option value="BRANCH" ${b.type === 'BRANCH' ? 'selected' : ''}>فرع</option>
+          <option value="CENTRAL_KITCHEN" ${b.type === 'CENTRAL_KITCHEN' ? 'selected' : ''}>مطبخ مركزي</option>
+          <option value="WAREHOUSE" ${b.type === 'WAREHOUSE' ? 'selected' : ''}>مستودع</option>
+        </select>
+      </div>
+      <div><label>العنوان</label><input class="eb-address" value="${b.address || ''}"></div>
+      <div><label>الرقم الضريبي (15 رقمًا، يبدأ وينتهي بـ 3)</label><input class="eb-vat" value="${b.vatNumber || ''}" maxlength="15"></div>
+      <div><label><input type="checkbox" class="eb-active" style="width:auto;display:inline" ${b.isActive ? 'checked' : ''}> نشط</label></div>
+      <div><button onclick="saveBranchEdit('${id}')">💾 حفظ</button></div>
+    </div>
+  `;
+}
+async function saveBranchEdit(id) {
+  const box = document.getElementById('edit-branch-box-' + id);
+  const name = box.querySelector('.eb-name').value.trim();
+  const type = box.querySelector('.eb-type').value;
+  const address = box.querySelector('.eb-address').value.trim();
+  const vatNumber = box.querySelector('.eb-vat').value.trim();
+  const isActive = box.querySelector('.eb-active').checked;
+  if (!name) { flashGlobal('⚠️ اكتب اسم الفرع', 'err'); return; }
+  try {
+    const body = { name, type, address, isActive };
+    if (vatNumber) body.vatNumber = vatNumber;
+    await api('/locations/' + id, { method: 'PATCH', body: JSON.stringify(body) });
+    flashGlobal('✅ تم حفظ التعديل', 'ok');
+    document.getElementById('edit-branch-row-' + id).classList.add('hidden');
     loadBranches();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -2617,12 +2666,17 @@ async function createOrder() {
     return;
   }
   try {
-    await api('/orders', { method: 'POST', body: JSON.stringify({ locationId: shift.locationId, shiftId, channel, salesChannelId, customerId, lines }) });
+    const created = await api('/orders', { method: 'POST', body: JSON.stringify({ locationId: shift.locationId, shiftId, channel, salesChannelId, customerId, lines }) });
     container.innerHTML = '';
     updateOrderCartTotals();
     document.getElementById('ord-customer').value = '';
     flashGlobal('✅ تم إنشاء الطلب', 'ok');
     loadOrders(); loadShifts();
+    // Go straight into the payment step instead of leaving the cashier to
+    // find the order in the list and open it manually -- this dialog
+    // already offers "تعليق الفاتورة" (hold) as the explicit skip-for-now
+    // action, right at the moment the order is placed.
+    openPaymentDialog(created.id);
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function loadOrders() {
@@ -2684,9 +2738,9 @@ function renderPaymentDialog() {
 
   document.getElementById('pay-lines').innerHTML = paymentDialogLines.map((l, i) => `
     <div class="pay-line">
-      <select onchange="updatePaymentLine(${i}, 'method', this.value)">
-        ${paymentMethodsCache.map((m) => `<option value="${m.code}" ${m.code === l.method ? 'selected' : ''}>${m.name}</option>`).join('')}
-      </select>
+      <div class="pay-method-picker">
+        ${paymentMethodsCache.map((m) => `<button type="button" class="pay-method-btn ${m.code === l.method ? 'active' : ''}" onclick="updatePaymentLine(${i}, 'method', '${m.code.replace(/'/g, "\\'")}')">${m.name}</button>`).join('')}
+      </div>
       <input type="number" step="0.01" value="${l.amount}" oninput="updatePaymentLine(${i}, 'amount', this.value)" placeholder="المبلغ">
       <input type="text" value="${l.terminalRef}" oninput="updatePaymentLine(${i}, 'terminalRef', this.value)" placeholder="رقم العملية / المرجع (اختياري)">
       ${paymentDialogLines.length > 1 ? `<button class="link-btn" onclick="removePaymentLine(${i})">✕</button>` : ''}

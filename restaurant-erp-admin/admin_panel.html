@@ -60,6 +60,17 @@
   th{color:var(--muted);font-weight:600;font-size:12px;}
   tr:last-child td{border-bottom:none;}
   tbody tr:hover td{background:var(--card2);}
+
+  /* ---- Report tables (Odoo/Foodics-style): shaded header, zebra rows,
+     tabular-figure numeric columns, and a bold highlighted totals row --
+     scoped to .report-table so the rest of the app's plain data-management
+     tables (branches, items, orders...) are untouched. ---- */
+  .report-table thead th{background:var(--card2);border-bottom:2px solid var(--border);}
+  .report-table tbody tr:nth-child(even) td{background:rgba(127,127,127,.04);}
+  .report-table tbody tr:nth-child(even):hover td{background:var(--card2);}
+  .report-table td.num,.report-table th.num{font-variant-numeric:tabular-nums;text-align:left;}
+  .report-table tr.report-total-row td{font-weight:800;border-top:2px solid var(--brand);background:rgba(55,48,163,.06);}
+  .report-table tr.report-total-row td:first-child{color:var(--brand);}
   .row-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:10px;}
   .row-form > div{flex:1;min-width:140px;}
   .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
@@ -333,7 +344,7 @@
 
       <div class="panel subview" id="br-sub-list">
         <h2>الفروع الحالية</h2>
-        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>نسبة الضريبة</th><th>الحالة</th><th>إلزام اختيار العميل</th><th>البيع بالسالب</th><th>الإجراءات</th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>نسبة الضريبة</th><th>الحالة</th><th>إلزام اختيار العميل</th><th>البيع بالسالب</th><th>الإجراءات</th></tr></thead>
           <tbody id="branchesTable"></tbody>
         </table></div>
       </div>
@@ -371,7 +382,7 @@
 
       <div class="panel subview" id="ing-sub-list">
         <h2>الأصناف الحالية</h2>
-        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الوحدة</th><th>النوع</th><th>حد أدنى</th><th></th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>الوحدة</th><th>النوع</th><th>حد أدنى</th><th></th></tr></thead>
           <tbody id="ingredientsTable"></tbody>
         </table></div>
       </div>
@@ -414,7 +425,7 @@
       <div class="view-body">
       <div class="panel subview" id="mi-sub-list">
         <h2>أصناف المنيو الحالية</h2>
-        <div class="table-wrap"><table><thead><tr><th>الصورة</th><th>الاسم</th><th>القسم</th><th>السعر</th><th>التكلفة الحالية</th><th>الحالة</th><th></th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الصورة</th><th>الاسم</th><th>القسم</th><th>السعر</th><th>التكلفة الحالية</th><th>الحالة</th><th></th></tr></thead>
           <tbody id="itemsTable"></tbody>
         </table></div>
       </div>
@@ -435,7 +446,7 @@
           <div><button onclick="createSalesChannel()">➕ إضافة قناة</button></div>
         </div>
         <div id="sc-msg" class="msg"></div>
-        <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>القناة</th><th>الحالة</th><th></th></tr></thead>
+        <div class="table-wrap" style="margin-top:10px"><table class="report-table"><thead><tr><th>القناة</th><th>الحالة</th><th></th></tr></thead>
           <tbody id="sc-channels-table"></tbody>
         </table></div>
         <div id="sc-matrix-wrap" class="table-wrap" style="margin-top:16px"></div>
@@ -460,7 +471,7 @@
             <select id="inv-filter-location" onchange="loadInventoryBalances()"><option value="">كل المواقع</option></select>
           </div>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>الموقع</th><th>الصنف</th><th>الرصيد</th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الموقع</th><th>الصنف</th><th>الرصيد</th></tr></thead>
           <tbody id="inventoryTable"></tbody>
         </table></div>
       </div>
@@ -497,7 +508,7 @@
 
       <div class="panel subview" id="sl-sub-shifts">
         <h2>الورديات</h2>
-        <div class="table-wrap"><table><thead><tr><th>الموقع</th><th>الحالة</th><th>فتحها</th><th>أغلقها</th><th>رأس المال</th><th>المتوقع</th><th>المعدود</th><th>الفرق</th><th></th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الموقع</th><th>الحالة</th><th>فتحها</th><th>أغلقها</th><th>رأس المال</th><th>المتوقع</th><th>المعدود</th><th>الفرق</th><th></th></tr></thead>
           <tbody id="shiftsTable"></tbody>
         </table></div>
         <div class="row-form">
@@ -563,7 +574,7 @@
       </div>
       <div class="panel subview hidden" id="sl-sub-orders">
         <h2>الطلبات</h2>
-        <div class="table-wrap"><table><thead><tr><th>الموقع</th><th>القناة</th><th>الكاشير</th><th>نوع الفاتورة</th><th>الحالة</th><th>الإجمالي</th><th>طريقة الدفع</th><th></th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الموقع</th><th>القناة</th><th>الكاشير</th><th>نوع الفاتورة</th><th>الحالة</th><th>الإجمالي</th><th>طريقة الدفع</th><th></th></tr></thead>
           <tbody id="ordersTable"></tbody>
         </table></div>
       </div>
@@ -592,7 +603,7 @@
       </div>
       <div class="panel subview hidden" id="rt-sub-history">
         <h2>سجل المرتجعات</h2>
-        <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>الموقع</th><th>الأصناف</th><th>السبب</th><th>الاسترداد</th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ</th><th>الموقع</th><th>الأصناف</th><th>السبب</th><th>الاسترداد</th></tr></thead>
           <tbody id="returnsTable"></tbody>
         </table></div>
       </div>
@@ -642,7 +653,7 @@
 
       <div class="panel subview" id="pu-sub-suppliers">
         <h2>الموردون</h2>
-        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الجوال</th><th>النطاق</th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>الجوال</th><th>النطاق</th></tr></thead>
           <tbody id="suppliersTable"></tbody>
         </table></div>
         <div class="row-form">
@@ -654,7 +665,7 @@
       </div>
       <div class="panel subview hidden" id="pu-sub-matrix">
         <h2>مصفوفة الموافقات (Approval Matrix)</h2>
-        <div class="table-wrap"><table><thead><tr><th>النوع</th><th>الحد الأقصى</th><th>الدور المطلوب (Role ID)</th><th>الموقع</th><th></th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>النوع</th><th>الحد الأقصى</th><th>الدور المطلوب (Role ID)</th><th>الموقع</th><th></th></tr></thead>
           <tbody id="approvalRulesTable"></tbody>
         </table></div>
         <div class="row-form">
@@ -678,7 +689,7 @@
       </div>
       <div class="panel subview hidden" id="pu-sub-orders">
         <h2>أوامر الشراء</h2>
-        <div class="table-wrap"><table><thead><tr><th>المورد</th><th>الموقع</th><th>الحالة</th><th>الإجمالي</th><th></th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>المورد</th><th>الموقع</th><th>الحالة</th><th>الإجمالي</th><th></th></tr></thead>
           <tbody id="purchaseOrdersTable"></tbody>
         </table></div>
       </div>
@@ -695,7 +706,7 @@
         </div>
         <div id="pr-msg" class="msg"></div>
         <h3 style="margin-top:20px">سجل مرتجعات المشتريات</h3>
-        <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>المورد</th><th>الأصناف</th><th>السبب</th><th>المبلغ</th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ</th><th>المورد</th><th>الأصناف</th><th>السبب</th><th>المبلغ</th></tr></thead>
           <tbody id="purchaseReturnsTable"></tbody>
         </table></div>
       </div>
@@ -727,7 +738,7 @@
       </div>
       <div class="panel subview hidden" id="pr-sub-orders">
         <h2>أوامر الإنتاج</h2>
-        <div class="table-wrap"><table><thead><tr><th>الموقع</th><th>الصنف الناتج</th><th>الكمية</th><th>الحالة</th><th>التكلفة الفعلية</th><th></th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الموقع</th><th>الصنف الناتج</th><th>الكمية</th><th>الحالة</th><th>التكلفة الفعلية</th><th></th></tr></thead>
           <tbody id="productionOrdersTable"></tbody>
         </table></div>
       </div>
@@ -2236,10 +2247,11 @@ async function loadItemsReport() {
       api('/analytics/menu-item-costs' + (locationId ? '?locationId=' + locationId : '')),
     ]);
     document.getElementById('mir-topitems-table').innerHTML = topItems.length
-      ? topItems.map((i) => `<tr><td>${i.name}</td><td>${i.quantity}</td><td>${i.revenue.toFixed(2)}</td></tr>`).join('')
+      ? topItems.map((i) => `<tr><td>${i.name}</td><td class="num">${i.quantity}</td><td class="num">${fmtMoney(i.revenue)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${topItems.reduce((s, i) => s + i.quantity, 0)}</td><td class="num">${fmtMoney(topItems.reduce((s, i) => s + i.revenue, 0))}</td></tr>`
       : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
     document.getElementById('mir-costs-table').innerHTML = costs.length
-      ? costs.map((c) => `<tr><td>${c.name}${c.hasRecipe ? '' : ' ⚠️'}</td><td>${c.price.toFixed(2)}</td><td>${c.cost.toFixed(2)}</td><td>${c.costPercent.toFixed(1)}%</td><td>${c.grossMargin.toFixed(2)}</td></tr>`).join('')
+      ? costs.map((c) => `<tr><td>${c.name}${c.hasRecipe ? '' : ' ⚠️'}</td><td class="num">${fmtMoney(c.price)}</td><td class="num">${fmtMoney(c.cost)}</td><td class="num">${c.costPercent.toFixed(1)}%</td><td class="num">${fmtMoney(c.grossMargin)}</td></tr>`).join('')
       : `<tr><td colspan="5" class="empty">لا توجد أصناف بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -2475,11 +2487,12 @@ async function loadInventoryReport() {
     const qs = locationId ? '?locationId=' + locationId : '';
     const [valuation, lowStock] = await Promise.all([api('/analytics/inventory-valuation' + qs), api('/analytics/low-stock' + qs)]);
     document.getElementById('ivr-valuation-table').innerHTML = valuation.lines.length
-      ? valuation.lines.map((l) => `<tr><td>${l.name}</td><td>${l.quantity} ${l.unit}</td><td>${l.value.toFixed(2)}</td></tr>`).join('')
+      ? valuation.lines.map((l) => `<tr><td>${l.name}</td><td class="num">${l.quantity} ${l.unit}</td><td class="num">${fmtMoney(l.value)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td></td><td class="num">${fmtMoney(valuation.totalValue)}</td></tr>`
       : `<tr><td colspan="3" class="empty">لا يوجد مخزون بعد</td></tr>`;
-    document.getElementById('ivr-valuation-total').textContent = 'الإجمالي: ' + valuation.totalValue.toFixed(2) + ' ر.س';
+    document.getElementById('ivr-valuation-total').textContent = 'الإجمالي: ' + fmtMoney(valuation.totalValue) + ' ر.س';
     document.getElementById('ivr-lowstock-table').innerHTML = lowStock.length
-      ? lowStock.map((r) => `<tr><td>${r.name}</td><td>${r.locationName}</td><td>${r.quantity} ${r.unit}</td><td>${r.lowStockThreshold} ${r.unit}</td></tr>`).join('')
+      ? lowStock.map((r) => `<tr><td>${r.name}</td><td>${r.locationName}</td><td class="num">${r.quantity} ${r.unit}</td><td class="num">${r.lowStockThreshold} ${r.unit}</td></tr>`).join('')
       : `<tr><td colspan="4" class="empty">لا توجد تنبيهات انخفاض مخزون</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -3050,17 +3063,19 @@ async function loadSalesReport() {
     const [summary, topItems] = await Promise.all([api('/analytics/sales-summary?' + qs), api('/analytics/top-items?' + qs)]);
     document.getElementById('slr-summary-cards').innerHTML = [
       statTile('عدد الطلبات', summary.orderCount),
-      statTile('الإيراد', summary.revenue.toFixed(2)),
-      statTile('صافي المبيعات', summary.netSales.toFixed(2)),
-      statTile('ضريبة القيمة المضافة', summary.vatCollected.toFixed(2)),
-      statTile('الخصومات', summary.discountGiven.toFixed(2)),
-      statTile('متوسط الطلب', summary.averageOrderValue.toFixed(2)),
+      statTile('الإيراد', fmtMoney(summary.revenue)),
+      statTile('صافي المبيعات', fmtMoney(summary.netSales)),
+      statTile('ضريبة القيمة المضافة', fmtMoney(summary.vatCollected)),
+      statTile('الخصومات', fmtMoney(summary.discountGiven)),
+      statTile('متوسط الطلب', fmtMoney(summary.averageOrderValue)),
     ].join('');
     document.getElementById('slr-channel-table').innerHTML = summary.byChannel.length
-      ? summary.byChannel.map((c) => `<tr><td>${AN_CHANNEL_LABEL[c.channel] || c.channel}</td><td>${c.orderCount}</td><td>${c.revenue.toFixed(2)}</td></tr>`).join('')
+      ? summary.byChannel.map((c) => `<tr><td>${AN_CHANNEL_LABEL[c.channel] || c.channel}</td><td class="num">${c.orderCount}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${summary.byChannel.reduce((s, c) => s + c.orderCount, 0)}</td><td class="num">${fmtMoney(summary.byChannel.reduce((s, c) => s + c.revenue, 0))}</td></tr>`
       : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
     document.getElementById('slr-topitems-table').innerHTML = topItems.length
-      ? topItems.map((i) => `<tr><td>${i.name}</td><td>${i.quantity}</td><td>${i.revenue.toFixed(2)}</td></tr>`).join('')
+      ? topItems.map((i) => `<tr><td>${i.name}</td><td class="num">${i.quantity}</td><td class="num">${fmtMoney(i.revenue)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${topItems.reduce((s, i) => s + i.quantity, 0)}</td><td class="num">${fmtMoney(topItems.reduce((s, i) => s + i.revenue, 0))}</td></tr>`
       : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -3153,10 +3168,11 @@ async function loadReturnsReport() {
     const res = await api('/analytics/returns-summary?' + params.toString());
     document.getElementById('rtr-cards').innerHTML = [
       statTile('عدد المرتجعات', res.returnCount),
-      statTile('إجمالي المسترد', res.totalRefund.toFixed(2)),
+      statTile('إجمالي المسترد', fmtMoney(res.totalRefund)),
     ].join('');
     document.getElementById('rtr-topitems-table').innerHTML = res.topReturnedItems.length
-      ? res.topReturnedItems.map((i) => `<tr><td>${i.name}</td><td>${i.quantity}</td></tr>`).join('')
+      ? res.topReturnedItems.map((i) => `<tr><td>${i.name}</td><td class="num">${i.quantity}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${res.topReturnedItems.reduce((s, i) => s + i.quantity, 0)}</td></tr>`
       : `<tr><td colspan="2" class="empty">لا توجد مرتجعات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -3449,14 +3465,16 @@ async function loadPurchasingReport() {
     const res = await api('/analytics/purchasing-summary?' + params.toString());
     document.getElementById('pur-cards').innerHTML = [
       statTile('عدد الأوامر', res.orderCount),
-      statTile('الإنفاق الفعلي', res.totalSpend.toFixed(2)),
-      statTile('ضريبة مدخلات مقدّرة', res.estimatedVat.toFixed(2)),
+      statTile('الإنفاق الفعلي', fmtMoney(res.totalSpend)),
+      statTile('ضريبة مدخلات مقدّرة', fmtMoney(res.estimatedVat)),
     ].join('');
     document.getElementById('pur-status-table').innerHTML = res.byStatus.length
-      ? res.byStatus.map((s) => `<tr><td>${PO_STATUS_LABEL[s.status] || s.status}</td><td>${s.count}</td></tr>`).join('')
+      ? res.byStatus.map((s) => `<tr><td>${PO_STATUS_LABEL[s.status] || s.status}</td><td class="num">${s.count}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${res.byStatus.reduce((sum, s) => sum + s.count, 0)}</td></tr>`
       : `<tr><td colspan="2" class="empty">لا توجد أوامر شراء في هذه الفترة</td></tr>`;
     document.getElementById('pur-suppliers-table').innerHTML = res.topSuppliers.length
-      ? res.topSuppliers.map((s) => `<tr><td>${s.supplierName}</td><td>${s.spend.toFixed(2)}</td></tr>`).join('')
+      ? res.topSuppliers.map((s) => `<tr><td>${s.supplierName}</td><td class="num">${fmtMoney(s.spend)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${fmtMoney(res.topSuppliers.reduce((sum, s) => sum + s.spend, 0))}</td></tr>`
       : `<tr><td colspan="2" class="empty">لا يوجد إنفاق في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -3547,10 +3565,11 @@ async function loadPurchaseReturnsReport() {
     const res = await api('/analytics/purchase-returns-summary?' + params.toString());
     document.getElementById('por-cards').innerHTML = [
       statTile('عدد المرتجعات', res.returnCount),
-      statTile('إجمالي المبلغ', res.totalAmount.toFixed(2)),
+      statTile('إجمالي المبلغ', fmtMoney(res.totalAmount)),
     ].join('');
     document.getElementById('por-topitems-table').innerHTML = res.topReturnedIngredients.length
-      ? res.topReturnedIngredients.map((i) => `<tr><td>${i.name}</td><td>${i.quantity}</td></tr>`).join('')
+      ? res.topReturnedIngredients.map((i) => `<tr><td>${i.name}</td><td class="num">${i.quantity}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${res.topReturnedIngredients.reduce((s, i) => s + i.quantity, 0)}</td></tr>`
       : `<tr><td colspan="2" class="empty">لا توجد مرتجعات مشتريات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -3573,7 +3592,8 @@ async function loadShiftsReport() {
       statTile('ورديات مفتوحة الآن', res.openShiftsCount),
     ].join('');
     document.getElementById('shr-cashier-table').innerHTML = res.byCashier.length
-      ? res.byCashier.map((c) => `<tr><td>${c.cashierName}</td><td>${c.shiftsCount}</td><td>${c.totalSales.toFixed(2)}</td><td>${c.totalVariance.toFixed(2)}</td></tr>`).join('')
+      ? res.byCashier.map((c) => `<tr><td>${c.cashierName}</td><td class="num">${c.shiftsCount}</td><td class="num">${fmtMoney(c.totalSales)}</td><td class="num">${fmtMoney(c.totalVariance)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${res.byCashier.reduce((s, c) => s + c.shiftsCount, 0)}</td><td class="num">${fmtMoney(res.byCashier.reduce((s, c) => s + c.totalSales, 0))}</td><td class="num">${fmtMoney(res.byCashier.reduce((s, c) => s + c.totalVariance, 0))}</td></tr>`
       : `<tr><td colspan="4" class="empty">لا توجد ورديات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -3592,9 +3612,10 @@ async function loadPaymentMethodsReport() {
     if (from) params.set('from', from);
     if (to) params.set('to', to);
     const res = await api('/analytics/payment-methods-summary?' + params.toString());
-    document.getElementById('pmr-total').textContent = 'الإجمالي: ' + res.totalAmount.toFixed(2) + ' ر.س';
+    document.getElementById('pmr-total').textContent = 'الإجمالي: ' + fmtMoney(res.totalAmount) + ' ر.س';
     document.getElementById('pmr-method-table').innerHTML = res.byMethod.length
-      ? res.byMethod.map((m) => `<tr><td>${paymentMethodLabel(m.method)}</td><td>${m.count}</td><td>${m.total.toFixed(2)}</td></tr>`).join('')
+      ? res.byMethod.map((m) => `<tr><td>${paymentMethodLabel(m.method)}</td><td class="num">${m.count}</td><td class="num">${fmtMoney(m.total)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${res.byMethod.reduce((s, m) => s + m.count, 0)}</td><td class="num">${fmtMoney(res.byMethod.reduce((s, m) => s + m.total, 0))}</td></tr>`
       : `<tr><td colspan="3" class="empty">لا توجد مدفوعات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -3612,10 +3633,11 @@ async function loadProductionReport() {
     const res = await api('/analytics/production-summary?' + params.toString());
     document.getElementById('pdr-cards').innerHTML = [
       statTile('عدد الأوامر (بدأت أو اكتملت)', res.ordersCount),
-      statTile('إجمالي التكلفة الفعلية', res.totalCost.toFixed(2)),
+      statTile('إجمالي التكلفة الفعلية', fmtMoney(res.totalCost)),
     ].join('');
     document.getElementById('pdr-output-table').innerHTML = res.byOutput.length
-      ? res.byOutput.map((o) => `<tr><td>${o.name}</td><td>${o.ordersCount}</td><td>${o.totalOutputQuantity} ${o.unit}</td><td>${o.totalCost.toFixed(2)}</td><td>${o.avgUnitCost.toFixed(4)}</td></tr>`).join('')
+      ? res.byOutput.map((o) => `<tr><td>${o.name}</td><td class="num">${o.ordersCount}</td><td class="num">${o.totalOutputQuantity} ${o.unit}</td><td class="num">${fmtMoney(o.totalCost)}</td><td class="num">${o.avgUnitCost.toFixed(4)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${res.byOutput.reduce((s, o) => s + o.ordersCount, 0)}</td><td></td><td class="num">${fmtMoney(res.byOutput.reduce((s, o) => s + o.totalCost, 0))}</td><td></td></tr>`
       : `<tr><td colspan="5" class="empty">لا توجد أوامر إنتاج بدأت في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -3948,6 +3970,11 @@ async function redeemCustomerPoints(id) {
 /* ---------------- Analytics / BI ---------------- */
 const AN_CHANNEL_LABEL = { DINE_IN: 'صالة', TAKEAWAY: 'تيك أواي', DRIVE_THRU: 'Drive-thru', DELIVERY_PARTNER: 'توصيل خارجي', BRAND_APP: 'تطبيق العلامة' };
 function statTile(label, value) { return `<div class="stat-tile"><div class="label">${label}</div><div class="value">${value}</div></div>`; }
+// Thousands-separated, fixed-2-decimal money formatting for report tables
+// (e.g. "12,345.00") -- Odoo/Foodics-style reports always group large
+// figures this way; scoped to report renderers only so it doesn't ripple
+// into the invoice/payment-dialog formatting used elsewhere.
+function fmtMoney(n) { return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
 /* ---------------- Reports export (Excel/PDF) ---------------- */
 async function loadReportsList() {

@@ -1519,17 +1519,18 @@ async function doLogin() {
     if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
     accessToken = data.accessToken;
     document.getElementById('whoAmI').textContent = phone;
+    // Awaited (not fire-and-forget) BEFORE the app screen/nav become
+    // clickable: locationsCache feeds location dropdowns in several other
+    // modules' forms (shift-open included), and a user clicking into one
+    // of those fast enough used to find it empty -- the fetch hadn't
+    // resolved yet since nothing was blocking navigation in the meantime.
+    await loadBranches();
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('appScreen').classList.remove('hidden');
     updateOfflineBanner();
     renderNav();
     renderHomeGrid();
     injectViewToolbars();
-    // Loaded quietly (no popup opened) since locationsCache feeds the
-    // location dropdowns in several other modules' forms -- those need it
-    // populated from the moment the user opens ANY module, not only after
-    // they've visited "الفروع" first.
-    loadBranches();
   } catch (e) {
     showMsg('loginMsg', '❌ ' + e.message, 'err');
   } finally {

@@ -45,10 +45,11 @@
   header{background:var(--brand);color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;}
   header h1{font-size:16px;margin:0;}
   header .who{font-size:12px;opacity:.85;}
-  nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:2px;padding:6px 20px;position:sticky;top:0;z-index:5;}
+  nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:6px 20px;position:sticky;top:0;z-index:5;}
   nav button{background:none;color:var(--muted);border:none;border-radius:6px;padding:10px 14px;font-weight:600;font-size:13px;border-bottom:2px solid transparent;white-space:nowrap;}
   nav button.active{color:var(--brand);background:var(--card2);border-bottom-color:var(--brand);}
   nav button:hover{background:var(--card2);}
+  nav .nav-sep{width:1px;align-self:stretch;margin:4px 6px;background:var(--border);}
   main{flex:1;padding:24px;max-width:1320px;width:100%;margin:0 auto;}
   .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px;box-shadow:0 1px 3px rgba(20,20,40,.04);}
   .panel h2{font-size:14.5px;margin:0 0 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
@@ -115,6 +116,10 @@
   .alert-info{background:rgba(55,48,163,.05);border-color:rgba(55,48,163,.2);}
 
   /* ---- home dashboard (landing screen behind the popups) ---- */
+  .home-group{margin-bottom:20px;}
+  .home-group:last-child{margin-bottom:0;}
+  .home-group-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.03em;margin:0 0 10px;}
   .home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
   .home-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 14px;
     text-align:center;cursor:pointer;transition:all .12s;}
@@ -203,29 +208,14 @@
     </div>
   </header>
   <div id="offlineBanner" class="msg" style="display:none;margin:12px 20px 0"></div>
-  <nav>
-    <button id="tab-branches" onclick="switchTab('branches')">🏢 الفروع</button>
-    <button id="tab-ingredients" onclick="switchTab('ingredients')">🥕 الأصناف الخام والنصف مصنّعة</button>
-    <button id="tab-items" onclick="switchTab('items')">📋 أصناف المنيو</button>
-    <button id="tab-inventory" onclick="switchTab('inventory')">📦 المخزون</button>
-    <button id="tab-sales" onclick="switchTab('sales')">🧾 المبيعات</button>
-    <button id="tab-returns" onclick="switchTab('returns')">↩️ المرتجعات</button>
-    <button id="tab-kitchen" onclick="switchTab('kitchen')">🍳 المطبخ</button>
-    <button id="tab-alerts" onclick="switchTab('alerts')">🔔 التنبيهات</button>
-    <button id="tab-purchasing" onclick="switchTab('purchasing')">🛒 المشتريات</button>
-    <button id="tab-production" onclick="switchTab('production')">🏭 الإنتاج</button>
-    <button id="tab-transfers" onclick="switchTab('transfers')">🚚 التحويلات</button>
-    <button id="tab-promotions" onclick="switchTab('promotions')">🎁 العروض</button>
-    <button id="tab-customers" onclick="switchTab('customers')">👤 العملاء</button>
-    <button id="tab-analytics" onclick="switchTab('analytics')">📊 التقارير</button>
-  </nav>
+  <nav id="mainNav"></nav>
   <main>
     <div id="globalMsg" class="msg" style="margin-bottom:14px"></div>
 
     <!-- HOME (the persistent base screen behind every popup) -->
     <div class="panel">
       <h2>اختر قسمًا</h2>
-      <div class="home-grid" id="homeGrid"></div>
+      <div id="homeGrid"></div>
     </div>
 
     <!-- BRANCHES -->
@@ -239,7 +229,7 @@
 
       <div class="panel subview" id="br-sub-list">
         <h2>الفروع الحالية</h2>
-        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>الحالة</th></tr></thead>
+        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>الحالة</th><th>إلزام اختيار العميل</th></tr></thead>
           <tbody id="branchesTable"></tbody>
         </table></div>
       </div>
@@ -256,6 +246,7 @@
           </div>
           <div><label>العنوان (اختياري)</label><input id="b-address" placeholder="شارع الملك فهد"></div>
           <div><label>الرقم الضريبي (اختياري -- لازم لفوترة ZATCA)</label><input id="b-vat" placeholder="15 رقمًا، يبدأ وينتهي بـ 3" maxlength="15"></div>
+          <div><label><input type="checkbox" id="b-require-customer" style="width:auto;display:inline"> إلزام اختيار العميل عند إنشاء الطلب</label></div>
           <div><button onclick="createBranch()">إضافة</button></div>
         </div>
       </div>
@@ -412,7 +403,7 @@
       <div class="panel subview hidden" id="sl-sub-new">
         <h2>➕ طلب جديد</h2>
         <div class="row-form">
-          <div><label>الوردية المفتوحة</label><select id="ord-shift"></select></div>
+          <div><label>الوردية المفتوحة</label><select id="ord-shift" onchange="onOrderShiftChange()"></select></div>
           <div><label>القناة</label>
             <select id="ord-channel">
               <option value="DINE_IN">صالة</option>
@@ -427,7 +418,12 @@
               <option value="">السعر الأساسي</option>
             </select>
           </div>
+          <div><label id="ord-customer-label">العميل (اختياري)</label>
+            <input type="text" id="ord-customer-search" placeholder="🔍 بحث برقم جوال العميل..." oninput="onOrderCustomerSearch(this.value)" style="margin-bottom:4px">
+            <select id="ord-customer"><option value="">بدون عميل</option></select>
+          </div>
         </div>
+        <div id="ord-customer-required-note" class="msg err hidden" style="margin-top:8px">⚠️ هذا الفرع يُلزم اختيار عميل لإنشاء الطلب</div>
         <div style="margin-top:14px">
           <label>اختر من المنيو (اضغط على الصنف لإضافته)</label>
           <input type="text" placeholder="🔍 ابحث عن صنف..." style="margin-bottom:8px" oninput="renderOrderMenuGrid(this.value)">
@@ -716,6 +712,29 @@
      </div></div>
     </div>
 
+    <!-- PAYMENT METHODS -->
+    <div id="view-payment-methods" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>💳 طرق الدفع</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <h2>طرق الدفع الحالية</h2>
+        <div class="hint">"نقدية؟" تحدّد أي الطرق تُحتسب ضمن تسوية صندوق الوردية عند الإغلاق (Shifts) -- طرق مثل البطاقة/المحفظة تُسوَّى عبر جهاتها الخاصة، لا الصندوق.</div>
+        <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>الاسم</th><th>الكود</th><th>نقدية؟</th><th>الحالة</th><th></th></tr></thead>
+          <tbody id="paymentMethodsTable"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>➕ طريقة دفع جديدة</h2>
+        <div class="row-form">
+          <div><label>الاسم</label><input id="pm-name" placeholder="مثال: الدفع عند الاستلام"></div>
+          <div><label>الكود (حروف إنجليزية كبيرة، بدون مسافات)</label><input id="pm-code" placeholder="مثال: COD"></div>
+          <div><label><input type="checkbox" id="pm-is-cash" style="width:auto;display:inline"> تُحتسب كنقدية في تسوية الصندوق</label></div>
+          <div><button onclick="createPaymentMethod()">إضافة</button></div>
+        </div>
+        <div id="pm-msg" class="msg"></div>
+      </div>
+     </div></div>
+    </div>
+
     <!-- ANALYTICS / BI -->
     <div id="view-analytics" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>📊 التقارير</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
@@ -980,6 +999,7 @@ function ingredientOptions(filterFn) {
 }
 async function ensureIngredientsCache() { if (!ingredientsCache.length) ingredientsCache = await api('/ingredients'); }
 async function ensureMenuItemsCache() { if (!menuItemsCache.length) menuItemsCache = await api('/items'); }
+async function ensurePaymentMethodsCache() { if (!paymentMethodsCache.length) paymentMethodsCache = await api('/payment-methods'); }
 
 function apiBase() { return document.getElementById('apiBase').value.trim().replace(/\/$/, ''); }
 
@@ -1349,6 +1369,7 @@ async function doLogin() {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('appScreen').classList.remove('hidden');
     updateOfflineBanner();
+    renderNav();
     renderHomeGrid();
     // Loaded quietly (no popup opened) since locationsCache feeds the
     // location dropdowns in several other modules' forms -- those need it
@@ -1369,32 +1390,72 @@ function doLogout(message) {
   if (message) showMsg('loginMsg', 'ℹ️ ' + message, 'err');
 }
 
+// Ordered groups the nav bar and home dashboard both render from -- a
+// business-flow grouping (setup data -> supply chain -> sales/service ->
+// monitoring) rather than the old flat, addition-order list that had
+// unrelated screens (e.g. Alerts next to Sales, Payment Methods tacked on
+// at the very end) sitting next to each other for no reason but insertion
+// history.
+const TAB_GROUPS = [
+  { key: 'setup', label: 'الإعداد الأساسي' },
+  { key: 'supply', label: 'سلسلة التوريد والمخزون' },
+  { key: 'service', label: 'المبيعات وخدمة العملاء' },
+  { key: 'insight', label: 'المراقبة والتقارير' },
+];
 const TAB_META = {
-  branches: { icon: '🏢', label: 'الفروع' },
-  ingredients: { icon: '🥕', label: 'الأصناف الخام والنصف مصنّعة' },
-  items: { icon: '📋', label: 'أصناف المنيو' },
-  inventory: { icon: '📦', label: 'المخزون' },
-  sales: { icon: '🧾', label: 'المبيعات' },
-  returns: { icon: '↩️', label: 'المرتجعات' },
-  kitchen: { icon: '🍳', label: 'المطبخ' },
-  alerts: { icon: '🔔', label: 'التنبيهات' },
-  purchasing: { icon: '🛒', label: 'المشتريات' },
-  production: { icon: '🏭', label: 'الإنتاج' },
-  transfers: { icon: '🚚', label: 'التحويلات' },
-  promotions: { icon: '🎁', label: 'العروض' },
-  customers: { icon: '👤', label: 'العملاء' },
-  analytics: { icon: '📊', label: 'التقارير' },
+  branches: { icon: '🏢', label: 'الفروع', group: 'setup' },
+  ingredients: { icon: '🥕', label: 'الأصناف الخام والنصف مصنّعة', group: 'setup' },
+  items: { icon: '📋', label: 'أصناف المنيو', group: 'setup' },
+  inventory: { icon: '📦', label: 'المخزون', group: 'supply' },
+  purchasing: { icon: '🛒', label: 'المشتريات', group: 'supply' },
+  production: { icon: '🏭', label: 'الإنتاج', group: 'supply' },
+  transfers: { icon: '🚚', label: 'التحويلات', group: 'supply' },
+  sales: { icon: '🧾', label: 'المبيعات', group: 'service' },
+  kitchen: { icon: '🍳', label: 'المطبخ', group: 'service' },
+  returns: { icon: '↩️', label: 'المرتجعات', group: 'service' },
+  promotions: { icon: '🎁', label: 'العروض', group: 'service' },
+  customers: { icon: '👤', label: 'العملاء', group: 'service' },
+  'payment-methods': { icon: '💳', label: 'طرق الدفع', group: 'service' },
+  alerts: { icon: '🔔', label: 'التنبيهات', group: 'insight' },
+  analytics: { icon: '📊', label: 'التقارير', group: 'insight' },
 };
 const TABS = Object.keys(TAB_META);
 
 // The home dashboard is the persistent base screen behind every popup --
 // same idea as رصيد's dailyView staying put while the other main screens
 // open as overlays on top of it. Each card just calls switchTab(), the
-// same function the nav buttons call.
+// same function the nav buttons call. Grouped by TAB_GROUPS/TAB_META.group
+// so related screens (e.g. all of supply chain) sit under one heading
+// instead of one long flat grid.
 function renderHomeGrid() {
-  document.getElementById('homeGrid').innerHTML = TABS.map((t) =>
-    `<div class="home-card" onclick="switchTab('${t}')"><div class="ic">${TAB_META[t].icon}</div><div class="lb">${TAB_META[t].label}</div></div>`
-  ).join('');
+  document.getElementById('homeGrid').innerHTML = TAB_GROUPS.map((g) => {
+    const tabsInGroup = TABS.filter((t) => TAB_META[t].group === g.key);
+    if (!tabsInGroup.length) return '';
+    return `
+      <div class="home-group">
+        <h3 class="home-group-title">${g.label}</h3>
+        <div class="home-grid">
+          ${tabsInGroup.map((t) =>
+            `<div class="home-card" onclick="switchTab('${t}')"><div class="ic">${TAB_META[t].icon}</div><div class="lb">${TAB_META[t].label}</div></div>`
+          ).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// The nav bar mirrors the same grouping (a thin separator between groups)
+// so reordering/regrouping TAB_META only ever needs one edit -- previously
+// this button list was hand-written HTML that had already drifted out of
+// sync with TAB_META once (a tab existed in one but not the other).
+function renderNav() {
+  document.getElementById('mainNav').innerHTML = TAB_GROUPS.map((g, i) => {
+    const tabsInGroup = TABS.filter((t) => TAB_META[t].group === g.key);
+    if (!tabsInGroup.length) return '';
+    const sep = i > 0 ? '<span class="nav-sep"></span>' : '';
+    return sep + tabsInGroup.map((t) =>
+      `<button id="tab-${t}" onclick="switchTab('${t}')">${TAB_META[t].icon} ${TAB_META[t].label}</button>`
+    ).join('');
+  }).join('');
 }
 
 function closeView() {
@@ -1463,6 +1524,7 @@ function switchTab(name) {
   if (name === 'transfers') { switchSubview('tf', ['new', 'list'], 'new'); loadTransfersTab(); }
   if (name === 'promotions') { switchSubview('pm', ['list', 'add'], 'list'); loadPromotions(); }
   if (name === 'customers') { switchSubview('cu', ['list', 'add', 'import'], 'list'); loadCustomers(); }
+  if (name === 'payment-methods') loadPaymentMethodsTab();
   if (name === 'analytics') { document.getElementById('an-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadReportsList(); }
 }
 
@@ -1475,8 +1537,12 @@ async function loadBranches() {
     locationsCache = branches;
     const typeLabel = { BRANCH: 'فرع', CENTRAL_KITCHEN: 'مطبخ مركزي', WAREHOUSE: 'مستودع' };
     document.getElementById('branchesTable').innerHTML = branches.length
-      ? branches.map((b) => `<tr><td>${b.name}</td><td>${typeLabel[b.type] || b.type}</td><td>${b.address || '-'}</td><td>${b.vatNumber || '-'}</td><td>${b.isActive ? '✅ نشط' : '⛔ معطّل'}</td></tr>`).join('')
-      : `<tr><td colspan="5" class="empty">لا توجد فروع بعد</td></tr>`;
+      ? branches.map((b) => `<tr>
+          <td>${b.name}</td><td>${typeLabel[b.type] || b.type}</td><td>${b.address || '-'}</td><td>${b.vatNumber || '-'}</td>
+          <td>${b.isActive ? '✅ نشط' : '⛔ معطّل'}</td>
+          <td><button class="link-btn" onclick="toggleRequireCustomer('${b.id}', ${!b.requireCustomerForOrders})">${b.requireCustomerForOrders ? '✅ إلزامي' : '⛔ اختياري'}</button></td>
+        </tr>`).join('')
+      : `<tr><td colspan="6" class="empty">لا توجد فروع بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function createBranch() {
@@ -1484,14 +1550,23 @@ async function createBranch() {
   const type = document.getElementById('b-type').value;
   const address = document.getElementById('b-address').value.trim();
   const vatNumber = document.getElementById('b-vat').value.trim();
+  const requireCustomerForOrders = document.getElementById('b-require-customer').checked;
   if (!name) { flashGlobal('⚠️ اكتب اسم الفرع', 'err'); return; }
   try {
-    const body = { name, type };
+    const body = { name, type, requireCustomerForOrders };
     if (address) body.address = address;
     if (vatNumber) body.vatNumber = vatNumber;
     await api('/locations', { method: 'POST', body: JSON.stringify(body) });
     document.getElementById('b-name').value = ''; document.getElementById('b-address').value = ''; document.getElementById('b-vat').value = '';
+    document.getElementById('b-require-customer').checked = false;
     flashGlobal('✅ تمت إضافة الفرع', 'ok');
+    loadBranches();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function toggleRequireCustomer(id, value) {
+  try {
+    await api(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify({ requireCustomerForOrders: value }) });
+    flashGlobal('✅ تم التحديث', 'ok');
     loadBranches();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -2006,8 +2081,44 @@ async function loadSalesTab() {
   orderChannelPriceMap = null;
   document.getElementById('sh-location').innerHTML = locationOptions();
   renderOrderMenuGrid('');
+  paymentMethodsCache = await api('/payment-methods?activeOnly=true');
   await loadShifts();
   await loadOrders();
+  await loadOrderCustomerOptions();
+}
+// Falls back to the raw code for a method created/renamed after the page's
+// cache was last loaded (e.g. mid-session by another admin) rather than
+// showing blank -- looks up the friendly name from the live PaymentMethod
+// list instead of the old hardcoded CASH/CARD/WALLET-only map.
+function paymentMethodLabel(code) {
+  const m = paymentMethodsCache.find((pm) => pm.code === code);
+  return (m && m.name) || PAYMENT_METHOD_LABEL[code] || code;
+}
+
+async function loadOrderCustomerOptions(phone) {
+  try {
+    const customers = await api('/customers' + (phone ? '?phone=' + encodeURIComponent(phone) : ''));
+    document.getElementById('ord-customer').innerHTML =
+      '<option value="">بدون عميل</option>' + customers.map((c) => `<option value="${c.id}">${c.name || 'بلا اسم'} -- ${c.phone}</option>`).join('');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+let orderCustomerSearchTimer = null;
+function onOrderCustomerSearch(phone) {
+  clearTimeout(orderCustomerSearchTimer);
+  orderCustomerSearchTimer = setTimeout(() => loadOrderCustomerOptions(phone.trim()), 300);
+}
+// Re-derives whether the shift's location requires a customer every time
+// the shift selection changes, straight from locationsCache (already
+// carries requireCustomerForOrders on every location row) -- the server
+// enforces this regardless, this is purely to warn the cashier BEFORE
+// they fill the whole order and hit a 400 at the very end.
+function onOrderShiftChange() {
+  const shiftId = document.getElementById('ord-shift').value;
+  const shift = shiftsCache.find((s) => s.id === shiftId);
+  const location = shift ? locationsCache.find((l) => l.id === shift.locationId) : null;
+  const required = !!(location && location.requireCustomerForOrders);
+  document.getElementById('ord-customer-required-note').classList.toggle('hidden', !required);
+  document.getElementById('ord-customer-label').textContent = required ? 'العميل (إلزامي لهذا الفرع)' : 'العميل (اختياري)';
 }
 
 async function onOrderSalesChannelChange() {
@@ -2096,6 +2207,7 @@ async function loadShifts() {
     document.getElementById('ord-shift').innerHTML = openShifts.length
       ? openShifts.map((s) => `<option value="${s.id}">${locName(s.locationId)} -- ${s.id.slice(-6)}</option>`).join('')
       : '<option value="">لا توجد وردية مفتوحة</option>';
+    onOrderShiftChange();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function openShift() {
@@ -2130,6 +2242,7 @@ async function createOrder() {
   const shiftId = document.getElementById('ord-shift').value;
   const channel = document.getElementById('ord-channel').value;
   const salesChannelId = document.getElementById('ord-sales-channel').value || undefined;
+  const customerId = document.getElementById('ord-customer').value || undefined;
   const container = document.getElementById('ord-lines');
   const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => ({
     menuItemId: row.querySelector('.ol-item').value,
@@ -2137,10 +2250,16 @@ async function createOrder() {
   })).filter((l) => l.menuItemId && l.quantity > 0);
   if (!shiftId) { flashGlobal('⚠️ افتح وردية أولًا', 'err'); return; }
   if (!lines.length) { flashGlobal('⚠️ أضف صنف واحد على الأقل', 'err'); return; }
+  const shift = shiftsCache.find((s) => s.id === shiftId);
+  const location = shift ? locationsCache.find((l) => l.id === shift.locationId) : null;
+  if (location && location.requireCustomerForOrders && !customerId) {
+    flashGlobal('⚠️ هذا الفرع يُلزم اختيار عميل لإنشاء الطلب', 'err');
+    return;
+  }
   try {
-    const shift = shiftsCache.find((s) => s.id === shiftId);
-    await api('/orders', { method: 'POST', body: JSON.stringify({ locationId: shift.locationId, shiftId, channel, salesChannelId, lines }) });
+    await api('/orders', { method: 'POST', body: JSON.stringify({ locationId: shift.locationId, shiftId, channel, salesChannelId, customerId, lines }) });
     container.innerHTML = '';
+    document.getElementById('ord-customer').value = '';
     flashGlobal('✅ تم إنشاء الطلب', 'ok');
     loadOrders(); loadShifts();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
@@ -2157,13 +2276,11 @@ async function loadOrders() {
           <td>${o.servedBy ? o.servedBy.name : '-'}</td>
           <td>${o.status}</td>
           <td>${Number(o.grandTotal).toFixed(2)}</td>
-          <td>${o.payments && o.payments.length ? o.payments.map((p) => PAYMENT_METHOD_LABEL[p.method] || p.method).join('، ') : '-'}</td>
+          <td>${o.payments && o.payments.length ? o.payments.map((p) => paymentMethodLabel(p.method)).join('، ') : '-'}</td>
           <td>
             ${o.status === 'SENT_TO_KITCHEN' ? `
               <select id="pay-method-${o.id}" style="width:110px;display:inline-block">
-                <option value="CASH">كاش</option>
-                <option value="CARD">بطاقة</option>
-                <option value="WALLET">محفظة إلكترونية</option>
+                ${paymentMethodsCache.map((m) => `<option value="${m.code}">${m.name}</option>`).join('')}
               </select>
               <button class="link-btn" onclick="payOrder('${o.id}', ${o.grandTotal})">💰 دفع</button>
               <button class="link-btn" onclick="voidOrder('${o.id}')">إلغاء</button>
@@ -2204,6 +2321,7 @@ async function openInvoicePopup(orderId) {
   document.getElementById('view-invoice').classList.add('open');
   document.getElementById('inv-content').innerHTML = '<div class="empty">جارِ التحميل...</div>';
   try {
+    await ensurePaymentMethodsCache();
     const order = await api('/orders/' + orderId);
     renderInvoice(order);
   } catch (e) {
@@ -2229,7 +2347,7 @@ function renderInvoice(o) {
   }).join('');
 
   const paymentsText = o.payments && o.payments.length
-    ? o.payments.map((p) => `${PAYMENT_METHOD_LABEL[p.method] || p.method}: ${Number(p.amount).toFixed(2)}`).join('، ')
+    ? o.payments.map((p) => `${paymentMethodLabel(p.method)}: ${Number(p.amount).toFixed(2)}`).join('، ')
     : '-';
 
   const pendingNote = o.zatcaSyncStatus === 'PENDING'
@@ -2760,6 +2878,7 @@ const PAYMENT_METHOD_LABEL = { CASH: 'كاش', CARD: 'بطاقة', WALLET: 'مح
 async function loadPaymentMethodsReport() {
   const sel = document.getElementById('pmr-location');
   if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  await ensurePaymentMethodsCache();
   try {
     const locationId = sel.value;
     const from = document.getElementById('pmr-from').value;
@@ -2771,7 +2890,7 @@ async function loadPaymentMethodsReport() {
     const res = await api('/analytics/payment-methods-summary?' + params.toString());
     document.getElementById('pmr-total').textContent = 'الإجمالي: ' + res.totalAmount.toFixed(2) + ' ر.س';
     document.getElementById('pmr-method-table').innerHTML = res.byMethod.length
-      ? res.byMethod.map((m) => `<tr><td>${PAYMENT_METHOD_LABEL[m.method] || m.method}</td><td>${m.count}</td><td>${m.total.toFixed(2)}</td></tr>`).join('')
+      ? res.byMethod.map((m) => `<tr><td>${paymentMethodLabel(m.method)}</td><td>${m.count}</td><td>${m.total.toFixed(2)}</td></tr>`).join('')
       : `<tr><td colspan="3" class="empty">لا توجد مدفوعات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -3022,6 +3141,42 @@ async function createCustomer() {
     loadCustomers();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+/* ================= Payment Methods ================= */
+let paymentMethodsCache = [];
+async function loadPaymentMethodsTab() {
+  try {
+    paymentMethodsCache = await api('/payment-methods');
+    document.getElementById('paymentMethodsTable').innerHTML = paymentMethodsCache.length
+      ? paymentMethodsCache.map((m) => `
+        <tr>
+          <td>${m.name}</td><td>${m.code}</td>
+          <td>${m.isCash ? '✅' : '⛔'} <button class="link-btn" onclick="togglePaymentMethodField('${m.id}','isCash',${!m.isCash})">تبديل</button></td>
+          <td>${m.isActive ? '✅ نشطة' : '⛔ معطّلة'}</td>
+          <td><button class="link-btn" onclick="togglePaymentMethodField('${m.id}','isActive',${!m.isActive})">${m.isActive ? 'تعطيل' : 'تفعيل'}</button></td>
+        </tr>
+      `).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد طرق دفع بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function createPaymentMethod() {
+  const name = document.getElementById('pm-name').value.trim();
+  const code = document.getElementById('pm-code').value.trim().toUpperCase();
+  const isCash = document.getElementById('pm-is-cash').checked;
+  if (!name || !code) { showMsg('pm-msg', '⚠️ اكتب الاسم والكود', 'err'); return; }
+  try {
+    await api('/payment-methods', { method: 'POST', body: JSON.stringify({ name, code, isCash }) });
+    document.getElementById('pm-name').value = ''; document.getElementById('pm-code').value = ''; document.getElementById('pm-is-cash').checked = false;
+    showMsg('pm-msg', '✅ تمت إضافة طريقة الدفع', 'ok');
+    loadPaymentMethodsTab();
+  } catch (e) { showMsg('pm-msg', '❌ ' + e.message, 'err'); }
+}
+async function togglePaymentMethodField(id, field, value) {
+  try {
+    await api(`/payment-methods/${id}`, { method: 'PATCH', body: JSON.stringify({ [field]: value }) });
+    loadPaymentMethodsTab();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
 const LOYALTY_REASON_LABEL = { ORDER_EARN: 'كسب من طلب', REDEEM: 'استبدال', MANUAL_ADJUST: 'تعديل يدوي' };
 async function toggleCustomerDetail(id) {
   const row = document.getElementById('cust-detail-row-' + id);

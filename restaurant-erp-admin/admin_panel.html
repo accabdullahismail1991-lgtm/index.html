@@ -566,7 +566,7 @@
                 <div class="row grand"><span>الإجمالي</span><span id="ord-grand-total">0.00</span></div>
               </div>
               <button class="order-manual-btn" onclick="addOrderLineRow()" style="margin-top:12px">➕ صنف (يدويًا)</button>
-              <button class="order-checkout-btn" onclick="createOrder()">✅ إنشاء الطلب</button>
+              <button class="order-checkout-btn" onclick="createOrder()">💰 دفع</button>
               <button class="order-clear-btn" onclick="clearCurrentOrder()">إفراغ الطلب</button>
             </div>
           </div>
@@ -2828,7 +2828,10 @@ async function loadOrders() {
               <button class="link-btn" onclick="printKitchenTicketFromOrder('${o.id}')">🖨️ تذكرة</button>
               <button class="link-btn" onclick="voidOrder('${o.id}')">إلغاء</button>
             ` : ''}
-            ${o.status === 'PAID' ? `<button class="link-btn" onclick="openInvoicePopup('${o.id}')">🧾 الفاتورة</button>` : ''}
+            ${o.status === 'PAID' ? `
+              <button class="link-btn" onclick="openInvoicePopup('${o.id}')">🧾 الفاتورة</button>
+              <button class="link-btn" onclick="printKitchenTicketFromOrder('${o.id}')">🖨️ تذكرة</button>
+            ` : ''}
           </td>
         </tr>
       `).join('')

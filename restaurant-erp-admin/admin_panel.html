@@ -211,6 +211,9 @@
   .pay-method-picker{display:flex;gap:6px;flex-wrap:wrap;flex:1 0 100%;}
   .pay-method-btn{padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);cursor:pointer;font-size:13px;}
   .pay-method-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700;}
+  .invoice-type-picker{display:flex;gap:6px;}
+  .invoice-type-btn{flex:1;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);cursor:pointer;font-size:13px;}
+  .invoice-type-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700;}
   .pay-line input[type=number]{flex:0 0 90px;}
   .pay-line input[type=text]{flex:1;min-width:0;}
   .pay-remaining{font-weight:700;font-size:14px;margin:10px 0;padding:8px 10px;border-radius:8px;background:var(--card2);}
@@ -506,8 +509,15 @@
             <input type="text" id="ord-customer-search" placeholder="🔍 بحث برقم جوال العميل..." oninput="onOrderCustomerSearch(this.value)" style="margin-bottom:4px">
             <select id="ord-customer"><option value="">بدون عميل</option></select>
           </div>
+          <div><label>نوع الفاتورة</label>
+            <div class="invoice-type-picker" id="ord-invoice-type-picker">
+              <button type="button" class="invoice-type-btn active" onclick="selectOrderInvoiceType('CASH', this)">نقدي</button>
+              <button type="button" class="invoice-type-btn" onclick="selectOrderInvoiceType('CREDIT', this)">آجل</button>
+            </div>
+          </div>
         </div>
         <div id="ord-customer-required-note" class="msg err hidden" style="margin-top:8px">⚠️ هذا الفرع يُلزم اختيار عميل لإنشاء الطلب</div>
+        <div id="ord-credit-requires-customer-note" class="msg err hidden" style="margin-top:8px">⚠️ الفاتورة الآجلة تتطلب اختيار عميل</div>
 
         <div class="pos-theme">
           <div class="pos-cat-row" id="ord-categories"></div>
@@ -534,7 +544,7 @@
       </div>
       <div class="panel subview hidden" id="sl-sub-orders">
         <h2>الطلبات</h2>
-        <div class="table-wrap"><table><thead><tr><th>الموقع</th><th>القناة</th><th>الكاشير</th><th>الحالة</th><th>الإجمالي</th><th>طريقة الدفع</th><th></th></tr></thead>
+        <div class="table-wrap"><table><thead><tr><th>الموقع</th><th>القناة</th><th>الكاشير</th><th>نوع الفاتورة</th><th>الحالة</th><th>الإجمالي</th><th>طريقة الدفع</th><th></th></tr></thead>
           <tbody id="ordersTable"></tbody>
         </table></div>
       </div>
@@ -2449,6 +2459,15 @@ function onOrderShiftChange() {
   document.getElementById('ord-customer-label').textContent = required ? 'العميل (إلزامي لهذا الفرع)' : 'العميل (اختياري)';
   updateOrderCartTotals();
 }
+// نقدي (الوضع الافتراضي) أو آجل -- الفاتورة الآجلة تُفوتر لعميل محدد ليُسوَّى
+// حسابه لاحقًا، فتتطلب عميلًا بغض النظر عن إعداد الفرع requireCustomerForOrders
+// (orders.service.ts create() يفرض هذا من جهة الخادم على أي حال).
+let orderInvoiceType = 'CASH';
+function selectOrderInvoiceType(type, btn) {
+  orderInvoiceType = type;
+  document.querySelectorAll('#ord-invoice-type-picker .invoice-type-btn').forEach((b) => b.classList.toggle('active', b === btn));
+  document.getElementById('ord-credit-requires-customer-note').classList.toggle('hidden', type !== 'CREDIT');
+}
 
 async function onOrderSalesChannelChange() {
   const channelId = document.getElementById('ord-sales-channel').value;
@@ -2666,11 +2685,16 @@ async function createOrder() {
     flashGlobal('⚠️ هذا الفرع يُلزم اختيار عميل لإنشاء الطلب', 'err');
     return;
   }
+  if (orderInvoiceType === 'CREDIT' && !customerId) {
+    flashGlobal('⚠️ الفاتورة الآجلة تتطلب اختيار عميل', 'err');
+    return;
+  }
   try {
-    const created = await api('/orders', { method: 'POST', body: JSON.stringify({ locationId: shift.locationId, shiftId, channel, salesChannelId, customerId, lines }) });
+    const created = await api('/orders', { method: 'POST', body: JSON.stringify({ locationId: shift.locationId, shiftId, channel, salesChannelId, customerId, invoiceType: orderInvoiceType, lines }) });
     container.innerHTML = '';
     updateOrderCartTotals();
     document.getElementById('ord-customer').value = '';
+    document.querySelector('#ord-invoice-type-picker .invoice-type-btn').click();
     flashGlobal('✅ تم إنشاء الطلب', 'ok');
     loadOrders(); loadShifts();
     // Go straight into the payment step instead of leaving the cashier to
@@ -2680,6 +2704,7 @@ async function createOrder() {
     openPaymentDialog(created.id);
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+const INVOICE_TYPE_LABEL = { CASH: 'نقدي', CREDIT: 'آجل' };
 async function loadOrders() {
   try {
     const orders = await api('/orders');
@@ -2690,6 +2715,7 @@ async function loadOrders() {
         <tr>
           <td>${locName(o.locationId)}</td><td>${channelLabel[o.channel] || o.channel}</td>
           <td>${o.servedBy ? o.servedBy.name : '-'}</td>
+          <td>${INVOICE_TYPE_LABEL[o.invoiceType] || o.invoiceType}</td>
           <td>${o.status}</td>
           <td>${Number(o.grandTotal).toFixed(2)}</td>
           <td>${o.payments && o.payments.length ? o.payments.map((p) => paymentMethodLabel(p.method)).join('، ') : '-'}</td>
@@ -2702,7 +2728,7 @@ async function loadOrders() {
           </td>
         </tr>
       `).join('')
-      : `<tr><td colspan="7" class="empty">لا توجد طلبات بعد</td></tr>`;
+      : `<tr><td colspan="8" class="empty">لا توجد طلبات بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
@@ -2863,6 +2889,7 @@ function renderInvoice(o) {
         <div><span class="k">التاريخ والوقت:</span> ${o.paidAt ? new Date(o.paidAt).toLocaleString('ar-SA') : '-'}</div>
         <div><span class="k">الكاشير:</span> ${o.servedBy ? o.servedBy.name : '-'}</div>
         ${o.customer ? `<div><span class="k">العميل:</span> ${o.customer.name || o.customer.phone}</div>` : ''}
+        <div><span class="k">نوع الفاتورة:</span> ${INVOICE_TYPE_LABEL[o.invoiceType] || o.invoiceType}</div>
         <div><span class="k">طريقة الدفع:</span> ${paymentsText}</div>
       </div>
       <table>

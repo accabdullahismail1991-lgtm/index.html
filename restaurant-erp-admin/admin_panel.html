@@ -262,6 +262,16 @@
   .invoice-note{font-size:10.5px;color:#666;text-align:center;margin-top:8px;line-height:1.6;}
   .invoice-pending-note{background:#fff8e1;border:1px solid #f0d060;border-radius:8px;padding:10px;font-size:12px;margin-bottom:12px;}
 
+  /* ---- Kitchen ticket: thermal-style, no prices, big enough to read
+     across a busy kitchen line ---- */
+  .kitchen-ticket-box{max-width:302px;margin:0 auto;background:#fff;padding:12px;color:#000;font-size:13px;}
+  .kitchen-ticket-box .kt-ticket-title{text-align:center;font-weight:800;font-size:16px;margin-bottom:2px;}
+  .kitchen-ticket-box .kt-ticket-meta{text-align:center;font-size:11.5px;color:#444;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed #999;}
+  .kitchen-ticket-box .kt-ticket-line{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dotted #ccc;font-size:16px;font-weight:700;}
+  .kitchen-ticket-box .kt-ticket-line .qty{flex:0 0 auto;}
+  .kt-elapsed{font-size:11px;padding:2px 7px;border-radius:10px;font-weight:700;background:rgba(104,116,138,.15);color:var(--muted);}
+  .kt-elapsed.urgent{background:rgba(179,38,30,.15);color:#b3261e;}
+
   /* Generic: whichever popup is currently open (.view.open) prints on its
      own, full-page -- not just the invoice. Works for every module/report
      screen for free since they all share this same open/close mechanism,
@@ -1093,6 +1103,20 @@
       </div>
       <div class="view-body">
         <div id="inv-content"></div>
+      </div>
+     </div></div>
+
+    <!-- KITCHEN TICKET (printable, no prices -- item names/qty only) -->
+    <div id="view-kitchen-ticket" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card">
+      <div class="view-head no-print"><h2>🖨️ تذكرة المطبخ</h2>
+        <div style="display:flex;gap:8px">
+          <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
+          <button class="view-close" onclick="closeView()">✕</button>
+        </div>
+      </div>
+      <div class="view-body">
+        <div id="kt-ticket-content"></div>
       </div>
      </div></div>
 
@@ -2788,6 +2812,7 @@ async function loadOrders() {
           <td>
             ${(o.status === 'SENT_TO_KITCHEN' || o.status === 'READY' || o.status === 'OPEN') ? `
               <button class="link-btn" onclick="openPaymentDialog('${o.id}')">💰 دفع${o._count && o._count.activityLog ? ' 🅿️' : ''}</button>
+              <button class="link-btn" onclick="printKitchenTicketFromOrder('${o.id}')">🖨️ تذكرة</button>
               <button class="link-btn" onclick="voidOrder('${o.id}')">إلغاء</button>
             ` : ''}
             ${o.status === 'PAID' ? `<button class="link-btn" onclick="openInvoicePopup('${o.id}')">🧾 الفاتورة</button>` : ''}
@@ -3139,9 +3164,19 @@ async function loadReturnsReport() {
 /* ================= Kitchen (KDS) ================= */
 const KITCHEN_STATUS_LABEL = { QUEUED: 'قيد الانتظار', PREPARING: 'قيد التحضير', READY: 'جاهز', SERVED: 'تم التسليم' };
 const KITCHEN_CHANNEL_LABEL = { DINE_IN: 'صالة', TAKEAWAY: 'تيك أواي', DRIVE_THRU: 'Drive-thru', DELIVERY_PARTNER: 'توصيل خارجي', BRAND_APP: 'تطبيق' };
+// Minutes an order can sit SENT_TO_KITCHEN before its elapsed-time badge
+// turns urgent (red) -- a plain "8 دقائق" number doesn't grab attention on
+// a busy line the way a color change does.
+const KITCHEN_URGENT_MINUTES = 10;
 let kitchenPollTimer = null;
+let kitchenQueueCache = []; // last-loaded queue, so "print ticket" doesn't need a second fetch
 function stopKitchenPolling() {
   if (kitchenPollTimer) { clearInterval(kitchenPollTimer); kitchenPollTimer = null; }
+}
+function elapsedMinutesLabel(createdAt) {
+  const mins = Math.max(0, Math.round((Date.now() - new Date(createdAt).getTime()) / 60000));
+  const urgent = mins >= KITCHEN_URGENT_MINUTES;
+  return `<span class="kt-elapsed ${urgent ? 'urgent' : ''}">⏱️ منذ ${mins} د</span>`;
 }
 async function loadKitchenTab() {
   document.getElementById('kt-location').innerHTML = locationOptions();
@@ -3159,12 +3194,16 @@ async function loadKitchenQueue() {
   if (!locationId) { grid.innerHTML = '<div class="empty">لا توجد مواقع بعد</div>'; return; }
   try {
     const orders = await api('/kitchen/queue?locationId=' + locationId);
+    kitchenQueueCache = orders;
     grid.innerHTML = orders.length
       ? orders.map((o) => `
         <div class="kt-ticket">
           <div class="kt-ticket-head">
-            <span>${KITCHEN_CHANNEL_LABEL[o.channel] || o.channel}${o.tableLabel ? ' -- ' + o.tableLabel : ''}</span>
-            <span>${new Date(o.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</span>
+            <span>${KITCHEN_CHANNEL_LABEL[o.channel] || o.channel}${o.tableLabel ? ' -- ' + o.tableLabel : ''}${o.shiftSequence ? ' -- #' + o.shiftSequence : ''}</span>
+            <span style="display:flex;align-items:center;gap:6px">
+              ${elapsedMinutesLabel(o.createdAt)}
+              <button class="link-btn" onclick="printKitchenTicketFromQueue('${o.orderId}')" title="طباعة تذكرة">🖨️</button>
+            </span>
           </div>
           ${o.lines.map((l) => `
             <div class="kt-line">
@@ -3176,6 +3215,42 @@ async function loadKitchenQueue() {
         </div>
       `).join('')
       : '<div class="empty">لا توجد طلبات قيد التحضير حاليًا 🎉</div>';
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+function renderKitchenTicket(ticket) {
+  closeView();
+  document.getElementById('view-kitchen-ticket').classList.add('open');
+  const refLabel = [ticket.shiftSequence ? 'طلب الوردية #' + ticket.shiftSequence : null, ticket.dailySequence ? 'الرقم اليومي #' + ticket.dailySequence : null]
+    .filter(Boolean).join(' -- ') || ('#' + ticket.orderId.slice(-6));
+  document.getElementById('kt-ticket-content').innerHTML = `
+    <div class="kitchen-ticket-box">
+      <div class="kt-ticket-title">🍳 تذكرة المطبخ</div>
+      <div class="kt-ticket-meta">
+        ${refLabel}<br>
+        ${KITCHEN_CHANNEL_LABEL[ticket.channel] || ticket.channel}${ticket.tableLabel ? ' -- ' + ticket.tableLabel : ''}<br>
+        ${new Date(ticket.createdAt).toLocaleString('ar-SA')}
+      </div>
+      ${ticket.lines.map((l) => `<div class="kt-ticket-line"><span>${l.menuItemName}</span><span class="qty">× ${l.quantity}</span></div>`).join('')}
+    </div>
+  `;
+}
+function printKitchenTicketFromQueue(orderId) {
+  const ticket = kitchenQueueCache.find((o) => o.orderId === orderId);
+  if (!ticket) { flashGlobal('❌ تعذّر إيجاد بيانات الطلب', 'err'); return; }
+  renderKitchenTicket(ticket);
+}
+async function printKitchenTicketFromOrder(orderId) {
+  try {
+    const o = await api('/orders/' + orderId);
+    renderKitchenTicket({
+      orderId: o.id,
+      channel: o.channel,
+      tableLabel: o.table ? o.table.label : null,
+      createdAt: o.createdAt,
+      shiftSequence: o.shiftSequence,
+      dailySequence: o.dailySequence,
+      lines: o.lines.map((l) => ({ menuItemName: l.menuItem ? l.menuItem.name : l.menuItemId, quantity: l.quantity })),
+    });
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function advanceKitchenLine(lineId) {

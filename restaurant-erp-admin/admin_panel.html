@@ -566,7 +566,7 @@
                 <div class="row grand"><span>الإجمالي</span><span id="ord-grand-total">0.00</span></div>
               </div>
               <button class="order-manual-btn" onclick="addOrderLineRow()" style="margin-top:12px">➕ صنف (يدويًا)</button>
-              <button class="order-checkout-btn" onclick="createOrder()">💰 دفع</button>
+              <button class="order-checkout-btn" id="ord-checkout-btn" onclick="createOrder()">💰 دفع</button>
               <button class="order-clear-btn" onclick="clearCurrentOrder()">إفراغ الطلب</button>
             </div>
           </div>
@@ -1142,7 +1142,7 @@
           <div id="pay-remaining" class="pay-remaining"></div>
           <div id="pay-msg" class="msg"></div>
           <div style="display:flex;gap:8px;margin-top:8px">
-            <button onclick="confirmPayment()">✅ تأكيد الدفع</button>
+            <button id="pay-confirm-btn" onclick="confirmPayment()">✅ تأكيد الدفع</button>
             <button class="ghost" onclick="holdOrderFromDialog()">🅿️ تعليق الفاتورة</button>
           </div>
           <div id="pay-activity-log" class="activity-log hidden"></div>
@@ -2792,6 +2792,16 @@ async function createOrder() {
     flashGlobal('⚠️ الفاتورة الآجلة تتطلب اختيار عميل', 'err');
     return;
   }
+  // A cold/sleeping backend (e.g. Render's free tier spinning back up) can
+  // leave this request pending for many seconds with no feedback at all --
+  // that looks exactly like a broken button. Disable + relabel it for the
+  // duration so a slow response reads as "working" instead of "nothing
+  // happened"; the finally always restores it, whether the order was
+  // created or the request failed.
+  const btn = document.getElementById('ord-checkout-btn');
+  const originalBtnText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ جارِ الحفظ...';
   try {
     const created = await api('/orders', { method: 'POST', body: JSON.stringify({ locationId: shift.locationId, shiftId, channel, salesChannelId, customerId, invoiceType: orderInvoiceType, lines }) });
     container.innerHTML = '';
@@ -2805,7 +2815,13 @@ async function createOrder() {
     // already offers "تعليق الفاتورة" (hold) as the explicit skip-for-now
     // action, right at the moment the order is placed.
     openPaymentDialog(created.id);
-  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+  } catch (e) {
+    flashGlobal('❌ ' + e.message, 'err');
+  } finally {
+    btn.textContent = originalBtnText;
+    btn.disabled = false;
+    updateOrderCartTotals();
+  }
 }
 const INVOICE_TYPE_LABEL = { CASH: 'نقدي', CREDIT: 'آجل' };
 async function loadOrders() {
@@ -2851,6 +2867,9 @@ async function openPaymentDialog(orderId) {
     paymentDialogLines = [{ method: defaultMethod, amount: Number(paymentDialogOrder.grandTotal), terminalRef: '' }];
     document.getElementById('pay-msg').className = 'msg';
     document.getElementById('paymentDialog').classList.add('open');
+    const confirmBtn = document.getElementById('pay-confirm-btn');
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = '✅ تأكيد الدفع';
     renderPaymentDialog();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -2911,6 +2930,13 @@ function updatePaymentLine(i, field, value) {
 }
 async function confirmPayment() {
   if (paymentRemaining() !== 0) { showMsg('pay-msg', '⚠️ يجب أن يساوي مجموع طرق الدفع إجمالي الفاتورة بالضبط', 'err'); return; }
+  // Same reasoning as createOrder()'s loading state -- a slow/cold backend
+  // otherwise leaves this button looking inert for however long the
+  // request takes.
+  const btn = document.getElementById('pay-confirm-btn');
+  const originalBtnText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ جارِ الدفع...';
   try {
     const payments = paymentDialogLines.map((l) => ({
       method: l.method, mode: 'MANUAL', amount: Number(l.amount), terminalRef: l.terminalRef ? l.terminalRef.trim() || undefined : undefined,
@@ -2919,7 +2945,11 @@ async function confirmPayment() {
     flashGlobal('✅ تم الدفع', 'ok');
     closePaymentDialog();
     loadOrders();
-  } catch (e) { showMsg('pay-msg', '❌ ' + e.message, 'err'); }
+  } catch (e) {
+    showMsg('pay-msg', '❌ ' + e.message, 'err');
+    btn.textContent = originalBtnText;
+    btn.disabled = false;
+  }
 }
 async function holdOrderFromDialog() {
   const note = window.prompt('ملاحظة تعليق الفاتورة (اختياري)؟', '') || undefined;

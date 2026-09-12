@@ -11,6 +11,7 @@
      block arbitrary external hosts entirely. -->
 <script src="./dexie.min.js"></script>
 <script src="./vendor-qrcode.min.js"></script>
+<script src="./vendor-chart.min.js"></script>
 <style>
   :root{
     --ink:#1a2030; --muted:#68748a; --border:#e3e6ee; --bg:#f2f3f8; --card:#ffffff;
@@ -94,6 +95,36 @@
   .stat-tile .value{font-size:19px;font-weight:700;}
   #apiBaseRow{font-size:11px;color:rgba(255,255,255,.75);}
   #apiBaseRow input{width:180px;padding:4px 8px;font-size:11px;background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff;}
+
+  /* ---- Analytical dashboards (charts + KPIs), one per module, opened
+     from the same "📊 التقارير" hub as the existing flat-table reports --
+     these are additive, not a replacement: every existing report popup
+     keeps working exactly as before. ---- */
+  .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px;}
+  .dash-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+  .dash-card h4{margin:0 0 10px;font-size:13px;color:var(--muted);font-weight:700;}
+  .dash-card canvas{max-height:220px;}
+  .dash-card.wide{grid-column:1/-1;}
+  .dash-list{list-style:none;margin:0;padding:0;font-size:12.5px;}
+  .dash-list li{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);}
+  .dash-list li:last-child{border-bottom:none;}
+  .dash-list .dash-list-name{color:var(--ink);}
+  .dash-list .dash-list-val{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .dash-list li.low .dash-list-val{color:var(--danger);}
+
+  /* Cashier-facing scrolling ticker (New Order screen): best sellers +
+     low-stock alerts, continuously animated so a busy cashier catches it
+     at a glance without needing to open any report. Pure CSS keyframes --
+     no chart library or JS timer involved. */
+  .pos-ticker{overflow:hidden;white-space:nowrap;background:var(--brand);border-radius:8px;margin-bottom:10px;}
+  .pos-ticker-track{display:inline-flex;animation:pos-ticker-scroll 30s linear infinite;}
+  .pos-ticker-track span{color:#fff;font-size:12.5px;font-weight:600;padding:8px 28px;display:inline-block;white-space:nowrap;}
+  .pos-ticker.hidden{display:none;}
+  /* The JS renders the ticker's content TWICE back to back, so animating
+     exactly halfway (-50%) lands on an identical copy of the start --
+     a seamless loop with no visible jump or gap, rather than a single
+     copy that would leave a blank pause once per lap. */
+  @keyframes pos-ticker-scroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
 
   /* menu grid picker (Sales -- new order), same idea as a restaurant
      cashier screen: browse a tile per item instead of a name in a
@@ -519,6 +550,7 @@
       </div>
       <div class="panel subview hidden" id="sl-sub-new">
         <h2>➕ طلب جديد</h2>
+        <div class="pos-ticker hidden" id="pos-ticker"><div class="pos-ticker-track" id="pos-ticker-track"></div></div>
         <div class="row-form">
           <div><label>الوردية المفتوحة</label><select id="ord-shift" onchange="onOrderShiftChange()"></select></div>
           <div><label>القناة</label>
@@ -876,7 +908,17 @@
     <div id="view-analytics" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>📊 التقارير</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
       <div class="panel">
-        <h2>التقارير المتاحة</h2>
+        <h2>لوحات التحكم التحليلية</h2>
+        <div class="hint">رسوم بيانية ومؤشرات حية لكل قسم -- بالإضافة إلى التقارير الجدولية أدناه، وليست بديلًا عنها.</div>
+        <div class="home-grid" style="margin-top:12px">
+          <div class="home-card" onclick="openReportPopup('dash-sales')"><div class="ic">📊</div><div class="lb">لوحة تحكم المبيعات</div></div>
+          <div class="home-card" onclick="openReportPopup('dash-production')"><div class="ic">🏭</div><div class="lb">لوحة تحكم الإنتاج</div></div>
+          <div class="home-card" onclick="openReportPopup('dash-purchasing')"><div class="ic">🛒</div><div class="lb">لوحة تحكم المشتريات</div></div>
+          <div class="home-card" onclick="openReportPopup('dash-items')"><div class="ic">📋</div><div class="lb">لوحة تحكم الأصناف</div></div>
+          <div class="home-card" onclick="openReportPopup('dash-inventory')"><div class="ic">📦</div><div class="lb">لوحة تحكم المخازن</div></div>
+        </div>
+
+        <h2 style="margin-top:22px">التقارير المتاحة</h2>
         <div class="hint">كل تقرير يفتح في نافذته المستقلة، بفلاتر موقع/فترة خاصة به.</div>
         <div class="home-grid" style="margin-top:12px">
           <div class="home-card" onclick="openReportPopup('sales')"><div class="ic">🧾</div><div class="lb">تقرير المبيعات</div></div>
@@ -911,6 +953,99 @@
         <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>النوع</th><th>الصيغة</th><th>الموقع</th><th>الفترة</th><th>تاريخ التوليد</th><th></th></tr></thead>
           <tbody id="rp-list-table"></tbody>
         </table></div>
+      </div>
+     </div></div>
+    </div>
+
+    <!-- ANALYTICAL DASHBOARDS: charts (Chart.js) + KPI tiles per module,
+         each its own independent popup exactly like the report popups
+         below -- additive, the flat-table reports are untouched. -->
+    <div id="view-report-dash-sales" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>📊 لوحة تحكم المبيعات</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>الموقع</label><select id="dshs-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="dshs-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="dshs-to" type="date"></div>
+          <div><button onclick="loadSalesDashboard()">تحديث</button></div>
+        </div>
+        <div id="dshs-kpis" class="stats-row"></div>
+        <div class="dash-grid">
+          <div class="dash-card wide"><h4>اتجاه المبيعات اليومي</h4><canvas id="dshs-trend-chart"></canvas></div>
+          <div class="dash-card"><h4>الإيراد حسب القناة</h4><canvas id="dshs-channel-chart"></canvas></div>
+          <div class="dash-card"><h4>طرق الدفع</h4><canvas id="dshs-payment-chart"></canvas></div>
+          <div class="dash-card"><h4>🔥 الأصناف الأكثر مبيعًا</h4><ul id="dshs-topitems-list" class="dash-list"></ul></div>
+          <div class="dash-card"><h4>⚠️ تنبيهات نقص المخزون</h4><ul id="dshs-lowstock-list" class="dash-list"></ul></div>
+        </div>
+      </div>
+     </div></div>
+    </div>
+
+    <div id="view-report-dash-production" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>🏭 لوحة تحكم الإنتاج</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>الموقع</label><select id="dshp-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="dshp-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="dshp-to" type="date"></div>
+          <div><button onclick="loadProductionDashboard()">تحديث</button></div>
+        </div>
+        <div id="dshp-kpis" class="stats-row"></div>
+        <div class="dash-grid">
+          <div class="dash-card"><h4>أوامر الإنتاج حسب الحالة</h4><canvas id="dshp-status-chart"></canvas></div>
+          <div class="dash-card wide"><h4>التكلفة حسب المنتج</h4><canvas id="dshp-cost-chart"></canvas></div>
+        </div>
+      </div>
+     </div></div>
+    </div>
+
+    <div id="view-report-dash-purchasing" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>🛒 لوحة تحكم المشتريات</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>الموقع</label><select id="dshpu-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="dshpu-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="dshpu-to" type="date"></div>
+          <div><button onclick="loadPurchasingDashboard()">تحديث</button></div>
+        </div>
+        <div id="dshpu-kpis" class="stats-row"></div>
+        <div class="dash-grid">
+          <div class="dash-card"><h4>أوامر الشراء حسب الحالة</h4><canvas id="dshpu-status-chart"></canvas></div>
+          <div class="dash-card wide"><h4>أعلى الموردين إنفاقًا</h4><canvas id="dshpu-suppliers-chart"></canvas></div>
+        </div>
+      </div>
+     </div></div>
+    </div>
+
+    <div id="view-report-dash-items" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>📋 لوحة تحكم الأصناف</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>الموقع</label><select id="dshi-location"><option value="">كل المواقع</option></select></div>
+          <div><button onclick="loadItemsDashboard()">تحديث</button></div>
+        </div>
+        <div id="dshi-kpis" class="stats-row"></div>
+        <div class="dash-grid">
+          <div class="dash-card wide"><h4>أعلى الأصناف هامش ربحًا</h4><canvas id="dshi-margin-chart"></canvas></div>
+          <div class="dash-card wide"><h4>أعلى الأصناف نسبة تكلفة</h4><canvas id="dshi-cost-chart"></canvas></div>
+          <div class="dash-card wide"><h4>أصناف بلا وصفة (تكلفتها صفر)</h4><ul id="dshi-norecipe-list" class="dash-list"></ul></div>
+        </div>
+      </div>
+     </div></div>
+    </div>
+
+    <div id="view-report-dash-inventory" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>📦 لوحة تحكم المخازن</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>الموقع</label><select id="dshinv-location"><option value="">كل المواقع</option></select></div>
+          <div><button onclick="loadInventoryDashboard()">تحديث</button></div>
+        </div>
+        <div id="dshinv-kpis" class="stats-row"></div>
+        <div class="dash-grid">
+          <div class="dash-card wide"><h4>أعلى المكوّنات قيمةً</h4><canvas id="dshinv-value-chart"></canvas></div>
+          <div class="dash-card wide"><h4>⚠️ تنبيهات نقص المخزون (بالكميات المتوفرة)</h4><ul id="dshinv-lowstock-list" class="dash-list"></ul></div>
+        </div>
       </div>
      </div></div>
     </div>
@@ -1780,6 +1915,11 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeView(
 // ---- Reports hub: each report is its own independent popup (view-report-*),
 // opened only from the "📊 التقارير" hub grid, never part of TABS. ----
 const REPORT_POPUPS = {
+  'dash-sales': loadSalesDashboard,
+  'dash-production': loadProductionDashboard,
+  'dash-purchasing': loadPurchasingDashboard,
+  'dash-items': loadItemsDashboard,
+  'dash-inventory': loadInventoryDashboard,
   sales: loadSalesReport,
   items: loadItemsReport,
   inventory: loadInventoryReport,
@@ -2561,6 +2701,30 @@ function onOrderShiftChange() {
   document.getElementById('ord-customer-required-note').classList.toggle('hidden', !required);
   document.getElementById('ord-customer-label').textContent = required ? 'العميل (إلزامي لهذا الفرع)' : 'العميل (اختياري)';
   updateOrderCartTotals();
+  updatePosTicker(shift ? shift.locationId : null);
+}
+// Cashier-facing scrolling ticker: today's best sellers + current low-stock
+// alerts for the branch the open shift belongs to, so the cashier catches
+// both without leaving the New Order screen. Re-run whenever the selected
+// shift (and therefore its branch) changes.
+async function updatePosTicker(locationId) {
+  const ticker = document.getElementById('pos-ticker');
+  if (!locationId) { ticker.classList.add('hidden'); return; }
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const [topItems, lowStock] = await Promise.all([
+      api(`/analytics/top-items?locationId=${locationId}&from=${today}&limit=5`),
+      api(`/analytics/low-stock?locationId=${locationId}`),
+    ]);
+    const parts = [
+      ...topItems.map((i) => `🔥 الأكثر مبيعًا اليوم: ${i.name} × ${i.quantity}`),
+      ...lowStock.map((r) => `⚠️ نقص مخزون: ${r.name} (${r.quantity} ${r.unit} متبقٍ)`),
+    ];
+    if (!parts.length) { ticker.classList.add('hidden'); return; }
+    const html = parts.map((p) => `<span>${p}</span>`).join('');
+    document.getElementById('pos-ticker-track').innerHTML = html + html; // duplicated for the seamless -50% loop
+    ticker.classList.remove('hidden');
+  } catch (e) { ticker.classList.add('hidden'); }
 }
 // نقدي (الوضع الافتراضي) أو آجل -- الفاتورة الآجلة تُفوتر لعميل محدد ليُسوَّى
 // حسابه لاحقًا، فتتطلب عميلًا بغض النظر عن إعداد الفرع requireCustomerForOrders
@@ -4008,6 +4172,166 @@ function statTile(label, value) { return `<div class="stat-tile"><div class="lab
 // figures this way; scoped to report renderers only so it doesn't ripple
 // into the invoice/payment-dialog formatting used elsewhere.
 function fmtMoney(n) { return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+/* ================= Analytical dashboards (charts) ================= */
+// Chart.js instances keyed by their canvas id -- re-opening/refreshing a
+// dashboard must .destroy() the previous instance before creating a new
+// one on the same <canvas>, or Chart.js throws "Canvas is already in use".
+const chartInstances = {};
+function mountChart(canvasId, config) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  if (chartInstances[canvasId]) { chartInstances[canvasId].destroy(); delete chartInstances[canvasId]; }
+  chartInstances[canvasId] = new Chart(canvas.getContext('2d'), config);
+}
+// An empty dataset otherwise renders as a bare, tick-less axis (Chart.js
+// has nothing to derive a real scale from) which reads as broken, not
+// "no data yet" -- swap the canvas for a plain empty-state message instead
+// whenever there's nothing to actually plot.
+function mountChartOrEmpty(canvasId, hasData, buildConfig, emptyText) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const card = canvas.closest('.dash-card');
+  let emptyEl = card ? card.querySelector('.dash-chart-empty') : null;
+  if (!hasData) {
+    canvas.style.display = 'none';
+    if (card) {
+      if (!emptyEl) { emptyEl = document.createElement('div'); emptyEl.className = 'empty dash-chart-empty'; card.appendChild(emptyEl); }
+      emptyEl.textContent = emptyText || 'لا توجد بيانات لهذه الفترة';
+    }
+    if (chartInstances[canvasId]) { chartInstances[canvasId].destroy(); delete chartInstances[canvasId]; }
+    return;
+  }
+  canvas.style.display = '';
+  if (emptyEl) emptyEl.remove();
+  mountChart(canvasId, buildConfig());
+}
+const CHART_COLORS = ['#3730a3', '#0891b2', '#d97706', '#dc2626', '#059669', '#7c3aed', '#0284c7', '#be185d'];
+function lineChartConfig(labels, data, label) {
+  return { type: 'line', data: { labels, datasets: [{ label, data, borderColor: '#3730a3', backgroundColor: 'rgba(55,48,163,.12)', fill: true, tension: .3 }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } };
+}
+function doughnutChartConfig(labels, data) {
+  return { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: CHART_COLORS }] },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } } } };
+}
+function barChartConfig(labels, data, label, horizontal) {
+  return { type: 'bar', data: { labels, datasets: [{ label, data, backgroundColor: CHART_COLORS[0] }] },
+    options: { indexAxis: horizontal ? 'y' : 'x', responsive: true, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } } };
+}
+function dashListRow(name, value, low) { return `<li class="${low ? 'low' : ''}"><span class="dash-list-name">${name}</span><span class="dash-list-val">${value}</span></li>`; }
+function dashEmptyList(text) { return `<li class="empty">${text}</li>`; }
+
+async function loadSalesDashboard() {
+  const sel = document.getElementById('dshs-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('dshs-from').value;
+    const to = document.getElementById('dshs-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const qs = params.toString();
+    const [summary, trend, topItems, paymentMethods, lowStock] = await Promise.all([
+      api('/analytics/sales-summary?' + qs), api('/analytics/sales-trend?' + qs), api('/analytics/top-items?' + qs + '&limit=5'),
+      api('/analytics/payment-methods-summary?' + qs), api('/analytics/low-stock' + (locationId ? '?locationId=' + locationId : '')),
+    ]);
+    document.getElementById('dshs-kpis').innerHTML = [
+      statTile('عدد الطلبات', summary.orderCount), statTile('الإيراد', fmtMoney(summary.revenue)),
+      statTile('صافي المبيعات', fmtMoney(summary.netSales)), statTile('الضريبة', fmtMoney(summary.vatCollected)),
+      statTile('متوسط الطلب', fmtMoney(summary.averageOrderValue)),
+    ].join('');
+    mountChartOrEmpty('dshs-trend-chart', trend.length > 0, () => lineChartConfig(trend.map((t) => t.date), trend.map((t) => t.revenue), 'الإيراد'), 'لا توجد مبيعات في هذه الفترة');
+    mountChartOrEmpty('dshs-channel-chart', summary.byChannel.length > 0, () => doughnutChartConfig(summary.byChannel.map((c) => AN_CHANNEL_LABEL[c.channel] || c.channel), summary.byChannel.map((c) => c.revenue)), 'لا توجد مبيعات في هذه الفترة');
+    mountChartOrEmpty('dshs-payment-chart', paymentMethods.byMethod.length > 0, () => doughnutChartConfig(paymentMethods.byMethod.map((m) => paymentMethodLabel(m.method)), paymentMethods.byMethod.map((m) => m.total)), 'لا توجد مدفوعات في هذه الفترة');
+    document.getElementById('dshs-topitems-list').innerHTML = topItems.length
+      ? topItems.map((i) => dashListRow(i.name, `${i.quantity} × ${fmtMoney(i.revenue)}`)).join('') : dashEmptyList('لا توجد مبيعات في هذه الفترة');
+    document.getElementById('dshs-lowstock-list').innerHTML = lowStock.length
+      ? lowStock.slice(0, 8).map((r) => dashListRow(r.name, `${r.quantity} ${r.unit}`, true)).join('') : dashEmptyList('لا توجد تنبيهات نقص مخزون');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+async function loadProductionDashboard() {
+  const sel = document.getElementById('dshp-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('dshp-from').value;
+    const to = document.getElementById('dshp-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/analytics/production-summary?' + params.toString());
+    document.getElementById('dshp-kpis').innerHTML = [
+      statTile('عدد أوامر الإنتاج', res.ordersCount), statTile('إجمالي التكلفة', fmtMoney(res.totalCost)),
+    ].join('');
+    mountChartOrEmpty('dshp-status-chart', res.byStatus.length > 0, () => doughnutChartConfig(res.byStatus.map((s) => PRODUCTION_STATUS_LABEL[s.status] || s.status), res.byStatus.map((s) => s.count)), 'لا توجد أوامر إنتاج في هذه الفترة');
+    const top = res.byOutput.slice(0, 8);
+    mountChartOrEmpty('dshp-cost-chart', top.length > 0, () => barChartConfig(top.map((o) => o.name), top.map((o) => o.totalCost), 'التكلفة', true), 'لا توجد تكاليف إنتاج مسجّلة بعد');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+async function loadPurchasingDashboard() {
+  const sel = document.getElementById('dshpu-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('dshpu-from').value;
+    const to = document.getElementById('dshpu-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/analytics/purchasing-summary?' + params.toString());
+    document.getElementById('dshpu-kpis').innerHTML = [
+      statTile('عدد الأوامر', res.orderCount), statTile('إجمالي الإنفاق', fmtMoney(res.totalSpend)), statTile('ضريبة تقديرية', fmtMoney(res.estimatedVat)),
+    ].join('');
+    mountChartOrEmpty('dshpu-status-chart', res.byStatus.length > 0, () => doughnutChartConfig(res.byStatus.map((s) => PO_STATUS_LABEL[s.status] || s.status), res.byStatus.map((s) => s.count)), 'لا توجد أوامر شراء في هذه الفترة');
+    mountChartOrEmpty('dshpu-suppliers-chart', res.topSuppliers.length > 0, () => barChartConfig(res.topSuppliers.map((s) => s.supplierName), res.topSuppliers.map((s) => s.spend), 'الإنفاق', true), 'لا يوجد إنفاق معتمد بعد لهذه الفترة');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+async function loadItemsDashboard() {
+  const sel = document.getElementById('dshi-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const res = await api('/analytics/menu-item-costs' + (locationId ? '?locationId=' + locationId : ''));
+    const withRecipe = res.filter((i) => i.hasRecipe);
+    const avgMargin = withRecipe.length ? withRecipe.reduce((s, i) => s + i.costPercent, 0) / withRecipe.length : 0;
+    document.getElementById('dshi-kpis').innerHTML = [
+      statTile('عدد الأصناف', res.length), statTile('متوسط نسبة التكلفة', avgMargin.toFixed(1) + '%'),
+    ].join('');
+    const topMargin = [...withRecipe].sort((a, b) => b.grossMargin - a.grossMargin).slice(0, 8);
+    mountChartOrEmpty('dshi-margin-chart', topMargin.length > 0, () => barChartConfig(topMargin.map((i) => i.name), topMargin.map((i) => i.grossMargin), 'هامش الربح', true), 'لا توجد أصناف بوصفة بعد');
+    const topCost = [...withRecipe].sort((a, b) => b.costPercent - a.costPercent).slice(0, 8);
+    mountChartOrEmpty('dshi-cost-chart', topCost.length > 0, () => barChartConfig(topCost.map((i) => i.name), topCost.map((i) => i.costPercent), 'نسبة التكلفة %', true), 'لا توجد أصناف بوصفة بعد');
+    const noRecipe = res.filter((i) => !i.hasRecipe);
+    document.getElementById('dshi-norecipe-list').innerHTML = noRecipe.length
+      ? noRecipe.slice(0, 10).map((i) => dashListRow(i.name, fmtMoney(i.price))).join('') : dashEmptyList('كل الأصناف لديها وصفة');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+async function loadInventoryDashboard() {
+  const sel = document.getElementById('dshinv-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const qs = locationId ? '?locationId=' + locationId : '';
+    const [valuation, lowStock] = await Promise.all([api('/analytics/inventory-valuation' + qs), api('/analytics/low-stock' + qs)]);
+    document.getElementById('dshinv-kpis').innerHTML = [
+      statTile('القيمة الإجمالية للمخزون', fmtMoney(valuation.totalValue)), statTile('أصناف منخفضة المخزون', lowStock.length),
+    ].join('');
+    const top = valuation.lines.slice(0, 8);
+    mountChartOrEmpty('dshinv-value-chart', top.length > 0, () => barChartConfig(top.map((l) => l.name), top.map((l) => l.value), 'القيمة', true), 'لا يوجد مخزون مسجّل بعد');
+    document.getElementById('dshinv-lowstock-list').innerHTML = lowStock.length
+      ? lowStock.map((r) => dashListRow(`${r.name}${r.locationName ? ' -- ' + r.locationName : ''}`, `${r.quantity} ${r.unit} (الحد: ${r.lowStockThreshold})`, true)).join('')
+      : dashEmptyList('لا توجد تنبيهات نقص مخزون');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
 
 /* ---------------- Reports export (Excel/PDF) ---------------- */
 async function loadReportsList() {

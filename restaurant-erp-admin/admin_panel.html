@@ -251,8 +251,10 @@
   .modal-body{padding:16px;}
   .pay-line{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
   .pay-method-picker{display:flex;gap:6px;flex-wrap:wrap;flex:1 0 100%;}
-  .pay-method-btn{padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);cursor:pointer;font-size:13px;}
-  .pay-method-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700;}
+  .pay-method-btn{display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--card2);cursor:pointer;font-size:13.5px;font-weight:600;color:var(--ink);}
+  .pay-method-btn .pay-method-icon{font-size:17px;line-height:1;}
+  .pay-method-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700;box-shadow:0 2px 8px rgba(55,48,163,.35);}
+  .pay-method-btn:hover:not(.active){border-color:var(--brand);}
   .invoice-type-picker{display:flex;gap:6px;}
   .invoice-type-btn{flex:1;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);cursor:pointer;font-size:13px;}
   .invoice-type-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700;}
@@ -263,6 +265,12 @@
   .pay-remaining.negative{color:#b3261e;}
   .activity-log{font-size:12px;color:var(--muted);margin-top:10px;border-top:1px solid var(--border);padding-top:8px;}
   .activity-log .entry{margin-bottom:4px;}
+  .pay-line.active-numpad{background:rgba(55,48,163,.06);border:1px solid rgba(55,48,163,.3);border-radius:10px;padding:8px;margin:-1px -1px 8px -1px;}
+  .pay-numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px;}
+  .pay-numpad button{padding:12px;font-size:17px;font-weight:700;background:var(--card2);color:var(--ink);border:1px solid var(--border);}
+  .pay-numpad button:hover{background:var(--border);}
+  .pay-numpad button.ghost{background:none;}
+  .pay-numpad-fill{grid-column:span 3;background:var(--brand) !important;color:#fff !important;font-size:13.5px !important;}
 
   /* ---- sub-tabs inside a popup that bundles more than one distinct
      record type (e.g. Inventory's balances/receive/waste) -- splits them
@@ -289,6 +297,12 @@
   .invoice-box .invoice-header-note,.invoice-box .invoice-footer-note{text-align:center;font-size:11px;color:#333;margin:6px 0;line-height:1.6;white-space:pre-line;}
   .invoice-title{text-align:center;font-weight:700;font-size:13px;margin:8px 0;padding:4px 0;
     border-top:1px dashed #999;border-bottom:1px dashed #999;}
+  /* Big and unmissable -- the one number a cashier/customer actually needs
+     to find fast (matching against a kitchen ticket, a call-out number,
+     etc.), unlike the smaller reference fields below it. */
+  .invoice-order-number{text-align:center;font-size:15px;font-weight:600;color:#333;margin:6px 0;}
+  .invoice-order-number span{font-size:30px;font-weight:800;color:#000;margin-inline-start:4px;}
+  .invoice-box.thermal .invoice-order-number span{font-size:26px;}
   .invoice-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;font-size:11.5px;margin:8px 0;}
   .invoice-box.thermal .invoice-meta-grid{grid-template-columns:1fr;}
   .invoice-meta-grid .k{color:#555;}
@@ -308,6 +322,8 @@
      across a busy kitchen line ---- */
   .kitchen-ticket-box{max-width:302px;margin:0 auto;background:#fff;padding:12px;color:#000;font-size:13px;}
   .kitchen-ticket-box .kt-ticket-title{text-align:center;font-weight:800;font-size:16px;margin-bottom:2px;}
+  .kitchen-ticket-box .kt-ticket-order-number{text-align:center;font-size:13px;font-weight:600;color:#333;margin-bottom:4px;}
+  .kitchen-ticket-box .kt-ticket-order-number span{font-size:28px;font-weight:800;color:#000;margin-inline-start:4px;}
   .kitchen-ticket-box .kt-ticket-meta{text-align:center;font-size:11.5px;color:#444;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed #999;}
   .kitchen-ticket-box .kt-ticket-line{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dotted #ccc;font-size:16px;font-weight:700;}
   .kitchen-ticket-box .kt-ticket-line .qty{flex:0 0 auto;}
@@ -539,7 +555,7 @@
 
       <div class="panel subview" id="sl-sub-shifts">
         <h2>الورديات</h2>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>الموقع</th><th>الحالة</th><th>فتحها</th><th>أغلقها</th><th>رأس المال</th><th>المتوقع</th><th>المعدود</th><th>الفرق</th><th></th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الوردية</th><th>الموقع</th><th>الحالة</th><th>فتحها</th><th>أغلقها</th><th>رأس المال</th><th>المتوقع</th><th>المعدود</th><th>الفرق</th><th></th></tr></thead>
           <tbody id="shiftsTable"></tbody>
         </table></div>
         <div class="row-form">
@@ -934,6 +950,35 @@
           <div><button onclick="createPaymentMethod()">إضافة</button></div>
         </div>
         <div id="pm-msg" class="msg"></div>
+      </div>
+     </div></div>
+    </div>
+
+    <!-- GENERAL SETTINGS -->
+    <div id="view-settings" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>⚙️ الإعدادات العامة</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <h2>تفضيلات الطباعة</h2>
+        <div class="hint">تتحكم في شكل الفاتورة عند فتحها لأول مرة، وفي ما يُطبع تلقائيًا مباشرة بعد كل عملية دفع.</div>
+        <div class="row-form" style="margin-top:10px">
+          <div><label>مقاس الفاتورة الافتراضي</label>
+            <div class="invoice-template-picker" id="set-print-size-picker">
+              <button type="button" class="tmpl-btn" data-val="THERMAL" onclick="setGeneralSettingOption('printSize','THERMAL',this)">حراري 80مم</button>
+              <button type="button" class="tmpl-btn" data-val="A4" onclick="setGeneralSettingOption('printSize','A4',this)">A4</button>
+            </div>
+          </div>
+          <div><label>تفاصيل الفاتورة الافتراضية</label>
+            <div class="invoice-template-picker" id="set-print-detail-picker">
+              <button type="button" class="tmpl-btn" data-val="FULL" onclick="setGeneralSettingOption('printDetail','FULL',this)">كامل</button>
+              <button type="button" class="tmpl-btn" data-val="BRIEF" onclick="setGeneralSettingOption('printDetail','BRIEF',this)">مختصر</button>
+            </div>
+          </div>
+        </div>
+        <div class="row-form" style="margin-top:6px">
+          <div><label><input type="checkbox" id="set-auto-print-invoice" style="width:auto;display:inline" onchange="setGeneralSettingOption('autoPrintInvoice', this.checked)"> طباعة الفاتورة تلقائيًا بعد كل عملية دفع</label></div>
+          <div><label><input type="checkbox" id="set-auto-print-kitchen" style="width:auto;display:inline" onchange="setGeneralSettingOption('autoPrintKitchenTicket', this.checked)"> طباعة تذكرة المطبخ تلقائيًا مع الفاتورة بعد الدفع</label></div>
+        </div>
+        <div id="set-msg" class="msg"></div>
       </div>
      </div></div>
     </div>
@@ -1373,6 +1418,14 @@
       </div>
      </div></div>
 
+    <!-- SHIFT CLOSE SUMMARY (brief recap shown right after closing a shift) -->
+    <div id="view-shift-summary" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>📋 ملخص إغلاق الوردية</h2><button class="view-close" onclick="closeView()">✕</button></div>
+      <div class="view-body">
+        <div id="shift-summary-content"></div>
+      </div>
+     </div></div>
+
     <!-- PAYMENT DIALOG (small, focused -- not a full-screen view) -->
     <div id="paymentDialog" class="modal-backdrop" onclick="if(event.target===this) closePaymentDialog()">
       <div class="modal-box">
@@ -1382,9 +1435,28 @@
           <div id="pay-lines"></div>
           <button class="ghost" onclick="addPaymentLine()" style="margin-bottom:8px">➕ إضافة طريقة دفع</button>
           <div id="pay-remaining" class="pay-remaining"></div>
+          <!-- Simplified numpad for adjusting whichever payment line is
+               "active" (the one last focused/clicked) -- lets a cashier
+               retype a split-payment amount without a physical keyboard,
+               the same touch-first pattern global POS systems use. -->
+          <div class="pay-numpad">
+            <button type="button" onclick="numpadPress('7')">7</button>
+            <button type="button" onclick="numpadPress('8')">8</button>
+            <button type="button" onclick="numpadPress('9')">9</button>
+            <button type="button" onclick="numpadPress('4')">4</button>
+            <button type="button" onclick="numpadPress('5')">5</button>
+            <button type="button" onclick="numpadPress('6')">6</button>
+            <button type="button" onclick="numpadPress('1')">1</button>
+            <button type="button" onclick="numpadPress('2')">2</button>
+            <button type="button" onclick="numpadPress('3')">3</button>
+            <button type="button" class="ghost" onclick="numpadPress('clear')">C</button>
+            <button type="button" onclick="numpadPress('0')">0</button>
+            <button type="button" class="ghost" onclick="numpadPress('back')">⌫</button>
+            <button type="button" class="pay-numpad-fill" onclick="numpadPress('fillRemaining')">= المتبقي بالكامل</button>
+          </div>
           <div id="pay-msg" class="msg"></div>
           <div style="display:flex;gap:8px;margin-top:8px">
-            <button id="pay-confirm-btn" onclick="confirmPayment()">✅ تأكيد الدفع</button>
+            <button id="pay-confirm-btn" onclick="confirmPayment()" style="flex:1;font-size:15px;padding:12px">✅ تأكيد الدفع</button>
             <button class="ghost" onclick="holdOrderFromDialog()">🅿️ تعليق الفاتورة</button>
           </div>
           <div id="pay-activity-log" class="activity-log hidden"></div>
@@ -1918,6 +1990,7 @@ const TAB_META = {
   combos: { icon: '🍔', label: 'وجبات الكمبو', group: 'service' },
   customers: { icon: '👤', label: 'العملاء', group: 'service' },
   'payment-methods': { icon: '💳', label: 'طرق الدفع', group: 'service' },
+  settings: { icon: '⚙️', label: 'الإعدادات العامة', group: 'setup' },
   alerts: { icon: '🔔', label: 'التنبيهات', group: 'insight' },
   analytics: { icon: '📊', label: 'التقارير', group: 'insight' },
 };
@@ -1967,10 +2040,15 @@ function renderNav() {
 // button and isn't a plain table to CSV-export.
 function injectViewToolbars() {
   document.querySelectorAll('.view').forEach((view) => {
-    if (view.id === 'view-invoice') return;
+    // Both already have their own dedicated print button and no meaningful
+    // table to CSV-export -- view-kitchen-ticket's close button also isn't
+    // a direct child of .view-head (it's nested in its own button-row div),
+    // which would otherwise throw on insertBefore below and silently abort
+    // this loop for every OTHER view that follows it in the document.
+    if (view.id === 'view-invoice' || view.id === 'view-kitchen-ticket') return;
     const head = view.querySelector('.view-head');
     const closeBtn = head ? head.querySelector('.view-close') : null;
-    if (!head || !closeBtn || head.querySelector('.view-toolbar')) return;
+    if (!head || !closeBtn || closeBtn.parentElement !== head || head.querySelector('.view-toolbar')) return;
     const wrap = document.createElement('div');
     wrap.className = 'view-toolbar no-print';
     wrap.style.cssText = 'display:flex;gap:8px;align-items:center';
@@ -2083,6 +2161,7 @@ function switchTab(name) {
   if (name === 'combos') { switchSubview('cb', ['list', 'add'], 'list'); loadCombos(); }
   if (name === 'customers') { switchSubview('cu', ['list', 'add', 'import'], 'list'); loadCustomers(); }
   if (name === 'payment-methods') loadPaymentMethodsTab();
+  if (name === 'settings') loadGeneralSettingsTab();
   if (name === 'analytics') { document.getElementById('an-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadReportsList(); }
 }
 
@@ -2786,6 +2865,19 @@ function paymentMethodLabel(code) {
   const m = paymentMethodsCache.find((pm) => pm.code === code);
   return (m && m.name) || PAYMENT_METHOD_LABEL[code] || code;
 }
+// A clear, at-a-glance icon per method -- known codes get a specific icon
+// (matching how Foodics/Square-style POS UIs always pair a payment tile
+// with a recognizable glyph); an admin-defined custom method not in this
+// map falls back by its isCash flag so it's never left with no icon at all.
+const PAYMENT_METHOD_ICON = { CASH: '💵', CARD: '💳', WALLET: '📱', COD: '📦', BANK_TRANSFER: '🏦' };
+function paymentMethodIcon(code) {
+  if (PAYMENT_METHOD_ICON[code]) return PAYMENT_METHOD_ICON[code];
+  const m = paymentMethodsCache.find((pm) => pm.code === code);
+  return m && m.isCash ? '💵' : '💳';
+}
+function paymentMethodLabelWithIcon(code) {
+  return `${paymentMethodIcon(code)} ${paymentMethodLabel(code)}`;
+}
 
 async function loadOrderCustomerOptions(phone) {
   try {
@@ -3107,6 +3199,7 @@ async function loadShifts() {
     document.getElementById('shiftsTable').innerHTML = shifts.length
       ? shifts.map((s) => `
         <tr>
+          <td><b>SH${s.shiftNumber ?? '-'}</b></td>
           <td>${locName(s.locationId)}</td>
           <td>${s.closedAt ? '⛔ مغلقة' : '✅ مفتوحة'}</td>
           <td>${s.openedBy ? s.openedBy.name : '-'}</td>
@@ -3118,10 +3211,10 @@ async function loadShifts() {
           <td>${s.closedAt ? '' : `<button class="link-btn" onclick="closeShiftPrompt('${s.id}')">إغلاق</button>`}</td>
         </tr>
       `).join('')
-      : `<tr><td colspan="9" class="empty">لا توجد ورديات بعد</td></tr>`;
+      : `<tr><td colspan="10" class="empty">لا توجد ورديات بعد</td></tr>`;
     const openShifts = shifts.filter((s) => !s.closedAt);
     document.getElementById('ord-shift').innerHTML = openShifts.length
-      ? openShifts.map((s) => `<option value="${s.id}">${locName(s.locationId)} -- ${s.id.slice(-6)}</option>`).join('')
+      ? openShifts.map((s) => `<option value="${s.id}">SH${s.shiftNumber ?? '-'} -- ${locName(s.locationId)}</option>`).join('')
       : '<option value="">لا توجد وردية مفتوحة</option>';
     onOrderShiftChange();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
@@ -3143,7 +3236,50 @@ async function closeShiftPrompt(id) {
     await api(`/shifts/${id}/close`, { method: 'POST', body: JSON.stringify({ closingCounted }) });
     flashGlobal('✅ تم إغلاق الوردية', 'ok');
     loadShifts();
+    openShiftCloseSummary(id);
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function openShiftCloseSummary(shiftId) {
+  closeView();
+  document.getElementById('view-shift-summary').classList.add('open');
+  document.getElementById('shift-summary-content').innerHTML = '<div class="empty">جارٍ التحميل...</div>';
+  try {
+    const s = await api(`/shifts/${shiftId}/close-summary`);
+    document.getElementById('shift-summary-content').innerHTML = `
+      <div class="stats-row">
+        ${statTile('رقم الوردية', 'SH' + (s.shiftNumber ?? '-'))}
+        ${statTile('عدد الطلبات', s.orderCount)}
+        ${statTile('عدد الأصناف المباعة', s.itemCount)}
+        ${statTile('إجمالي المبيعات', fmtMoney(s.revenue))}
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <h2>المبيعات حسب القسم</h2>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>القسم</th><th>الكمية</th><th>المبيعات (بلا ضريبة)</th></tr></thead>
+          <tbody>${s.byCategory.length
+            ? s.byCategory.map((c) => `<tr><td>${c.category}</td><td class="num">${c.quantity}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`).join('')
+            : `<tr><td colspan="3" class="empty">لا توجد مبيعات هذه الوردية</td></tr>`}</tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>الأصناف المباعة</h2>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>الكمية</th><th>المبيعات (بلا ضريبة)</th></tr></thead>
+          <tbody>${s.byItem.length
+            ? s.byItem.map((i) => `<tr><td>${i.name}</td><td class="num">${i.quantity}</td><td class="num">${fmtMoney(i.revenue)}</td></tr>`).join('')
+            : `<tr><td colspan="3" class="empty">لا توجد مبيعات هذه الوردية</td></tr>`}</tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>حسب نوع الطلب</h2>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>نوع الطلب</th><th>عدد الطلبات</th><th>المبيعات (شامل الضريبة)</th></tr></thead>
+          <tbody>${s.byChannel.length
+            ? s.byChannel.map((c) => `<tr><td>${AN_CHANNEL_LABEL[c.channel] || c.channel}</td><td class="num">${c.orderCount}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`).join('')
+            : `<tr><td colspan="3" class="empty">لا توجد طلبات هذه الوردية</td></tr>`}</tbody>
+        </table></div>
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById('shift-summary-content').innerHTML = '<div class="empty">❌ ' + e.message + '</div>';
+  }
 }
 function addOrderLineRow() {
   const container = document.getElementById('ord-lines');
@@ -3225,7 +3361,7 @@ async function loadOrders() {
           <td>${INVOICE_TYPE_LABEL[o.invoiceType] || o.invoiceType}</td>
           <td>${o.status}</td>
           <td>${Number(o.grandTotal).toFixed(2)}</td>
-          <td>${o.payments && o.payments.length ? o.payments.map((p) => paymentMethodLabel(p.method)).join('، ') : '-'}</td>
+          <td>${o.payments && o.payments.length ? o.payments.map((p) => paymentMethodLabelWithIcon(p.method)).join('، ') : '-'}</td>
           <td>
             ${(o.status === 'SENT_TO_KITCHEN' || o.status === 'READY' || o.status === 'OPEN') ? `
               <button class="link-btn" onclick="openPaymentDialog('${o.id}')">💰 دفع${o._count && o._count.activityLog ? ' 🅿️' : ''}</button>
@@ -3246,6 +3382,9 @@ async function loadOrders() {
 /* ================= Payment dialog (split payment + hold) ================= */
 let paymentDialogOrder = null;
 let paymentDialogLines = [];
+// Which pay-line the numpad edits -- whichever one was last focused/clicked;
+// defaults to the first (and usually only) line.
+let activePayLineIndex = 0;
 
 async function openPaymentDialog(orderId) {
   try {
@@ -3253,6 +3392,7 @@ async function openPaymentDialog(orderId) {
     paymentDialogOrder = await api('/orders/' + orderId);
     const defaultMethod = (paymentMethodsCache.find((m) => m.isActive) || paymentMethodsCache[0] || {}).code || 'CASH';
     paymentDialogLines = [{ method: defaultMethod, amount: Number(paymentDialogOrder.grandTotal), terminalRef: '' }];
+    activePayLineIndex = 0;
     document.getElementById('pay-msg').className = 'msg';
     document.getElementById('paymentDialog').classList.add('open');
     const confirmBtn = document.getElementById('pay-confirm-btn');
@@ -3274,17 +3414,18 @@ function renderPaymentDialog() {
   const o = paymentDialogOrder;
   const itemCount = o.lines ? o.lines.reduce((s, l) => s + l.quantity, 0) : 0;
   document.getElementById('pay-order-summary').innerHTML =
-    `<div>طلب #${o.id.slice(-8)} -- ${itemCount} صنف${o.customer ? ' -- العميل: ' + (o.customer.name || o.customer.phone) : ''}</div>
+    `<div style="font-size:15px">رقم الطلب <b style="font-size:20px">#${o.shiftSequence ?? o.id.slice(-6)}</b> -- ${o.shift && o.shift.shiftNumber != null ? 'SH' + o.shift.shiftNumber : ''} -- ${itemCount} صنف${o.customer ? ' -- العميل: ' + (o.customer.name || o.customer.phone) : ''}</div>
      <div style="font-weight:700;font-size:16px;margin-top:4px">الإجمالي: ${Number(o.grandTotal).toFixed(2)}</div>`;
 
+  if (activePayLineIndex >= paymentDialogLines.length) activePayLineIndex = paymentDialogLines.length - 1;
   document.getElementById('pay-lines').innerHTML = paymentDialogLines.map((l, i) => `
-    <div class="pay-line">
+    <div class="pay-line ${i === activePayLineIndex ? 'active-numpad' : ''}" onclick="activePayLineIndex=${i}; renderPaymentDialog();">
       <div class="pay-method-picker">
-        ${paymentMethodsCache.map((m) => `<button type="button" class="pay-method-btn ${m.code === l.method ? 'active' : ''}" onclick="updatePaymentLine(${i}, 'method', '${m.code.replace(/'/g, "\\'")}')">${m.name}</button>`).join('')}
+        ${paymentMethodsCache.map((m) => `<button type="button" class="pay-method-btn ${m.code === l.method ? 'active' : ''}" onclick="event.stopPropagation(); updatePaymentLine(${i}, 'method', '${m.code.replace(/'/g, "\\'")}')"><span class="pay-method-icon">${paymentMethodIcon(m.code)}</span><span>${m.name}</span></button>`).join('')}
       </div>
-      <input type="number" step="0.01" value="${l.amount}" oninput="updatePaymentLine(${i}, 'amount', this.value)" placeholder="المبلغ">
-      <input type="text" value="${l.terminalRef}" oninput="updatePaymentLine(${i}, 'terminalRef', this.value)" placeholder="رقم العملية / المرجع (اختياري)">
-      ${paymentDialogLines.length > 1 ? `<button class="link-btn" onclick="removePaymentLine(${i})">✕</button>` : ''}
+      <input type="number" step="0.01" value="${l.amount}" onfocus="activePayLineIndex=${i}" oninput="updatePaymentLine(${i}, 'amount', this.value)" placeholder="المبلغ">
+      <input type="text" value="${l.terminalRef}" onfocus="activePayLineIndex=${i}" oninput="updatePaymentLine(${i}, 'terminalRef', this.value)" placeholder="رقم العملية / المرجع (اختياري)">
+      ${paymentDialogLines.length > 1 ? `<button class="link-btn" onclick="event.stopPropagation(); removePaymentLine(${i})">✕</button>` : ''}
     </div>
   `).join('');
 
@@ -3306,14 +3447,35 @@ function renderPaymentDialog() {
 function addPaymentLine() {
   const defaultMethod = (paymentMethodsCache.find((m) => m.isActive) || paymentMethodsCache[0] || {}).code || 'CASH';
   paymentDialogLines.push({ method: defaultMethod, amount: Math.max(paymentRemaining(), 0), terminalRef: '' });
+  activePayLineIndex = paymentDialogLines.length - 1; // numpad now targets the new line
   renderPaymentDialog();
 }
 function removePaymentLine(i) {
   paymentDialogLines.splice(i, 1);
+  if (activePayLineIndex >= i && activePayLineIndex > 0) activePayLineIndex -= 1;
   renderPaymentDialog();
 }
 function updatePaymentLine(i, field, value) {
   paymentDialogLines[i][field] = field === 'amount' ? parseFloat(value) || 0 : value;
+  renderPaymentDialog();
+}
+// Cents-entry numpad (like Square/Foodics): each digit shifts the current
+// amount left and appends -- typing 4,2,5,5 lands on 42.55, no need to
+// type a decimal point. Operates on whichever line is "active" (see
+// activePayLineIndex), same amount field a cashier could also type into
+// directly with a physical keyboard.
+function numpadPress(key) {
+  const line = paymentDialogLines[activePayLineIndex];
+  if (!line) return;
+  if (key === 'fillRemaining') {
+    line.amount = Math.round((Number(line.amount) + paymentRemaining()) * 100) / 100;
+  } else {
+    let cents = Math.round((Number(line.amount) || 0) * 100);
+    if (key === 'clear') cents = 0;
+    else if (key === 'back') cents = Math.floor(cents / 10);
+    else if (cents < 9999999) cents = cents * 10 + parseInt(key, 10); // cap ~99,999.99
+    line.amount = cents / 100;
+  }
   renderPaymentDialog();
 }
 async function confirmPayment() {
@@ -3329,10 +3491,12 @@ async function confirmPayment() {
     const payments = paymentDialogLines.map((l) => ({
       method: l.method, mode: 'MANUAL', amount: Number(l.amount), terminalRef: l.terminalRef ? l.terminalRef.trim() || undefined : undefined,
     }));
-    await api(`/orders/${paymentDialogOrder.id}/pay`, { method: 'POST', body: JSON.stringify({ payments }) });
+    const paidOrderId = paymentDialogOrder.id;
+    await api(`/orders/${paidOrderId}/pay`, { method: 'POST', body: JSON.stringify({ payments }) });
     flashGlobal('✅ تم الدفع', 'ok');
     closePaymentDialog();
     loadOrders();
+    await autoPrintAfterPayment(paidOrderId);
   } catch (e) {
     showMsg('pay-msg', '❌ ' + e.message, 'err');
     btn.textContent = originalBtnText;
@@ -3384,6 +3548,13 @@ function renderInvoice(o) {
   const loc = o.location || {};
   const sizeClass = invoiceTemplate.size === 'THERMAL' ? 'thermal' : '';
   const full = invoiceTemplate.detail !== 'BRIEF';
+  // Keeps the popup's own size/detail toggle buttons in sync even when
+  // invoiceTemplate was set programmatically (e.g. autoPrintAfterPayment
+  // applying the general-settings default) rather than by clicking one --
+  // otherwise the highlighted button could silently disagree with what's
+  // actually rendered below it.
+  document.querySelectorAll('.invoice-template-picker .tmpl-btn[data-dim="size"]').forEach((b) => b.classList.toggle('active', b.dataset.val === invoiceTemplate.size));
+  document.querySelectorAll('.invoice-template-picker .tmpl-btn[data-dim="detail"]').forEach((b) => b.classList.toggle('active', b.dataset.val === invoiceTemplate.detail));
   const round2 = (n) => Math.round(n * 100) / 100;
   // Per-branch rate (Location.vatRate, a percentage) -- only used here to
   // show a per-LINE VAT/total breakdown for readability; the order-level
@@ -3411,7 +3582,7 @@ function renderInvoice(o) {
   }).join('');
 
   const paymentsText = o.payments && o.payments.length
-    ? o.payments.map((p) => `${paymentMethodLabel(p.method)}: ${Number(p.amount).toFixed(2)}`).join('، ')
+    ? o.payments.map((p) => `${paymentMethodLabelWithIcon(p.method)}: ${Number(p.amount).toFixed(2)}`).join('، ')
     : '-';
 
   const pendingNote = o.zatcaSyncStatus === 'PENDING'
@@ -3427,8 +3598,9 @@ function renderInvoice(o) {
       ${loc.address ? `<div class="biz-meta">${loc.address}</div>` : ''}
       ${loc.invoiceHeaderNote ? `<div class="invoice-header-note">${loc.invoiceHeaderNote}</div>` : ''}
       <div class="invoice-title">فاتورة ضريبية مبسّطة<br>Simplified Tax Invoice</div>
+      <div class="invoice-order-number">رقم الطلب <span>#${o.shiftSequence ?? '-'}</span></div>
       <div class="invoice-meta-grid">
-        <div><span class="k">رقم فاتورة الوردية:</span> #${o.shiftSequence ?? '-'}</div>
+        <div><span class="k">الوردية:</span> SH${o.shift && o.shift.shiftNumber != null ? o.shift.shiftNumber : '-'}</div>
         <div><span class="k">الرقم اليومي:</span> #${o.dailySequence ?? '-'}</div>
         <div><span class="k">التسلسل الضريبي (ICV):</span> ${o.zatcaInvoiceCounter ?? '-'}</div>
         <div><span class="k">التاريخ والوقت:</span> ${o.paidAt ? new Date(o.paidAt).toLocaleString('ar-SA') : '-'}</div>
@@ -3663,13 +3835,13 @@ async function loadKitchenQueue() {
 function renderKitchenTicket(ticket) {
   closeView();
   document.getElementById('view-kitchen-ticket').classList.add('open');
-  const refLabel = [ticket.shiftSequence ? 'طلب الوردية #' + ticket.shiftSequence : null, ticket.dailySequence ? 'الرقم اليومي #' + ticket.dailySequence : null]
-    .filter(Boolean).join(' -- ') || ('#' + ticket.orderId.slice(-6));
+  const orderNumberLabel = ticket.shiftSequence ? '#' + ticket.shiftSequence : '#' + ticket.orderId.slice(-6);
   document.getElementById('kt-ticket-content').innerHTML = `
     <div class="kitchen-ticket-box">
       <div class="kt-ticket-title">🍳 تذكرة المطبخ</div>
+      <div class="kt-ticket-order-number">رقم الطلب <span>${orderNumberLabel}</span></div>
       <div class="kt-ticket-meta">
-        ${refLabel}<br>
+        ${ticket.shiftNumber != null ? 'SH' + ticket.shiftNumber : '-'}${ticket.dailySequence ? ' -- الرقم اليومي #' + ticket.dailySequence : ''}<br>
         ${KITCHEN_CHANNEL_LABEL[ticket.channel] || ticket.channel}${ticket.tableLabel ? ' -- ' + ticket.tableLabel : ''}<br>
         ${new Date(ticket.createdAt).toLocaleString('ar-SA')}
       </div>
@@ -3692,6 +3864,7 @@ async function printKitchenTicketFromOrder(orderId) {
       createdAt: o.createdAt,
       shiftSequence: o.shiftSequence,
       dailySequence: o.dailySequence,
+      shiftNumber: o.shift ? o.shift.shiftNumber : null,
       lines: o.lines.map((l) => ({
         menuItemName: l.menuItem
           ? l.menuItem.name
@@ -4046,7 +4219,7 @@ async function loadPaymentMethodsReport() {
     const res = await api('/analytics/payment-methods-summary?' + params.toString());
     document.getElementById('pmr-total').textContent = 'الإجمالي: ' + fmtMoney(res.totalAmount) + ' ر.س';
     document.getElementById('pmr-method-table').innerHTML = res.byMethod.length
-      ? res.byMethod.map((m) => `<tr><td>${paymentMethodLabel(m.method)}</td><td class="num">${m.count}</td><td class="num">${fmtMoney(m.total)}</td></tr>`).join('')
+      ? res.byMethod.map((m) => `<tr><td>${paymentMethodLabelWithIcon(m.method)}</td><td class="num">${m.count}</td><td class="num">${fmtMoney(m.total)}</td></tr>`).join('')
         + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${res.byMethod.reduce((s, m) => s + m.count, 0)}</td><td class="num">${fmtMoney(res.byMethod.reduce((s, m) => s + m.total, 0))}</td></tr>`
       : `<tr><td colspan="3" class="empty">لا توجد مدفوعات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
@@ -4438,7 +4611,7 @@ async function loadPaymentMethodsTab() {
     document.getElementById('paymentMethodsTable').innerHTML = paymentMethodsCache.length
       ? paymentMethodsCache.map((m) => `
         <tr>
-          <td>${m.name}</td><td>${m.code}</td>
+          <td>${paymentMethodIcon(m.code)} ${m.name}</td><td>${m.code}</td>
           <td>${m.isCash ? '✅' : '⛔'} <button class="link-btn" onclick="togglePaymentMethodField('${m.id}','isCash',${!m.isCash})">تبديل</button></td>
           <td>${m.isActive ? '✅ نشطة' : '⛔ معطّلة'}</td>
           <td><button class="link-btn" onclick="togglePaymentMethodField('${m.id}','isActive',${!m.isActive})">${m.isActive ? 'تعطيل' : 'تفعيل'}</button></td>
@@ -4464,6 +4637,53 @@ async function togglePaymentMethodField(id, field, value) {
     await api(`/payment-methods/${id}`, { method: 'PATCH', body: JSON.stringify({ [field]: value }) });
     loadPaymentMethodsTab();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ================= General settings (persisted to localStorage) ================= */
+// Thermal-first default: a POS cashier printing straight after every sale
+// is the far more common case than someone reviewing an A4 copy later.
+const GENERAL_SETTINGS_KEY = 'restaurant_erp_admin_settings';
+const DEFAULT_GENERAL_SETTINGS = { printSize: 'THERMAL', printDetail: 'FULL', autoPrintInvoice: true, autoPrintKitchenTicket: true };
+function loadGeneralSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(GENERAL_SETTINGS_KEY) || '{}');
+    return { ...DEFAULT_GENERAL_SETTINGS, ...saved };
+  } catch (e) { return { ...DEFAULT_GENERAL_SETTINGS }; }
+}
+function saveGeneralSettings(settings) {
+  try { localStorage.setItem(GENERAL_SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* private-mode/no storage -- setting just won't persist */ }
+}
+function loadGeneralSettingsTab() {
+  const s = loadGeneralSettings();
+  document.querySelectorAll('#set-print-size-picker .tmpl-btn').forEach((b) => b.classList.toggle('active', b.dataset.val === s.printSize));
+  document.querySelectorAll('#set-print-detail-picker .tmpl-btn').forEach((b) => b.classList.toggle('active', b.dataset.val === s.printDetail));
+  document.getElementById('set-auto-print-invoice').checked = s.autoPrintInvoice;
+  document.getElementById('set-auto-print-kitchen').checked = s.autoPrintKitchenTicket;
+}
+function setGeneralSettingOption(key, val, btn) {
+  const s = loadGeneralSettings();
+  s[key] = val;
+  saveGeneralSettings(s);
+  if (btn) document.querySelectorAll(`.invoice-template-picker .tmpl-btn`).forEach((b) => { if (b.parentElement === btn.parentElement) b.classList.toggle('active', b === btn); });
+  showMsg('set-msg', '✅ تم حفظ الإعداد', 'ok');
+}
+// Auto-print sequence right after a successful payment: the invoice (per
+// the general settings' size/detail) then the kitchen ticket, each its own
+// print dialog -- same manual "🖨️ طباعة" pattern every other popup already
+// uses, just triggered automatically instead of waiting for a click.
+async function autoPrintAfterPayment(orderId) {
+  const s = loadGeneralSettings();
+  if (!s.autoPrintInvoice && !s.autoPrintKitchenTicket) return;
+  if (s.autoPrintInvoice) {
+    invoiceTemplate.size = s.printSize;
+    invoiceTemplate.detail = s.printDetail;
+    await openInvoicePopup(orderId);
+    window.print();
+  }
+  if (s.autoPrintKitchenTicket) {
+    await printKitchenTicketFromOrder(orderId);
+    window.print();
+  }
 }
 
 const LOYALTY_REASON_LABEL = { ORDER_EARN: 'كسب من طلب', REDEEM: 'استبدال', MANUAL_ADJUST: 'تعديل يدوي' };
@@ -4598,7 +4818,7 @@ async function loadSalesDashboard() {
         + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${summary.byChannel.reduce((s, c) => s + c.orderCount, 0)}</td><td class="num">${fmtMoney(summary.byChannel.reduce((s, c) => s + c.revenue, 0))}</td></tr>`
       : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
     document.getElementById('dshs-payment-table').innerHTML = paymentMethods.byMethod.length
-      ? paymentMethods.byMethod.map((m) => `<tr><td>${paymentMethodLabel(m.method)}</td><td class="num">${m.count}</td><td class="num">${fmtMoney(m.total)}</td></tr>`).join('')
+      ? paymentMethods.byMethod.map((m) => `<tr><td>${paymentMethodLabelWithIcon(m.method)}</td><td class="num">${m.count}</td><td class="num">${fmtMoney(m.total)}</td></tr>`).join('')
       : `<tr><td colspan="3" class="empty">لا توجد مدفوعات في هذه الفترة</td></tr>`;
     document.getElementById('dshs-allitems-table').innerHTML = topItems.length
       ? topItems.map((i) => `<tr><td>${i.name}</td><td class="num">${i.quantity}</td><td class="num">${fmtMoney(i.revenue)}</td></tr>`).join('')

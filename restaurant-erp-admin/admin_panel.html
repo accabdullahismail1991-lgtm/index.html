@@ -1081,6 +1081,21 @@
         <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>السعر</th><th>التكلفة</th><th>نسبة التكلفة %</th><th>هامش الربح</th><th>لديه وصفة</th></tr></thead>
           <tbody id="dshi-all-table"></tbody>
         </table></div>
+
+        <h3 style="margin-top:24px">🍽️ هندسة المنيو (تحليل قائمة المنيو)</h3>
+        <div class="hint">تصنيف كل صنف بِيع فعليًا خلال الفترة حسب شعبيته (نسبة مبيعاته) وربحيته (هامش ربحه) -- مقارنةً بمتوسط الفترة نفسها.</div>
+        <div class="row-form" style="margin-top:8px;margin-bottom:12px">
+          <div><label>من تاريخ</label><input id="dshi-me-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="dshi-me-to" type="date"></div>
+          <div><button onclick="loadMenuEngineering()">تحديث تحليل هندسة المنيو</button></div>
+        </div>
+        <div id="dshi-me-kpis" class="stats-row"></div>
+        <div class="dash-grid">
+          <div class="dash-card wide"><h4>مصفوفة هندسة المنيو (الشعبية × الربحية)</h4><canvas id="dshi-me-chart"></canvas></div>
+        </div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>الكمية المباعة</th><th>الشعبية %</th><th>هامش الربح</th><th>التصنيف</th></tr></thead>
+          <tbody id="dshi-me-table"></tbody>
+        </table></div>
       </div>
      </div></div>
     </div>
@@ -4402,6 +4417,53 @@ async function loadItemsDashboard() {
     document.getElementById('dshi-all-table').innerHTML = res.length
       ? res.map((i) => `<tr><td>${i.name}</td><td class="num">${fmtMoney(i.price)}</td><td class="num">${fmtMoney(i.cost)}</td><td class="num">${i.costPercent.toFixed(1)}%</td><td class="num">${fmtMoney(i.grossMargin)}</td><td>${i.hasRecipe ? 'نعم' : 'لا'}</td></tr>`).join('')
       : `<tr><td colspan="6" class="empty">لا توجد أصناف</td></tr>`;
+
+    loadMenuEngineering();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+// Menu engineering (Kasavana & Smith matrix): plots every item actually
+// sold in the selected period on popularity% (x) vs. margin (y), one
+// Chart.js scatter dataset per classification so the four quadrants read
+// as four colors at a glance, backed by the same numbers in the table
+// below (a scatter dot alone can't show an exact value on hover reliably
+// across print/export, the table is the source of truth).
+const MENU_ENG_LABEL = { STAR: '⭐ نجم', PLOWHORSE: '🐴 حصان عمل', PUZZLE: '🧩 لغز', DOG: '🐶 ضعيف' };
+const MENU_ENG_COLOR = { STAR: '#059669', PLOWHORSE: '#d97706', PUZZLE: '#0891b2', DOG: '#dc2626' };
+async function loadMenuEngineering() {
+  const locationId = document.getElementById('dshi-location').value;
+  const from = document.getElementById('dshi-me-from').value;
+  const to = document.getElementById('dshi-me-to').value;
+  const params = new URLSearchParams();
+  if (locationId) params.set('locationId', locationId);
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  try {
+    const res = await api('/analytics/menu-engineering?' + params.toString());
+    document.getElementById('dshi-me-kpis').innerHTML = [
+      statTile('⭐ نجوم', res.counts.STAR), statTile('🐴 أحصنة عمل', res.counts.PLOWHORSE),
+      statTile('🧩 ألغاز', res.counts.PUZZLE), statTile('🐶 ضعيفة', res.counts.DOG),
+      statTile('متوسط هامش الربح', fmtMoney(res.avgMargin)), statTile('عتبة الشعبية', res.popularityThresholdPercent.toFixed(1) + '%'),
+    ].join('');
+    const datasets = Object.keys(MENU_ENG_LABEL).map((key) => {
+      const points = res.items.filter((i) => i.classification === key).map((i) => ({ x: i.popularityPercent, y: i.margin, label: i.name }));
+      return { label: MENU_ENG_LABEL[key], data: points, backgroundColor: MENU_ENG_COLOR[key] };
+    });
+    mountChartOrEmpty('dshi-me-chart', res.items.length > 0, () => ({
+      type: 'scatter',
+      data: { datasets },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.raw.label}: شعبية ${ctx.raw.x}%، هامش ${fmtMoney(ctx.raw.y)}` } },
+        },
+        scales: { x: { title: { display: true, text: 'الشعبية %' } }, y: { title: { display: true, text: 'هامش الربح' } } },
+      },
+    }), 'لا توجد مبيعات في هذه الفترة');
+    document.getElementById('dshi-me-table').innerHTML = res.items.length
+      ? res.items.map((i) => `<tr><td>${i.name}</td><td class="num">${i.quantity}</td><td class="num">${i.popularityPercent.toFixed(1)}%</td><td class="num">${fmtMoney(i.margin)}</td><td>${MENU_ENG_LABEL[i.classification]}</td></tr>`).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 

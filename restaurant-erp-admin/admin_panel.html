@@ -316,7 +316,6 @@
   .invoice-totals .grand{font-weight:800;font-size:14px;border-top:1px solid #000;margin-top:4px;padding-top:4px;}
   .invoice-qr{display:flex;flex-direction:column;align-items:center;margin-top:14px;gap:6px;}
   .invoice-note{font-size:10.5px;color:#666;text-align:center;margin-top:8px;line-height:1.6;}
-  .invoice-pending-note{background:#fff8e1;border:1px solid #f0d060;border-radius:8px;padding:10px;font-size:12px;margin-bottom:12px;}
 
   /* ---- Kitchen ticket: thermal-style, no prices, big enough to read
      across a busy kitchen line ---- */
@@ -3585,13 +3584,8 @@ function renderInvoice(o) {
     ? o.payments.map((p) => `${paymentMethodLabelWithIcon(p.method)}: ${Number(p.amount).toFixed(2)}`).join('، ')
     : '-';
 
-  const pendingNote = o.zatcaSyncStatus === 'PENDING'
-    ? `<div class="invoice-pending-note">⚠️ لا يوجد رقم ضريبي مُعدّ لهذا الفرع، لذا لم تُولَّد فاتورة إلكترونية موقّعة (لا رمز QR). أضف الرقم الضريبي من تبويب "🏢 الفروع" لتفعيل الفوترة الإلكترونية المتوافقة مع "فاتورة" لهذا الفرع.</div>`
-    : '';
-
   document.getElementById('inv-content').innerHTML = `
     <div class="invoice-box ${sizeClass}">
-      ${pendingNote}
       <div class="biz-logo-slot" id="inv-logo-slot"></div>
       <div class="biz-name">${loc.name || '-'}</div>
       ${loc.vatNumber ? `<div class="biz-meta">الرقم الضريبي / VAT No: ${loc.vatNumber}</div>` : ''}

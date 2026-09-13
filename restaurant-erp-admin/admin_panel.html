@@ -436,9 +436,10 @@
     <!-- INGREDIENTS -->
     <div id="view-ingredients" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>🥕 الأصناف الخام والنصف مصنّعة</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
-        <button id="ing-tab-list" class="active" onclick="switchSubview('ing',['list','add','import'],'list')">الأصناف الحالية</button>
-        <button id="ing-tab-add" class="" onclick="switchSubview('ing',['list','add','import'],'add')">➕ إضافة صنف</button>
-        <button id="ing-tab-import" class="" onclick="switchSubview('ing',['list','add','import'],'import'); renderImportExportPanel('ing-sub-import','ingredients')">📥 استيراد / تصدير</button>
+        <button id="ing-tab-list" class="active" onclick="switchSubview('ing',['list','add','units','import'],'list')">الأصناف الحالية</button>
+        <button id="ing-tab-add" class="" onclick="switchSubview('ing',['list','add','units','import'],'add')">➕ إضافة صنف</button>
+        <button id="ing-tab-units" class="" onclick="switchSubview('ing',['list','add','units','import'],'units'); loadUnitsOfMeasure()">📐 وحدات القياس</button>
+        <button id="ing-tab-import" class="" onclick="switchSubview('ing',['list','add','units','import'],'import'); renderImportExportPanel('ing-sub-import','ingredients')">📥 استيراد / تصدير</button>
       </div>
       <div class="view-body">
 
@@ -467,11 +468,31 @@
               <option value="SEMI_FINISHED">نصف مصنّع</option>
             </select>
           </div>
+          <div><label>طريقة التقييم</label>
+            <select id="i-valuation">
+              <option value="WEIGHTED_AVERAGE">متوسط مرجّح</option>
+              <option value="FIFO">وارد أولًا يصرف أولًا (FIFO)</option>
+            </select>
+          </div>
           <div><label>الحد الأدنى للتنبيه</label><input id="i-threshold" type="number" value="0"></div>
           <div><button onclick="createIngredient()">إضافة</button></div>
         </div>
       </div>
       <div class="panel subview hidden" id="ing-sub-import"></div>
+      <div class="panel subview hidden" id="ing-sub-units">
+        <h2>وحدات القياس</h2>
+        <div class="hint">كتالوج الوحدات المتاحة لاختيارها عند تعريف الأصناف الخام والنصف مصنّعة أدناه.</div>
+        <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>الكود</th><th>الاسم</th><th>الحالة</th><th></th></tr></thead>
+          <tbody id="unitsTable"></tbody>
+        </table></div>
+        <h2 style="margin-top:18px">➕ وحدة جديدة</h2>
+        <div class="row-form">
+          <div><label>الكود (بالإنجليزية، مثال: oz)</label><input id="u-code" placeholder="oz"></div>
+          <div><label>الاسم</label><input id="u-name" placeholder="أونصة"></div>
+          <div><button onclick="createUnit()">إضافة</button></div>
+        </div>
+        <div id="u-msg" class="msg"></div>
+      </div>
      </div></div>
     </div>
 
@@ -497,6 +518,13 @@
           <div><label>الاسم</label><input id="m-name" placeholder="بيتزا مارجريتا"></div>
           <div><label>القسم</label><input id="m-category" placeholder="رئيسي"></div>
           <div><label>السعر</label><input id="m-price" type="number" step="0.01" placeholder="35"></div>
+          <div><label>نوع الضريبة</label>
+            <select id="m-tax-type">
+              <option value="STANDARD">خاضع للضريبة (أساسي)</option>
+              <option value="ZERO_RATED">نسبة صفرية</option>
+              <option value="EXEMPT">معفى من الضريبة</option>
+            </select>
+          </div>
           <div><button onclick="createItem()">إضافة</button></div>
         </div>
       </div>
@@ -1097,6 +1125,10 @@
           <div class="home-card" onclick="openReportPopup('shifts')"><div class="ic">🧑‍💼</div><div class="lb">تقرير الورديات والكاشيرات</div></div>
           <div class="home-card" onclick="openReportPopup('payment-methods')"><div class="ic">💳</div><div class="lb">تقرير طرق الدفع</div></div>
           <div class="home-card" onclick="openReportPopup('production')"><div class="ic">🏭</div><div class="lb">تقرير الإنتاج والتكاليف</div></div>
+          <div class="home-card" onclick="openReportPopup('tax')"><div class="ic">🧮</div><div class="lb">تقرير الضرائب</div></div>
+          <div class="home-card" onclick="openReportPopup('peak-hours')"><div class="ic">⏰</div><div class="lb">تقرير ساعات الذروة</div></div>
+          <div class="home-card" onclick="openReportPopup('customer-experience')"><div class="ic">😊</div><div class="lb">تقرير تجربة العميل</div></div>
+          <div class="home-card" onclick="openReportPopup('kitchen-performance')"><div class="ic">🍳</div><div class="lb">تقرير أداء المطبخ</div></div>
         </div>
       </div>
       <div class="panel">
@@ -1474,6 +1506,76 @@
      </div></div>
     </div>
 
+    <div id="view-report-tax" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>🧮 تقرير الضرائب</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="hint">ضريبة المبيعات مأخوذة فعليًا من كل فاتورة (بحسب نوع ضريبة كل صنف وقت الحساب) -- ضريبة المشتريات تقديرية بنسبة الفرع لعدم وجود حقل ضريبة منفصل من المورد.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="txr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="txr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="txr-to" type="date"></div>
+          <div><button onclick="loadTaxReport()">تحديث</button></div>
+        </div>
+        <div id="txr-cards" class="stats-row"></div>
+        <h3 style="margin-top:16px">مبيعات حسب نوع الضريبة</h3>
+        <div class="table-wrap"><table><thead><tr><th>نوع الضريبة</th><th>المبيعات</th></tr></thead>
+          <tbody id="txr-by-type-table"></tbody>
+        </table></div>
+      </div>
+     </div></div>
+    </div>
+
+    <div id="view-report-peak-hours" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>⏰ تقرير ساعات الذروة</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>الموقع</label><select id="pkr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="pkr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="pkr-to" type="date"></div>
+          <div><button onclick="loadPeakHoursReport()">تحديث</button></div>
+        </div>
+        <div id="pkr-cards" class="stats-row"></div>
+        <div class="table-wrap"><table><thead><tr><th>الساعة</th><th>عدد الطلبات</th><th>المبيعات</th></tr></thead>
+          <tbody id="pkr-hour-table"></tbody>
+        </table></div>
+      </div>
+     </div></div>
+    </div>
+
+    <div id="view-report-customer-experience" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>😊 تقرير تجربة العميل</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="hint">مؤشرات مشتقّة من البيانات الحالية (لا يوجد استبيان رضا عملاء) -- نسبة تكرار العملاء، متوسط سرعة الخدمة، ونسبة الإلغاء/المرتجعات.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="cxr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="cxr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="cxr-to" type="date"></div>
+          <div><button onclick="loadCustomerExperienceReport()">تحديث</button></div>
+        </div>
+        <div id="cxr-cards" class="stats-row"></div>
+      </div>
+     </div></div>
+    </div>
+
+    <div id="view-report-kitchen-performance" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>🍳 تقرير أداء المطبخ</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="hint">وقت التحضير محسوب من إنشاء الطلب حتى تعليم الصنف "جاهز" في شاشة المطبخ -- الأصناف التي لم تُعلَّم جاهزة بعد غير محتسبة.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="kpr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="kpr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="kpr-to" type="date"></div>
+          <div><button onclick="loadKitchenPerformanceReport()">تحديث</button></div>
+        </div>
+        <div id="kpr-cards" class="stats-row"></div>
+        <h3 style="margin-top:16px">متوسط وقت التحضير حسب القسم</h3>
+        <div class="table-wrap"><table><thead><tr><th>القسم</th><th>عدد الأصناف</th><th>متوسط وقت التحضير (دقيقة)</th></tr></thead>
+          <tbody id="kpr-category-table"></tbody>
+        </table></div>
+      </div>
+     </div></div>
+    </div>
+
     <!-- INVOICE (ZATCA-compliant view/print) -->
     <div id="view-invoice" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card">
@@ -1575,6 +1677,7 @@
 <script>
 let accessToken = null;
 let ingredientsCache = [];
+let unitsOfMeasureCache = [];
 let locationsCache = [];
 let menuItemsCache = [];
 
@@ -1600,6 +1703,15 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Fallback only -- used before unitsOfMeasureCache has loaded at least
+// once (e.g. a very first render). Once loaded, unitOptionsHtml/unitLabel
+// read the live admin-managed catalog (وحدات القياس screen) instead, so a
+// newly added unit shows up here without a code change. UNIT_FAMILIES below
+// (mass/volume/count conversion) intentionally stays hardcoded to these
+// same 5 codes regardless of what else gets added to the catalog -- a
+// custom unit an admin adds has no known conversion family, and
+// compatibleUnitsFor() already degrades gracefully (falls back to just
+// that unit, no cross-unit entry) for anything outside these three.
 const UNIT_OPTIONS = [
   { value: 'g', label: 'جرام (g)' },
   { value: 'kg', label: 'كجم (kg)' },
@@ -1608,7 +1720,14 @@ const UNIT_OPTIONS = [
   { value: 'pcs', label: 'قطعة (pcs)' },
 ];
 function unitOptionsHtml(selected) {
-  return UNIT_OPTIONS.map((u) => `<option value="${u.value}" ${u.value === selected ? 'selected' : ''}>${u.label}</option>`).join('');
+  const source = unitsOfMeasureCache.length
+    ? unitsOfMeasureCache.filter((u) => u.isActive).map((u) => ({ value: u.code, label: `${u.name} (${u.code})` }))
+    : UNIT_OPTIONS;
+  return source.map((u) => `<option value="${u.value}" ${u.value === selected ? 'selected' : ''}>${u.label}</option>`).join('');
+}
+async function ensureUnitsOfMeasureCache() {
+  if (unitsOfMeasureCache.length) return;
+  try { unitsOfMeasureCache = await api('/units-of-measure'); } catch (e) { /* falls back to UNIT_OPTIONS above */ }
 }
 
 /* ================= Unit conversion (recipes + purchasing) =================
@@ -1630,7 +1749,13 @@ function compatibleUnitsFor(baseUnit) {
   const fam = unitFamily(baseUnit);
   return fam ? Object.keys(UNIT_FAMILIES[fam]) : [baseUnit];
 }
-function unitLabel(unit) { return (UNIT_OPTIONS.find((u) => u.value === unit) || {}).label || unit; }
+function unitLabel(unit) {
+  if (unitsOfMeasureCache.length) {
+    const found = unitsOfMeasureCache.find((u) => u.code === unit);
+    if (found) return `${found.name} (${found.code})`;
+  }
+  return (UNIT_OPTIONS.find((u) => u.value === unit) || {}).label || unit;
+}
 // quantity entered in `fromUnit` -> the equivalent quantity in `ingredient.unit`.
 function convertToIngredientUnit(ingredientId, quantity, fromUnit) {
   const ing = ingredientsCache.find((i) => i.id === ingredientId);
@@ -2221,6 +2346,10 @@ const REPORT_POPUPS = {
   shifts: loadShiftsReport,
   'payment-methods': loadPaymentMethodsReport,
   production: loadProductionReport,
+  tax: loadTaxReport,
+  'peak-hours': loadPeakHoursReport,
+  'customer-experience': loadCustomerExperienceReport,
+  'kitchen-performance': loadKitchenPerformanceReport,
 };
 function openReportPopup(key) {
   closeView();
@@ -2253,7 +2382,7 @@ function switchTab(name) {
   });
   stopKitchenPolling(); // only the currently-open tab, if it's Kitchen, restarts it below
   if (name === 'branches') { switchSubview('br', ['list', 'add', 'import'], 'list'); loadBranches(); }
-  if (name === 'ingredients') { switchSubview('ing', ['list', 'add', 'import'], 'list'); loadIngredients(); }
+  if (name === 'ingredients') { switchSubview('ing', ['list', 'add', 'units', 'import'], 'list'); loadIngredients(); }
   if (name === 'items') { switchSubview('mi', ['list', 'add', 'channels', 'import'], 'list'); loadItems(); }
   if (name === 'inventory') { switchSubview('inv', ['balances', 'receive', 'waste'], 'balances'); loadInventoryTab(); }
   if (name === 'sales') { switchSubview('sl', ['new', 'orders', 'shifts'], 'new'); loadSalesTab(); }
@@ -2438,6 +2567,8 @@ async function saveBranchEdit(id) {
 /* ---------------- Ingredients ---------------- */
 async function loadIngredients() {
   try {
+    await ensureUnitsOfMeasureCache();
+    document.getElementById('i-unit').innerHTML = unitOptionsHtml('g');
     ingredientsCache = await api('/ingredients');
     renderIngredientsTable();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
@@ -2463,10 +2594,11 @@ async function createIngredient() {
   const name = document.getElementById('i-name').value.trim();
   const unit = document.getElementById('i-unit').value;
   const kind = document.getElementById('i-kind').value;
+  const valuationMethod = document.getElementById('i-valuation').value;
   const lowStockThreshold = parseFloat(document.getElementById('i-threshold').value) || 0;
   if (!name) { flashGlobal('⚠️ اكتب اسم الصنف', 'err'); return; }
   try {
-    const created = await api('/ingredients', { method: 'POST', body: JSON.stringify({ name, unit, kind, lowStockThreshold }) });
+    const created = await api('/ingredients', { method: 'POST', body: JSON.stringify({ name, unit, kind, valuationMethod, lowStockThreshold }) });
     document.getElementById('i-name').value = '';
     flashGlobal('✅ تمت إضافة الصنف', 'ok');
     await loadIngredients();
@@ -2496,6 +2628,12 @@ function toggleIngredientEdit(id) {
           <option value="SEMI_FINISHED" ${ing.kind === 'SEMI_FINISHED' ? 'selected' : ''}>نصف مصنّع</option>
         </select>
       </div>
+      <div><label>طريقة التقييم</label>
+        <select class="ei-valuation">
+          <option value="WEIGHTED_AVERAGE" ${ing.valuationMethod === 'WEIGHTED_AVERAGE' ? 'selected' : ''}>متوسط مرجّح</option>
+          <option value="FIFO" ${ing.valuationMethod === 'FIFO' ? 'selected' : ''}>وارد أولًا يصرف أولًا (FIFO)</option>
+        </select>
+      </div>
       <div><label>الحد الأدنى للتنبيه</label><input class="ei-threshold" type="number" value="${ing.lowStockThreshold}"></div>
       <div><button onclick="saveIngredientEdit('${id}')">💾 حفظ</button></div>
     </div>
@@ -2506,10 +2644,11 @@ async function saveIngredientEdit(id) {
   const name = box.querySelector('.ei-name').value.trim();
   const unit = box.querySelector('.ei-unit').value;
   const kind = box.querySelector('.ei-kind').value;
+  const valuationMethod = box.querySelector('.ei-valuation').value;
   const lowStockThreshold = parseFloat(box.querySelector('.ei-threshold').value) || 0;
   if (!name) { flashGlobal('⚠️ اكتب اسم الصنف', 'err'); return; }
   try {
-    await api('/ingredients/' + id, { method: 'PATCH', body: JSON.stringify({ name, unit, kind, lowStockThreshold }) });
+    await api('/ingredients/' + id, { method: 'PATCH', body: JSON.stringify({ name, unit, kind, valuationMethod, lowStockThreshold }) });
     flashGlobal('✅ تم حفظ التعديل', 'ok');
     document.getElementById('edit-ing-row-' + id).classList.add('hidden');
     loadIngredients();
@@ -2527,6 +2666,40 @@ async function toggleIngredientRecipe(id) {
     const lines = await api('/ingredients/' + id + '/recipe');
     renderRecipeEditor(box, id, lines, 'ingredient');
   } catch (e) { box.innerHTML = '❌ ' + e.message; }
+}
+
+/* ---------------- Units of Measure ---------------- */
+async function loadUnitsOfMeasure() {
+  try {
+    unitsOfMeasureCache = await api('/units-of-measure');
+    document.getElementById('unitsTable').innerHTML = unitsOfMeasureCache.length
+      ? unitsOfMeasureCache.map((u) => `
+        <tr>
+          <td>${u.code}</td><td>${u.name}</td>
+          <td>${u.isActive ? '✅ نشطة' : '⛔ معطّلة'}</td>
+          <td><button class="link-btn" onclick="toggleUnitActive('${u.id}', ${!u.isActive})">${u.isActive ? 'تعطيل' : 'تفعيل'}</button></td>
+        </tr>
+      `).join('')
+      : `<tr><td colspan="4" class="empty">لا توجد وحدات بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function createUnit() {
+  const code = document.getElementById('u-code').value.trim();
+  const name = document.getElementById('u-name').value.trim();
+  if (!code || !name) { showMsg('u-msg', '⚠️ اكتب الكود والاسم', 'err'); return; }
+  try {
+    await api('/units-of-measure', { method: 'POST', body: JSON.stringify({ code, name }) });
+    document.getElementById('u-code').value = '';
+    document.getElementById('u-name').value = '';
+    showMsg('u-msg', '✅ تمت إضافة الوحدة', 'ok');
+    await loadUnitsOfMeasure();
+  } catch (e) { showMsg('u-msg', '❌ ' + e.message, 'err'); }
+}
+async function toggleUnitActive(id, isActive) {
+  try {
+    await api('/units-of-measure/' + id, { method: 'PATCH', body: JSON.stringify({ isActive }) });
+    await loadUnitsOfMeasure();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
 /* ---------------- Items ---------------- */
@@ -2704,9 +2877,10 @@ async function createItem() {
   const name = document.getElementById('m-name').value.trim();
   const category = document.getElementById('m-category').value.trim();
   const price = parseFloat(document.getElementById('m-price').value);
+  const taxType = document.getElementById('m-tax-type').value;
   if (!name || !category || !price) { flashGlobal('⚠️ اكتب الاسم والقسم والسعر', 'err'); return; }
   try {
-    const created = await api('/items', { method: 'POST', body: JSON.stringify({ name, category, price }) });
+    const created = await api('/items', { method: 'POST', body: JSON.stringify({ name, category, price, taxType }) });
     document.getElementById('m-name').value = ''; document.getElementById('m-category').value = ''; document.getElementById('m-price').value = '';
     flashGlobal('✅ تمت إضافة الصنف', 'ok');
     await loadItems();
@@ -2731,6 +2905,13 @@ function toggleItemEdit(id) {
       <div><label>الاسم</label><input class="em-name" value="${item.name}"></div>
       <div><label>القسم</label><input class="em-category" value="${item.category}"></div>
       <div><label>السعر</label><input class="em-price" type="number" step="0.01" value="${item.price}"></div>
+      <div><label>نوع الضريبة</label>
+        <select class="em-tax-type">
+          <option value="STANDARD" ${item.taxType === 'STANDARD' ? 'selected' : ''}>خاضع للضريبة (أساسي)</option>
+          <option value="ZERO_RATED" ${item.taxType === 'ZERO_RATED' ? 'selected' : ''}>نسبة صفرية</option>
+          <option value="EXEMPT" ${item.taxType === 'EXEMPT' ? 'selected' : ''}>معفى من الضريبة</option>
+        </select>
+      </div>
       <div><label><input type="checkbox" class="em-active" style="width:auto;display:inline" ${item.isActive ? 'checked' : ''}> نشط (متاح للبيع)</label></div>
       <div><button onclick="saveItemEdit('${id}')">💾 حفظ</button></div>
     </div>
@@ -2795,10 +2976,11 @@ async function saveItemEdit(id) {
   const name = box.querySelector('.em-name').value.trim();
   const category = box.querySelector('.em-category').value.trim();
   const price = parseFloat(box.querySelector('.em-price').value);
+  const taxType = box.querySelector('.em-tax-type').value;
   const isActive = box.querySelector('.em-active').checked;
   if (!name || !category || !price) { flashGlobal('⚠️ اكمل كل الحقول', 'err'); return; }
   try {
-    await api('/items/' + id, { method: 'PATCH', body: JSON.stringify({ name, category, price, isActive }) });
+    await api('/items/' + id, { method: 'PATCH', body: JSON.stringify({ name, category, price, taxType, isActive }) });
     flashGlobal('✅ تم حفظ التعديل', 'ok');
     document.getElementById('edit-item-row-' + id).classList.add('hidden');
     loadItems();
@@ -4484,6 +4666,98 @@ async function loadProductionReport() {
       ? res.byOutput.map((o) => `<tr><td>${o.name}</td><td class="num">${o.ordersCount}</td><td class="num">${o.totalOutputQuantity} ${o.unit}</td><td class="num">${fmtMoney(o.totalCost)}</td><td class="num">${o.avgUnitCost.toFixed(4)}</td></tr>`).join('')
         + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${res.byOutput.reduce((s, o) => s + o.ordersCount, 0)}</td><td></td><td class="num">${fmtMoney(res.byOutput.reduce((s, o) => s + o.totalCost, 0))}</td><td></td></tr>`
       : `<tr><td colspan="5" class="empty">لا توجد أوامر إنتاج بدأت في هذه الفترة</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+const TAX_TYPE_LABEL = { STANDARD: 'خاضع للضريبة', ZERO_RATED: 'نسبة صفرية', EXEMPT: 'معفى' };
+async function loadTaxReport() {
+  const sel = document.getElementById('txr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('txr-from').value;
+    const to = document.getElementById('txr-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/analytics/tax-summary?' + params.toString());
+    document.getElementById('txr-cards').innerHTML = [
+      statTile('ضريبة المبيعات المحصّلة', fmtMoney(res.sales.vatCollected)),
+      statTile('ضريبة المشتريات (تقديرية)', fmtMoney(res.purchasing.estimatedVat)),
+      statTile('صافي مركز الضريبة', fmtMoney(res.netVatPosition)),
+    ].join('');
+    document.getElementById('txr-by-type-table').innerHTML = res.sales.byTaxType.length
+      ? res.sales.byTaxType.map((t) => `<tr><td>${TAX_TYPE_LABEL[t.taxType] || t.taxType}</td><td class="num">${fmtMoney(t.revenue)}</td></tr>`).join('')
+      : `<tr><td colspan="2" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+async function loadPeakHoursReport() {
+  const sel = document.getElementById('pkr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('pkr-from').value;
+    const to = document.getElementById('pkr-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/analytics/peak-hours?' + params.toString());
+    document.getElementById('pkr-cards').innerHTML = [
+      statTile('ساعة الذروة', res.peakHour != null ? `${res.peakHour}:00` : '-'),
+    ].join('');
+    document.getElementById('pkr-hour-table').innerHTML = res.byHour
+      .filter((h) => h.orderCount > 0)
+      .map((h) => `<tr ${h.hour === res.peakHour ? 'style="font-weight:700;background:var(--card2)"' : ''}><td>${h.hour}:00 -- ${h.hour + 1}:00</td><td class="num">${h.orderCount}</td><td class="num">${fmtMoney(h.revenue)}</td></tr>`).join('')
+      || `<tr><td colspan="3" class="empty">لا توجد طلبات في هذه الفترة</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+async function loadCustomerExperienceReport() {
+  const sel = document.getElementById('cxr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('cxr-from').value;
+    const to = document.getElementById('cxr-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/analytics/customer-experience?' + params.toString());
+    document.getElementById('cxr-cards').innerHTML = [
+      statTile('إجمالي الطلبات', res.totalOrders),
+      statTile('عملاء مُعرَّفون', res.distinctCustomersIdentified),
+      statTile('نسبة تكرار العملاء', res.repeatCustomerRate + '%'),
+      statTile('متوسط سرعة الخدمة (دقيقة)', res.avgServiceMinutes),
+      statTile('نسبة الإلغاء', res.voidRate + '%'),
+      statTile('عدد المرتجعات', res.returnsCount),
+    ].join('');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+async function loadKitchenPerformanceReport() {
+  const sel = document.getElementById('kpr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('kpr-from').value;
+    const to = document.getElementById('kpr-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/analytics/kitchen-performance?' + params.toString());
+    document.getElementById('kpr-cards').innerHTML = [
+      statTile('أصناف جاهزة', res.linesReady),
+      statTile('متوسط وقت التحضير (دقيقة)', res.avgPrepMinutes),
+      statTile('أطول وقت تحضير (دقيقة)', res.maxPrepMinutes),
+    ].join('');
+    document.getElementById('kpr-category-table').innerHTML = res.byCategory.length
+      ? res.byCategory.map((c) => `<tr><td>${c.category}</td><td class="num">${c.count}</td><td class="num">${c.avgPrepMinutes}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="empty">لا توجد أصناف جاهزة في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 

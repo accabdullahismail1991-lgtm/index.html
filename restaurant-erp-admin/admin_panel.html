@@ -585,7 +585,11 @@
           <div class="pos-cat-row" id="ord-categories"></div>
           <div class="order-matrix">
             <div>
-              <input type="text" placeholder="🔍 ابحث عن صنف..." style="margin-bottom:8px" oninput="onOrderMenuSearch(this.value)">
+              <div style="display:flex;gap:8px;margin-bottom:8px">
+                <input type="text" placeholder="🔍 ابحث عن صنف..." style="flex:1" oninput="onOrderMenuSearch(this.value)">
+                <button type="button" class="ghost" onclick="openOrderComboBuilder()">🍔 كمبو</button>
+              </div>
+              <div id="ord-combo-builder" class="recipe-box hidden" style="margin-bottom:10px"></div>
               <div id="ord-menu-grid" class="menu-grid"></div>
             </div>
 
@@ -846,6 +850,36 @@
           <div><button onclick="createPromotion()">إضافة</button></div>
         </div>
         <div class="hint">* أنواع "اشترِ واحصل على" و"الكومبو" غير مدعومة بعد في محرك تطبيق العروض تلقائيًا.</div>
+      </div>
+     </div></div>
+    </div>
+
+    <!-- COMBO MEALS -->
+    <div id="view-combos" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>🍔 وجبات الكمبو والبوكس</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
+        <button id="cb-tab-list" class="active" onclick="switchSubview('cb',['list','add'],'list')">الكمبو الحالية</button>
+        <button id="cb-tab-add" class="" onclick="switchSubview('cb',['list','add'],'add')">➕ كمبو جديد</button>
+      </div>
+      <div class="view-body">
+
+      <div class="panel subview" id="cb-sub-list">
+        <h2>الكمبو الحالية</h2>
+        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>السعر الأساسي</th><th>عدد الفئات</th><th>الحالة</th><th></th></tr></thead>
+          <tbody id="combosTable"></tbody>
+        </table></div>
+      </div>
+      <div class="panel subview hidden" id="cb-sub-add">
+        <h2>➕ كمبو جديد</h2>
+        <div class="row-form">
+          <div><label>اسم الكمبو</label><input id="cb-name" placeholder="وجبة كمبو 1"></div>
+          <div><label>السعر الأساسي (بلا أي زيادة سعر)</label><input id="cb-base-price" type="number" step="0.01" placeholder="20"></div>
+        </div>
+        <div id="cb-slots"></div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button class="ghost" onclick="addComboSlotRow()">➕ فئة اختيار (مثال: الرئيسي / المشروب)</button>
+          <button onclick="createCombo()">💾 إنشاء الكمبو</button>
+        </div>
+        <div class="hint">* كل فئة تحدد الحد الأدنى/الأقصى لعدد الاختيارات منها ضمن الطلب، وكل خيار قد يضيف سعرًا إضافيًا فوق السعر الأساسي (اتركه 0 لعدم الزيادة). لا يمكن تعديل الفئات والخيارات بعد إنشاء الكمبو -- عطّله وأنشئ كمبو جديد إن احتجت تغيير تركيبته.</div>
       </div>
      </div></div>
     </div>
@@ -1881,6 +1915,7 @@ const TAB_META = {
   kitchen: { icon: '🍳', label: 'المطبخ', group: 'service' },
   returns: { icon: '↩️', label: 'المرتجعات', group: 'service' },
   promotions: { icon: '🎁', label: 'العروض', group: 'service' },
+  combos: { icon: '🍔', label: 'وجبات الكمبو', group: 'service' },
   customers: { icon: '👤', label: 'العملاء', group: 'service' },
   'payment-methods': { icon: '💳', label: 'طرق الدفع', group: 'service' },
   alerts: { icon: '🔔', label: 'التنبيهات', group: 'insight' },
@@ -2045,6 +2080,7 @@ function switchTab(name) {
   if (name === 'production') { switchSubview('pr', ['new', 'orders'], 'new'); loadProductionTab(); }
   if (name === 'transfers') { switchSubview('tf', ['new', 'list'], 'new'); loadTransfersTab(); }
   if (name === 'promotions') { switchSubview('pm', ['list', 'add'], 'list'); loadPromotions(); }
+  if (name === 'combos') { switchSubview('cb', ['list', 'add'], 'list'); loadCombos(); }
   if (name === 'customers') { switchSubview('cu', ['list', 'add', 'import'], 'list'); loadCustomers(); }
   if (name === 'payment-methods') loadPaymentMethodsTab();
   if (name === 'analytics') { document.getElementById('an-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadReportsList(); }
@@ -2719,6 +2755,7 @@ let salesChannelsCache = [];
 // shows base prices; the server computes the real total from
 // salesChannelId regardless of what any UI happened to display).
 let orderChannelPriceMap = null;
+let combosCache = [];
 
 async function loadSalesTab() {
   // Always fresh here (unlike ensureMenuItemsCache()'s once-per-session
@@ -2726,6 +2763,7 @@ async function loadSalesTab() {
   // added, priced, or photographed in the "أصناف المنيو" tab without
   // requiring a full page reload first.
   menuItemsCache = await api('/items');
+  combosCache = (await api('/combos')).filter((c) => c.isActive);
   salesChannelsCache = await api('/sales-channels');
   const activeChannels = salesChannelsCache.filter((c) => c.isActive);
   document.getElementById('ord-sales-channel').innerHTML =
@@ -2885,7 +2923,7 @@ function renderOrderMenuGrid(term) {
 // interchangeable ways to build the same order.
 function addMenuTileToOrder(menuItemId) {
   const container = document.getElementById('ord-lines');
-  const existingRow = Array.from(container.querySelectorAll('.recipe-row')).find((row) => row.querySelector('.ol-item').value === menuItemId);
+  const existingRow = Array.from(container.querySelectorAll('.recipe-row')).find((row) => row.querySelector('.ol-item') && row.querySelector('.ol-item').value === menuItemId);
   if (existingRow) {
     const qtyInput = existingRow.querySelector('.ol-qty');
     qtyInput.value = (parseInt(qtyInput.value, 10) || 0) + 1;
@@ -2897,6 +2935,110 @@ function addMenuTileToOrder(menuItemId) {
   rows[rows.length - 1].querySelector('.ol-item').value = menuItemId;
   updateOrderCartTotals();
 }
+// ---- Combo picker for the New Order screen ----
+// A combo cart line is a `.recipe-row.combo-row` (not `.ol-item`/`.ol-qty`
+// like a regular line) carrying its already-computed unit price and
+// selections as data attributes -- createOrder()/updateOrderCartTotals()
+// branch on the presence of `.combo-row` to treat it differently, since a
+// combo's price can't be looked up from menuItemsCache the way a regular
+// line's can (it depends on which options were chosen).
+function openOrderComboBuilder() {
+  const box = document.getElementById('ord-combo-builder');
+  if (!combosCache.length) {
+    box.classList.remove('hidden');
+    box.innerHTML = '<div class="empty">لا توجد وجبات كمبو نشطة بعد -- أضِفها من شاشة "وجبات الكمبو"</div>';
+    return;
+  }
+  box.classList.remove('hidden');
+  box.innerHTML = `
+    <div class="row-form">
+      <div><label>اختر الكمبو</label><select id="ord-combo-select" onchange="renderOrderComboSlots()">
+        ${combosCache.map((c) => `<option value="${c.id}">${c.name} (${Number(c.basePrice).toFixed(2)} ر.س)</option>`).join('')}
+      </select></div>
+    </div>
+    <div id="ord-combo-slots"></div>
+    <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+      <button onclick="addOrderComboToCart()">➕ أضف للطلب (<span id="ord-combo-live-price">0.00</span> ر.س)</button>
+      <button class="ghost" onclick="cancelOrderComboBuilder()">إلغاء</button>
+    </div>
+  `;
+  renderOrderComboSlots();
+}
+function cancelOrderComboBuilder() {
+  const box = document.getElementById('ord-combo-builder');
+  box.classList.add('hidden');
+  box.innerHTML = '';
+}
+function renderOrderComboSlots() {
+  const combo = combosCache.find((c) => c.id === document.getElementById('ord-combo-select').value);
+  const wrap = document.getElementById('ord-combo-slots');
+  if (!combo) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = combo.slots.map((s) => `
+    <div class="recipe-box" data-slot-id="${s.id}" data-min="${s.minSelect}" data-max="${s.maxSelect}" style="margin-top:8px">
+      <b>${s.label}</b> <span class="hint">(اختر ${s.minSelect === s.maxSelect ? s.minSelect : `${s.minSelect}-${s.maxSelect}`})</span>
+      ${s.options.map((o) => `
+        <div class="recipe-row">
+          <span style="flex:1">${o.menuItem.name}${Number(o.extraPrice) > 0 ? ` (+${Number(o.extraPrice).toFixed(2)} ر.س)` : ''}</span>
+          <input type="number" class="ord-combo-opt-qty" data-menu-item-id="${o.menuItemId}" data-extra-price="${o.extraPrice}" min="0" max="${s.maxSelect}" value="0" style="width:70px" oninput="updateOrderComboPricePreview()">
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+  updateOrderComboPricePreview();
+}
+function updateOrderComboPricePreview() {
+  const combo = combosCache.find((c) => c.id === document.getElementById('ord-combo-select').value);
+  if (!combo) return;
+  const extra = Array.from(document.querySelectorAll('.ord-combo-opt-qty'))
+    .reduce((sum, inp) => sum + (parseInt(inp.value, 10) || 0) * Number(inp.dataset.extraPrice), 0);
+  document.getElementById('ord-combo-live-price').textContent = (Number(combo.basePrice) + extra).toFixed(2);
+}
+function addOrderComboToCart() {
+  const combo = combosCache.find((c) => c.id === document.getElementById('ord-combo-select').value);
+  if (!combo) return;
+  const selections = [];
+  let extra = 0;
+  for (const slotBox of document.querySelectorAll('#ord-combo-slots > div')) {
+    const min = parseInt(slotBox.dataset.min, 10);
+    const max = parseInt(slotBox.dataset.max, 10);
+    const slotId = slotBox.dataset.slotId;
+    let slotTotal = 0;
+    slotBox.querySelectorAll('.ord-combo-opt-qty').forEach((inp) => {
+      const qty = parseInt(inp.value, 10) || 0;
+      if (qty > 0) {
+        selections.push({ comboSlotId: slotId, menuItemId: inp.dataset.menuItemId, quantity: qty });
+        extra += qty * Number(inp.dataset.extraPrice);
+      }
+      slotTotal += qty;
+    });
+    if (slotTotal < min || slotTotal > max) {
+      flashGlobal(`⚠️ فئة "${slotBox.querySelector('b').textContent}" تتطلب اختيار ${min === max ? min : `بين ${min} و${max}`}`, 'err');
+      return;
+    }
+  }
+  const unitPrice = round2Client(Number(combo.basePrice) + extra);
+  const composition = selections.map((s) => {
+    const item = combo.slots.flatMap((sl) => sl.options).find((o) => o.menuItemId === s.menuItemId);
+    return `${item.menuItem.name}${s.quantity > 1 ? ' × ' + s.quantity : ''}`;
+  }).join('، ');
+
+  const container = document.getElementById('ord-lines');
+  const div = document.createElement('div');
+  div.className = 'recipe-row combo-row';
+  div.dataset.comboMealId = combo.id;
+  div.dataset.comboUnitPrice = unitPrice;
+  div.dataset.comboSelections = JSON.stringify(selections);
+  div.innerHTML = `
+    <span style="flex:1">🍔 ${combo.name} (${unitPrice.toFixed(2)} ر.س) -- ${composition}</span>
+    <input class="ol-qty" type="number" min="1" step="1" value="1" placeholder="الكمية" oninput="updateOrderCartTotals()">
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateOrderCartTotals();">✕</button>
+  `;
+  container.appendChild(div);
+  cancelOrderComboBuilder();
+  updateOrderCartTotals();
+}
+function round2Client(n) { return Math.round(n * 100) / 100; }
+
 // menuItemsCache/orderChannelPriceMap-aware price lookup shared by the
 // menu grid tiles and the cart totals below, so both always agree.
 function effectiveOrderItemPrice(menuItemId) {
@@ -2915,9 +3057,15 @@ function updateOrderCartTotals() {
   let itemCount = 0;
   let subtotal = 0;
   rows.forEach((row) => {
-    const menuItemId = row.querySelector('.ol-item') ? row.querySelector('.ol-item').value : '';
     const qty = parseInt(row.querySelector('.ol-qty').value, 10) || 0;
-    if (menuItemId && qty > 0) {
+    if (qty <= 0) return;
+    if (row.classList.contains('combo-row')) {
+      itemCount += qty;
+      subtotal += Number(row.dataset.comboUnitPrice) * qty;
+      return;
+    }
+    const menuItemId = row.querySelector('.ol-item') ? row.querySelector('.ol-item').value : '';
+    if (menuItemId) {
       itemCount += qty;
       subtotal += effectiveOrderItemPrice(menuItemId) * qty;
     }
@@ -3013,10 +3161,13 @@ async function createOrder() {
   const salesChannelId = document.getElementById('ord-sales-channel').value || undefined;
   const customerId = document.getElementById('ord-customer').value || undefined;
   const container = document.getElementById('ord-lines');
-  const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => ({
-    menuItemId: row.querySelector('.ol-item').value,
-    quantity: parseInt(row.querySelector('.ol-qty').value, 10),
-  })).filter((l) => l.menuItemId && l.quantity > 0);
+  const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => {
+    const quantity = parseInt(row.querySelector('.ol-qty').value, 10);
+    if (row.classList.contains('combo-row')) {
+      return { comboMealId: row.dataset.comboMealId, comboSelections: JSON.parse(row.dataset.comboSelections), quantity };
+    }
+    return { menuItemId: row.querySelector('.ol-item').value, quantity };
+  }).filter((l) => (l.menuItemId || l.comboMealId) && l.quantity > 0);
   if (!shiftId) { flashGlobal('⚠️ افتح وردية أولًا', 'err'); return; }
   if (!lines.length) { flashGlobal('⚠️ أضف صنف واحد على الأقل', 'err'); return; }
   const shift = shiftsCache.find((s) => s.id === shiftId);
@@ -3244,8 +3395,14 @@ function renderInvoice(o) {
     const lineSubtotal = Number(l.unitPrice) * l.quantity;
     const lineVat = round2(lineSubtotal * vatRate);
     const lineTotal = round2(lineSubtotal + lineVat);
+    // A combo line has no single menu item -- show the combo's name plus
+    // exactly what was chosen for it (comboSelections, snapshotted at order
+    // time), the same "what was actually sold" principle as unitPrice.
+    const label = l.menuItem
+      ? l.menuItem.name
+      : `🍔 ${l.comboMeal.name} (${l.comboSelections.map((s) => `${s.menuItem.name}${s.quantity > 1 ? ' × ' + s.quantity : ''}`).join('، ')})`;
     return `<tr>
-      <td>${l.menuItem ? l.menuItem.name : l.menuItemId}</td>
+      <td>${label}</td>
       <td>${l.quantity}</td>
       <td>${Number(l.unitPrice).toFixed(2)}</td>
       <td>${lineVat.toFixed(2)}</td>
@@ -3535,7 +3692,12 @@ async function printKitchenTicketFromOrder(orderId) {
       createdAt: o.createdAt,
       shiftSequence: o.shiftSequence,
       dailySequence: o.dailySequence,
-      lines: o.lines.map((l) => ({ menuItemName: l.menuItem ? l.menuItem.name : l.menuItemId, quantity: l.quantity })),
+      lines: o.lines.map((l) => ({
+        menuItemName: l.menuItem
+          ? l.menuItem.name
+          : `🍔 ${l.comboMeal.name}: ${l.comboSelections.map((s) => `${s.menuItem.name}${s.quantity > 1 ? ' × ' + s.quantity : ''}`).join('، ')}`,
+        quantity: l.quantity,
+      })),
     });
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -4131,6 +4293,110 @@ async function togglePromotion(id, isActive) {
     await api('/promotions/' + id, { method: 'PATCH', body: JSON.stringify({ isActive }) });
     flashGlobal(isActive ? '✅ تم تفعيل العرض' : '✅ تم تعطيل العرض', 'ok');
     loadPromotions();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ---------------- Combo Meals ---------------- */
+// Slots/options are only built in the "add" form -- CombosService.update()
+// deliberately never touches them once created (historical ComboSelection
+// rows reference a specific slot/option), so there's no edit UI for them:
+// disable the combo and create a new one if its composition needs to change.
+let comboSlotSeq = 0;
+function addComboSlotRow() {
+  comboSlotSeq += 1;
+  const slotId = comboSlotSeq;
+  const div = document.createElement('div');
+  div.className = 'recipe-box';
+  div.id = 'cb-slot-' + slotId;
+  div.innerHTML = `
+    <div class="row-form">
+      <div><label>اسم الفئة</label><input class="cbs-label" placeholder="الطبق الرئيسي"></div>
+      <div><label>حد أدنى للاختيار</label><input class="cbs-min" type="number" min="1" value="1"></div>
+      <div><label>حد أقصى للاختيار</label><input class="cbs-max" type="number" min="1" value="1"></div>
+      <div><button class="link-btn" onclick="document.getElementById('cb-slot-${slotId}').remove()">✕ حذف الفئة</button></div>
+    </div>
+    <div id="cb-slot-${slotId}-options"></div>
+    <button class="ghost" onclick="addComboOptionRow(${slotId})">➕ خيار لهذه الفئة</button>
+  `;
+  document.getElementById('cb-slots').appendChild(div);
+  addComboOptionRow(slotId);
+}
+function addComboOptionRow(slotId) {
+  const options = menuItemsCache.filter((m) => m.isActive !== false).map((m) => `<option value="${m.id}">${m.name}</option>`).join('');
+  const div = document.createElement('div');
+  div.className = 'recipe-row';
+  div.innerHTML = `<select class="cbo-item">${options}</select><input class="cbo-extra" type="number" step="0.01" value="0" placeholder="زيادة سعر"><button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+  document.getElementById('cb-slot-' + slotId + '-options').appendChild(div);
+}
+async function loadCombos() {
+  await ensureMenuItemsCache();
+  try {
+    const combos = await api('/combos');
+    document.getElementById('combosTable').innerHTML = combos.length
+      ? combos.map((c) => `
+        <tr>
+          <td>${c.name}</td>
+          <td>${Number(c.basePrice).toFixed(2)} ر.س</td>
+          <td>${c.slots.length}</td>
+          <td>${c.isActive ? '✅ نشط' : '⛔ معطّل'}</td>
+          <td>
+            <button class="link-btn" onclick="toggleComboActive('${c.id}', ${!c.isActive})">${c.isActive ? 'تعطيل' : 'تفعيل'}</button>
+            <button class="link-btn" onclick="toggleComboDetail('${c.id}')">📋 التفاصيل</button>
+          </td>
+        </tr>
+        <tr id="combo-detail-row-${c.id}" class="hidden"><td colspan="5"><div class="recipe-box">${renderComboDetail(c)}</div></td></tr>
+      `).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد وجبات كمبو بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+function renderComboDetail(c) {
+  return c.slots.map((s) => `
+    <div style="margin-bottom:10px">
+      <b>${s.label}</b> (اختر ${s.minSelect === s.maxSelect ? s.minSelect : `${s.minSelect}-${s.maxSelect}`})
+      <ul style="margin:6px 0 0 0;padding-inline-start:20px">
+        ${s.options.map((o) => `<li>${o.menuItem.name}${Number(o.extraPrice) > 0 ? ` (+${Number(o.extraPrice).toFixed(2)} ر.س)` : ''}</li>`).join('')}
+      </ul>
+    </div>
+  `).join('');
+}
+function toggleComboDetail(id) {
+  document.getElementById('combo-detail-row-' + id).classList.toggle('hidden');
+}
+async function toggleComboActive(id, isActive) {
+  try {
+    await api('/combos/' + id, { method: 'PATCH', body: JSON.stringify({ isActive }) });
+    flashGlobal(isActive ? '✅ تم تفعيل الكمبو' : '✅ تم تعطيل الكمبو', 'ok');
+    loadCombos();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function createCombo() {
+  const name = document.getElementById('cb-name').value.trim();
+  const basePrice = parseFloat(document.getElementById('cb-base-price').value);
+  if (!name) { flashGlobal('⚠️ اكتب اسم الكمبو', 'err'); return; }
+  if (!basePrice || basePrice <= 0) { flashGlobal('⚠️ اكتب السعر الأساسي', 'err'); return; }
+  const slotEls = document.querySelectorAll('#cb-slots > div');
+  if (!slotEls.length) { flashGlobal('⚠️ أضف فئة اختيار واحدة على الأقل', 'err'); return; }
+  const slots = Array.from(slotEls).map((slotEl) => ({
+    label: slotEl.querySelector('.cbs-label').value.trim(),
+    minSelect: parseInt(slotEl.querySelector('.cbs-min').value, 10),
+    maxSelect: parseInt(slotEl.querySelector('.cbs-max').value, 10),
+    options: Array.from(slotEl.querySelectorAll('.recipe-row')).map((row) => ({
+      menuItemId: row.querySelector('.cbo-item').value,
+      extraPrice: parseFloat(row.querySelector('.cbo-extra').value) || 0,
+    })),
+  }));
+  if (slots.some((s) => !s.label || !s.options.length)) {
+    flashGlobal('⚠️ أكمل بيانات كل فئة (الاسم وخيار واحد على الأقل)', 'err');
+    return;
+  }
+  try {
+    await api('/combos', { method: 'POST', body: JSON.stringify({ name, basePrice, slots }) });
+    document.getElementById('cb-name').value = '';
+    document.getElementById('cb-base-price').value = '';
+    document.getElementById('cb-slots').innerHTML = '';
+    flashGlobal('✅ تم إنشاء الكمبو', 'ok');
+    switchSubview('cb', ['list', 'add'], 'list');
+    loadCombos();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 

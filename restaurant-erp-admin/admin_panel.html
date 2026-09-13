@@ -272,6 +272,15 @@
   .pay-numpad button.ghost{background:none;}
   .pay-numpad-fill{grid-column:span 3;background:var(--brand) !important;color:#fff !important;font-size:13.5px !important;}
 
+  /* ---- Settings: checkbox lists (user roles/locations) and the grouped
+     permission matrix (role editor) ---- */
+  .checkbox-grid{display:flex;flex-wrap:wrap;gap:6px 14px;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px;max-height:160px;overflow-y:auto;}
+  .checkbox-item{display:flex;align-items:center;gap:4px;font-size:12.5px;font-weight:400;white-space:nowrap;margin:0;}
+  .checkbox-item input{width:auto;}
+  .perm-group{margin-bottom:10px;}
+  .perm-group-title{font-weight:700;font-size:12.5px;color:var(--brand);margin-bottom:4px;}
+  .perm-group .checkbox-grid{max-height:none;}
+
   /* ---- sub-tabs inside a popup that bundles more than one distinct
      record type (e.g. Inventory's balances/receive/waste) -- splits them
      into separate screens instead of a long stacked scroll, same "one
@@ -955,8 +964,15 @@
 
     <!-- GENERAL SETTINGS -->
     <div id="view-settings" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>⚙️ الإعدادات العامة</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
-      <div class="panel">
+     <div class="view-card"><div class="view-head"><h2>⚙️ الإعدادات العامة</h2><button class="view-close" onclick="closeView()">✕</button></div>
+      <div class="subnav">
+        <button id="set-tab-general" class="active" onclick="switchSubview('set',['general','users','roles'],'general')">عام</button>
+        <button id="set-tab-users" class="" onclick="switchSubview('set',['general','users','roles'],'users'); loadUsersTab()">👤 المستخدمون</button>
+        <button id="set-tab-roles" class="" onclick="switchSubview('set',['general','users','roles'],'roles'); loadRolesTab()">🛡️ الأدوار والصلاحيات</button>
+      </div>
+      <div class="view-body">
+
+      <div class="panel subview" id="set-sub-general">
         <h2>تفضيلات الطباعة</h2>
         <div class="hint">تتحكم في شكل الفاتورة عند فتحها لأول مرة، وفي ما يُطبع تلقائيًا مباشرة بعد كل عملية دفع.</div>
         <div class="row-form" style="margin-top:10px">
@@ -978,6 +994,41 @@
           <div><label><input type="checkbox" id="set-auto-print-kitchen" style="width:auto;display:inline" onchange="setGeneralSettingOption('autoPrintKitchenTicket', this.checked)"> طباعة تذكرة المطبخ تلقائيًا مع الفاتورة بعد الدفع</label></div>
         </div>
         <div id="set-msg" class="msg"></div>
+      </div>
+
+      <div class="panel subview hidden" id="set-sub-users">
+        <h2>المستخدمون</h2>
+        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الجوال</th><th>الأدوار</th><th>الفروع</th><th>الحالة</th><th></th></tr></thead>
+          <tbody id="usersTable"></tbody>
+        </table></div>
+        <h2 style="margin-top:18px">➕ مستخدم جديد</h2>
+        <div class="row-form">
+          <div><label>الاسم</label><input id="u-name" placeholder="اسم المستخدم"></div>
+          <div><label>الجوال</label><input id="u-phone" placeholder="+9665..."></div>
+          <div><label>كلمة المرور</label><input id="u-password" type="password" placeholder="8 أحرف على الأقل"></div>
+        </div>
+        <div class="row-form" style="margin-top:6px">
+          <div><label>الأدوار</label><div id="u-roles-checks" class="checkbox-grid"></div></div>
+          <div><label>الفروع (اتركها فارغة لإتاحة كل الفروع)</label><div id="u-locations-checks" class="checkbox-grid"></div></div>
+        </div>
+        <div style="margin-top:10px"><button onclick="createUser()">إضافة</button></div>
+        <div id="u-msg" class="msg"></div>
+      </div>
+
+      <div class="panel subview hidden" id="set-sub-roles">
+        <h2>الأدوار الحالية</h2>
+        <div class="table-wrap"><table><thead><tr><th>الدور</th><th>الوصف</th><th>عدد الصلاحيات</th><th>عدد المستخدمين</th><th></th></tr></thead>
+          <tbody id="rolesTable"></tbody>
+        </table></div>
+        <h2 style="margin-top:18px">➕ دور جديد</h2>
+        <div class="row-form">
+          <div><label>اسم الدور</label><input id="r-name" placeholder="مثال: مشرف مشتريات"></div>
+          <div><label>الوصف (اختياري)</label><input id="r-description" placeholder="وصف مختصر لهذا الدور"></div>
+        </div>
+        <label style="margin-top:10px">الصلاحيات</label>
+        <div id="r-permissions-grid"></div>
+        <div style="margin-top:10px"><button onclick="createRole()">إضافة</button></div>
+        <div id="r-msg" class="msg"></div>
       </div>
      </div></div>
     </div>
@@ -1341,6 +1392,10 @@
         <div class="table-wrap"><table><thead><tr><th>الكاشير</th><th>عدد الورديات</th><th>المبيعات</th><th>فرق الصندوق</th></tr></thead>
           <tbody id="shr-cashier-table"></tbody>
         </table></div>
+        <h3 style="margin-top:16px">قائمة الورديات</h3>
+        <div class="table-wrap"><table><thead><tr><th>رقم الوردية</th><th>الموقع</th><th>فتحت بواسطة</th><th>وقت الفتح</th><th>أغلقت بواسطة</th><th>وقت الإغلاق</th><th>فرق الصندوق</th><th></th></tr></thead>
+          <tbody id="shr-shifts-table"></tbody>
+        </table></div>
       </div>
      </div></div>
     </div>
@@ -1422,6 +1477,20 @@
      <div class="view-card"><div class="view-head"><h2>📋 ملخص إغلاق الوردية</h2><button class="view-close" onclick="closeView()">✕</button></div>
       <div class="view-body">
         <div id="shift-summary-content"></div>
+      </div>
+     </div></div>
+
+    <!-- SHIFT ACTIVITY LOG (full chronological timeline for one shift, printable) -->
+    <div id="view-shift-activity-log" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card">
+      <div class="view-head no-print"><h2>🕒 سجل حركة الوردية</h2>
+        <div style="display:flex;gap:8px">
+          <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
+          <button class="view-close" onclick="closeView()">✕</button>
+        </div>
+      </div>
+      <div class="view-body">
+        <div id="sal-content"></div>
       </div>
      </div></div>
 
@@ -2160,7 +2229,7 @@ function switchTab(name) {
   if (name === 'combos') { switchSubview('cb', ['list', 'add'], 'list'); loadCombos(); }
   if (name === 'customers') { switchSubview('cu', ['list', 'add', 'import'], 'list'); loadCustomers(); }
   if (name === 'payment-methods') loadPaymentMethodsTab();
-  if (name === 'settings') loadGeneralSettingsTab();
+  if (name === 'settings') { switchSubview('set', ['general', 'users', 'roles'], 'general'); loadGeneralSettingsTab(); }
   if (name === 'analytics') { document.getElementById('an-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadReportsList(); }
 }
 
@@ -4194,7 +4263,66 @@ async function loadShiftsReport() {
       ? res.byCashier.map((c) => `<tr><td>${c.cashierName}</td><td class="num">${c.shiftsCount}</td><td class="num">${fmtMoney(c.totalSales)}</td><td class="num">${fmtMoney(c.totalVariance)}</td></tr>`).join('')
         + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${res.byCashier.reduce((s, c) => s + c.shiftsCount, 0)}</td><td class="num">${fmtMoney(res.byCashier.reduce((s, c) => s + c.totalSales, 0))}</td><td class="num">${fmtMoney(res.byCashier.reduce((s, c) => s + c.totalVariance, 0))}</td></tr>`
       : `<tr><td colspan="4" class="empty">لا توجد ورديات في هذه الفترة</td></tr>`;
+
+    const shiftsList = await api('/shifts?' + params.toString());
+    document.getElementById('shr-shifts-table').innerHTML = shiftsList.length
+      ? shiftsList.map((s) => {
+          const locName = (locationsCache.find((l) => l.id === s.locationId) || {}).name || s.locationId;
+          return `<tr>
+            <td>SH${s.shiftNumber ?? '-'}</td>
+            <td>${locName}</td>
+            <td>${s.openedBy ? s.openedBy.name : '-'}</td>
+            <td>${new Date(s.openedAt).toLocaleString('ar-SA')}</td>
+            <td>${s.closedBy ? s.closedBy.name : '-'}</td>
+            <td>${s.closedAt ? new Date(s.closedAt).toLocaleString('ar-SA') : '-- مفتوحة --'}</td>
+            <td class="num">${s.variance != null ? fmtMoney(s.variance) : '-'}</td>
+            <td><button class="link-btn" onclick="openShiftActivityLog('${s.id}')">🕒 سجل الحركة</button></td>
+          </tr>`;
+        }).join('')
+      : `<tr><td colspan="8" class="empty">لا توجد ورديات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+const SHIFT_EVENT_LABEL = {
+  SHIFT_OPENED: { icon: '🟢', label: 'فتح الوردية' },
+  ORDER_CREATED: { icon: '🧾', label: 'إنشاء طلب' },
+  ORDER_PAID: { icon: '💰', label: 'دفع طلب' },
+  ORDER_HELD: { icon: '🅿️', label: 'تعليق طلب' },
+  ORDER_VOIDED: { icon: '🚫', label: 'إلغاء طلب' },
+  ORDER_RETURNED: { icon: '↩️', label: 'إرجاع طلب' },
+  SHIFT_CLOSED: { icon: '🔴', label: 'إغلاق الوردية' },
+};
+async function openShiftActivityLog(shiftId) {
+  closeView();
+  document.getElementById('view-shift-activity-log').classList.add('open');
+  document.getElementById('sal-content').innerHTML = '<div class="empty">جارٍ التحميل...</div>';
+  try {
+    const res = await api(`/shifts/${shiftId}/activity-log`);
+    const s = res.shift;
+    const locName = (locationsCache.find((l) => l.id === s.locationId) || {}).name || s.locationId;
+    document.getElementById('sal-content').innerHTML = `
+      <div class="stats-row">
+        ${statTile('رقم الوردية', 'SH' + (s.shiftNumber ?? '-'))}
+        ${statTile('الموقع', locName)}
+        ${statTile('فتحت بواسطة', s.openedBy || '-')}
+        ${statTile('أغلقت بواسطة', s.closedBy || (s.closedAt ? '-' : '-- مفتوحة --'))}
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <h2>الأحداث</h2>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الحدث</th><th>الوقت</th><th>بواسطة</th><th>مرجع الطلب</th><th>تفاصيل</th></tr></thead>
+          <tbody>${res.events.length
+            ? res.events.map((e) => {
+                const meta = SHIFT_EVENT_LABEL[e.type] || { icon: '•', label: e.type };
+                const detail = e.amount != null ? fmtMoney(e.amount) : (e.note || '-');
+                return `<tr><td>${meta.icon} ${meta.label}</td><td>${new Date(e.at).toLocaleString('ar-SA')}</td><td>${e.by || '-'}</td><td>${e.orderRef != null ? '#' + e.orderRef : '-'}</td><td>${detail}</td></tr>`;
+              }).join('')
+            : `<tr><td colspan="5" class="empty">لا توجد أحداث</td></tr>`}</tbody>
+        </table></div>
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById('sal-content').innerHTML = '<div class="empty">❌ ' + e.message + '</div>';
+  }
 }
 
 const PAYMENT_METHOD_LABEL = { CASH: 'كاش', CARD: 'بطاقة', WALLET: 'محفظة إلكترونية' };
@@ -4678,6 +4806,196 @@ async function autoPrintAfterPayment(orderId) {
     await printKitchenTicketFromOrder(orderId);
     window.print();
   }
+}
+
+/* ================= Settings: Users + Roles & Permissions ================= */
+// Small shared helper: a flat list of {id,name} rendered as a checkbox per
+// item, a given set pre-checked -- used for both a user's roles and their
+// branch scope (empty selection = "all branches", per UserLocationScope's
+// existing meaning: no rows = unscoped).
+function renderCheckboxList(containerId, items, checkedIds, className) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = items.length
+    ? items.map((it) => `<label class="checkbox-item"><input type="checkbox" class="${className}" value="${it.id}" ${checkedIds.includes(it.id) ? 'checked' : ''}> ${it.name}</label>`).join('')
+    : '<span class="hint">لا توجد عناصر بعد</span>';
+}
+
+const PERMISSION_GROUP_LABEL = {
+  users: 'المستخدمون والأدوار', branches: 'الفروع', ingredients: 'الأصناف الخام والنصف مصنّعة', items: 'أصناف المنيو',
+  inventory: 'المخزون', purchasing: 'المشتريات', production: 'الإنتاج', transfers: 'التحويلات',
+  pos: 'نقطة البيع', promotions: 'العروض', combos: 'الكمبو والبوكس', analytics: 'التقارير التحليلية', payment_methods: 'طرق الدفع',
+};
+function groupPermissions(list) {
+  const groups = new Map();
+  list.forEach((p) => {
+    const prefix = p.code.split('.')[0];
+    if (!groups.has(prefix)) groups.set(prefix, []);
+    groups.get(prefix).push(p);
+  });
+  return [...groups.entries()].map(([prefix, perms]) => ({ label: PERMISSION_GROUP_LABEL[prefix] || prefix, perms }));
+}
+// Shared by both the "new role" form and every role's inline editor -- a
+// permission checkbox grid grouped by module, one instance of `.perm-check`
+// per code, read back via `containerId .perm-check:checked`.
+function renderPermissionCheckboxes(containerId, checkedCodes) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = groupPermissions(permissionsCache).map((g) => `
+    <div class="perm-group">
+      <div class="perm-group-title">${g.label}</div>
+      <div class="checkbox-grid">
+        ${g.perms.map((p) => `<label class="checkbox-item"><input type="checkbox" class="perm-check" value="${p.code}" ${checkedCodes.includes(p.code) ? 'checked' : ''}> ${p.label}</label>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+let usersCache = [];
+let rolesCache = [];
+async function loadUsersTab() {
+  try {
+    [usersCache, rolesCache] = await Promise.all([api('/users'), api('/roles')]);
+    if (!locationsCache.length) await loadBranches();
+    document.getElementById('usersTable').innerHTML = usersCache.length
+      ? usersCache.map((u) => `
+        <tr>
+          <td>${u.name}</td><td>${u.phone}</td>
+          <td>${u.roles.map((r) => r.name).join('، ') || '-'}</td>
+          <td>${u.locations.length ? u.locations.map((l) => l.name).join('، ') : 'كل الفروع'}</td>
+          <td>${u.isActive ? '✅ نشط' : '⛔ معطّل'}</td>
+          <td><button class="link-btn" onclick="toggleUserEdit('${u.id}')">✏️ تعديل</button></td>
+        </tr>
+        <tr id="edit-user-row-${u.id}" class="hidden"><td colspan="6"><div class="recipe-box" id="edit-user-box-${u.id}"></div></td></tr>
+      `).join('')
+      : `<tr><td colspan="6" class="empty">لا يوجد مستخدمون بعد</td></tr>`;
+    renderCheckboxList('u-roles-checks', rolesCache, [], 'u-role-check');
+    renderCheckboxList('u-locations-checks', locationsCache, [], 'u-location-check');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function createUser() {
+  const name = document.getElementById('u-name').value.trim();
+  const phone = document.getElementById('u-phone').value.trim();
+  const password = document.getElementById('u-password').value;
+  if (!name || !phone) { showMsg('u-msg', '⚠️ اكتب الاسم والجوال', 'err'); return; }
+  if (!password || password.length < 8) { showMsg('u-msg', '⚠️ كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'err'); return; }
+  const roleIds = Array.from(document.querySelectorAll('.u-role-check:checked')).map((el) => el.value);
+  const locationIds = Array.from(document.querySelectorAll('.u-location-check:checked')).map((el) => el.value);
+  try {
+    await api('/users', { method: 'POST', body: JSON.stringify({ name, phone, password, roleIds, locationIds }) });
+    document.getElementById('u-name').value = '';
+    document.getElementById('u-phone').value = '';
+    document.getElementById('u-password').value = '';
+    showMsg('u-msg', '✅ تمت إضافة المستخدم', 'ok');
+    loadUsersTab();
+  } catch (e) { showMsg('u-msg', '❌ ' + e.message, 'err'); }
+}
+function toggleUserEdit(id) {
+  const row = document.getElementById('edit-user-row-' + id);
+  const box = document.getElementById('edit-user-box-' + id);
+  const opening = row.classList.contains('hidden');
+  row.classList.toggle('hidden');
+  if (!opening) return;
+  const u = usersCache.find((x) => x.id === id);
+  box.innerHTML = `
+    <div class="row-form">
+      <div><label>الاسم</label><input id="eu-name-${id}" value="${u.name}"></div>
+      <div><label>كلمة مرور جديدة (اتركها فارغة لعدم التغيير)</label><input id="eu-password-${id}" type="password" placeholder="8 أحرف على الأقل"></div>
+      <div><label><input type="checkbox" id="eu-active-${id}" style="width:auto;display:inline" ${u.isActive ? 'checked' : ''}> نشط</label></div>
+    </div>
+    <div class="row-form" style="margin-top:6px">
+      <div><label>الأدوار</label><div id="eu-roles-${id}" class="checkbox-grid"></div></div>
+      <div><label>الفروع (اتركها فارغة لإتاحة كل الفروع)</label><div id="eu-locations-${id}" class="checkbox-grid"></div></div>
+    </div>
+    <div style="margin-top:8px"><button onclick="saveUserEdit('${id}')">💾 حفظ</button></div>
+  `;
+  renderCheckboxList('eu-roles-' + id, rolesCache, u.roles.map((r) => r.id), 'eu-role-check-' + id);
+  renderCheckboxList('eu-locations-' + id, locationsCache, u.locations.map((l) => l.id), 'eu-location-check-' + id);
+}
+async function saveUserEdit(id) {
+  const name = document.getElementById('eu-name-' + id).value.trim();
+  const isActive = document.getElementById('eu-active-' + id).checked;
+  const password = document.getElementById('eu-password-' + id).value;
+  const roleIds = Array.from(document.querySelectorAll('.eu-role-check-' + id + ':checked')).map((el) => el.value);
+  const locationIds = Array.from(document.querySelectorAll('.eu-location-check-' + id + ':checked')).map((el) => el.value);
+  if (password && password.length < 8) { flashGlobal('⚠️ كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'err'); return; }
+  const body = { name, isActive, roleIds, locationIds };
+  if (password) body.password = password;
+  try {
+    await api('/users/' + id, { method: 'PATCH', body: JSON.stringify(body) });
+    flashGlobal('✅ تم حفظ المستخدم', 'ok');
+    loadUsersTab();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+let permissionsCache = [];
+async function loadRolesTab() {
+  try {
+    [rolesCache, permissionsCache] = await Promise.all([api('/roles'), api('/permissions')]);
+    document.getElementById('rolesTable').innerHTML = rolesCache.length
+      ? rolesCache.map((r) => `
+        <tr>
+          <td>${r.name}</td><td>${r.description || '-'}</td>
+          <td>${r.permissions.length}</td><td>${r.userCount}</td>
+          <td>
+            <button class="link-btn" onclick="toggleRoleEdit('${r.id}')">✏️ تعديل</button>
+            <button class="link-btn" onclick="deleteRole('${r.id}')">🗑️ حذف</button>
+          </td>
+        </tr>
+        <tr id="edit-role-row-${r.id}" class="hidden"><td colspan="5"><div class="recipe-box" id="edit-role-box-${r.id}"></div></td></tr>
+      `).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد أدوار بعد</td></tr>`;
+    renderPermissionCheckboxes('r-permissions-grid', []);
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function createRole() {
+  const name = document.getElementById('r-name').value.trim();
+  const description = document.getElementById('r-description').value.trim();
+  const permissionCodes = Array.from(document.querySelectorAll('#r-permissions-grid .perm-check:checked')).map((el) => el.value);
+  if (!name) { showMsg('r-msg', '⚠️ اكتب اسم الدور', 'err'); return; }
+  try {
+    await api('/roles', { method: 'POST', body: JSON.stringify({ name, description: description || undefined, permissionCodes }) });
+    document.getElementById('r-name').value = '';
+    document.getElementById('r-description').value = '';
+    showMsg('r-msg', '✅ تمت إضافة الدور', 'ok');
+    loadRolesTab();
+  } catch (e) { showMsg('r-msg', '❌ ' + e.message, 'err'); }
+}
+function toggleRoleEdit(id) {
+  const row = document.getElementById('edit-role-row-' + id);
+  const box = document.getElementById('edit-role-box-' + id);
+  const opening = row.classList.contains('hidden');
+  row.classList.toggle('hidden');
+  if (!opening) return;
+  const r = rolesCache.find((x) => x.id === id);
+  box.innerHTML = `
+    <div class="row-form">
+      <div><label>اسم الدور</label><input id="er-name-${id}" value="${r.name}"></div>
+      <div><label>الوصف</label><input id="er-description-${id}" value="${r.description || ''}"></div>
+    </div>
+    <label style="margin-top:8px">الصلاحيات</label>
+    <div id="er-permissions-${id}"></div>
+    <div style="margin-top:8px"><button onclick="saveRoleEdit('${id}')">💾 حفظ</button></div>
+  `;
+  renderPermissionCheckboxes('er-permissions-' + id, r.permissions.map((p) => p.code));
+}
+async function saveRoleEdit(id) {
+  const name = document.getElementById('er-name-' + id).value.trim();
+  const description = document.getElementById('er-description-' + id).value.trim();
+  const permissionCodes = Array.from(document.querySelectorAll('#er-permissions-' + id + ' .perm-check:checked')).map((el) => el.value);
+  try {
+    await api('/roles/' + id, { method: 'PATCH', body: JSON.stringify({ name, description, permissionCodes }) });
+    flashGlobal('✅ تم حفظ الدور', 'ok');
+    loadRolesTab();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function deleteRole(id) {
+  if (!window.confirm('هل أنت متأكد من حذف هذا الدور؟')) return;
+  try {
+    await api('/roles/' + id, { method: 'DELETE' });
+    flashGlobal('✅ تم حذف الدور', 'ok');
+    loadRolesTab();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
 const LOYALTY_REASON_LABEL = { ORDER_EARN: 'كسب من طلب', REDEEM: 'استبدال', MANUAL_ADJUST: 'تعديل يدوي' };

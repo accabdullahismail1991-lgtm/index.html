@@ -968,6 +968,8 @@
           <div><label>من تاريخ</label><input id="dshs-from" type="date"></div>
           <div><label>إلى تاريخ</label><input id="dshs-to" type="date"></div>
           <div><button onclick="loadSalesDashboard()">تحديث</button></div>
+          <div><button class="ghost" onclick="exportDashboard('sales','XLSX')">📥 تصدير Excel</button></div>
+          <div><button class="ghost" onclick="exportDashboard('sales','PDF')">🖨️ تصدير PDF</button></div>
         </div>
         <div id="dshs-kpis" class="stats-row"></div>
         <div class="dash-grid">
@@ -977,6 +979,24 @@
           <div class="dash-card"><h4>🔥 الأصناف الأكثر مبيعًا</h4><ul id="dshs-topitems-list" class="dash-list"></ul></div>
           <div class="dash-card"><h4>⚠️ تنبيهات نقص المخزون</h4><ul id="dshs-lowstock-list" class="dash-list"></ul></div>
         </div>
+
+        <h3 style="margin-top:20px">📋 جداول مرجعية</h3>
+        <h4>اتجاه المبيعات اليومي</h4>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ</th><th>عدد الطلبات</th><th>الإيراد</th></tr></thead>
+          <tbody id="dshs-trend-table"></tbody>
+        </table></div>
+        <h4 style="margin-top:16px">الإيراد حسب القناة</h4>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>القناة</th><th>عدد الطلبات</th><th>الإيراد</th></tr></thead>
+          <tbody id="dshs-channel-table"></tbody>
+        </table></div>
+        <h4 style="margin-top:16px">طرق الدفع</h4>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الطريقة</th><th>العدد</th><th>الإجمالي</th></tr></thead>
+          <tbody id="dshs-payment-table"></tbody>
+        </table></div>
+        <h4 style="margin-top:16px">الأصناف الأكثر مبيعًا (الكل)</h4>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>الكمية</th><th>الإيراد</th></tr></thead>
+          <tbody id="dshs-allitems-table"></tbody>
+        </table></div>
       </div>
      </div></div>
     </div>
@@ -989,12 +1009,24 @@
           <div><label>من تاريخ</label><input id="dshp-from" type="date"></div>
           <div><label>إلى تاريخ</label><input id="dshp-to" type="date"></div>
           <div><button onclick="loadProductionDashboard()">تحديث</button></div>
+          <div><button class="ghost" onclick="exportDashboard('production','XLSX')">📥 تصدير Excel</button></div>
+          <div><button class="ghost" onclick="exportDashboard('production','PDF')">🖨️ تصدير PDF</button></div>
         </div>
         <div id="dshp-kpis" class="stats-row"></div>
         <div class="dash-grid">
           <div class="dash-card"><h4>أوامر الإنتاج حسب الحالة</h4><canvas id="dshp-status-chart"></canvas></div>
           <div class="dash-card wide"><h4>التكلفة حسب المنتج</h4><canvas id="dshp-cost-chart"></canvas></div>
         </div>
+
+        <h3 style="margin-top:20px">📋 جداول مرجعية</h3>
+        <h4>أوامر الإنتاج حسب الحالة</h4>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الحالة</th><th>العدد</th></tr></thead>
+          <tbody id="dshp-status-table"></tbody>
+        </table></div>
+        <h4 style="margin-top:16px">التكلفة حسب المنتج</h4>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>المنتج</th><th>عدد الأوامر</th><th>الكمية المنتجة</th><th>التكلفة الإجمالية</th><th>متوسط تكلفة الوحدة</th></tr></thead>
+          <tbody id="dshp-cost-table"></tbody>
+        </table></div>
       </div>
      </div></div>
     </div>
@@ -1007,12 +1039,24 @@
           <div><label>من تاريخ</label><input id="dshpu-from" type="date"></div>
           <div><label>إلى تاريخ</label><input id="dshpu-to" type="date"></div>
           <div><button onclick="loadPurchasingDashboard()">تحديث</button></div>
+          <div><button class="ghost" onclick="exportDashboard('purchasing','XLSX')">📥 تصدير Excel</button></div>
+          <div><button class="ghost" onclick="exportDashboard('purchasing','PDF')">🖨️ تصدير PDF</button></div>
         </div>
         <div id="dshpu-kpis" class="stats-row"></div>
         <div class="dash-grid">
           <div class="dash-card"><h4>أوامر الشراء حسب الحالة</h4><canvas id="dshpu-status-chart"></canvas></div>
           <div class="dash-card wide"><h4>أعلى الموردين إنفاقًا</h4><canvas id="dshpu-suppliers-chart"></canvas></div>
         </div>
+
+        <h3 style="margin-top:20px">📋 جداول مرجعية</h3>
+        <h4>أوامر الشراء حسب الحالة</h4>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الحالة</th><th>العدد</th></tr></thead>
+          <tbody id="dshpu-status-table"></tbody>
+        </table></div>
+        <h4 style="margin-top:16px">أعلى الموردين إنفاقًا</h4>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>المورد</th><th>الإنفاق</th></tr></thead>
+          <tbody id="dshpu-suppliers-table"></tbody>
+        </table></div>
       </div>
      </div></div>
     </div>
@@ -1023,6 +1067,8 @@
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshi-location"><option value="">كل المواقع</option></select></div>
           <div><button onclick="loadItemsDashboard()">تحديث</button></div>
+          <div><button class="ghost" onclick="exportDashboard('items','XLSX')">📥 تصدير Excel</button></div>
+          <div><button class="ghost" onclick="exportDashboard('items','PDF')">🖨️ تصدير PDF</button></div>
         </div>
         <div id="dshi-kpis" class="stats-row"></div>
         <div class="dash-grid">
@@ -1030,6 +1076,11 @@
           <div class="dash-card wide"><h4>أعلى الأصناف نسبة تكلفة</h4><canvas id="dshi-cost-chart"></canvas></div>
           <div class="dash-card wide"><h4>أصناف بلا وصفة (تكلفتها صفر)</h4><ul id="dshi-norecipe-list" class="dash-list"></ul></div>
         </div>
+
+        <h3 style="margin-top:20px">📋 جدول مرجعي: تكلفة وهامش ربح كل صنف</h3>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>السعر</th><th>التكلفة</th><th>نسبة التكلفة %</th><th>هامش الربح</th><th>لديه وصفة</th></tr></thead>
+          <tbody id="dshi-all-table"></tbody>
+        </table></div>
       </div>
      </div></div>
     </div>
@@ -1040,12 +1091,19 @@
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshinv-location"><option value="">كل المواقع</option></select></div>
           <div><button onclick="loadInventoryDashboard()">تحديث</button></div>
+          <div><button class="ghost" onclick="exportDashboard('inventory','XLSX')">📥 تصدير Excel</button></div>
+          <div><button class="ghost" onclick="exportDashboard('inventory','PDF')">🖨️ تصدير PDF</button></div>
         </div>
         <div id="dshinv-kpis" class="stats-row"></div>
         <div class="dash-grid">
           <div class="dash-card wide"><h4>أعلى المكوّنات قيمةً</h4><canvas id="dshinv-value-chart"></canvas></div>
           <div class="dash-card wide"><h4>⚠️ تنبيهات نقص المخزون (بالكميات المتوفرة)</h4><ul id="dshinv-lowstock-list" class="dash-list"></ul></div>
         </div>
+
+        <h3 style="margin-top:20px">📋 جدول مرجعي: قيمة المخزون حسب المكوّن</h3>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>المكوّن</th><th>الكمية</th><th>الوحدة</th><th>القيمة</th></tr></thead>
+          <tbody id="dshinv-value-table"></tbody>
+        </table></div>
       </div>
      </div></div>
     </div>
@@ -4235,7 +4293,7 @@ async function loadSalesDashboard() {
     if (to) params.set('to', to);
     const qs = params.toString();
     const [summary, trend, topItems, paymentMethods, lowStock] = await Promise.all([
-      api('/analytics/sales-summary?' + qs), api('/analytics/sales-trend?' + qs), api('/analytics/top-items?' + qs + '&limit=5'),
+      api('/analytics/sales-summary?' + qs), api('/analytics/sales-trend?' + qs), api('/analytics/top-items?' + qs + '&limit=50'),
       api('/analytics/payment-methods-summary?' + qs), api('/analytics/low-stock' + (locationId ? '?locationId=' + locationId : '')),
     ]);
     document.getElementById('dshs-kpis').innerHTML = [
@@ -4247,9 +4305,23 @@ async function loadSalesDashboard() {
     mountChartOrEmpty('dshs-channel-chart', summary.byChannel.length > 0, () => doughnutChartConfig(summary.byChannel.map((c) => AN_CHANNEL_LABEL[c.channel] || c.channel), summary.byChannel.map((c) => c.revenue)), 'لا توجد مبيعات في هذه الفترة');
     mountChartOrEmpty('dshs-payment-chart', paymentMethods.byMethod.length > 0, () => doughnutChartConfig(paymentMethods.byMethod.map((m) => paymentMethodLabel(m.method)), paymentMethods.byMethod.map((m) => m.total)), 'لا توجد مدفوعات في هذه الفترة');
     document.getElementById('dshs-topitems-list').innerHTML = topItems.length
-      ? topItems.map((i) => dashListRow(i.name, `${i.quantity} × ${fmtMoney(i.revenue)}`)).join('') : dashEmptyList('لا توجد مبيعات في هذه الفترة');
+      ? topItems.slice(0, 5).map((i) => dashListRow(i.name, `${i.quantity} × ${fmtMoney(i.revenue)}`)).join('') : dashEmptyList('لا توجد مبيعات في هذه الفترة');
     document.getElementById('dshs-lowstock-list').innerHTML = lowStock.length
       ? lowStock.slice(0, 8).map((r) => dashListRow(r.name, `${r.quantity} ${r.unit}`, true)).join('') : dashEmptyList('لا توجد تنبيهات نقص مخزون');
+
+    document.getElementById('dshs-trend-table').innerHTML = trend.length
+      ? trend.map((t) => `<tr><td>${t.date}</td><td class="num">${t.orderCount}</td><td class="num">${fmtMoney(t.revenue)}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+    document.getElementById('dshs-channel-table').innerHTML = summary.byChannel.length
+      ? summary.byChannel.map((c) => `<tr><td>${AN_CHANNEL_LABEL[c.channel] || c.channel}</td><td class="num">${c.orderCount}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${summary.byChannel.reduce((s, c) => s + c.orderCount, 0)}</td><td class="num">${fmtMoney(summary.byChannel.reduce((s, c) => s + c.revenue, 0))}</td></tr>`
+      : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+    document.getElementById('dshs-payment-table').innerHTML = paymentMethods.byMethod.length
+      ? paymentMethods.byMethod.map((m) => `<tr><td>${paymentMethodLabel(m.method)}</td><td class="num">${m.count}</td><td class="num">${fmtMoney(m.total)}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="empty">لا توجد مدفوعات في هذه الفترة</td></tr>`;
+    document.getElementById('dshs-allitems-table').innerHTML = topItems.length
+      ? topItems.map((i) => `<tr><td>${i.name}</td><td class="num">${i.quantity}</td><td class="num">${fmtMoney(i.revenue)}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
@@ -4271,6 +4343,13 @@ async function loadProductionDashboard() {
     mountChartOrEmpty('dshp-status-chart', res.byStatus.length > 0, () => doughnutChartConfig(res.byStatus.map((s) => PRODUCTION_STATUS_LABEL[s.status] || s.status), res.byStatus.map((s) => s.count)), 'لا توجد أوامر إنتاج في هذه الفترة');
     const top = res.byOutput.slice(0, 8);
     mountChartOrEmpty('dshp-cost-chart', top.length > 0, () => barChartConfig(top.map((o) => o.name), top.map((o) => o.totalCost), 'التكلفة', true), 'لا توجد تكاليف إنتاج مسجّلة بعد');
+
+    document.getElementById('dshp-status-table').innerHTML = res.byStatus.length
+      ? res.byStatus.map((s) => `<tr><td>${PRODUCTION_STATUS_LABEL[s.status] || s.status}</td><td class="num">${s.count}</td></tr>`).join('')
+      : `<tr><td colspan="2" class="empty">لا توجد أوامر إنتاج في هذه الفترة</td></tr>`;
+    document.getElementById('dshp-cost-table').innerHTML = res.byOutput.length
+      ? res.byOutput.map((o) => `<tr><td>${o.name}</td><td class="num">${o.ordersCount}</td><td class="num">${fmtMoney(o.totalOutputQuantity)}</td><td class="num">${fmtMoney(o.totalCost)}</td><td class="num">${fmtMoney(o.avgUnitCost)}</td></tr>`).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد تكاليف إنتاج مسجّلة بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
@@ -4291,6 +4370,13 @@ async function loadPurchasingDashboard() {
     ].join('');
     mountChartOrEmpty('dshpu-status-chart', res.byStatus.length > 0, () => doughnutChartConfig(res.byStatus.map((s) => PO_STATUS_LABEL[s.status] || s.status), res.byStatus.map((s) => s.count)), 'لا توجد أوامر شراء في هذه الفترة');
     mountChartOrEmpty('dshpu-suppliers-chart', res.topSuppliers.length > 0, () => barChartConfig(res.topSuppliers.map((s) => s.supplierName), res.topSuppliers.map((s) => s.spend), 'الإنفاق', true), 'لا يوجد إنفاق معتمد بعد لهذه الفترة');
+
+    document.getElementById('dshpu-status-table').innerHTML = res.byStatus.length
+      ? res.byStatus.map((s) => `<tr><td>${PO_STATUS_LABEL[s.status] || s.status}</td><td class="num">${s.count}</td></tr>`).join('')
+      : `<tr><td colspan="2" class="empty">لا توجد أوامر شراء في هذه الفترة</td></tr>`;
+    document.getElementById('dshpu-suppliers-table').innerHTML = res.topSuppliers.length
+      ? res.topSuppliers.map((s) => `<tr><td>${s.supplierName}</td><td class="num">${fmtMoney(s.spend)}</td></tr>`).join('')
+      : `<tr><td colspan="2" class="empty">لا يوجد إنفاق معتمد بعد لهذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
@@ -4312,6 +4398,10 @@ async function loadItemsDashboard() {
     const noRecipe = res.filter((i) => !i.hasRecipe);
     document.getElementById('dshi-norecipe-list').innerHTML = noRecipe.length
       ? noRecipe.slice(0, 10).map((i) => dashListRow(i.name, fmtMoney(i.price))).join('') : dashEmptyList('كل الأصناف لديها وصفة');
+
+    document.getElementById('dshi-all-table').innerHTML = res.length
+      ? res.map((i) => `<tr><td>${i.name}</td><td class="num">${fmtMoney(i.price)}</td><td class="num">${fmtMoney(i.cost)}</td><td class="num">${i.costPercent.toFixed(1)}%</td><td class="num">${fmtMoney(i.grossMargin)}</td><td>${i.hasRecipe ? 'نعم' : 'لا'}</td></tr>`).join('')
+      : `<tr><td colspan="6" class="empty">لا توجد أصناف</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
@@ -4330,6 +4420,11 @@ async function loadInventoryDashboard() {
     document.getElementById('dshinv-lowstock-list').innerHTML = lowStock.length
       ? lowStock.map((r) => dashListRow(`${r.name}${r.locationName ? ' -- ' + r.locationName : ''}`, `${r.quantity} ${r.unit} (الحد: ${r.lowStockThreshold})`, true)).join('')
       : dashEmptyList('لا توجد تنبيهات نقص مخزون');
+
+    document.getElementById('dshinv-value-table').innerHTML = valuation.lines.length
+      ? valuation.lines.map((l) => `<tr><td>${l.name}</td><td class="num">${fmtMoney(l.quantity)}</td><td>${l.unit}</td><td class="num">${fmtMoney(l.value)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td colspan="3">الإجمالي</td><td class="num">${fmtMoney(valuation.totalValue)}</td></tr>`
+      : `<tr><td colspan="4" class="empty">لا يوجد مخزون مسجّل بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
@@ -4406,6 +4501,40 @@ async function downloadReport(id, fileName) {
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   } catch (e) { showMsg('rp-msg', '❌ فشل تحميل التقرير: ' + e.message, 'err'); }
+}
+
+// Real Excel/PDF export of one dashboard's underlying data (not the
+// browser print-to-PDF / CSV-of-visible-tables the generic view toolbar
+// already gives every popup) -- streamed straight from
+// /reports/dashboard-export using the SAME filters currently set on that
+// dashboard's location/from/to inputs.
+const DASH_PREFIX = { sales: 'dshs', production: 'dshp', purchasing: 'dshpu', items: 'dshi', inventory: 'dshinv' };
+async function exportDashboard(kind, format) {
+  const prefix = DASH_PREFIX[kind];
+  const locationId = document.getElementById(prefix + '-location').value;
+  const fromEl = document.getElementById(prefix + '-from');
+  const toEl = document.getElementById(prefix + '-to');
+  const params = new URLSearchParams({ kind, format });
+  if (locationId) params.set('locationId', locationId);
+  if (fromEl && fromEl.value) params.set('from', fromEl.value);
+  if (toEl && toEl.value) params.set('to', toEl.value);
+  try {
+    const res = await fetch(apiBase() + '/reports/dashboard-export?' + params.toString(), {
+      headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {},
+    });
+    if (!res.ok) {
+      let msg = 'HTTP ' + res.status;
+      try { const j = await res.json(); if (j && j.message) msg = j.message; } catch (e) { /* not JSON */ }
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dashboard-${kind}.${format.toLowerCase()}`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) { flashGlobal('❌ فشل تصدير اللوحة: ' + e.message, 'err'); }
 }
 </script>
 </body>

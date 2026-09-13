@@ -1061,6 +1061,16 @@
           <div><label><input type="checkbox" id="set-auto-print-kitchen" style="width:auto;display:inline" onchange="setGeneralSettingOption('autoPrintKitchenTicket', this.checked)"> طباعة تذكرة المطبخ تلقائيًا مع الفاتورة بعد الدفع</label></div>
         </div>
         <div id="set-msg" class="msg"></div>
+
+        <h2 style="margin-top:24px">🔗 إعدادات أخرى</h2>
+        <div class="hint">كل إعداد يظهر ضمن الشاشة التي يخصّها مباشرةً (بدل تكرارها هنا) حتى يبقى قريبًا من البيانات التي يتحكم بها.</div>
+        <div class="home-grid" style="margin-top:10px">
+          <div class="home-card" onclick="switchTab('branches')"><div class="ic">🏢</div><div class="lb">الفروع -- الضريبة، البيع بالسالب، الإغلاق التلقائي للوردية</div></div>
+          <div class="home-card" onclick="switchTab('ingredients')"><div class="ic">🧺</div><div class="lb">المكوّنات -- طريقة تقييم المخزون (FIFO/متوسط مرجّح)، وحدات القياس</div></div>
+          <div class="home-card" onclick="switchTab('items')"><div class="ic">🍽️</div><div class="lb">أصناف المنيو -- نوع الضريبة لكل صنف</div></div>
+          <div class="home-card" onclick="switchTab('promotions')"><div class="ic">🏷️</div><div class="lb">العروض والخصومات</div></div>
+          <div class="home-card" onclick="switchTab('payment-methods')"><div class="ic">💳</div><div class="lb">طرق الدفع</div></div>
+        </div>
       </div>
 
       <div class="panel subview hidden" id="set-sub-users">
@@ -1296,6 +1306,18 @@
         </div>
         <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>الكمية المباعة</th><th>الشعبية %</th><th>هامش الربح</th><th>التصنيف</th></tr></thead>
           <tbody id="dshi-me-table"></tbody>
+        </table></div>
+
+        <h3 style="margin-top:24px">🧪 محاكاة أثر تغيّر تكلفة المكوّنات على هندسة المنيو</h3>
+        <div class="hint">أدخل مكوّنًا واحدًا أو أكثر مع تكلفته الافتراضية الجديدة لمعرفة أثر التغيير على تكلفة وهامش وتصنيف كل صنف يستخدمه -- بالمقارنة بنفس الفترة المحدّدة أعلاه.</div>
+        <div id="ci-rows" style="margin-top:8px"></div>
+        <div class="row-form" style="margin-top:4px">
+          <div><button class="ghost" onclick="addCostImpactRow()">➕ إضافة مكوّن</button></div>
+          <div><button onclick="runCostImpactSimulation()">تشغيل المحاكاة</button></div>
+        </div>
+        <div id="ci-summary" class="stats-row"></div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>التكلفة الحالية</th><th>التكلفة بعد المحاكاة</th><th>فرق التكلفة</th><th>الهامش الحالي</th><th>الهامش بعد المحاكاة</th><th>التصنيف الحالي</th><th>التصنيف بعد المحاكاة</th></tr></thead>
+          <tbody id="ci-table"></tbody>
         </table></div>
       </div>
      </div></div>
@@ -5768,6 +5790,47 @@ async function loadMenuEngineering() {
     document.getElementById('dshi-me-table').innerHTML = res.items.length
       ? res.items.map((i) => `<tr><td>${i.name}</td><td class="num">${i.quantity}</td><td class="num">${i.popularityPercent.toFixed(1)}%</td><td class="num">${fmtMoney(i.margin)}</td><td>${MENU_ENG_LABEL[i.classification]}</td></tr>`).join('')
       : `<tr><td colspan="5" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+// "What if" simulation: reuses the same menu-engineering classification as
+// the report above, but with one or more ingredients' cost hypothetically
+// replaced -- lets an admin see a cost increase's real effect on margins
+// and STAR/PLOWHORSE/PUZZLE/DOG classification before it actually happens.
+async function addCostImpactRow() {
+  await ensureIngredientsCache();
+  const container = document.getElementById('ci-rows');
+  const div = document.createElement('div');
+  div.className = 'recipe-row';
+  div.innerHTML = `<select class="ci-ing">${ingredientOptions()}</select>
+    <input class="ci-cost" type="number" step="0.01" min="0" placeholder="التكلفة الجديدة للوحدة">
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+  container.appendChild(div);
+}
+async function runCostImpactSimulation() {
+  const container = document.getElementById('ci-rows');
+  const ingredientChanges = Array.from(container.querySelectorAll('.recipe-row')).map((row) => ({
+    ingredientId: row.querySelector('.ci-ing').value,
+    newUnitCost: parseFloat(row.querySelector('.ci-cost').value),
+  })).filter((c) => c.ingredientId && c.newUnitCost >= 0 && !isNaN(c.newUnitCost));
+  if (!ingredientChanges.length) { flashGlobal('⚠️ أضف مكوّنًا واحدًا على الأقل مع تكلفته الجديدة', 'err'); return; }
+  const locationId = document.getElementById('dshi-location').value;
+  const from = document.getElementById('dshi-me-from').value;
+  const to = document.getElementById('dshi-me-to').value;
+  try {
+    const res = await api('/analytics/cost-impact-simulation', {
+      method: 'POST',
+      body: JSON.stringify({ ingredientChanges, locationId: locationId || undefined, from: from || undefined, to: to || undefined }),
+    });
+    document.getElementById('ci-summary').innerHTML = [
+      statTile('أصناف تأثرت', res.items.length), statTile('أصناف تغيّر تصنيفها', res.classificationShiftCount),
+    ].join('');
+    document.getElementById('ci-table').innerHTML = res.items.length
+      ? res.items.map((i) => {
+          const rowStyle = i.classificationChanged ? 'background:#fef3c7' : '';
+          return `<tr style="${rowStyle}"><td>${i.name}</td><td class="num">${fmtMoney(i.currentCost)}</td><td class="num">${fmtMoney(i.simulatedCost)}</td><td class="num">${i.costDelta >= 0 ? '+' : ''}${fmtMoney(i.costDelta)}</td><td class="num">${fmtMoney(i.currentMargin)}</td><td class="num">${fmtMoney(i.simulatedMargin)}</td><td>${MENU_ENG_LABEL[i.currentClassification]}</td><td>${MENU_ENG_LABEL[i.simulatedClassification]}</td></tr>`;
+        }).join('')
+      : `<tr><td colspan="8" class="empty">لا توجد أصناف متأثرة بهذا التغيير خلال هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 

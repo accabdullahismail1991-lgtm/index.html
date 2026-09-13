@@ -74,6 +74,11 @@
   .report-table tr.report-total-row td:first-child{color:var(--brand);}
   .row-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:10px;}
   .row-form > div{flex:1;min-width:140px;}
+  /* Screen-only placeholder for printCurrentView()'s injected summary --
+     shown only under print (below), so a printed report states its own
+     title/filters/timestamp instead of the interactive filter controls
+     it's about to replace on paper. */
+  .print-only-header{display:none;}
   .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
   .pill.raw{background:rgba(55,48,163,.1);color:var(--brand);}
   .pill.semi{background:rgba(31,157,104,.1);color:var(--ok);}
@@ -355,7 +360,22 @@
     .view.open{position:absolute;inset:0;background:#fff;}
     .no-print{display:none !important;}
     .view-card{box-shadow:none;}
+    /* Every report/module popup's filter row (location/date pickers, the
+       "تحديث" refresh button) is a live control with no meaning on paper --
+       printCurrentView() replaces it with .print-only-header below instead
+       of leaving empty date inputs and a clickable button on the page. */
+    .row-form{display:none !important;}
+    .print-only-header{display:block !important;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #333;color:#000;}
+    .print-only-header .ph-title{font-size:17px;font-weight:800;}
+    .print-only-header .ph-filters{font-size:12px;margin-top:4px;}
+    .print-only-header .ph-meta{font-size:11px;color:#555;margin-top:2px;}
+    /* Keeps a totals row (or any single row) from being split across a
+       page boundary, and repeats the table's header row on every printed
+       page -- both standard expectations for a tabular financial report. */
+    tr{page-break-inside:avoid;}
+    thead{display:table-header-group;}
   }
+  @page{margin:14mm;}
 </style>
 </head>
 <body>
@@ -2337,6 +2357,39 @@ function injectViewToolbars() {
   });
 }
 function printCurrentView() { window.print(); }
+
+// Fires for ANY print trigger on a popup -- our own 🖨️ button or a plain
+// Ctrl+P/browser print menu -- since @media print hides every .row-form
+// (the live filter/date controls have no meaning on paper) and this is
+// what replaces it: a plain-text line naming the filters actually applied,
+// plus a print timestamp, so the printed report still states its own
+// scope instead of leaving that information only in now-hidden form
+// controls. #view-invoice and #view-kitchen-ticket already carry their
+// own purpose-built print layout and have no .row-form to replace.
+window.addEventListener('beforeprint', () => {
+  const view = document.querySelector('.view.open');
+  if (!view || view.id === 'view-invoice' || view.id === 'view-kitchen-ticket') return;
+  view.querySelectorAll('.print-only-header').forEach((el) => el.remove());
+  const filters = [];
+  view.querySelectorAll('.row-form > div').forEach((field) => {
+    const label = field.querySelector('label');
+    const control = field.querySelector('select, input');
+    if (!label || !control || control.type === 'checkbox' || control.type === 'radio') return;
+    const value = control.tagName === 'SELECT'
+      ? (control.selectedOptions[0] ? control.selectedOptions[0].textContent.trim() : '')
+      : control.value;
+    if (value) filters.push(`${label.textContent.trim()}: ${value}`);
+  });
+  const header = document.createElement('div');
+  header.className = 'print-only-header';
+  header.innerHTML = (filters.length ? `<div class="ph-filters">${filters.join('&nbsp;&nbsp;|&nbsp;&nbsp;')}</div>` : '')
+    + `<div class="ph-meta">تاريخ الطباعة: ${fmtDateTime(new Date())}</div>`;
+  const body = view.querySelector('.view-body');
+  if (body) body.insertBefore(header, body.firstChild);
+});
+window.addEventListener('afterprint', () => {
+  document.querySelectorAll('.print-only-header').forEach((el) => el.remove());
+});
 // Exports every <table> visible in the currently open .view to one CSV
 // file -- generic (walks whatever tables that screen happens to render)
 // rather than a per-screen column list that would drift out of sync.
@@ -3269,7 +3322,7 @@ function onOrderShiftChange() {
   updateOrderCartTotals();
   updatePosTicker(shift ? shift.locationId : null);
   const statusText = document.getElementById('ord-shift-status-text');
-  if (shift) statusText.textContent = `الوردية المفتوحة: SH${shift.shiftNumber ?? '-'} -- ${location ? location.name : ''} -- تاريخ الفتح: ${new Date(shift.openedAt).toLocaleDateString('ar-SA')}`;
+  if (shift) statusText.textContent = `الوردية المفتوحة: SH${shift.shiftNumber ?? '-'} -- ${location ? location.name : ''} -- تاريخ الفتح: ${fmtDate(shift.openedAt)}`;
 }
 // No order/invoice can be created before some shift is open (backend
 // enforces this too -- OrdersService.create() requires an open, unclosed
@@ -3635,7 +3688,7 @@ async function loadShifts() {
       ? openShifts.map((s) => `<option value="${s.id}">SH${s.shiftNumber ?? '-'} -- ${locName(s.locationId)}</option>`).join('')
       : '<option value="">لا توجد وردية مفتوحة</option>';
     document.getElementById('ord-open-shift-location').innerHTML = locationOptions();
-    const todayLabel = 'تاريخ اليوم: ' + new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const todayLabel = 'تاريخ اليوم: ' + fmtDateLong(new Date());
     document.getElementById('ord-open-shift-today').textContent = todayLabel;
     document.getElementById('sh-open-today').textContent = todayLabel;
     updateOrderShiftGate();
@@ -3823,7 +3876,7 @@ async function loadOrders() {
         <tr>
           <td>${o.sequenceNumber ?? '-'}</td>
           <td>يومي #${o.dailySequence ?? '-'} / وردية #${o.shiftSequence ?? '-'}</td>
-          <td>${new Date(o.createdAt).toLocaleString('ar-SA')}</td>
+          <td>${fmtDateTime(o.createdAt)}</td>
           <td>${locName(o.locationId)}</td>
           <td>${AN_CHANNEL_LABEL[o.channel] || o.channel}</td>
           <td>${o.servedBy ? o.servedBy.name : '-'}</td>
@@ -3907,7 +3960,7 @@ function renderPaymentDialog() {
   if (o.activityLog && o.activityLog.length) {
     logEl.classList.remove('hidden');
     logEl.innerHTML = '<div style="font-weight:700;margin-bottom:4px">سجل الحركة</div>' + o.activityLog.map((a) =>
-      `<div class="entry">🅿️ عُلّقت بواسطة ${a.createdBy ? a.createdBy.name : '-'} في ${new Date(a.createdAt).toLocaleString('ar-SA')}${a.note ? ' -- ' + a.note : ''}</div>`
+      `<div class="entry">🅿️ عُلّقت بواسطة ${a.createdBy ? a.createdBy.name : '-'} في ${fmtDateTime(a.createdAt)}${a.note ? ' -- ' + a.note : ''}</div>`
     ).join('');
   } else {
     logEl.classList.add('hidden');
@@ -4044,14 +4097,14 @@ function renderInvoice(o) {
     return `<tr>
       <td>${label}</td>
       <td>${l.quantity}</td>
-      <td>${Number(l.unitPrice).toFixed(2)}</td>
-      <td>${lineVat.toFixed(2)}</td>
-      <td>${lineTotal.toFixed(2)}</td>
+      <td>${fmtMoney(l.unitPrice)}</td>
+      <td>${fmtMoney(lineVat)}</td>
+      <td>${fmtMoney(lineTotal)}</td>
     </tr>`;
   }).join('');
 
   const paymentsText = o.payments && o.payments.length
-    ? o.payments.map((p) => `${paymentMethodLabelWithIcon(p.method)}: ${Number(p.amount).toFixed(2)}`).join('، ')
+    ? o.payments.map((p) => `${paymentMethodLabelWithIcon(p.method)}: ${fmtMoney(p.amount)}`).join('، ')
     : '-';
 
   document.getElementById('inv-content').innerHTML = `
@@ -4067,7 +4120,7 @@ function renderInvoice(o) {
         <div><span class="k">الوردية:</span> SH${o.shift && o.shift.shiftNumber != null ? o.shift.shiftNumber : '-'}</div>
         <div><span class="k">الرقم اليومي:</span> #${o.dailySequence ?? '-'}</div>
         <div><span class="k">التسلسل الضريبي (ICV):</span> ${o.zatcaInvoiceCounter ?? '-'}</div>
-        <div><span class="k">التاريخ والوقت:</span> ${o.paidAt ? new Date(o.paidAt).toLocaleString('ar-SA') : '-'}</div>
+        <div><span class="k">التاريخ والوقت:</span> ${fmtDateTime(o.paidAt)}</div>
         <div><span class="k">الكاشير:</span> ${o.servedBy ? o.servedBy.name : '-'}</div>
         ${o.customer ? `<div><span class="k">العميل:</span> ${o.customer.name || o.customer.phone}</div>` : ''}
         <div><span class="k">نوع الفاتورة:</span> ${INVOICE_TYPE_LABEL[o.invoiceType] || o.invoiceType}</div>
@@ -4080,10 +4133,10 @@ function renderInvoice(o) {
         </table>
       ` : ''}
       <div class="invoice-totals">
-        <div class="row"><span>الإجمالي قبل الضريبة</span><span>${Number(o.subtotal).toFixed(2)}</span></div>
-        ${Number(o.discountTotal) > 0 ? `<div class="row"><span>الخصم</span><span>-${Number(o.discountTotal).toFixed(2)}</span></div>` : ''}
-        <div class="row"><span>ضريبة القيمة المضافة (15%)</span><span>${Number(o.vatTotal).toFixed(2)}</span></div>
-        <div class="row grand"><span>الإجمالي شامل الضريبة</span><span>${Number(o.grandTotal).toFixed(2)} ر.س</span></div>
+        <div class="row"><span>الإجمالي قبل الضريبة</span><span>${fmtMoney(o.subtotal)}</span></div>
+        ${Number(o.discountTotal) > 0 ? `<div class="row"><span>الخصم</span><span>-${fmtMoney(o.discountTotal)}</span></div>` : ''}
+        <div class="row"><span>ضريبة القيمة المضافة (${round2(vatRate * 100)}%)</span><span>${fmtMoney(o.vatTotal)}</span></div>
+        <div class="row grand"><span>الإجمالي شامل الضريبة</span><span>${fmtMoney(o.grandTotal)} ر.س</span></div>
       </div>
       ${o.zatcaQrCode ? `
         <div class="invoice-qr">
@@ -4207,7 +4260,7 @@ async function loadReturnsHistory() {
     document.getElementById('returnsTable').innerHTML = returns.length
       ? returns.map((r) => `
         <tr>
-          <td>${new Date(r.createdAt).toLocaleString('ar-SA')}</td>
+          <td>${fmtDateTime(r.createdAt)}</td>
           <td>${locName(r.order.locationId)}</td>
           <td>${r.lines.map((l) => `${l.orderLine.menuItem.name} × ${l.quantity}`).join('، ')}</td>
           <td>${r.reason || '-'}</td>
@@ -4307,7 +4360,7 @@ function renderKitchenTicket(ticket) {
       <div class="kt-ticket-meta">
         ${ticket.shiftNumber != null ? 'SH' + ticket.shiftNumber : '-'}${ticket.dailySequence ? ' -- الرقم اليومي #' + ticket.dailySequence : ''}<br>
         ${KITCHEN_CHANNEL_LABEL[ticket.channel] || ticket.channel}${ticket.tableLabel ? ' -- ' + ticket.tableLabel : ''}<br>
-        ${new Date(ticket.createdAt).toLocaleString('ar-SA')}
+        ${fmtDateTime(ticket.createdAt)}
       </div>
       ${ticket.lines.map((l) => `<div class="kt-ticket-line"><span>${l.menuItemName}</span><span class="qty">× ${l.quantity}</span></div>`).join('')}
     </div>
@@ -4609,7 +4662,7 @@ async function loadPurchaseReturnsHistory() {
     document.getElementById('purchaseReturnsTable').innerHTML = returns.length
       ? returns.map((r) => `
         <tr>
-          <td>${new Date(r.createdAt).toLocaleString('ar-SA')}</td>
+          <td>${fmtDateTime(r.createdAt)}</td>
           <td>${r.purchaseOrder.supplier.name}</td>
           <td>${r.lines.map((l) => `${l.purchaseOrderLine.ingredient.name} × ${Number(l.quantity)}`).join('، ')}</td>
           <td>${r.reason || '-'}</td>
@@ -4673,9 +4726,9 @@ async function loadShiftsReport() {
             <td>SH${s.shiftNumber ?? '-'}</td>
             <td>${locName}</td>
             <td>${s.openedBy ? s.openedBy.name : '-'}</td>
-            <td>${new Date(s.openedAt).toLocaleString('ar-SA')}</td>
+            <td>${fmtDateTime(s.openedAt)}</td>
             <td>${s.closedBy ? s.closedBy.name : '-'}</td>
-            <td>${s.closedAt ? new Date(s.closedAt).toLocaleString('ar-SA') : '-- مفتوحة --'}</td>
+            <td>${s.closedAt ? fmtDateTime(s.closedAt) : '-- مفتوحة --'}</td>
             <td class="num">${s.variance != null ? fmtMoney(s.variance) : '-'}</td>
             <td><button class="link-btn" onclick="openShiftActivityLog('${s.id}')">🕒 سجل الحركة</button></td>
           </tr>`;
@@ -4715,7 +4768,7 @@ async function openShiftActivityLog(shiftId) {
             ? res.events.map((e) => {
                 const meta = SHIFT_EVENT_LABEL[e.type] || { icon: '•', label: e.type };
                 const detail = e.amount != null ? fmtMoney(e.amount) : (e.note || '-');
-                return `<tr><td>${meta.icon} ${meta.label}</td><td>${new Date(e.at).toLocaleString('ar-SA')}</td><td>${e.by || '-'}</td><td>${e.orderRef != null ? '#' + e.orderRef : '-'}</td><td>${detail}</td></tr>`;
+                return `<tr><td>${meta.icon} ${meta.label}</td><td>${fmtDateTime(e.at)}</td><td>${e.by || '-'}</td><td>${e.orderRef != null ? '#' + e.orderRef : '-'}</td><td>${detail}</td></tr>`;
               }).join('')
             : `<tr><td colspan="5" class="empty">لا توجد أحداث</td></tr>`}</tbody>
         </table></div>
@@ -4881,7 +4934,7 @@ async function loadDayCloseReport() {
     if (to) params.set('to', to);
     const res = await api('/shifts/day-close/list?' + params.toString());
     document.getElementById('dcr-table').innerHTML = res.length
-      ? res.map((d) => `<tr><td>${new Date(d.businessDate).toLocaleDateString('ar-SA')}</td><td>${d.location.name}</td><td class="num">${d.shiftsCount}</td><td class="num">${fmtMoney(d.totalRevenue)}</td><td class="num">${fmtMoney(d.totalVariance)}</td><td>${DAY_CLOSE_METHOD_LABEL[d.autoClosed]}</td></tr>`).join('')
+      ? res.map((d) => `<tr><td>${fmtDate(d.businessDate)}</td><td>${d.location.name}</td><td class="num">${d.shiftsCount}</td><td class="num">${fmtMoney(d.totalRevenue)}</td><td class="num">${fmtMoney(d.totalVariance)}</td><td>${DAY_CLOSE_METHOD_LABEL[d.autoClosed]}</td></tr>`).join('')
       : `<tr><td colspan="6" class="empty">لا يوجد إنهاء يوم مسجّل بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -5070,7 +5123,7 @@ async function loadPromotions() {
     document.getElementById('promotionsTable').innerHTML = promotions.length
       ? promotions.map((p) => {
           const valueLabel = p.type === 'PERCENTAGE_DISCOUNT' ? `${Number(p.value)}%` : `${Number(p.value).toFixed(2)} ر.س`;
-          const period = [p.startsAt ? new Date(p.startsAt).toLocaleDateString('ar-SA') : null, p.endsAt ? new Date(p.endsAt).toLocaleDateString('ar-SA') : null]
+          const period = [p.startsAt ? fmtDate(p.startsAt) : null, p.endsAt ? fmtDate(p.endsAt) : null]
             .filter(Boolean).join(' → ') || 'بلا حدود';
           return `
             <tr>
@@ -5540,7 +5593,7 @@ async function toggleCustomerDetail(id) {
       <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>النقاط</th><th>السبب</th></tr></thead>
         <tbody>
           ${ledger.length ? ledger.map((t) => `
-            <tr><td>${new Date(t.createdAt).toLocaleString('ar-SA')}</td><td>${t.points > 0 ? '+' : ''}${t.points}</td><td>${LOYALTY_REASON_LABEL[t.reason] || t.reason}</td></tr>
+            <tr><td>${fmtDateTime(t.createdAt)}</td><td>${t.points > 0 ? '+' : ''}${t.points}</td><td>${LOYALTY_REASON_LABEL[t.reason] || t.reason}</td></tr>
           `).join('') : `<tr><td colspan="3" class="empty">لا توجد حركات نقاط بعد</td></tr>`}
         </tbody>
       </table></div>
@@ -5571,6 +5624,17 @@ function statTile(label, value) { return `<div class="stat-tile"><div class="lab
 // figures this way; scoped to report renderers only so it doesn't ripple
 // into the invoice/payment-dialog formatting used elsewhere.
 function fmtMoney(n) { return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+// Every date/time in the app renders in Arabic (matching the UI) but on
+// the GREGORIAN calendar with Western digits -- plain 'ar-SA' quietly
+// switches to the Hijri calendar with Eastern Arabic-Indic numerals,
+// which would silently disagree with every Gregorian business date this
+// system actually stores (Order.createdAt, Shift.openedAt, the <input
+// type=date> filters everywhere, and ZATCA's Gregorian-only invoice date).
+const AR_GREGORIAN_LOCALE = 'ar-SA-u-ca-gregory-nu-latn';
+function fmtDate(d) { return d ? new Date(d).toLocaleDateString(AR_GREGORIAN_LOCALE) : '-'; }
+function fmtDateTime(d) { return d ? new Date(d).toLocaleString(AR_GREGORIAN_LOCALE) : '-'; }
+function fmtDateLong(d) { return d ? new Date(d).toLocaleDateString(AR_GREGORIAN_LOCALE, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-'; }
 
 /* ================= Analytical dashboards (charts) ================= */
 // Chart.js instances keyed by their canvas id -- re-opening/refreshing a
@@ -5869,7 +5933,7 @@ async function loadReportsList() {
           <td>${r.format}</td>
           <td>${r.locationId ? (locationsCache.find((l) => l.id === r.locationId) || {}).name || r.locationId : 'كل المواقع'}</td>
           <td>${r.periodStart.slice(0, 10)} → ${r.periodEnd.slice(0, 10)}</td>
-          <td>${new Date(r.createdAt).toLocaleString('ar-SA')}</td>
+          <td>${fmtDateTime(r.createdAt)}</td>
           <td><button class="link-btn" onclick="downloadReport('${r.id}', '${r.fileName.replace(/'/g, "\\'")}')">⬇️ تحميل</button></td>
         </tr>`).join('')
       : `<tr><td colspan="6" class="empty">لا توجد تقارير مولَّدة بعد</td></tr>`;

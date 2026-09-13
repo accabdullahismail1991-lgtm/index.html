@@ -256,6 +256,8 @@
   .pay-method-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700;box-shadow:0 2px 8px rgba(55,48,163,.35);}
   .pay-method-btn:hover:not(.active){border-color:var(--brand);}
   .invoice-type-picker{display:flex;gap:6px;}
+  .order-type-picker{flex-wrap:wrap;}
+  .order-type-picker .invoice-type-btn{flex:none;white-space:nowrap;}
   .invoice-type-btn{flex:1;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);cursor:pointer;font-size:13px;}
   .invoice-type-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700;}
   .pay-line input[type=number]{flex:0 0 90px;}
@@ -271,6 +273,11 @@
   .pay-numpad button:hover{background:var(--border);}
   .pay-numpad button.ghost{background:none;}
   .pay-numpad-fill{grid-column:span 3;background:var(--brand) !important;color:#fff !important;font-size:13.5px !important;}
+
+  /* ---- New Order: shift status bar (gates order entry on an open shift) */
+  .shift-status-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+    background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:10px;}
+  .shift-status-bar #ord-shift-status-text{font-weight:700;}
 
   /* ---- Settings: checkbox lists (user roles/locations) and the grouped
      permission matrix (role editor) ---- */
@@ -555,36 +562,46 @@
     <!-- SALES -->
     <div id="view-sales" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>🧾 المبيعات</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
-        <button id="sl-tab-shifts" class="active" onclick="switchSubview('sl',['shifts','new','orders'],'shifts')">الورديات</button>
-        <button id="sl-tab-new" class="" onclick="switchSubview('sl',['shifts','new','orders'],'new')">➕ طلب جديد</button>
-        <button id="sl-tab-orders" class="" onclick="switchSubview('sl',['shifts','new','orders'],'orders')">الطلبات</button>
+        <button id="sl-tab-new" class="active" onclick="switchSubview('sl',['new','orders','shifts'],'new')">➕ طلب جديد</button>
+        <button id="sl-tab-orders" class="" onclick="switchSubview('sl',['new','orders','shifts'],'orders')">الطلبات</button>
+        <button id="sl-tab-shifts" class="" onclick="switchSubview('sl',['new','orders','shifts'],'shifts')">🔚 الورديات</button>
       </div>
       <div class="view-body">
 
-      <div class="panel subview" id="sl-sub-shifts">
-        <h2>الورديات</h2>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>الوردية</th><th>الموقع</th><th>الحالة</th><th>فتحها</th><th>أغلقها</th><th>رأس المال</th><th>المتوقع</th><th>المعدود</th><th>الفرق</th><th></th></tr></thead>
-          <tbody id="shiftsTable"></tbody>
-        </table></div>
-        <div class="row-form">
-          <div><label>الموقع</label><select id="sh-location"></select></div>
-          <div><label>رأس المال الافتتاحي</label><input id="sh-float" type="number" step="0.01" value="200"></div>
-          <div><button onclick="openShift()">فتح وردية</button></div>
-        </div>
-      </div>
-      <div class="panel subview hidden" id="sl-sub-new">
+      <div class="panel subview" id="sl-sub-new">
         <h2>➕ طلب جديد</h2>
         <div class="pos-ticker hidden" id="pos-ticker"><div class="pos-ticker-track" id="pos-ticker-track"></div></div>
+
+        <div class="shift-status-bar" id="ord-shift-status-bar">
+          <div id="ord-shift-status-text"></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="ord-shift" onchange="onOrderShiftChange()"></select>
+            <button type="button" class="ghost" id="ord-close-shift-btn" onclick="closeShiftFromNewOrder()">🔒 إغلاق الوردية</button>
+          </div>
+        </div>
+
+        <div id="ord-no-shift-panel" class="panel hidden" style="margin-top:12px">
+          <div class="empty">⚠️ لا توجد وردية مفتوحة على أي فرع -- افتح وردية أولًا قبل إنشاء أي طلب أو فاتورة</div>
+          <div class="hint" id="ord-open-shift-today" style="margin-top:6px"></div>
+          <div class="row-form" style="margin-top:10px">
+            <div><label>الموقع</label><select id="ord-open-shift-location"></select></div>
+            <div><label>رأس المال الافتتاحي</label><input id="ord-open-shift-float" type="number" step="0.01" value="200"></div>
+            <div><button onclick="openShiftFromNewOrder()">فتح وردية</button></div>
+          </div>
+        </div>
+
+        <div id="ord-order-form">
         <div class="row-form">
-          <div><label>الوردية المفتوحة</label><select id="ord-shift" onchange="onOrderShiftChange()"></select></div>
-          <div><label>القناة</label>
-            <select id="ord-channel">
-              <option value="DINE_IN">صالة</option>
-              <option value="TAKEAWAY">تيك أواي</option>
-              <option value="DRIVE_THRU">Drive-thru</option>
-              <option value="DELIVERY_PARTNER">توصيل خارجي</option>
-              <option value="BRAND_APP">تطبيق العلامة</option>
-            </select>
+          <div style="flex:2">
+            <label>نوع الطلب</label>
+            <input type="hidden" id="ord-channel" value="DINE_IN">
+            <div class="invoice-type-picker order-type-picker" id="ord-channel-picker">
+              <button type="button" class="invoice-type-btn active" onclick="selectOrderChannel('DINE_IN', this)">🍽️ صالة</button>
+              <button type="button" class="invoice-type-btn" onclick="selectOrderChannel('TAKEAWAY', this)">🥡 تيك أواي</button>
+              <button type="button" class="invoice-type-btn" onclick="selectOrderChannel('DRIVE_THRU', this)">🚗 Drive-thru</button>
+              <button type="button" class="invoice-type-btn" onclick="selectOrderChannel('DELIVERY_PARTNER', this)">🛵 توصيل خارجي</button>
+              <button type="button" class="invoice-type-btn" onclick="selectOrderChannel('BRAND_APP', this)">📱 تطبيق العلامة</button>
+            </div>
           </div>
           <div><label>قائمة الأسعار (اختياري)</label>
             <select id="ord-sales-channel" onchange="onOrderSalesChannelChange()">
@@ -631,12 +648,33 @@
             </div>
           </div>
         </div>
+        </div>
       </div>
       <div class="panel subview hidden" id="sl-sub-orders">
         <h2>الطلبات</h2>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>الموقع</th><th>القناة</th><th>الكاشير</th><th>نوع الفاتورة</th><th>الحالة</th><th>الإجمالي</th><th>طريقة الدفع</th><th></th></tr></thead>
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>اليوم</label><input id="ordf-date" type="date"></div>
+          <div><label>الوردية</label><select id="ordf-shift"><option value="">كل الورديات</option></select></div>
+          <div><label>الكاشير</label><select id="ordf-user"><option value="">كل المستخدمين</option></select></div>
+          <div><label>بحث برقم الطلب (اليومي/الوردية)</label><input id="ordf-number" type="number" placeholder="مثال: 12"></div>
+          <div><button onclick="loadOrders()">تحديث</button></div>
+          <div><button class="ghost" onclick="clearOrdersFilters()">إعادة تعيين</button></div>
+        </div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>#</th><th>رقم الطلب (يومي/وردية)</th><th>التاريخ والوقت</th><th>الموقع</th><th>نوع الطلب</th><th>الكاشير</th><th>نوع الفاتورة</th><th>الحالة</th><th>الإجمالي</th><th>طريقة الدفع</th><th></th></tr></thead>
           <tbody id="ordersTable"></tbody>
         </table></div>
+      </div>
+      <div class="panel subview hidden" id="sl-sub-shifts">
+        <h2>الورديات</h2>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الوردية</th><th>الموقع</th><th>الحالة</th><th>فتحها</th><th>أغلقها</th><th>رأس المال</th><th>المتوقع</th><th>المعدود</th><th>الفرق</th><th></th></tr></thead>
+          <tbody id="shiftsTable"></tbody>
+        </table></div>
+        <div class="hint" id="sh-open-today" style="margin-bottom:6px"></div>
+        <div class="row-form">
+          <div><label>الموقع</label><select id="sh-location"></select></div>
+          <div><label>رأس المال الافتتاحي</label><input id="sh-float" type="number" step="0.01" value="200"></div>
+          <div><button onclick="openShift()">فتح وردية</button></div>
+        </div>
       </div>
      </div></div>
     </div>
@@ -2218,7 +2256,7 @@ function switchTab(name) {
   if (name === 'ingredients') { switchSubview('ing', ['list', 'add', 'import'], 'list'); loadIngredients(); }
   if (name === 'items') { switchSubview('mi', ['list', 'add', 'channels', 'import'], 'list'); loadItems(); }
   if (name === 'inventory') { switchSubview('inv', ['balances', 'receive', 'waste'], 'balances'); loadInventoryTab(); }
-  if (name === 'sales') { switchSubview('sl', ['shifts', 'new', 'orders'], 'shifts'); loadSalesTab(); }
+  if (name === 'sales') { switchSubview('sl', ['new', 'orders', 'shifts'], 'new'); loadSalesTab(); }
   if (name === 'returns') { switchSubview('rt', ['new', 'history'], 'new'); loadReturnsTab(); }
   if (name === 'kitchen') loadKitchenTab();
   if (name === 'alerts') { document.getElementById('al-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadAlerts(); }
@@ -2937,7 +2975,7 @@ function paymentMethodLabel(code) {
 // (matching how Foodics/Square-style POS UIs always pair a payment tile
 // with a recognizable glyph); an admin-defined custom method not in this
 // map falls back by its isCash flag so it's never left with no icon at all.
-const PAYMENT_METHOD_ICON = { CASH: '💵', CARD: '💳', WALLET: '📱', COD: '📦', BANK_TRANSFER: '🏦' };
+const PAYMENT_METHOD_ICON = { CASH: '💵', CARD: '💳', WALLET: '📱', COD: '📦', BANK_TRANSFER: '🏦', STAFF_MEAL: '🍽️' };
 function paymentMethodIcon(code) {
   if (PAYMENT_METHOD_ICON[code]) return PAYMENT_METHOD_ICON[code];
   const m = paymentMethodsCache.find((pm) => pm.code === code);
@@ -2973,6 +3011,34 @@ function onOrderShiftChange() {
   document.getElementById('ord-customer-label').textContent = required ? 'العميل (إلزامي لهذا الفرع)' : 'العميل (اختياري)';
   updateOrderCartTotals();
   updatePosTicker(shift ? shift.locationId : null);
+  const statusText = document.getElementById('ord-shift-status-text');
+  if (shift) statusText.textContent = `الوردية المفتوحة: SH${shift.shiftNumber ?? '-'} -- ${location ? location.name : ''} -- تاريخ الفتح: ${new Date(shift.openedAt).toLocaleDateString('ar-SA')}`;
+}
+// No order/invoice can be created before some shift is open (backend
+// enforces this too -- OrdersService.create() requires an open, unclosed
+// shift -- this is purely so the cashier is stopped BEFORE they build a
+// whole cart, with a clear "open a shift first" prompt instead of a
+// confusing failure at checkout).
+function updateOrderShiftGate() {
+  const hasOpenShift = document.getElementById('ord-shift').options.length > 0 && document.getElementById('ord-shift').value !== '';
+  document.getElementById('ord-no-shift-panel').classList.toggle('hidden', hasOpenShift);
+  document.getElementById('ord-order-form').classList.toggle('hidden', !hasOpenShift);
+  document.getElementById('ord-close-shift-btn').classList.toggle('hidden', !hasOpenShift);
+}
+async function openShiftFromNewOrder() {
+  const locationId = document.getElementById('ord-open-shift-location').value;
+  const openingFloat = parseFloat(document.getElementById('ord-open-shift-float').value);
+  if (!locationId || isNaN(openingFloat)) { flashGlobal('⚠️ اختر الموقع واكتب رأس المال', 'err'); return; }
+  try {
+    await api('/shifts', { method: 'POST', body: JSON.stringify({ locationId, openingFloat }) });
+    flashGlobal('✅ تم فتح الوردية', 'ok');
+    await loadShifts();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function closeShiftFromNewOrder() {
+  const shiftId = document.getElementById('ord-shift').value;
+  if (!shiftId) return;
+  await closeShiftPrompt(shiftId);
 }
 // Cashier-facing scrolling ticker: today's best sellers + current low-stock
 // alerts for the branch the open shift belongs to, so the cashier catches
@@ -3005,6 +3071,10 @@ function selectOrderInvoiceType(type, btn) {
   orderInvoiceType = type;
   document.querySelectorAll('#ord-invoice-type-picker .invoice-type-btn').forEach((b) => b.classList.toggle('active', b === btn));
   document.getElementById('ord-credit-requires-customer-note').classList.toggle('hidden', type !== 'CREDIT');
+}
+function selectOrderChannel(value, btn) {
+  document.getElementById('ord-channel').value = value;
+  document.querySelectorAll('#ord-channel-picker .invoice-type-btn').forEach((b) => b.classList.toggle('active', b === btn));
 }
 
 async function onOrderSalesChannelChange() {
@@ -3284,6 +3354,11 @@ async function loadShifts() {
     document.getElementById('ord-shift').innerHTML = openShifts.length
       ? openShifts.map((s) => `<option value="${s.id}">SH${s.shiftNumber ?? '-'} -- ${locName(s.locationId)}</option>`).join('')
       : '<option value="">لا توجد وردية مفتوحة</option>';
+    document.getElementById('ord-open-shift-location').innerHTML = locationOptions();
+    const todayLabel = 'تاريخ اليوم: ' + new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('ord-open-shift-today').textContent = todayLabel;
+    document.getElementById('sh-open-today').textContent = todayLabel;
+    updateOrderShiftGate();
     onOrderShiftChange();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -3343,6 +3418,16 @@ async function openShiftCloseSummary(shiftId) {
             ? s.byChannel.map((c) => `<tr><td>${AN_CHANNEL_LABEL[c.channel] || c.channel}</td><td class="num">${c.orderCount}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`).join('')
             : `<tr><td colspan="3" class="empty">لا توجد طلبات هذه الوردية</td></tr>`}</tbody>
         </table></div>
+      </div>
+      <div class="panel">
+        <h2>حسب طريقة الدفع (تسوية الصندوق)</h2>
+        <div class="hint">هذه هي الطرق الفعلية المحصّلة عند الدفع -- كاش، شبكة، محافظ إلكترونية، وجبات الموظفين، أو أي طريقة أخرى معرّفة.</div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الطريقة</th><th>المبلغ</th></tr></thead>
+          <tbody>${s.byPaymentMethod.length
+            ? s.byPaymentMethod.map((m) => `<tr><td>${paymentMethodLabelWithIcon(m.method)}</td><td class="num">${fmtMoney(m.amount)}</td></tr>`).join('')
+            : `<tr><td colspan="2" class="empty">لا توجد مدفوعات هذه الوردية</td></tr>`}</tbody>
+        </table></div>
+        ${s.creditInvoiceTotal > 0 ? `<div class="msg" style="margin-top:10px">💳 فواتير آجلة (توصيل خارجي/عملاء بالأجل): <b>${fmtMoney(s.creditInvoiceTotal)}</b> -- غير محصّلة نقدًا الآن</div>` : ''}
       </div>
     `;
   } catch (e) {
@@ -3416,15 +3501,48 @@ async function createOrder() {
   }
 }
 const INVOICE_TYPE_LABEL = { CASH: 'نقدي', CREDIT: 'آجل' };
+function clearOrdersFilters() {
+  document.getElementById('ordf-date').value = '';
+  document.getElementById('ordf-shift').value = '';
+  document.getElementById('ordf-user').value = '';
+  document.getElementById('ordf-number').value = '';
+  loadOrders();
+}
 async function loadOrders() {
   try {
-    const orders = await api('/orders');
+    if (!document.getElementById('ordf-shift').options.length || document.getElementById('ordf-shift').options.length === 1) {
+      document.getElementById('ordf-shift').innerHTML = '<option value="">كل الورديات</option>'
+        + shiftsCache.map((s) => `<option value="${s.id}">SH${s.shiftNumber ?? '-'} -- ${(locationsCache.find((l) => l.id === s.locationId) || {}).name || ''}</option>`).join('');
+      // Cashier filter options come from an unfiltered baseline read of
+      // orders (not a /users call -- a plain cashier has no `users.manage`
+      // permission to list every user), populated once so picking one
+      // cashier doesn't shrink this dropdown down to just them afterward.
+      const baseline = await api('/orders');
+      const cashiers = new Map();
+      baseline.forEach((o) => { if (o.servedBy) cashiers.set(o.servedBy.id, o.servedBy.name); });
+      document.getElementById('ordf-user').innerHTML = '<option value="">كل المستخدمين</option>'
+        + [...cashiers.entries()].map(([id, name]) => `<option value="${id}">${name}</option>`).join('');
+    }
+    const date = document.getElementById('ordf-date').value;
+    const params = new URLSearchParams();
+    if (date) { params.set('from', date); params.set('to', date); }
+    const shiftId = document.getElementById('ordf-shift').value;
+    if (shiftId) params.set('shiftId', shiftId);
+    const servedById = document.getElementById('ordf-user').value;
+    if (servedById) params.set('servedById', servedById);
+    const orderNumber = document.getElementById('ordf-number').value;
+    if (orderNumber) params.set('orderNumber', orderNumber);
+
+    const orders = await api('/orders?' + params.toString());
     const locName = (id) => (locationsCache.find((l) => l.id === id) || {}).name || id;
-    const channelLabel = { DINE_IN: 'صالة', TAKEAWAY: 'تيك أواي', DRIVE_THRU: 'Drive-thru', DELIVERY_PARTNER: 'توصيل خارجي', BRAND_APP: 'تطبيق' };
     document.getElementById('ordersTable').innerHTML = orders.length
       ? orders.map((o) => `
         <tr>
-          <td>${locName(o.locationId)}</td><td>${channelLabel[o.channel] || o.channel}</td>
+          <td>${o.sequenceNumber ?? '-'}</td>
+          <td>يومي #${o.dailySequence ?? '-'} / وردية #${o.shiftSequence ?? '-'}</td>
+          <td>${new Date(o.createdAt).toLocaleString('ar-SA')}</td>
+          <td>${locName(o.locationId)}</td>
+          <td>${AN_CHANNEL_LABEL[o.channel] || o.channel}</td>
           <td>${o.servedBy ? o.servedBy.name : '-'}</td>
           <td>${INVOICE_TYPE_LABEL[o.invoiceType] || o.invoiceType}</td>
           <td>${o.status}</td>
@@ -3437,13 +3555,13 @@ async function loadOrders() {
               <button class="link-btn" onclick="voidOrder('${o.id}')">إلغاء</button>
             ` : ''}
             ${o.status === 'PAID' ? `
-              <button class="link-btn" onclick="openInvoicePopup('${o.id}')">🧾 الفاتورة</button>
+              <button class="link-btn" onclick="openInvoicePopup('${o.id}')">🧾 عرض/طباعة الفاتورة</button>
               <button class="link-btn" onclick="printKitchenTicketFromOrder('${o.id}')">🖨️ تذكرة</button>
             ` : ''}
           </td>
         </tr>
       `).join('')
-      : `<tr><td colspan="8" class="empty">لا توجد طلبات بعد</td></tr>`;
+      : `<tr><td colspan="11" class="empty">لا توجد طلبات مطابقة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 

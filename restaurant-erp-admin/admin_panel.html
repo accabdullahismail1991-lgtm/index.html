@@ -646,6 +646,7 @@
               <button type="button" class="invoice-type-btn" onclick="selectOrderInvoiceType('CREDIT', this)">آجل</button>
             </div>
           </div>
+          <div><label>خصم يدوي (اختياري -- يتطلب صلاحية)</label><input id="ord-manual-discount" type="number" step="0.01" min="0" placeholder="0.00"></div>
         </div>
         <div id="ord-customer-required-note" class="msg err hidden" style="margin-top:8px">⚠️ هذا الفرع يُلزم اختيار عميل لإنشاء الطلب</div>
         <div id="ord-credit-requires-customer-note" class="msg err hidden" style="margin-top:8px">⚠️ الفاتورة الآجلة تتطلب اختيار عميل</div>
@@ -3737,10 +3738,13 @@ async function createOrder() {
   btn.disabled = true;
   btn.textContent = '⏳ جارِ الحفظ...';
   try {
-    const created = await api('/orders', { method: 'POST', body: JSON.stringify({ locationId: shift.locationId, shiftId, channel, salesChannelId, customerId, invoiceType: orderInvoiceType, lines }) });
+    const discountInput = parseFloat(document.getElementById('ord-manual-discount').value);
+    const discountTotal = !isNaN(discountInput) && discountInput > 0 ? discountInput : undefined;
+    const created = await api('/orders', { method: 'POST', body: JSON.stringify({ locationId: shift.locationId, shiftId, channel, salesChannelId, customerId, invoiceType: orderInvoiceType, discountTotal, lines }) });
     container.innerHTML = '';
     updateOrderCartTotals();
     document.getElementById('ord-customer').value = '';
+    document.getElementById('ord-manual-discount').value = '';
     document.querySelector('#ord-invoice-type-picker .invoice-type-btn').click();
     flashGlobal('✅ تم إنشاء الطلب', 'ok');
     loadOrders(); loadShifts();

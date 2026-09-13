@@ -30,8 +30,8 @@
   input,select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;
     background:#fafbfe;color:var(--ink);font-family:inherit;}
   input:focus,select:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:var(--brand);}
-  button{padding:9px 16px;border:none;border-radius:8px;background:var(--brand);color:#fff;
-    font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+  button{padding:7px 13px;border:none;border-radius:8px;background:var(--brand);color:#fff;
+    font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
   button:hover{background:var(--brand-dark);}
   button.ghost{background:none;color:var(--brand);border:1px solid var(--brand);}
   button.danger{background:var(--danger);}
@@ -263,7 +263,7 @@
   .invoice-type-picker{display:flex;gap:6px;}
   .order-type-picker{flex-wrap:wrap;}
   .order-type-picker .invoice-type-btn{flex:none;white-space:nowrap;}
-  .invoice-type-btn{flex:1;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);cursor:pointer;font-size:13px;}
+  .invoice-type-btn{flex:1;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--ink);cursor:pointer;font-size:13px;}
   .invoice-type-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700;}
   .pay-line input[type=number]{flex:0 0 90px;}
   .pay-line input[type=text]{flex:1;min-width:0;}
@@ -307,7 +307,7 @@
 
   /* ---- ZATCA-style invoice view/print ---- */
   .invoice-template-picker{display:flex;gap:4px;}
-  .tmpl-btn{padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);cursor:pointer;font-size:12px;}
+  .tmpl-btn{padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--ink);cursor:pointer;font-size:12px;}
   .tmpl-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700;}
   .invoice-box{max-width:420px;margin:0 auto;background:#fff;padding:16px;font-size:12.5px;color:#000;}
   .invoice-box.thermal{max-width:302px;font-size:11px;padding:8px;}
@@ -1134,9 +1134,10 @@
     <div id="view-settings" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>⚙️ الإعدادات العامة</h2><button class="view-close" onclick="closeView()">✕</button></div>
       <div class="subnav">
-        <button id="set-tab-general" class="active" onclick="switchSubview('set',['general','users','roles'],'general')">عام</button>
-        <button id="set-tab-users" class="" onclick="switchSubview('set',['general','users','roles'],'users'); loadUsersTab()">👤 المستخدمون</button>
-        <button id="set-tab-roles" class="" onclick="switchSubview('set',['general','users','roles'],'roles'); loadRolesTab()">🛡️ الأدوار والصلاحيات</button>
+        <button id="set-tab-general" class="active" onclick="switchSubview('set',['general','users','roles','danger'],'general')">عام</button>
+        <button id="set-tab-users" class="" onclick="switchSubview('set',['general','users','roles','danger'],'users'); loadUsersTab()">👤 المستخدمون</button>
+        <button id="set-tab-roles" class="" onclick="switchSubview('set',['general','users','roles','danger'],'roles'); loadRolesTab()">🛡️ الأدوار والصلاحيات</button>
+        <button id="set-tab-danger" class="" onclick="switchSubview('set',['general','users','roles','danger'],'danger')">🗑️ حذف البيانات</button>
       </div>
       <div class="view-body">
 
@@ -1208,6 +1209,33 @@
         <div style="margin-top:10px"><button onclick="createRole()">إضافة</button></div>
         <div id="r-msg" class="msg"></div>
       </div>
+
+      <div class="panel subview hidden" id="set-sub-danger">
+        <h2>⚠️ إجراءات حسّاسة -- لا يمكن التراجع عنها</h2>
+        <div class="hint">تحتاج صلاحية "حذف/تصفير بيانات النظام"، وتطلب كل واحدة كتابة عبارة تأكيد بالضبط قبل التنفيذ.</div>
+
+        <div class="panel" style="margin-top:14px;border:1px solid var(--border)">
+          <h2>🧺 تصفير بيانات الأصناف والوصفات</h2>
+          <div class="hint">
+            يحذف نهائيًا: كل المكوّنات والأصناف والوصفات ووجبات الكمبو، وكل ما يتبعها من طلبات مبيعات ومدفوعات ومخزون
+            (دفعات/حركات) وأوامر إنتاج/شراء/تحويل/جرد -- تمهيدًا لاستيراد بيانات أصناف جديدة.<br>
+            <b>يبقى كما هو:</b> الفروع، الموردون، العملاء، الورديات، قنوات البيع، العروض، طرق الدفع، والمستخدمون/الأدوار.
+          </div>
+          <div style="margin-top:10px"><button class="danger" onclick="runMasterDataReset()">🗑️ تصفير الأصناف والوصفات الآن</button></div>
+        </div>
+
+        <div class="panel" style="margin-top:14px;border:1px solid var(--border)">
+          <h2>💣 تفريغ قاعدة البيانات بالكامل</h2>
+          <div class="hint">
+            يشمل كل ما سبق، بالإضافة إلى: الفروع، الموردون، العملاء ورصيد نقاط الولاء، الطاولات، الورديات، قنوات البيع،
+            العروض، مصفوفة الموافقات، وسجلات إغلاق اليوم -- وتُعاد طرق الدفع لإعداداتها الافتراضية.<br>
+            <b>يبقى كما هو فقط:</b> حسابات المستخدمين والأدوار والصلاحيات، حتى تتمكن من تسجيل الدخول واستيراد بيانات فرعك الجديد بعدها مباشرة.
+          </div>
+          <div style="margin-top:10px"><button class="danger" onclick="runFullWipe()">💣 تفريغ كل شيء الآن</button></div>
+        </div>
+
+        <div id="danger-msg" class="msg"></div>
+      </div>
      </div></div>
     </div>
 
@@ -1243,6 +1271,10 @@
           <div class="home-card" onclick="openReportPopup('kitchen-performance')"><div class="ic">🍳</div><div class="lb">تقرير أداء المطبخ</div></div>
           <div class="home-card" onclick="openReportPopup('day-close')"><div class="ic">📅</div><div class="lb">إنهاء اليوم</div></div>
           <div class="home-card" onclick="openReportPopup('daily-consumption')"><div class="ic">📉</div><div class="lb">تقرير الاستهلاك اليومي</div></div>
+          <div class="home-card" onclick="openReportPopup('net-sales')"><div class="ic">💰</div><div class="lb">تقرير صافي المبيعات</div></div>
+          <div class="home-card" onclick="openReportPopup('abc-analysis')"><div class="ic">🅰️</div><div class="lb">تحليل ABC (باريتو) للأصناف</div></div>
+          <div class="home-card" onclick="openReportPopup('category-mix')"><div class="ic">🥧</div><div class="lb">مزيج المبيعات حسب الفئة</div></div>
+          <div class="home-card" onclick="openReportPopup('period-comparison')"><div class="ic">📆</div><div class="lb">مقارنة الفترات</div></div>
         </div>
       </div>
       <div class="panel">
@@ -1294,8 +1326,8 @@
         </div>
 
         <h3 style="margin-top:20px">📋 جداول مرجعية</h3>
-        <h4>اتجاه المبيعات اليومي</h4>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ</th><th>عدد الطلبات</th><th>الإيراد</th></tr></thead>
+        <h4>اتجاه المبيعات ومتوسط الفاتورة اليومي</h4>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ</th><th>عدد الطلبات</th><th>الإيراد</th><th>متوسط الفاتورة</th></tr></thead>
           <tbody id="dshs-trend-table"></tbody>
         </table></div>
         <h4 style="margin-top:16px">الإيراد حسب القناة</h4>
@@ -1740,6 +1772,81 @@
         <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>النوع</th><th>مبيعات (كمية)</th><th>مبيعات (تكلفة)</th><th>إنتاج (كمية)</th><th>إنتاج (تكلفة)</th><th>هالك (كمية)</th><th>هالك (تكلفة)</th><th>إجمالي الكمية</th><th>إجمالي التكلفة</th></tr></thead>
           <tbody id="dcnr-table"></tbody>
         </table></div>
+      </div>
+     </div></div>
+    </div>
+
+    <!-- NET SALES REPORT -->
+    <div id="view-report-net-sales" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>💰 تقرير صافي المبيعات</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="hint">صافي المبيعات بعد الخصم -- شامل الضريبة وبدون الضريبة جنبًا إلى جنب -- مع عدد العملاء المميزين (وليس عدد الطلبات فقط، فقد يضع نفس العميل أكثر من طلب) ومتوسط الفاتورة.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="nsr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="nsr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="nsr-to" type="date"></div>
+          <div><button onclick="loadNetSalesReport()">تحديث</button></div>
+        </div>
+        <div id="nsr-cards" class="stats-row"></div>
+        <h2 style="margin-top:18px">التفصيل اليومي</h2>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ</th><th>عدد الطلبات</th><th>صافي المبيعات (بدون ضريبة)</th><th>الضريبة</th><th>صافي المبيعات (شامل الضريبة)</th></tr></thead>
+          <tbody id="nsr-table"></tbody>
+        </table></div>
+      </div>
+     </div></div>
+    </div>
+
+    <!-- ABC / PARETO ANALYSIS -->
+    <div id="view-report-abc-analysis" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>🅰️ تحليل ABC (باريتو) للأصناف</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="hint">تصنيف كل صنف حسب نصيبه التراكمي من إجمالي المبيعات: <b>A</b> الأصناف التي تُشكّل أول ~80% من المبيعات (الأهم -- لا يجب أن تنفد أبدًا)، <b>B</b> الـ15% التالية، <b>C</b> الذيل الطويل (آخر ~5% -- أول مرشح لتقليص المنيو).</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="abcr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="abcr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="abcr-to" type="date"></div>
+          <div><button onclick="loadAbcAnalysisReport()">تحديث</button></div>
+        </div>
+        <div id="abcr-cards" class="stats-row"></div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>الفئة</th><th>الكمية</th><th>الإيراد</th><th>% من الإيراد</th><th>% تراكمي</th></tr></thead>
+          <tbody id="abcr-table"></tbody>
+        </table></div>
+      </div>
+     </div></div>
+    </div>
+
+    <!-- SALES BY CATEGORY MIX -->
+    <div id="view-report-category-mix" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>🥧 مزيج المبيعات حسب الفئة</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="hint">أي فئة من فئات المنيو (رئيسي، مقبلات، حلويات...) تقود الإيراد -- قبل النزول لتفاصيل كل صنف على حدة.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="cmxr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="cmxr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="cmxr-to" type="date"></div>
+          <div><button onclick="loadCategoryMixReport()">تحديث</button></div>
+        </div>
+        <div class="dash-card" style="max-width:420px;margin:0 auto 16px"><h4>الإيراد حسب الفئة</h4><canvas id="cmxr-chart"></canvas></div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الفئة</th><th>الكمية</th><th>الإيراد</th><th>% من الإيراد</th></tr></thead>
+          <tbody id="cmxr-table"></tbody>
+        </table></div>
+      </div>
+     </div></div>
+    </div>
+
+    <!-- PERIOD-OVER-PERIOD COMPARISON -->
+    <div id="view-report-period-comparison" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>📆 مقارنة الفترات</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="hint">الفترة المحددة مقابل الفترة السابقة لها مباشرة بنفس الطول -- بدون تحديد فترة، الافتراضي آخر 30 يومًا مقابل الـ30 يومًا التي قبلها.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="pcr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="pcr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="pcr-to" type="date"></div>
+          <div><button onclick="loadPeriodComparisonReport()">تحديث</button></div>
+        </div>
+        <div id="pcr-periods" class="hint"></div>
+        <div id="pcr-cards" class="stats-row" style="margin-top:10px"></div>
       </div>
      </div></div>
     </div>
@@ -2554,11 +2661,34 @@ const REPORT_POPUPS = {
   'kitchen-performance': loadKitchenPerformanceReport,
   'day-close': loadDayCloseReport,
   'daily-consumption': loadDailyConsumptionReport,
+  'net-sales': loadNetSalesReport,
+  'abc-analysis': loadAbcAnalysisReport,
+  'category-mix': loadCategoryMixReport,
+  'period-comparison': loadPeriodComparisonReport,
 };
 function openReportPopup(key) {
   closeView();
   document.getElementById('view-report-' + key).classList.add('open');
   REPORT_POPUPS[key]();
+  wireAutoRefreshFilters('view-report-' + key, REPORT_POPUPS[key]);
+}
+
+// Every report/dashboard's location/date/status filter previously did
+// nothing until the user separately noticed and clicked its own "تحديث"
+// button -- reading as "the output isn't connected to the filters" since
+// changing a filter had no visible effect on its own. This wires every
+// filter control inside the view's .row-form rows (the same convention
+// printCurrentView() already relies on to find "what's actually applied")
+// to re-run the exact same loader its تحديث button calls, so a report
+// updates the instant a filter changes. Wired once per view (guarded by
+// a data attribute) since openReportPopup can reopen the same view later.
+function wireAutoRefreshFilters(viewId, loaderFn) {
+  const view = document.getElementById(viewId);
+  if (!view || !loaderFn || view.dataset.autoRefreshWired) return;
+  view.dataset.autoRefreshWired = '1';
+  view.querySelectorAll('.row-form select, .row-form input[type="date"]').forEach((el) => {
+    el.addEventListener('change', () => loaderFn());
+  });
 }
 
 // Generic sub-tab switcher for a popup that bundles more than one distinct
@@ -2601,7 +2731,7 @@ function switchTab(name) {
   if (name === 'combos') { switchSubview('cb', ['list', 'add'], 'list'); loadCombos(); }
   if (name === 'customers') { switchSubview('cu', ['list', 'add', 'import'], 'list'); loadCustomers(); }
   if (name === 'payment-methods') loadPaymentMethodsTab();
-  if (name === 'settings') { switchSubview('set', ['general', 'users', 'roles'], 'general'); loadGeneralSettingsTab(); }
+  if (name === 'settings') { switchSubview('set', ['general', 'users', 'roles', 'danger'], 'general'); loadGeneralSettingsTab(); }
   if (name === 'analytics') { document.getElementById('an-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadReportsList(); }
 }
 
@@ -2852,7 +2982,8 @@ function toggleIngredientEdit(id) {
   box.innerHTML = `
     <div class="row-form" style="margin-top:0">
       <div><label>الاسم</label><input class="ei-name" value="${ing.name}"></div>
-      <div><label>الوحدة</label><select class="ei-unit">${unitOptionsHtml(ing.unit)}</select></div>
+      <div><label>الوحدة</label><select class="ei-unit" ${ing.hasMovement ? 'disabled title="لا يمكن تغيير الوحدة بعد وجود حركة مخزنية على هذا الصنف (كميات/تكاليف مسجّلة بالوحدة الحالية)"' : ''}>${unitOptionsHtml(ing.unit)}</select>
+        ${ing.hasMovement ? '<div class="hint" style="margin-top:4px">🔒 مقفلة -- يوجد حركة مخزنية على هذا الصنف</div>' : ''}</div>
       <div><label>النوع</label>
         <select class="ei-kind">
           <option value="RAW_MATERIAL" ${ing.kind === 'RAW_MATERIAL' ? 'selected' : ''}>خامة</option>
@@ -4287,6 +4418,9 @@ async function loadSalesReport() {
       statTile('ضريبة القيمة المضافة', fmtMoney(summary.vatCollected)),
       statTile('الخصومات', fmtMoney(summary.discountGiven)),
       statTile('متوسط الطلب', fmtMoney(summary.averageOrderValue)),
+      statTile('عدد المرتجعات', summary.returnCount),
+      statTile('قيمة المرتجعات', fmtMoney(summary.returnsTotal)),
+      statTile('الإيراد بعد المرتجعات', fmtMoney(summary.revenueAfterReturns)),
     ].join('');
     document.getElementById('slr-channel-table').innerHTML = summary.byChannel.length
       ? summary.byChannel.map((c) => `<tr><td>${AN_CHANNEL_LABEL[c.channel] || c.channel}</td><td class="num">${c.orderCount}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`).join('')
@@ -4392,14 +4526,18 @@ async function loadReturnableLines() {
       wrap.innerHTML = '<div class="empty">كل أصناف هذا الطلب مُرجَعة بالكامل بالفعل</div>';
       return;
     }
-    wrap.innerHTML = `<div class="table-wrap"><table><thead><tr><th>الصنف</th><th>الكمية المباعة</th><th>مُرجَع سابقًا</th><th>المتبقي</th><th>الكمية المطلوب إرجاعها</th></tr></thead>
-      <tbody>${returnable.map((l) => `
-        <tr>
+    wrap.innerHTML = `<div class="table-wrap"><table><thead><tr><th>الصنف</th><th>الكمية المباعة</th><th>مُرجَع سابقًا</th><th>المتبقي</th><th>حالة المطبخ</th><th>الكمية المطلوب إرجاعها</th></tr></thead>
+      <tbody>${returnable.map((l) => {
+        const kitchenReady = l.kitchenStatus === 'READY' || l.kitchenStatus === 'SERVED';
+        return `
+        <tr ${kitchenReady ? '' : 'title="لا يمكن الإرجاع قبل خروج الصنف من المطبخ"'}>
           <td>${l.menuItemName}</td><td>${l.quantity}</td><td>${l.alreadyReturned}</td><td>${l.remaining}</td>
-          <td><input type="number" min="0" max="${l.remaining}" step="1" value="0" class="rt-qty" data-line-id="${l.orderLineId}" style="width:70px"></td>
+          <td><span class="kt-status-badge kt-status-${l.kitchenStatus}">${KITCHEN_STATUS_LABEL[l.kitchenStatus]}</span></td>
+          <td><input type="number" min="0" max="${l.remaining}" step="1" value="0" class="rt-qty" data-line-id="${l.orderLineId}" style="width:70px" ${kitchenReady ? '' : 'disabled title="لم يخرج من المطبخ بعد"'}></td>
         </tr>
-      `).join('')}</tbody>
-    </table></div>`;
+      `; }).join('')}</tbody>
+    </table></div>
+    ${returnable.some((l) => l.kitchenStatus !== 'READY' && l.kitchenStatus !== 'SERVED') ? '<div class="hint" style="margin-top:8px">⚠️ بعض الأصناف ما زالت قيد التحضير في المطبخ ولا يمكن إرجاعها حتى تخرج (جاهز/تم التسليم)</div>' : ''}`;
     document.getElementById('rt-submit-btn').disabled = false;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); wrap.innerHTML = ''; }
 }
@@ -5257,6 +5395,103 @@ async function loadDailyConsumptionReport() {
       : `<tr><td colspan="10" class="empty">لا يوجد استهلاك مسجّل في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+async function loadNetSalesReport() {
+  const sel = document.getElementById('nsr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('nsr-from').value;
+    const to = document.getElementById('nsr-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/analytics/net-sales?' + params.toString());
+    document.getElementById('nsr-cards').innerHTML = [
+      statTile('عدد الطلبات', res.orderCount),
+      statTile('عدد العملاء', res.customerCount),
+      statTile('طلبات بدون عميل', res.walkInOrderCount),
+      statTile('إجمالي المبيعات (قبل الخصم)', fmtMoney(res.grossSales)),
+      statTile('الخصومات', fmtMoney(res.discountGiven)),
+      statTile('صافي المبيعات (بدون ضريبة)', fmtMoney(res.netSalesExclVat)),
+      statTile('ضريبة القيمة المضافة', fmtMoney(res.vatTotal)),
+      statTile('صافي المبيعات (شامل الضريبة)', fmtMoney(res.netSalesInclVat)),
+      statTile('متوسط الفاتورة (بدون ضريبة)', fmtMoney(res.averageInvoiceExclVat)),
+      statTile('متوسط الفاتورة (شامل الضريبة)', fmtMoney(res.averageInvoiceInclVat)),
+    ].join('');
+    document.getElementById('nsr-table').innerHTML = res.byDay.length
+      ? res.byDay.map((d) => `<tr><td>${d.date}</td><td class="num">${d.orderCount}</td><td class="num">${fmtMoney(d.netSalesExclVat)}</td><td class="num">${fmtMoney(d.vatTotal)}</td><td class="num">${fmtMoney(d.netSalesInclVat)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${res.orderCount}</td><td class="num">${fmtMoney(res.netSalesExclVat)}</td><td class="num">${fmtMoney(res.vatTotal)}</td><td class="num">${fmtMoney(res.netSalesInclVat)}</td></tr>`
+      : `<tr><td colspan="5" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+const ABC_CLASS_LABEL = { A: 'A -- الأهم', B: 'B', C: 'C -- الأقل أهمية' };
+async function loadAbcAnalysisReport() {
+  const sel = document.getElementById('abcr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('abcr-from').value;
+    const to = document.getElementById('abcr-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/analytics/abc-analysis?' + params.toString());
+    document.getElementById('abcr-cards').innerHTML = [
+      statTile('إجمالي الإيراد', fmtMoney(res.totalRevenue)),
+      ...res.summary.map((s) => statTile(`فئة ${s.class} (${s.itemCount} صنف)`, `${fmtMoney(s.revenue)} (${s.revenuePercent}%)`)),
+    ].join('');
+    document.getElementById('abcr-table').innerHTML = res.items.length
+      ? res.items.map((i) => `<tr><td>${i.name}</td><td><span class="pill">${ABC_CLASS_LABEL[i.class] || i.class}</span></td><td class="num">${i.quantity}</td><td class="num">${fmtMoney(i.revenue)}</td><td class="num">${i.revenuePercent}%</td><td class="num">${i.cumulativePercent}%</td></tr>`).join('')
+      : `<tr><td colspan="6" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function loadCategoryMixReport() {
+  const sel = document.getElementById('cmxr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('cmxr-from').value;
+    const to = document.getElementById('cmxr-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/analytics/category-mix?' + params.toString());
+    mountChartOrEmpty('cmxr-chart', res.length > 0, () => doughnutChartConfig(res.map((c) => c.category), res.map((c) => c.revenue)), 'لا توجد مبيعات في هذه الفترة');
+    document.getElementById('cmxr-table').innerHTML = res.length
+      ? res.map((c) => `<tr><td>${c.category}</td><td class="num">${c.quantity}</td><td class="num">${fmtMoney(c.revenue)}</td><td class="num">${c.revenuePercent}%</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${res.reduce((s, c) => s + c.quantity, 0)}</td><td class="num">${fmtMoney(res.reduce((s, c) => s + c.revenue, 0))}</td><td class="num">100%</td></tr>`
+      : `<tr><td colspan="4" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+function pctChangeBadge(pct) {
+  const sign = pct > 0 ? '▲' : pct < 0 ? '▼' : '–';
+  const cls = pct > 0 ? 'ok' : pct < 0 ? 'err' : '';
+  return `<span class="msg ${cls}" style="display:inline-block;padding:2px 8px">${sign} ${Math.abs(pct)}%</span>`;
+}
+async function loadPeriodComparisonReport() {
+  const sel = document.getElementById('pcr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('pcr-from').value;
+    const to = document.getElementById('pcr-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/analytics/period-comparison?' + params.toString());
+    document.getElementById('pcr-periods').textContent = `الفترة الحالية: ${res.current.from} إلى ${res.current.to} -- الفترة السابقة: ${res.previous.from} إلى ${res.previous.to}`;
+    document.getElementById('pcr-cards').innerHTML = [
+      statTile('الإيراد', `${fmtMoney(res.current.revenue)} <small>(كان ${fmtMoney(res.previous.revenue)})</small><br>${pctChangeBadge(res.change.revenue)}`),
+      statTile('عدد الطلبات', `${res.current.orderCount} <small>(كان ${res.previous.orderCount})</small><br>${pctChangeBadge(res.change.orderCount)}`),
+      statTile('متوسط الطلب', `${fmtMoney(res.current.averageOrderValue)} <small>(كان ${fmtMoney(res.previous.averageOrderValue)})</small><br>${pctChangeBadge(res.change.averageOrderValue)}`),
+      statTile('صافي المبيعات', `${fmtMoney(res.current.netSales)} <small>(كان ${fmtMoney(res.previous.netSales)})</small><br>${pctChangeBadge(res.change.netSales)}`),
+    ].join('');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
 async function closeDayNow() {
   const locationId = document.getElementById('dcr-close-location').value;
   const businessDate = document.getElementById('dcr-close-date').value;
@@ -5861,6 +6096,35 @@ async function createRole() {
     loadRolesTab();
   } catch (e) { showMsg('r-msg', '❌ ' + e.message, 'err'); }
 }
+
+// Both destructive actions require the caller to type the exact phrase the
+// backend expects (see admin.service.ts / confirm-reset.dto.ts) into a
+// window.prompt() -- the same "type to confirm" pattern used everywhere else
+// in this app for an irreversible action, on top of the system.reset_data
+// permission check the API itself enforces. A mismatched or cancelled prompt
+// never reaches the network at all.
+async function runMasterDataReset() {
+  const phrase = 'RESET-MASTER-DATA';
+  const typed = window.prompt('لا يمكن التراجع عن هذا الإجراء.\nسيُحذف كل الأصناف والوصفات وكل طلبات المبيعات والمخزون المرتبطة بها.\n\nاكتب "' + phrase + '" للتأكيد:');
+  if (typed !== phrase) { if (typed !== null) showMsg('danger-msg', '⚠️ العبارة غير مطابقة -- لم يتم تنفيذ أي شيء', 'err'); return; }
+  try {
+    const result = await api('/admin/reset-master-data', { method: 'POST', body: JSON.stringify({ confirm: phrase }) });
+    showMsg('danger-msg', `✅ تم التصفير: ${result.ingredients} صنف، ${result.menuItems} صنف منيو، ${result.orders} طلب مبيعات`, 'ok');
+    ingredientsCache = [];
+  } catch (e) { showMsg('danger-msg', '❌ ' + e.message, 'err'); }
+}
+
+async function runFullWipe() {
+  const phrase = 'FULL-WIPE-EVERYTHING';
+  const typed = window.prompt('لا يمكن التراجع عن هذا الإجراء.\nسيُحذف كل شيء عدا حسابات المستخدمين والأدوار والصلاحيات: الفروع، الموردون، العملاء، الورديات، وكل بيانات الأصناف والمبيعات.\n\nاكتب "' + phrase + '" للتأكيد:');
+  if (typed !== phrase) { if (typed !== null) showMsg('danger-msg', '⚠️ العبارة غير مطابقة -- لم يتم تنفيذ أي شيء', 'err'); return; }
+  try {
+    const result = await api('/admin/full-wipe', { method: 'POST', body: JSON.stringify({ confirm: phrase }) });
+    showMsg('danger-msg', `✅ تم تفريغ قاعدة البيانات بالكامل (${result.locations} فرع، ${result.customers} عميل، ${result.suppliers} مورّد)`, 'ok');
+    ingredientsCache = [];
+  } catch (e) { showMsg('danger-msg', '❌ ' + e.message, 'err'); }
+}
+
 function toggleRoleEdit(id) {
   const row = document.getElementById('edit-role-row-' + id);
   const box = document.getElementById('edit-role-box-' + id);
@@ -6024,6 +6288,7 @@ async function loadSalesDashboard() {
       statTile('عدد الطلبات', summary.orderCount), statTile('الإيراد', fmtMoney(summary.revenue)),
       statTile('صافي المبيعات', fmtMoney(summary.netSales)), statTile('الضريبة', fmtMoney(summary.vatCollected)),
       statTile('متوسط الطلب', fmtMoney(summary.averageOrderValue)),
+      statTile('المرتجعات', `${summary.returnCount} (${fmtMoney(summary.returnsTotal)})`),
     ].join('');
     mountChartOrEmpty('dshs-trend-chart', trend.length > 0, () => lineChartConfig(trend.map((t) => t.date), trend.map((t) => t.revenue), 'الإيراد'), 'لا توجد مبيعات في هذه الفترة');
     mountChartOrEmpty('dshs-channel-chart', summary.byChannel.length > 0, () => doughnutChartConfig(summary.byChannel.map((c) => AN_CHANNEL_LABEL[c.channel] || c.channel), summary.byChannel.map((c) => c.revenue)), 'لا توجد مبيعات في هذه الفترة');
@@ -6034,8 +6299,8 @@ async function loadSalesDashboard() {
       ? lowStock.slice(0, 8).map((r) => dashListRow(r.name, `${r.quantity} ${r.unit}`, true)).join('') : dashEmptyList('لا توجد تنبيهات نقص مخزون');
 
     document.getElementById('dshs-trend-table').innerHTML = trend.length
-      ? trend.map((t) => `<tr><td>${t.date}</td><td class="num">${t.orderCount}</td><td class="num">${fmtMoney(t.revenue)}</td></tr>`).join('')
-      : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+      ? trend.map((t) => `<tr><td>${t.date}</td><td class="num">${t.orderCount}</td><td class="num">${fmtMoney(t.revenue)}</td><td class="num">${fmtMoney(t.orderCount ? t.revenue / t.orderCount : 0)}</td></tr>`).join('')
+      : `<tr><td colspan="4" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
     document.getElementById('dshs-channel-table').innerHTML = summary.byChannel.length
       ? summary.byChannel.map((c) => `<tr><td>${AN_CHANNEL_LABEL[c.channel] || c.channel}</td><td class="num">${c.orderCount}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`).join('')
         + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${summary.byChannel.reduce((s, c) => s + c.orderCount, 0)}</td><td class="num">${fmtMoney(summary.byChannel.reduce((s, c) => s + c.revenue, 0))}</td></tr>`

@@ -610,9 +610,10 @@
     <!-- SALES -->
     <div id="view-sales" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>🧾 المبيعات</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
-        <button id="sl-tab-new" class="active" onclick="switchSubview('sl',['new','orders','shifts'],'new')">➕ طلب جديد</button>
-        <button id="sl-tab-orders" class="" onclick="switchSubview('sl',['new','orders','shifts'],'orders')">الطلبات</button>
-        <button id="sl-tab-shifts" class="" onclick="switchSubview('sl',['new','orders','shifts'],'shifts')">🔚 الورديات</button>
+        <button id="sl-tab-new" class="active" onclick="switchSubview('sl',['new','orders','shifts','staff-meal'],'new')">➕ طلب جديد</button>
+        <button id="sl-tab-orders" class="" onclick="switchSubview('sl',['new','orders','shifts','staff-meal'],'orders')">الطلبات</button>
+        <button id="sl-tab-shifts" class="" onclick="switchSubview('sl',['new','orders','shifts','staff-meal'],'shifts')">🔚 الورديات</button>
+        <button id="sl-tab-staff-meal" class="" onclick="switchSubview('sl',['new','orders','shifts','staff-meal'],'staff-meal'); loadStaffMealTab()">🍽️ وجبة موظف</button>
       </div>
       <div class="view-body">
 
@@ -724,6 +725,21 @@
           <div><button onclick="openShift()">فتح وردية</button></div>
         </div>
       </div>
+
+      <div class="panel subview hidden" id="sl-sub-staff-meal">
+        <h2>🍽️ وجبة موظف سريعة</h2>
+        <div class="hint">تُنشئ طلبًا فعليًا يخصم من المخزون حسب الوصفة تمامًا كأي طلب عادي، لكن تُدفع مباشرةً بطريقة "وجبات الموظفين" -- دون المرور بشاشة الطلب الكاملة. لا تزال شاشة الطلب الجديد تعمل أيضًا مع اختيار "وجبات الموظفين" كطريقة دفع لمن يفضّل ذلك.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الوردية المفتوحة</label><select id="stfm-shift"></select></div>
+        </div>
+        <div id="stfm-lines"></div>
+        <div class="row-form" style="margin-top:4px">
+          <div><button class="ghost" onclick="addStaffMealLineRow()">➕ إضافة صنف</button></div>
+        </div>
+        <div style="margin-top:10px;font-weight:700">الإجمالي: <span id="stfm-total">0.00</span></div>
+        <div style="margin-top:10px"><button onclick="submitStaffMeal()">✅ تسجيل الوجبة</button></div>
+        <div id="stfm-msg" class="msg"></div>
+      </div>
      </div></div>
     </div>
 
@@ -781,6 +797,71 @@
           <div><label>الموقع</label><select id="al-location" onchange="loadAlerts()"><option value="">كل المواقع</option></select></div>
         </div>
         <div id="al-list"></div>
+      </div>
+     </div></div>
+    </div>
+
+    <!-- STOCKTAKE (الجرد اليومي) -->
+    <div id="view-stocktake" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>📋 الجرد اليومي</h2><button class="view-close" onclick="closeView()">✕</button></div>
+      <div class="subnav">
+        <button id="stk-tab-list" class="active" onclick="switchSubview('stk',['list','new'],'list'); loadStocktakeList()">📑 السجل</button>
+        <button id="stk-tab-new" class="" onclick="switchSubview('stk',['list','new'],'new'); openNewStocktakeTab()">➕ جرد جديد</button>
+      </div>
+      <div class="view-body">
+
+      <div class="panel subview" id="stk-sub-list">
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>الموقع</label><select id="stkl-location"><option value="">كل المواقع</option></select></div>
+          <div><label>الحالة</label>
+            <select id="stkl-status">
+              <option value="">الكل</option>
+              <option value="IN_PROGRESS">⏳ قيد التنفيذ</option>
+              <option value="PENDING_APPROVAL">🔶 بانتظار الاعتماد</option>
+              <option value="APPROVED">✅ معتمد</option>
+            </select>
+          </div>
+          <div><button onclick="loadStocktakeList()">تحديث</button></div>
+        </div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ</th><th>الموقع</th><th>الحالة</th><th>أصناف بفارق</th><th></th></tr></thead>
+          <tbody id="stkl-table"></tbody>
+        </table></div>
+      </div>
+
+      <div class="panel subview hidden" id="stk-sub-new">
+        <div class="hint">اختر الموقع ونوع الأصناف، ثم أدخل الكمية المعدودة فعليًا لكل صنف عددته فقط -- أي صنف تتركه فارغًا لن يُدرج في هذا الجرد ولن يتأثر رصيده.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="stkn-location" onchange="loadStocktakeCountSheet()"></select></div>
+          <div><label>نوع الأصناف</label>
+            <select id="stkn-kind" onchange="loadStocktakeCountSheet()">
+              <option value="">الكل (خام + نصف مصنّع)</option>
+              <option value="RAW_MATERIAL">مواد خام فقط</option>
+              <option value="SEMI_FINISHED">نصف مصنّع فقط</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>الصنف</th><th>النوع</th><th>الرصيد النظري</th><th>الكمية المعدودة</th></tr></thead>
+          <tbody id="stkn-table"><tr><td colspan="4" class="empty">اختر الموقع أولًا</td></tr></tbody>
+        </table></div>
+        <div style="margin-top:10px"><button onclick="submitNewStocktake()">إنشاء الجرد</button></div>
+        <div id="stkn-msg" class="msg"></div>
+      </div>
+     </div></div>
+    </div>
+
+    <div id="view-stocktake-detail" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>📋 تفاصيل الجرد</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div id="stkd-meta" class="stats-row"></div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>النوع</th><th>الرصيد النظري</th><th>الكمية المعدودة</th><th>الفرق</th></tr></thead>
+          <tbody id="stkd-lines"></tbody>
+        </table></div>
+        <div id="stkd-actions" style="margin-top:14px;display:flex;gap:8px"></div>
+        <div id="stkd-msg" class="msg"></div>
+        <h3 style="margin-top:18px">سجل الاعتمادات</h3>
+        <div class="table-wrap"><table><thead><tr><th>القرار</th><th>بواسطة</th><th>بتاريخ</th><th>ملاحظة</th></tr></thead>
+          <tbody id="stkd-approvals"></tbody>
+        </table></div>
       </div>
      </div></div>
     </div>
@@ -1161,6 +1242,7 @@
           <div class="home-card" onclick="openReportPopup('customer-experience')"><div class="ic">😊</div><div class="lb">تقرير تجربة العميل</div></div>
           <div class="home-card" onclick="openReportPopup('kitchen-performance')"><div class="ic">🍳</div><div class="lb">تقرير أداء المطبخ</div></div>
           <div class="home-card" onclick="openReportPopup('day-close')"><div class="ic">📅</div><div class="lb">إنهاء اليوم</div></div>
+          <div class="home-card" onclick="openReportPopup('daily-consumption')"><div class="ic">📉</div><div class="lb">تقرير الاستهلاك اليومي</div></div>
         </div>
       </div>
       <div class="panel">
@@ -1639,6 +1721,24 @@
         </div>
         <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>الموقع</th><th>عدد الورديات</th><th>المبيعات</th><th>فرق الصندوق</th><th>طريقة الإنهاء</th></tr></thead>
           <tbody id="dcr-table"></tbody>
+        </table></div>
+      </div>
+     </div></div>
+    </div>
+
+    <div id="view-report-daily-consumption" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>📉 تقرير الاستهلاك اليومي</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="hint">كل ما خرج فعليًا من المخزون خلال الفترة -- من المبيعات (حسب الوصفة)، ومن استهلاك أصناف نصف مصنّعة كمكوّن في إنتاج أصناف أخرى، والهالك المُسجَّل يدويًا. تسويات الجرد لا تُحتسب هنا (تصحيح رصيد، وليست استهلاكًا). التكلفة الفعلية مأخوذة من تكلفة الدفعة الحقيقية التي استُهلكت، لا تقدير حالي.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="dcnr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="dcnr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="dcnr-to" type="date"></div>
+          <div><button onclick="loadDailyConsumptionReport()">تحديث</button></div>
+        </div>
+        <div id="dcnr-cards" class="stats-row"></div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>النوع</th><th>مبيعات (كمية)</th><th>مبيعات (تكلفة)</th><th>إنتاج (كمية)</th><th>إنتاج (تكلفة)</th><th>هالك (كمية)</th><th>هالك (تكلفة)</th><th>إجمالي الكمية</th><th>إجمالي التكلفة</th></tr></thead>
+          <tbody id="dcnr-table"></tbody>
         </table></div>
       </div>
      </div></div>
@@ -2279,6 +2379,7 @@ const TAB_META = {
   ingredients: { icon: '🥕', label: 'الأصناف الخام والنصف مصنّعة', group: 'setup' },
   items: { icon: '📋', label: 'أصناف المنيو', group: 'setup' },
   inventory: { icon: '📦', label: 'المخزون', group: 'supply' },
+  stocktake: { icon: '📋', label: 'الجرد اليومي', group: 'supply' },
   purchasing: { icon: '🛒', label: 'المشتريات', group: 'supply' },
   production: { icon: '🏭', label: 'الإنتاج', group: 'supply' },
   transfers: { icon: '🚚', label: 'التحويلات', group: 'supply' },
@@ -2452,6 +2553,7 @@ const REPORT_POPUPS = {
   'customer-experience': loadCustomerExperienceReport,
   'kitchen-performance': loadKitchenPerformanceReport,
   'day-close': loadDayCloseReport,
+  'daily-consumption': loadDailyConsumptionReport,
 };
 function openReportPopup(key) {
   closeView();
@@ -2487,7 +2589,8 @@ function switchTab(name) {
   if (name === 'ingredients') { switchSubview('ing', ['list', 'add', 'units', 'import'], 'list'); loadIngredients(); }
   if (name === 'items') { switchSubview('mi', ['list', 'add', 'channels', 'import'], 'list'); loadItems(); }
   if (name === 'inventory') { switchSubview('inv', ['balances', 'receive', 'waste'], 'balances'); loadInventoryTab(); }
-  if (name === 'sales') { switchSubview('sl', ['new', 'orders', 'shifts'], 'new'); loadSalesTab(); }
+  if (name === 'stocktake') { switchSubview('stk', ['list', 'new'], 'list'); loadStocktakeList(); }
+  if (name === 'sales') { switchSubview('sl', ['new', 'orders', 'shifts', 'staff-meal'], 'new'); loadSalesTab(); }
   if (name === 'returns') { switchSubview('rt', ['new', 'history'], 'new'); loadReturnsTab(); }
   if (name === 'kitchen') loadKitchenTab();
   if (name === 'alerts') { document.getElementById('al-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadAlerts(); }
@@ -4196,6 +4299,69 @@ async function loadSalesReport() {
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
+/* ================= Staff meal (quick entry) ================= */
+// A real Order (real menu items, real recipe-based inventory consumption)
+// paid immediately and fully via the STAFF_MEAL payment method -- the
+// exact same OrdersService.create()+pay() path any paying customer's
+// order goes through, just without the full New Order screen's
+// customer/channel picker. The New Order screen's own STAFF_MEAL payment
+// choice still works too; this is a faster on-ramp to the same result.
+let staffMealShiftsCache = [];
+async function loadStaffMealTab() {
+  await ensureMenuItemsCache();
+  document.getElementById('stfm-lines').innerHTML = '';
+  document.getElementById('stfm-msg').innerHTML = '';
+  try {
+    const shifts = await api('/shifts');
+    staffMealShiftsCache = shifts.filter((s) => !s.closedAt);
+    const locName = (id) => (locationsCache.find((l) => l.id === id) || {}).name || id;
+    document.getElementById('stfm-shift').innerHTML = staffMealShiftsCache.length
+      ? staffMealShiftsCache.map((s) => `<option value="${s.id}">SH${s.shiftNumber ?? '-'} -- ${locName(s.locationId)}</option>`).join('')
+      : '<option value="">لا توجد وردية مفتوحة</option>';
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+  addStaffMealLineRow();
+}
+function addStaffMealLineRow() {
+  const container = document.getElementById('stfm-lines');
+  const div = document.createElement('div');
+  div.className = 'recipe-row';
+  div.innerHTML = `<select class="stfm-item" onchange="updateStaffMealTotal()">${menuItemsCache.map((m) => `<option value="${m.id}" data-price="${Number(m.price)}">${m.name} (${fmtMoney(m.price)})</option>`).join('')}</select>
+    <input class="stfm-qty" type="number" min="1" step="1" value="1" placeholder="الكمية" oninput="updateStaffMealTotal()">
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateStaffMealTotal();">✕</button>`;
+  container.appendChild(div);
+  updateStaffMealTotal();
+}
+function updateStaffMealTotal() {
+  let total = 0;
+  document.querySelectorAll('#stfm-lines .recipe-row').forEach((row) => {
+    const sel = row.querySelector('.stfm-item');
+    const qty = parseFloat(row.querySelector('.stfm-qty').value) || 0;
+    const price = sel.selectedOptions[0] ? Number(sel.selectedOptions[0].dataset.price) : 0;
+    total += price * qty;
+  });
+  document.getElementById('stfm-total').textContent = fmtMoney(total);
+}
+async function submitStaffMeal() {
+  const shiftId = document.getElementById('stfm-shift').value;
+  if (!shiftId) { showMsg('stfm-msg', '⚠️ لا توجد وردية مفتوحة لتسجيل الوجبة عليها', 'err'); return; }
+  const shift = staffMealShiftsCache.find((s) => s.id === shiftId);
+  const lines = Array.from(document.querySelectorAll('#stfm-lines .recipe-row')).map((row) => ({
+    menuItemId: row.querySelector('.stfm-item').value,
+    quantity: parseInt(row.querySelector('.stfm-qty').value, 10),
+  })).filter((l) => l.menuItemId && l.quantity > 0);
+  if (!lines.length) { showMsg('stfm-msg', '⚠️ أضف صنفًا واحدًا على الأقل', 'err'); return; }
+  try {
+    const order = await api('/orders', { method: 'POST', body: JSON.stringify({ locationId: shift.locationId, shiftId, channel: 'DINE_IN', lines }) });
+    await api(`/orders/${order.id}/pay`, {
+      method: 'POST',
+      body: JSON.stringify({ payments: [{ method: 'STAFF_MEAL', mode: 'MANUAL', amount: Number(order.grandTotal) }] }),
+    });
+    showMsg('stfm-msg', `✅ تم تسجيل الوجبة -- طلب #${order.dailySequence ?? order.id.slice(-6)} بقيمة ${fmtMoney(order.grandTotal)}`, 'ok');
+    document.getElementById('stfm-lines').innerHTML = '';
+    addStaffMealLineRow();
+  } catch (e) { showMsg('stfm-msg', '❌ ' + e.message, 'err'); }
+}
+
 /* ================= Returns ================= */
 let returnableOrdersCache = [];
 async function loadReturnsTab() {
@@ -4417,6 +4583,121 @@ async function loadAlerts() {
       `).join('')
       : '<div class="empty">لا توجد تنبيهات حاليًا 🎉</div>';
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ================= Stocktake (الجرد اليومي) ================= */
+const STOCKTAKE_STATUS_LABEL = { IN_PROGRESS: '⏳ قيد التنفيذ', PENDING_APPROVAL: '🔶 بانتظار الاعتماد', APPROVED: '✅ معتمد' };
+
+async function loadStocktakeList() {
+  const sel = document.getElementById('stkl-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const status = document.getElementById('stkl-status').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (status) params.set('status', status);
+    const res = await api('/stocktakes?' + params.toString());
+    document.getElementById('stkl-table').innerHTML = res.length
+      ? res.map((s) => {
+          const varianceCount = (s.lines || []).filter((l) => Number(l.variance) !== 0).length;
+          return `<tr><td>${fmtDate(s.startedAt)}</td><td>${s.location ? s.location.name : '-'}</td><td>${STOCKTAKE_STATUS_LABEL[s.status] || s.status}</td><td class="num">${varianceCount}</td><td><button class="link-btn" onclick="openStocktakeDetail('${s.id}')">عرض</button></td></tr>`;
+        }).join('')
+      : `<tr><td colspan="5" class="empty">لا يوجد جرد مسجّل بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+function openNewStocktakeTab() {
+  const sel = document.getElementById('stkn-location');
+  if (!sel.options.length) sel.innerHTML = '<option value="">اختر الموقع...</option>' + locationOptions();
+}
+
+async function loadStocktakeCountSheet() {
+  const locationId = document.getElementById('stkn-location').value;
+  const kind = document.getElementById('stkn-kind').value;
+  const table = document.getElementById('stkn-table');
+  if (!locationId) { table.innerHTML = '<tr><td colspan="4" class="empty">اختر الموقع أولًا</td></tr>'; return; }
+  table.innerHTML = '<tr><td colspan="4" class="empty">جارٍ التحميل...</td></tr>';
+  try {
+    await ensureIngredientsCache();
+    const balances = await api('/inventory/balances?locationId=' + locationId);
+    const balanceOf = (id) => { const b = balances.find((x) => x.ingredientId === id); return b ? Number(b.quantity) : 0; };
+    const rows = ingredientsCache.filter((i) => !kind || i.kind === kind);
+    table.innerHTML = rows.length
+      ? rows.map((i) => `<tr data-ingredient-id="${i.id}"><td>${i.name} (${i.unit})</td><td>${INGREDIENT_KIND_PILL[i.kind] || i.kind}</td><td class="num">${balanceOf(i.id)}</td><td><input class="stkn-count" type="number" step="0.001" min="0" style="width:110px" placeholder="لم يُعدّ"></td></tr>`).join('')
+      : `<tr><td colspan="4" class="empty">لا توجد أصناف بهذا النوع</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+async function submitNewStocktake() {
+  const locationId = document.getElementById('stkn-location').value;
+  if (!locationId) { showMsg('stkn-msg', '⚠️ اختر الموقع', 'err'); return; }
+  const lines = [];
+  document.querySelectorAll('#stkn-table tr[data-ingredient-id]').forEach((row) => {
+    const val = row.querySelector('.stkn-count').value;
+    if (val === '') return;
+    lines.push({ ingredientId: row.dataset.ingredientId, countedQuantity: parseFloat(val) });
+  });
+  if (!lines.length) { showMsg('stkn-msg', '⚠️ أدخل كمية معدودة لصنف واحد على الأقل', 'err'); return; }
+  try {
+    const res = await api('/stocktakes', { method: 'POST', body: JSON.stringify({ locationId, lines }) });
+    document.querySelectorAll('#stkn-table .stkn-count').forEach((inp) => { inp.value = ''; });
+    switchSubview('stk', ['list', 'new'], 'list');
+    loadStocktakeList();
+    openStocktakeDetail(res.id);
+  } catch (e) { showMsg('stkn-msg', '❌ ' + e.message, 'err'); }
+}
+
+async function openStocktakeDetail(id) {
+  closeView();
+  document.getElementById('view-stocktake-detail').classList.add('open');
+  document.getElementById('stkd-lines').innerHTML = '<tr><td colspan="5" class="empty">جارٍ التحميل...</td></tr>';
+  document.getElementById('stkd-actions').innerHTML = '';
+  document.getElementById('stkd-msg').innerHTML = '';
+  try {
+    const s = await api('/stocktakes/' + id);
+    document.getElementById('stkd-meta').innerHTML = [
+      statTile('الموقع', s.location ? s.location.name : '-'),
+      statTile('التاريخ', fmtDate(s.startedAt)),
+      statTile('الحالة', STOCKTAKE_STATUS_LABEL[s.status] || s.status),
+    ].join('');
+    document.getElementById('stkd-lines').innerHTML = s.lines.length
+      ? s.lines.map((l) => {
+          const variance = Number(l.variance);
+          const varStyle = variance > 0 ? 'style="color:var(--ok)"' : variance < 0 ? 'style="color:var(--danger)"' : '';
+          return `<tr><td>${l.ingredient.name} (${l.ingredient.unit})</td><td>${INGREDIENT_KIND_PILL[l.ingredient.kind] || l.ingredient.kind}</td><td class="num">${Number(l.systemQuantity)}</td><td class="num">${Number(l.countedQuantity)}</td><td class="num" ${varStyle}>${variance > 0 ? '+' : ''}${variance}</td></tr>`;
+        }).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد أصناف بهذا الجرد</td></tr>`;
+
+    let actionsHtml = '';
+    if (s.status === 'IN_PROGRESS') {
+      actionsHtml = `<button onclick="submitStocktake('${s.id}')">📨 إرسال (اعتماد/تطبيق)</button>`;
+    } else if (s.status === 'PENDING_APPROVAL') {
+      actionsHtml = `<button onclick="decideStocktake('${s.id}','approve')">✅ اعتماد</button>
+        <button class="ghost" onclick="decideStocktake('${s.id}','reject')">↩️ رفض (إعادة عدّ)</button>`;
+    }
+    document.getElementById('stkd-actions').innerHTML = actionsHtml;
+
+    document.getElementById('stkd-approvals').innerHTML = (s.approvals || []).length
+      ? s.approvals.map((a) => `<tr><td>${a.decision === 'APPROVED' ? '✅ اعتماد' : '↩️ رفض'}</td><td>${a.approvedBy ? a.approvedBy.name : '-'}</td><td>${fmtDateTime(a.decidedAt)}</td><td>${a.note || '-'}</td></tr>`).join('')
+      : `<tr><td colspan="4" class="empty">لا يوجد سجل اعتمادات بعد</td></tr>`;
+  } catch (e) { showMsg('stkd-msg', '❌ ' + e.message, 'err'); }
+}
+
+async function submitStocktake(id) {
+  try {
+    await api(`/stocktakes/${id}/submit`, { method: 'POST' });
+    flashGlobal('✅ تم إرسال الجرد', 'ok');
+    openStocktakeDetail(id);
+  } catch (e) { showMsg('stkd-msg', '❌ ' + e.message, 'err'); }
+}
+async function decideStocktake(id, action) {
+  const note = window.prompt(action === 'approve' ? 'ملاحظة الاعتماد (اختياري)' : 'سبب الرفض (اختياري)') || undefined;
+  try {
+    await api(`/stocktakes/${id}/${action}`, { method: 'POST', body: JSON.stringify({ note }) });
+    flashGlobal(action === 'approve' ? '✅ تم اعتماد الجرد' : '↩️ تم رفض الجرد للإعادة', 'ok');
+    openStocktakeDetail(id);
+  } catch (e) { showMsg('stkd-msg', '❌ ' + e.message, 'err'); }
 }
 
 /* ================= Purchasing ================= */
@@ -4936,6 +5217,44 @@ async function loadDayCloseReport() {
     document.getElementById('dcr-table').innerHTML = res.length
       ? res.map((d) => `<tr><td>${fmtDate(d.businessDate)}</td><td>${d.location.name}</td><td class="num">${d.shiftsCount}</td><td class="num">${fmtMoney(d.totalRevenue)}</td><td class="num">${fmtMoney(d.totalVariance)}</td><td>${DAY_CLOSE_METHOD_LABEL[d.autoClosed]}</td></tr>`).join('')
       : `<tr><td colspan="6" class="empty">لا يوجد إنهاء يوم مسجّل بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+const INGREDIENT_KIND_PILL = { RAW_MATERIAL: '<span class="pill raw">خامة</span>', SEMI_FINISHED: '<span class="pill semi">نصف مصنّع</span>' };
+async function loadDailyConsumptionReport() {
+  const sel = document.getElementById('dcnr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  if (!document.getElementById('dcnr-from').value) {
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('dcnr-from').value = today;
+    document.getElementById('dcnr-to').value = today;
+  }
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('dcnr-from').value;
+    const to = document.getElementById('dcnr-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/analytics/daily-consumption?' + params.toString());
+    const byReason = (item, reason) => item.byReason.find((r) => r.reason === reason) || { quantity: 0, cost: 0 };
+    document.getElementById('dcnr-cards').innerHTML = [
+      statTile('عدد الأصناف المستهلكة', res.items.length),
+      ...res.totals.byReason.map((r) => statTile(r.label, fmtMoney(r.cost))),
+      statTile('إجمالي تكلفة الاستهلاك', fmtMoney(res.totals.totalCost)),
+    ].join('');
+    document.getElementById('dcnr-table').innerHTML = res.items.length
+      ? res.items.map((i) => {
+          const sale = byReason(i, 'SALE'); const prod = byReason(i, 'PRODUCTION_CONSUMPTION'); const waste = byReason(i, 'WASTE');
+          return `<tr><td>${i.name} (${i.unit})</td><td>${INGREDIENT_KIND_PILL[i.kind] || i.kind}</td>
+            <td class="num">${sale.quantity}</td><td class="num">${fmtMoney(sale.cost)}</td>
+            <td class="num">${prod.quantity}</td><td class="num">${fmtMoney(prod.cost)}</td>
+            <td class="num">${waste.quantity}</td><td class="num">${fmtMoney(waste.cost)}</td>
+            <td class="num">${i.totalQty}</td><td class="num">${fmtMoney(i.totalCost)}</td></tr>`;
+        }).join('')
+        + `<tr class="report-total-row"><td colspan="9">الإجمالي</td><td class="num">${fmtMoney(res.totals.totalCost)}</td></tr>`
+      : `<tr><td colspan="10" class="empty">لا يوجد استهلاك مسجّل في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function closeDayNow() {

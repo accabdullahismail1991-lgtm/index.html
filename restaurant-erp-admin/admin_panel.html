@@ -406,7 +406,7 @@
 
       <div class="panel subview" id="br-sub-list">
         <h2>الفروع الحالية</h2>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>نسبة الضريبة</th><th>الحالة</th><th>إلزام اختيار العميل</th><th>البيع بالسالب</th><th>الإجراءات</th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>نسبة الضريبة</th><th>الحالة</th><th>إلزام اختيار العميل</th><th>البيع بالسالب</th><th>الإغلاق التلقائي للوردية</th><th>الإجراءات</th></tr></thead>
           <tbody id="branchesTable"></tbody>
         </table></div>
       </div>
@@ -655,8 +655,7 @@
           <div class="order-matrix">
             <div>
               <div style="display:flex;gap:8px;margin-bottom:8px">
-                <input type="text" placeholder="🔍 ابحث عن صنف..." style="flex:1" oninput="onOrderMenuSearch(this.value)">
-                <button type="button" class="ghost" onclick="openOrderComboBuilder()">🍔 كمبو</button>
+                <input type="text" placeholder="🔍 ابحث عن صنف أو كمبو..." style="flex:1" oninput="onOrderMenuSearch(this.value)">
               </div>
               <div id="ord-combo-builder" class="recipe-box hidden" style="margin-bottom:10px"></div>
               <div id="ord-menu-grid" class="menu-grid"></div>
@@ -962,6 +961,7 @@
         <h2>➕ كمبو جديد</h2>
         <div class="row-form">
           <div><label>اسم الكمبو</label><input id="cb-name" placeholder="وجبة كمبو 1"></div>
+          <div><label>القسم (يظهر ضمنه في شاشة الطلب الجديد -- اتركه فارغًا لقسم "كمبو" الافتراضي)</label><input id="cb-category" placeholder="مثال: عروض"></div>
           <div><label>السعر الأساسي (بلا أي زيادة سعر)</label><input id="cb-base-price" type="number" step="0.01" placeholder="20"></div>
         </div>
         <div id="cb-slots"></div>
@@ -1129,6 +1129,7 @@
           <div class="home-card" onclick="openReportPopup('peak-hours')"><div class="ic">⏰</div><div class="lb">تقرير ساعات الذروة</div></div>
           <div class="home-card" onclick="openReportPopup('customer-experience')"><div class="ic">😊</div><div class="lb">تقرير تجربة العميل</div></div>
           <div class="home-card" onclick="openReportPopup('kitchen-performance')"><div class="ic">🍳</div><div class="lb">تقرير أداء المطبخ</div></div>
+          <div class="home-card" onclick="openReportPopup('day-close')"><div class="ic">📅</div><div class="lb">إنهاء اليوم</div></div>
         </div>
       </div>
       <div class="panel">
@@ -1571,6 +1572,30 @@
         <h3 style="margin-top:16px">متوسط وقت التحضير حسب القسم</h3>
         <div class="table-wrap"><table><thead><tr><th>القسم</th><th>عدد الأصناف</th><th>متوسط وقت التحضير (دقيقة)</th></tr></thead>
           <tbody id="kpr-category-table"></tbody>
+        </table></div>
+      </div>
+     </div></div>
+    </div>
+
+    <div id="view-report-day-close" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>📅 إنهاء اليوم</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="hint">يلخّص كل ورديات الفرع المغلقة في تاريخ واحد كسجل رسمي لإنهاء اليوم -- لا يمكن إنهاء يوم فيه وردية لا تزال مفتوحة. إذا كان الإغلاق التلقائي مفعّلاً لفرع (شاشة الفروع)، سيُنجز إنهاء اليوم تلقائيًا عند إغلاق آخر وردية منسية من يوم سابق.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="dcr-close-location"></select></div>
+          <div><label>التاريخ</label><input id="dcr-close-date" type="date"></div>
+          <div><button onclick="closeDayNow()">إنهاء اليوم</button></div>
+        </div>
+        <div id="dcr-msg" class="msg"></div>
+        <h3 style="margin-top:16px">سجل إنهاء الأيام</h3>
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>الموقع</label><select id="dcr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="dcr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="dcr-to" type="date"></div>
+          <div><button onclick="loadDayCloseReport()">تحديث</button></div>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>الموقع</th><th>عدد الورديات</th><th>المبيعات</th><th>فرق الصندوق</th><th>طريقة الإنهاء</th></tr></thead>
+          <tbody id="dcr-table"></tbody>
         </table></div>
       </div>
      </div></div>
@@ -2350,6 +2375,7 @@ const REPORT_POPUPS = {
   'peak-hours': loadPeakHoursReport,
   'customer-experience': loadCustomerExperienceReport,
   'kitchen-performance': loadKitchenPerformanceReport,
+  'day-close': loadDayCloseReport,
 };
 function openReportPopup(key) {
   closeView();
@@ -2415,10 +2441,14 @@ async function loadBranches() {
           <td>${b.isActive ? '✅ نشط' : '⛔ معطّل'}</td>
           <td><button class="link-btn" onclick="toggleRequireCustomer('${b.id}', ${!b.requireCustomerForOrders})">${b.requireCustomerForOrders ? '✅ إلزامي' : '⛔ اختياري'}</button></td>
           <td><button class="link-btn" onclick="toggleAllowNegativeStock('${b.id}', ${!b.allowNegativeStock})">${b.allowNegativeStock ? '✅ مسموح' : '⛔ ممنوع'}</button></td>
+          <td>
+            <button class="link-btn" onclick="toggleAutoClose('${b.id}', ${!b.autoCloseEnabled})">${b.autoCloseEnabled ? '✅ مفعّل' : '⛔ معطّل'}</button>
+            ${b.autoCloseEnabled ? `<button class="link-btn" onclick="editAutoCloseCutoffHour('${b.id}', ${b.autoCloseCutoffHour})">🕓 الساعة ${b.autoCloseCutoffHour}</button>` : ''}
+          </td>
           <td><button class="link-btn" onclick="toggleBranchEdit('${b.id}')">✏️ تعديل</button></td>
         </tr>
-        <tr id="edit-branch-row-${b.id}" class="hidden"><td colspan="9"><div class="recipe-box" id="edit-branch-box-${b.id}"></div></td></tr>`).join('')
-      : `<tr><td colspan="9" class="empty">لا توجد فروع بعد</td></tr>`;
+        <tr id="edit-branch-row-${b.id}" class="hidden"><td colspan="10"><div class="recipe-box" id="edit-branch-box-${b.id}"></div></td></tr>`).join('')
+      : `<tr><td colspan="10" class="empty">لا توجد فروع بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function createBranch() {
@@ -2455,6 +2485,28 @@ async function toggleAllowNegativeStock(id, value) {
   try {
     await api(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify({ allowNegativeStock: value }) });
     flashGlobal('✅ تم التحديث', 'ok');
+    loadBranches();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+// Auto-close: forgotten open shifts from a PREVIOUS calendar day get
+// force-closed automatically past this hour (server time), then end-of-day
+// runs for that date too if it wasn't done manually -- off by default, a
+// real operational change per branch, not a silent default.
+async function toggleAutoClose(id, value) {
+  try {
+    await api(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify({ autoCloseEnabled: value }) });
+    flashGlobal('✅ تم التحديث', 'ok');
+    loadBranches();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function editAutoCloseCutoffHour(id, current) {
+  const input = window.prompt('الساعة (0-23، بتوقيت الخادم) التي يُغلق بعدها تلقائيًا أي وردية منسية من يوم سابق؟', current);
+  if (input === null) return;
+  const hour = parseInt(input, 10);
+  if (isNaN(hour) || hour < 0 || hour > 23) { flashGlobal('⚠️ ساعة غير صالحة (0-23)', 'err'); return; }
+  try {
+    await api(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify({ autoCloseCutoffHour: hour }) });
+    flashGlobal('✅ تم تحديث ساعة الإغلاق التلقائي', 'ok');
     loadBranches();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -3278,10 +3330,18 @@ let orderMenuSearchTerm = '';
 // Rebuilds the category sidebar from whatever categories exist in the menu
 // right now -- never a fixed list, so a newly-added category (from "أصناف
 // المنيو") shows up here without any other change.
+// Combo (fallback) category label -- an uncategorized combo (category is
+// nullable, unlike MenuItem.category) still needs a tab to live under so
+// it's reachable from the grid at all, same "always show up somewhere"
+// principle applied elsewhere in this file (e.g. COMBO_CATEGORY_LABEL in
+// shifts.service.ts on the backend).
+const COMBO_FALLBACK_CATEGORY = 'كمبو';
 function renderOrderCategories() {
   const wrap = document.getElementById('ord-categories');
   if (!wrap) return;
-  const categories = [...new Set(menuItemsCache.map((m) => m.category).filter(Boolean))].sort();
+  const itemCategories = menuItemsCache.map((m) => m.category).filter(Boolean);
+  const comboCategories = combosCache.map((c) => c.category || COMBO_FALLBACK_CATEGORY);
+  const categories = [...new Set([...itemCategories, ...comboCategories])].sort();
   if (orderSelectedCategory && !categories.includes(orderSelectedCategory)) orderSelectedCategory = '';
   wrap.innerHTML = [{ key: '', label: 'الكل' }, ...categories.map((c) => ({ key: c, label: c }))].map((c) =>
     `<button class="${c.key === orderSelectedCategory ? 'active' : ''}" onclick="selectOrderCategory('${c.key.replace(/'/g, "\\'")}')">${c.label}</button>`
@@ -3303,8 +3363,19 @@ function renderOrderMenuGrid(term) {
   const t = (orderMenuSearchTerm || '').trim().toLowerCase();
   let list = t ? menuItemsCache.filter((m) => m.name.toLowerCase().includes(t)) : menuItemsCache;
   if (orderSelectedCategory) list = list.filter((m) => m.category === orderSelectedCategory);
-  if (!list.length) { grid.innerHTML = `<div class="empty">${menuItemsCache.length ? 'لا توجد أصناف مطابقة' : 'لا توجد أصناف منيو بعد'}</div>`; return; }
-  grid.innerHTML = list.map((m) => `
+  // Combos share the same category tabs as regular items (ComboMeal.category)
+  // instead of only being reachable through a separate combo-builder button
+  // -- a combo tile opens the same slot-selection builder, just pre-selected.
+  let comboList = t ? combosCache.filter((c) => c.name.toLowerCase().includes(t)) : combosCache;
+  if (orderSelectedCategory) comboList = comboList.filter((c) => (c.category || COMBO_FALLBACK_CATEGORY) === orderSelectedCategory);
+  if (!list.length && !comboList.length) { grid.innerHTML = `<div class="empty">${menuItemsCache.length || combosCache.length ? 'لا توجد أصناف مطابقة' : 'لا توجد أصناف منيو بعد'}</div>`; return; }
+  grid.innerHTML = comboList.map((c) => `
+    <div class="menu-tile" onclick="openComboBuilderFor('${c.id}')" title="بناء طلب الكمبو">
+      <div class="menu-tile-img">🍔</div>
+      <div class="menu-tile-name">${c.name}</div>
+      <div class="menu-tile-price">${Number(c.basePrice).toFixed(2)}+</div>
+    </div>
+  `).join('') + list.map((m) => `
     <div class="menu-tile" onclick="addMenuTileToOrder('${m.id}')" title="إضافة للطلب">
       <div class="menu-tile-img" id="ord-tile-img-${m.id}">${m.hasImage ? '' : '🍽️'}</div>
       <div class="menu-tile-name">${m.name}</div>
@@ -3354,7 +3425,10 @@ function addMenuTileToOrder(menuItemId) {
 // branch on the presence of `.combo-row` to treat it differently, since a
 // combo's price can't be looked up from menuItemsCache the way a regular
 // line's can (it depends on which options were chosen).
-function openOrderComboBuilder() {
+function openComboBuilderFor(comboId) {
+  openOrderComboBuilder(comboId);
+}
+function openOrderComboBuilder(preselectId) {
   const box = document.getElementById('ord-combo-builder');
   if (!combosCache.length) {
     box.classList.remove('hidden');
@@ -3365,7 +3439,7 @@ function openOrderComboBuilder() {
   box.innerHTML = `
     <div class="row-form">
       <div><label>اختر الكمبو</label><select id="ord-combo-select" onchange="renderOrderComboSlots()">
-        ${combosCache.map((c) => `<option value="${c.id}">${c.name} (${Number(c.basePrice).toFixed(2)} ر.س)</option>`).join('')}
+        ${combosCache.map((c) => `<option value="${c.id}" ${c.id === preselectId ? 'selected' : ''}>${c.name} (${Number(c.basePrice).toFixed(2)} ر.س)</option>`).join('')}
       </select></div>
     </div>
     <div id="ord-combo-slots"></div>
@@ -3375,6 +3449,7 @@ function openOrderComboBuilder() {
     </div>
   `;
   renderOrderComboSlots();
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 function cancelOrderComboBuilder() {
   const box = document.getElementById('ord-combo-builder');
@@ -4761,6 +4836,40 @@ async function loadKitchenPerformanceReport() {
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
+const DAY_CLOSE_METHOD_LABEL = { true: '🤖 تلقائي', false: '👤 يدوي' };
+async function loadDayCloseReport() {
+  const closeSel = document.getElementById('dcr-close-location');
+  if (!closeSel.options.length) closeSel.innerHTML = locationOptions();
+  if (!document.getElementById('dcr-close-date').value) {
+    document.getElementById('dcr-close-date').value = new Date().toISOString().slice(0, 10);
+  }
+  const sel = document.getElementById('dcr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('dcr-from').value;
+    const to = document.getElementById('dcr-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await api('/shifts/day-close/list?' + params.toString());
+    document.getElementById('dcr-table').innerHTML = res.length
+      ? res.map((d) => `<tr><td>${new Date(d.businessDate).toLocaleDateString('ar-SA')}</td><td>${d.location.name}</td><td class="num">${d.shiftsCount}</td><td class="num">${fmtMoney(d.totalRevenue)}</td><td class="num">${fmtMoney(d.totalVariance)}</td><td>${DAY_CLOSE_METHOD_LABEL[d.autoClosed]}</td></tr>`).join('')
+      : `<tr><td colspan="6" class="empty">لا يوجد إنهاء يوم مسجّل بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function closeDayNow() {
+  const locationId = document.getElementById('dcr-close-location').value;
+  const businessDate = document.getElementById('dcr-close-date').value;
+  if (!locationId || !businessDate) { showMsg('dcr-msg', '⚠️ اختر الموقع والتاريخ', 'err'); return; }
+  try {
+    await api('/shifts/day-close', { method: 'POST', body: JSON.stringify({ locationId, businessDate }) });
+    showMsg('dcr-msg', '✅ تم إنهاء اليوم بنجاح', 'ok');
+    loadDayCloseReport();
+  } catch (e) { showMsg('dcr-msg', '❌ ' + e.message, 'err'); }
+}
+
 /* ================= Production ================= */
 async function loadProductionTab() {
   await ensureIngredientsCache();
@@ -5058,6 +5167,7 @@ async function toggleComboActive(id, isActive) {
 }
 async function createCombo() {
   const name = document.getElementById('cb-name').value.trim();
+  const category = document.getElementById('cb-category').value.trim() || undefined;
   const basePrice = parseFloat(document.getElementById('cb-base-price').value);
   if (!name) { flashGlobal('⚠️ اكتب اسم الكمبو', 'err'); return; }
   if (!basePrice || basePrice <= 0) { flashGlobal('⚠️ اكتب السعر الأساسي', 'err'); return; }
@@ -5077,7 +5187,7 @@ async function createCombo() {
     return;
   }
   try {
-    await api('/combos', { method: 'POST', body: JSON.stringify({ name, basePrice, slots }) });
+    await api('/combos', { method: 'POST', body: JSON.stringify({ name, category, basePrice, slots }) });
     document.getElementById('cb-name').value = '';
     document.getElementById('cb-base-price').value = '';
     document.getElementById('cb-slots').innerHTML = '';

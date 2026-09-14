@@ -2565,6 +2565,12 @@ async function doLogin() {
     // modules' forms (shift-open included), and a user clicking into one
     // of those fast enough used to find it empty -- the fetch hadn't
     // resolved yet since nothing was blocking navigation in the meantime.
+    // Same reasoning for /auth/me -- myPermissions must be populated
+    // BEFORE renderNav()/renderHomeGrid() run, or a cashier would
+    // flash-see (then lose) links to screens they can't actually open.
+    const me = await api('/auth/me');
+    myPermissions = me.permissions;
+    document.getElementById('whoAmI').textContent = me.name || phone;
     await loadBranches();
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('appScreen').classList.remove('hidden');
@@ -2582,6 +2588,7 @@ async function doLogin() {
 function doLogout(message) {
   accessToken = null;
   refreshToken = null;
+  myPermissions = [];
   document.getElementById('appScreen').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
   if (message) showMsg('loginMsg', 'ℹ️ ' + message, 'err');
@@ -2601,13 +2608,17 @@ const TAB_GROUPS = [
 ];
 const TAB_META = {
   branches: { icon: '🏢', label: 'الفروع', group: 'setup' },
-  ingredients: { icon: '🥕', label: 'الأصناف الخام والنصف مصنّعة', group: 'setup' },
+  // permission: back-office/cost-sensitive screens a plain cashier can't
+  // see until a manager explicitly grants the matching *.view permission
+  // (see AuthService.me()/PermissionsGuard) -- everything WITHOUT a
+  // permission key here stays open to any logged-in user, same as before.
+  ingredients: { icon: '🥕', label: 'الأصناف الخام والنصف مصنّعة', group: 'setup', permission: 'ingredients.view' },
   items: { icon: '📋', label: 'أصناف المنيو', group: 'setup' },
-  inventory: { icon: '📦', label: 'المخزون', group: 'supply' },
+  inventory: { icon: '📦', label: 'المخزون', group: 'supply', permission: 'inventory.view' },
   stocktake: { icon: '📋', label: 'الجرد اليومي', group: 'supply' },
-  purchasing: { icon: '🛒', label: 'المشتريات', group: 'supply' },
-  production: { icon: '🏭', label: 'الإنتاج', group: 'supply' },
-  transfers: { icon: '🚚', label: 'التحويلات', group: 'supply' },
+  purchasing: { icon: '🛒', label: 'المشتريات', group: 'supply', permission: 'purchasing.view' },
+  production: { icon: '🏭', label: 'الإنتاج', group: 'supply', permission: 'production.view' },
+  transfers: { icon: '🚚', label: 'التحويلات', group: 'supply', permission: 'transfers.view' },
   sales: { icon: '🧾', label: 'المبيعات', group: 'service' },
   kitchen: { icon: '🍳', label: 'المطبخ', group: 'service' },
   returns: { icon: '↩️', label: 'المرتجعات', group: 'service' },
@@ -2620,6 +2631,14 @@ const TAB_META = {
   analytics: { icon: '📊', label: 'التقارير', group: 'insight' },
 };
 const TABS = Object.keys(TAB_META);
+// Populated from GET /auth/me right after login; empty (== "show
+// everything with no permission key") before that resolves, so a slow
+// network never flashes an incorrectly-restricted nav.
+let myPermissions = [];
+function canSeeTab(t) {
+  const perm = TAB_META[t].permission;
+  return !perm || myPermissions.includes(perm);
+}
 
 // The home dashboard is the persistent base screen behind every popup --
 // same idea as رصيد's dailyView staying put while the other main screens
@@ -2629,7 +2648,7 @@ const TABS = Object.keys(TAB_META);
 // instead of one long flat grid.
 function renderHomeGrid() {
   document.getElementById('homeGrid').innerHTML = TAB_GROUPS.map((g) => {
-    const tabsInGroup = TABS.filter((t) => TAB_META[t].group === g.key);
+    const tabsInGroup = TABS.filter((t) => TAB_META[t].group === g.key && canSeeTab(t));
     if (!tabsInGroup.length) return '';
     return `
       <div class="home-group">
@@ -2649,7 +2668,7 @@ function renderHomeGrid() {
 // sync with TAB_META once (a tab existed in one but not the other).
 function renderNav() {
   document.getElementById('mainNav').innerHTML = TAB_GROUPS.map((g) => {
-    const tabsInGroup = TABS.filter((t) => TAB_META[t].group === g.key);
+    const tabsInGroup = TABS.filter((t) => TAB_META[t].group === g.key && canSeeTab(t));
     if (!tabsInGroup.length) return '';
     const label = `<div class="nav-group-label">${g.label}</div>`;
     return label + tabsInGroup.map((t) =>
@@ -2885,7 +2904,11 @@ function switchTab(name) {
   document.getElementById('globalMsg').className = 'msg';
   closeNav(); // no-op on desktop; collapses the off-canvas drawer on mobile
   TABS.forEach((t) => {
-    document.getElementById('tab-' + t).classList.toggle('active', t === name);
+    // The nav button only exists in the DOM when canSeeTab(t) -- a
+    // permission-gated tab a plain cashier can't see never gets a
+    // '#tab-<t>' button rendered by renderNav() at all.
+    const navBtn = document.getElementById('tab-' + t);
+    if (navBtn) navBtn.classList.toggle('active', t === name);
     document.getElementById('view-' + t).classList.toggle('open', t === name);
   });
   stopKitchenPolling(); // only the currently-open tab, if it's Kitchen, restarts it below

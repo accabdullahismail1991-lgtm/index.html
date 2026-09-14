@@ -1134,10 +1134,11 @@
     <div id="view-settings" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>⚙️ الإعدادات العامة</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
       <div class="subnav">
-        <button id="set-tab-general" class="active" onclick="switchSubview('set',['general','users','roles','danger'],'general')">عام</button>
-        <button id="set-tab-users" class="" onclick="switchSubview('set',['general','users','roles','danger'],'users'); loadUsersTab()">👤 المستخدمون</button>
-        <button id="set-tab-roles" class="" onclick="switchSubview('set',['general','users','roles','danger'],'roles'); loadRolesTab()">🛡️ الأدوار والصلاحيات</button>
-        <button id="set-tab-danger" class="" onclick="switchSubview('set',['general','users','roles','danger'],'danger')">🗑️ حذف البيانات</button>
+        <button id="set-tab-general" class="active" onclick="switchSubview('set',['general','users','roles','backup','danger'],'general')">عام</button>
+        <button id="set-tab-users" class="" onclick="switchSubview('set',['general','users','roles','backup','danger'],'users'); loadUsersTab()">👤 المستخدمون</button>
+        <button id="set-tab-roles" class="" onclick="switchSubview('set',['general','users','roles','backup','danger'],'roles'); loadRolesTab()">🛡️ الأدوار والصلاحيات</button>
+        <button id="set-tab-backup" class="" onclick="switchSubview('set',['general','users','roles','backup','danger'],'backup'); loadBackupsTab()">💾 النسخ الاحتياطي</button>
+        <button id="set-tab-danger" class="" onclick="switchSubview('set',['general','users','roles','backup','danger'],'danger')">🗑️ حذف البيانات</button>
       </div>
       <div class="view-body">
 
@@ -1208,6 +1209,31 @@
         <div id="r-permissions-grid"></div>
         <div style="margin-top:10px"><button onclick="createRole()">إضافة</button></div>
         <div id="r-msg" class="msg"></div>
+      </div>
+
+      <div class="panel subview hidden" id="set-sub-backup">
+        <h2>💾 النسخ الاحتياطي</h2>
+        <div class="hint">نسخة احتياطية كاملة لقاعدة البيانات (كل البيانات، بما فيها المستخدمون والأدوار) -- تُؤخذ تلقائيًا كل ليلة (وتُحتفظ بآخر 14 نسخة)، أو يدويًا هنا في أي وقت. تحتاج صلاحية "إدارة النسخ الاحتياطية".</div>
+        <div class="row-form" style="margin-top:10px">
+          <div><label>ملاحظة (اختياري)</label><input id="bk-note" placeholder="مثال: قبل استيراد بيانات فرع جديد"></div>
+          <div><button onclick="createBackupNow()" id="bk-create-btn">➕ إنشاء نسخة احتياطية الآن</button></div>
+        </div>
+        <div id="bk-msg" class="msg"></div>
+        <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>تاريخ الإنشاء</th><th>بواسطة</th><th>ملاحظة</th><th>الحجم</th><th></th></tr></thead>
+          <tbody id="bk-list-table"></tbody>
+        </table></div>
+
+        <div class="panel" style="margin-top:18px;border:1px solid var(--border)">
+          <h2>⬆️ استعادة من ملف مرفوع</h2>
+          <div class="hint">
+            لرفع بيانات من بيئة أخرى (مثال: نسخة تم تحميلها من نظام تجريبي) إلى هذا النظام -- ارفع ملف النسخة الاحتياطية (.json أو .json.gz) هنا.
+            <b>تحذير: هذا يستبدل كل بيانات هذا النظام الحالية بالكامل بما في محتوى الملف المرفوع.</b>
+          </div>
+          <div class="row-form" style="margin-top:8px">
+            <div><label>ملف النسخة الاحتياطية</label><input type="file" id="bk-upload-file" accept=".json,.gz"></div>
+            <div><button class="danger" onclick="restoreBackupFromUpload()">⬆️ استعادة من هذا الملف</button></div>
+          </div>
+        </div>
       </div>
 
       <div class="panel subview hidden" id="set-sub-danger">
@@ -2779,7 +2805,7 @@ function switchTab(name) {
   if (name === 'combos') { switchSubview('cb', ['list', 'add'], 'list'); loadCombos(); }
   if (name === 'customers') { switchSubview('cu', ['list', 'add', 'import'], 'list'); loadCustomers(); }
   if (name === 'payment-methods') loadPaymentMethodsTab();
-  if (name === 'settings') { switchSubview('set', ['general', 'users', 'roles', 'danger'], 'general'); loadGeneralSettingsTab(); }
+  if (name === 'settings') { switchSubview('set', ['general', 'users', 'roles', 'backup', 'danger'], 'general'); loadGeneralSettingsTab(); }
   if (name === 'analytics') { document.getElementById('an-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadReportsList(); }
 }
 
@@ -6148,6 +6174,109 @@ async function createRole() {
     showMsg('r-msg', '✅ تمت إضافة الدور', 'ok');
     loadRolesTab();
   } catch (e) { showMsg('r-msg', '❌ ' + e.message, 'err'); }
+}
+
+function fmtBytes(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  return (n / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+async function loadBackupsTab() {
+  try {
+    const backups = await api('/backups');
+    document.getElementById('bk-list-table').innerHTML = backups.length
+      ? backups.map((b) => `<tr>
+          <td>${fmtDateTime(b.createdAt)}</td>
+          <td>${b.createdBy === 'SYSTEM_CRON' ? '⏰ تلقائي (يومي)' : 'يدوي'}</td>
+          <td>${b.note ? b.note.replace(/</g, '&lt;') : '-'}</td>
+          <td>${fmtBytes(b.sizeBytes)}</td>
+          <td>
+            <button class="link-btn" onclick="downloadBackup('${b.id}', '${b.fileName.replace(/'/g, "\\'")}')">⬇️ تحميل</button>
+            <button class="link-btn danger-link" onclick="restoreBackup('${b.id}')">↩️ استعادة</button>
+          </td>
+        </tr>`).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد نسخ احتياطية بعد</td></tr>`;
+  } catch (e) { showMsg('bk-msg', '❌ ' + e.message, 'err'); }
+}
+
+async function createBackupNow() {
+  const btn = document.getElementById('bk-create-btn');
+  btn.disabled = true;
+  try {
+    const note = document.getElementById('bk-note').value.trim();
+    await api('/backups', { method: 'POST', body: JSON.stringify(note ? { note } : {}) });
+    document.getElementById('bk-note').value = '';
+    showMsg('bk-msg', '✅ تم إنشاء النسخة الاحتياطية', 'ok');
+    loadBackupsTab();
+  } catch (e) { showMsg('bk-msg', '❌ ' + e.message, 'err'); }
+  finally { btn.disabled = false; }
+}
+
+// Same raw-fetch-+-blob bypass of api() that downloadReport() already uses
+// -- a backup file is plain JSON (or gzip), not something api()'s
+// JSON.parse(response) can round-trip as text without risking corruption
+// on a large one, and the browser's native save dialog is exactly what a
+// person migrating data between environments actually wants here.
+async function downloadBackup(id, fileName) {
+  try {
+    const res = await fetch(apiBase() + '/backups/' + id + '/download', {
+      headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {},
+    });
+    if (!res.ok) {
+      let msg = 'HTTP ' + res.status;
+      try { const j = await res.json(); if (j && j.message) msg = j.message; } catch (e) { /* not JSON */ }
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) { showMsg('bk-msg', '❌ فشل تحميل النسخة الاحتياطية: ' + e.message, 'err'); }
+}
+
+const RESTORE_CONFIRM_PHRASE = 'RESTORE-BACKUP-OVERWRITE-EVERYTHING';
+
+async function restoreBackup(id) {
+  const typed = window.prompt('لا يمكن التراجع عن هذا الإجراء.\nسيُستبدل كل بيانات هذا النظام الحالية (بما فيها المستخدمون والأدوار) ببيانات هذه النسخة الاحتياطية بالضبط.\n\nاكتب "' + RESTORE_CONFIRM_PHRASE + '" للتأكيد:');
+  if (typed !== RESTORE_CONFIRM_PHRASE) { if (typed !== null) showMsg('bk-msg', '⚠️ العبارة غير مطابقة -- لم يتم تنفيذ أي شيء', 'err'); return; }
+  try {
+    await api('/backups/' + id + '/restore', { method: 'POST', body: JSON.stringify({ confirm: RESTORE_CONFIRM_PHRASE }) });
+    showMsg('bk-msg', '✅ تمت الاستعادة بنجاح -- أعد تحميل الصفحة لرؤية البيانات المستعادة', 'ok');
+    ingredientsCache = [];
+    setTimeout(() => window.location.reload(), 1500);
+  } catch (e) { showMsg('bk-msg', '❌ ' + e.message, 'err'); }
+}
+
+// Multipart upload (like uploadBranchLogo) instead of api()'s JSON body --
+// the confirm phrase rides along as a plain form field next to the file,
+// matching what BackupController's restore-from-upload endpoint expects.
+async function restoreBackupFromUpload() {
+  const input = document.getElementById('bk-upload-file');
+  const file = input.files[0];
+  if (!file) { showMsg('bk-msg', '⚠️ اختر ملف النسخة الاحتياطية أولًا', 'err'); return; }
+  const typed = window.prompt('لا يمكن التراجع عن هذا الإجراء.\nسيُستبدل كل بيانات هذا النظام الحالية (بما فيها المستخدمون والأدوار) بمحتوى الملف المرفوع بالضبط.\n\nاكتب "' + RESTORE_CONFIRM_PHRASE + '" للتأكيد:');
+  if (typed !== RESTORE_CONFIRM_PHRASE) { if (typed !== null) showMsg('bk-msg', '⚠️ العبارة غير مطابقة -- لم يتم تنفيذ أي شيء', 'err'); return; }
+  const form = new FormData();
+  form.append('file', file);
+  form.append('confirm', RESTORE_CONFIRM_PHRASE);
+  try {
+    const res = await fetch(apiBase() + '/backups/restore-from-upload', {
+      method: 'POST',
+      headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {},
+      body: form,
+    });
+    if (!res.ok) {
+      let msg = 'HTTP ' + res.status;
+      try { const j = await res.json(); if (j && j.message) msg = Array.isArray(j.message) ? j.message.join('، ') : j.message; } catch (e) { /* no body */ }
+      throw new Error(msg);
+    }
+    showMsg('bk-msg', '✅ تمت الاستعادة من الملف بنجاح -- أعد تحميل الصفحة لرؤية البيانات المستعادة', 'ok');
+    input.value = '';
+    setTimeout(() => window.location.reload(), 1500);
+  } catch (e) { showMsg('bk-msg', '❌ ' + e.message, 'err'); }
 }
 
 // Both destructive actions require the caller to type the exact phrase the

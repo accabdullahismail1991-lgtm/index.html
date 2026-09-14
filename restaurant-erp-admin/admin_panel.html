@@ -463,7 +463,7 @@
 
       <div class="panel subview" id="br-sub-list">
         <h2>الفروع الحالية</h2>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>نسبة الضريبة</th><th>الحالة</th><th>إلزام اختيار العميل</th><th>البيع بالسالب</th><th>الإغلاق التلقائي للوردية</th><th>الإجراءات</th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>نسبة الضريبة</th><th>الأسعار شاملة الضريبة</th><th>الحالة</th><th>إلزام اختيار العميل</th><th>البيع بالسالب</th><th>الإغلاق التلقائي للوردية</th><th>الإجراءات</th></tr></thead>
           <tbody id="branchesTable"></tbody>
         </table></div>
       </div>
@@ -483,6 +483,7 @@
           <div><label>نسبة الضريبة %</label><input id="b-vat-rate" type="number" step="0.01" min="0" max="100" value="15"></div>
           <div><label><input type="checkbox" id="b-require-customer" style="width:auto;display:inline"> إلزام اختيار العميل عند إنشاء الطلب</label></div>
           <div><label><input type="checkbox" id="b-allow-negative-stock" style="width:auto;display:inline"> السماح بالبيع بالسالب (تجاوز نقص المخزون)</label></div>
+          <div><label><input type="checkbox" id="b-prices-include-vat" style="width:auto;display:inline"> الأسعار شاملة الضريبة (السعر المعروض = السعر النهائي)</label></div>
           <div><button onclick="createBranch()">إضافة</button></div>
         </div>
       </div>
@@ -2919,6 +2920,7 @@ async function loadBranches() {
       ? branches.map((b) => `<tr>
           <td>${b.name}</td><td>${typeLabel[b.type] || b.type}</td><td>${b.address || '-'}</td><td>${b.vatNumber || '-'}</td>
           <td>${Number(b.vatRate).toFixed(2)}% <button class="link-btn" onclick="editVatRate('${b.id}', ${Number(b.vatRate)})">✏️</button></td>
+          <td><button class="link-btn" onclick="togglePricesIncludeVat('${b.id}', ${!b.pricesIncludeVat})" title="عند التفعيل: السعر المعروض هو السعر النهائي شامل الضريبة (لا تُضاف الضريبة عند الدفع)">${b.pricesIncludeVat ? '✅ شاملة' : '⛔ غير شاملة'}</button></td>
           <td>${b.isActive ? '✅ نشط' : '⛔ معطّل'}</td>
           <td><button class="link-btn" onclick="toggleRequireCustomer('${b.id}', ${!b.requireCustomerForOrders})">${b.requireCustomerForOrders ? '✅ إلزامي' : '⛔ اختياري'}</button></td>
           <td><button class="link-btn" onclick="toggleAllowNegativeStock('${b.id}', ${!b.allowNegativeStock})">${b.allowNegativeStock ? '✅ مسموح' : '⛔ ممنوع'}</button></td>
@@ -2928,8 +2930,8 @@ async function loadBranches() {
           </td>
           <td><button class="link-btn" onclick="toggleBranchEdit('${b.id}')">✏️ تعديل</button></td>
         </tr>
-        <tr id="edit-branch-row-${b.id}" class="hidden"><td colspan="10"><div class="recipe-box" id="edit-branch-box-${b.id}"></div></td></tr>`).join('')
-      : `<tr><td colspan="10" class="empty">لا توجد فروع بعد</td></tr>`;
+        <tr id="edit-branch-row-${b.id}" class="hidden"><td colspan="11"><div class="recipe-box" id="edit-branch-box-${b.id}"></div></td></tr>`).join('')
+      : `<tr><td colspan="11" class="empty">لا توجد فروع بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function createBranch() {
@@ -2940,9 +2942,10 @@ async function createBranch() {
   const vatRate = parseFloat(document.getElementById('b-vat-rate').value);
   const requireCustomerForOrders = document.getElementById('b-require-customer').checked;
   const allowNegativeStock = document.getElementById('b-allow-negative-stock').checked;
+  const pricesIncludeVat = document.getElementById('b-prices-include-vat').checked;
   if (!name) { flashGlobal('⚠️ اكتب اسم الفرع', 'err'); return; }
   try {
-    const body = { name, type, requireCustomerForOrders, allowNegativeStock };
+    const body = { name, type, requireCustomerForOrders, allowNegativeStock, pricesIncludeVat };
     if (address) body.address = address;
     if (vatNumber) body.vatNumber = vatNumber;
     if (!isNaN(vatRate)) body.vatRate = vatRate;
@@ -2951,6 +2954,7 @@ async function createBranch() {
     document.getElementById('b-vat-rate').value = '15';
     document.getElementById('b-require-customer').checked = false;
     document.getElementById('b-allow-negative-stock').checked = false;
+    document.getElementById('b-prices-include-vat').checked = false;
     flashGlobal('✅ تمت إضافة الفرع', 'ok');
     loadBranches();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
@@ -2965,6 +2969,13 @@ async function toggleRequireCustomer(id, value) {
 async function toggleAllowNegativeStock(id, value) {
   try {
     await api(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify({ allowNegativeStock: value }) });
+    flashGlobal('✅ تم التحديث', 'ok');
+    loadBranches();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function togglePricesIncludeVat(id, value) {
+  try {
+    await api(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify({ pricesIncludeVat: value }) });
     flashGlobal('✅ تم التحديث', 'ok');
     loadBranches();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
@@ -4050,13 +4061,19 @@ function updateOrderCartTotals() {
   const shift = shiftsCache.find((s) => s.id === shiftId);
   const location = shift ? locationsCache.find((l) => l.id === shift.locationId) : null;
   const vatRate = location ? Number(location.vatRate) : 15;
-  const vat = Math.round(subtotal * (vatRate / 100) * 100) / 100;
-  const grand = Math.round((subtotal + vat) * 100) / 100;
+  // pricesIncludeVat: the price on the menu tile IS the final price -- VAT
+  // is EXTRACTED for display (not added on top), so grand never exceeds
+  // subtotal, matching OrdersService.create()'s own calc for this branch.
+  const pricesIncludeVat = location ? !!location.pricesIncludeVat : false;
+  const vat = pricesIncludeVat
+    ? Math.round((subtotal - subtotal / (1 + vatRate / 100)) * 100) / 100
+    : Math.round(subtotal * (vatRate / 100) * 100) / 100;
+  const grand = pricesIncludeVat ? subtotal : Math.round((subtotal + vat) * 100) / 100;
 
   const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
   setText('ord-cart-count', itemCount + ' صنف');
   setText('ord-subtotal', subtotal.toFixed(2));
-  setText('ord-vat-label', `ضريبة القيمة المضافة (${vatRate}%)`);
+  setText('ord-vat-label', pricesIncludeVat ? `شاملة ضريبة القيمة المضافة (${vatRate}%)` : `ضريبة القيمة المضافة (${vatRate}%)`);
   setText('ord-vat', vat.toFixed(2));
   setText('ord-grand-total', grand.toFixed(2));
   const checkoutBtn = document.querySelector('#sl-sub-new .order-checkout-btn');
@@ -4491,11 +4508,15 @@ function renderInvoice(o) {
   // subtotal/vatTotal/grandTotal actually charged always come straight
   // from the API, never recomputed from lines client-side.
   const vatRate = Number(loc.vatRate ?? 15) / 100;
+  // pricesIncludeVat: l.unitPrice is already the final price -- extract the
+  // VAT portion for the breakdown column instead of adding it on top, so
+  // per-line totals sum to o.subtotal exactly like the API's own calc.
+  const pricesIncludeVat = !!loc.pricesIncludeVat;
 
   const linesHtml = o.lines.map((l) => {
-    const lineSubtotal = Number(l.unitPrice) * l.quantity;
-    const lineVat = round2(lineSubtotal * vatRate);
-    const lineTotal = round2(lineSubtotal + lineVat);
+    const lineGross = Number(l.unitPrice) * l.quantity;
+    const lineVat = pricesIncludeVat ? round2(lineGross - lineGross / (1 + vatRate)) : round2(lineGross * vatRate);
+    const lineTotal = pricesIncludeVat ? round2(lineGross) : round2(lineGross + lineVat);
     // A combo line has no single menu item -- show the combo's name plus
     // exactly what was chosen for it (comboSelections, snapshotted at order
     // time), the same "what was actually sold" principle as unitPrice.
@@ -4541,9 +4562,9 @@ function renderInvoice(o) {
         </table>
       ` : ''}
       <div class="invoice-totals">
-        <div class="row"><span>الإجمالي قبل الضريبة</span><span>${fmtMoney(o.subtotal)}</span></div>
+        <div class="row"><span>${pricesIncludeVat ? 'الإجمالي قبل الخصم' : 'الإجمالي قبل الضريبة'}</span><span>${fmtMoney(o.subtotal)}</span></div>
         ${Number(o.discountTotal) > 0 ? `<div class="row"><span>الخصم</span><span>-${fmtMoney(o.discountTotal)}</span></div>` : ''}
-        <div class="row"><span>ضريبة القيمة المضافة (${round2(vatRate * 100)}%)</span><span>${fmtMoney(o.vatTotal)}</span></div>
+        <div class="row"><span>${pricesIncludeVat ? `منها ضريبة القيمة المضافة (${round2(vatRate * 100)}%)` : `ضريبة القيمة المضافة (${round2(vatRate * 100)}%)`}</span><span>${fmtMoney(o.vatTotal)}</span></div>
         <div class="row grand"><span>الإجمالي شامل الضريبة</span><span>${fmtMoney(o.grandTotal)} ر.س</span></div>
       </div>
       ${o.zatcaQrCode ? `

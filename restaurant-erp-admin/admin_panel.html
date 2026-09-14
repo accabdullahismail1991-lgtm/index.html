@@ -2218,15 +2218,66 @@ window.addEventListener('online', () => { updateOfflineBanner(); replayOfflineQu
 window.addEventListener('offline', updateOfflineBanner);
 setInterval(replayOfflineQueue, 20000); // safety net, same cadence as pos-web's syncEngine
 
+let refreshToken = null;
+let refreshInFlight = null;
+
+// The access token lives only 15 minutes; before this, ANY request made
+// after that window force-logged the user out mid-task (a branch edit
+// losing a half-typed VAT number, a cashier mid-order) even though the
+// refresh token is still good for 7 days. Refreshes at most once at a
+// time -- concurrent 401s (e.g. a few Promise.all'd GETs firing the
+// moment the token expires) share this one in-flight attempt instead of
+// each rotating the refresh token out from under the others.
+async function refreshAccessToken() {
+  if (!refreshToken) return false;
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    try {
+      const res = await fetch(apiBase() + '/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      accessToken = data.accessToken;
+      refreshToken = data.refreshToken;
+      return true;
+    } catch (e) {
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
+// Shared by both branches below -- on a 401, tries exactly one silent
+// refresh-and-retry before giving up. A 401 that survives a fresh access
+// token (refresh token itself expired/revoked, or a real permission
+// problem some day) still reaches the caller as a real 401, which then
+// falls through to doLogout() same as before.
+async function fetchWithAuth(path, options) {
+  options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+  if (accessToken) options.headers['Authorization'] = 'Bearer ' + accessToken;
+  let res = await fetch(apiBase() + path, options);
+  if (res.status === 401 && refreshToken) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      options.headers['Authorization'] = 'Bearer ' + accessToken;
+      res = await fetch(apiBase() + path, options);
+    }
+  }
+  return res;
+}
+
 async function api(path, options) {
   options = options || {};
   const method = (options.method || 'GET').toUpperCase();
-  options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
-  if (accessToken) options.headers['Authorization'] = 'Bearer ' + accessToken;
 
   if (method === 'GET') {
     try {
-      const res = await fetch(apiBase() + path, options);
+      const res = await fetchWithAuth(path, options);
       let data = null;
       try { data = await res.json(); } catch (e) { /* empty body */ }
       if (!res.ok) {
@@ -2245,7 +2296,7 @@ async function api(path, options) {
   }
 
   try {
-    const res = await fetch(apiBase() + path, options);
+    const res = await fetchWithAuth(path, options);
     let data = null;
     try { data = await res.json(); } catch (e) { /* empty body */ }
     if (!res.ok) {
@@ -2497,6 +2548,7 @@ async function doLogin() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
     accessToken = data.accessToken;
+    refreshToken = data.refreshToken;
     document.getElementById('whoAmI').textContent = phone;
     // Awaited (not fire-and-forget) BEFORE the app screen/nav become
     // clickable: locationsCache feeds location dropdowns in several other
@@ -2519,6 +2571,7 @@ async function doLogin() {
 
 function doLogout(message) {
   accessToken = null;
+  refreshToken = null;
   document.getElementById('appScreen').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
   if (message) showMsg('loginMsg', 'ℹ️ ' + message, 'err');

@@ -418,8 +418,8 @@
     <h1>🍽️ Restaurant ERP — لوحة التحكم</h1>
     <label>عنوان الـ API</label>
     <input id="apiBase" value="http://localhost:3000">
-    <label>رقم الجوال</label>
-    <input id="phone" value="+966500000000">
+    <label>رقم الجوال أو اسم المستخدم</label>
+    <input id="phone" value="+966500000000" placeholder="رقم الجوال أو اسم المستخدم">
     <label>كلمة المرور</label>
     <input id="password" type="password" value="ChangeMe123!">
     <button class="full" id="loginBtn" onclick="doLogin()">تسجيل الدخول</button>
@@ -1215,13 +1215,14 @@
 
       <div class="panel subview hidden" id="set-sub-users">
         <h2>المستخدمون</h2>
-        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الجوال</th><th>الأدوار</th><th>الفروع</th><th>الحالة</th><th></th></tr></thead>
+        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الجوال</th><th>اسم المستخدم (لتسجيل الدخول)</th><th>الأدوار</th><th>الفروع</th><th>الحالة</th><th></th></tr></thead>
           <tbody id="usersTable"></tbody>
         </table></div>
         <h2 style="margin-top:18px">➕ مستخدم جديد</h2>
         <div class="row-form">
-          <div><label>الاسم</label><input id="u-name" placeholder="اسم المستخدم"></div>
+          <div><label>الاسم</label><input id="u-full-name" placeholder="اسم المستخدم"></div>
           <div><label>الجوال</label><input id="u-phone" placeholder="+9665..."></div>
+          <div><label>اسم المستخدم لتسجيل الدخول (اختياري)</label><input id="u-username" placeholder="مثال: cashier1"></div>
           <div><label>كلمة المرور</label><input id="u-password" type="password" placeholder="8 أحرف على الأقل"></div>
         </div>
         <div class="row-form" style="margin-top:6px">
@@ -1229,7 +1230,7 @@
           <div><label>الفروع (اتركها فارغة لإتاحة كل الفروع)</label><div id="u-locations-checks" class="checkbox-grid"></div></div>
         </div>
         <div style="margin-top:10px"><button onclick="createUser()">إضافة</button></div>
-        <div id="u-msg" class="msg"></div>
+        <div id="u-msg-users" class="msg"></div>
       </div>
 
       <div class="panel subview hidden" id="set-sub-roles">
@@ -6193,35 +6194,39 @@ async function loadUsersTab() {
     document.getElementById('usersTable').innerHTML = usersCache.length
       ? usersCache.map((u) => `
         <tr>
-          <td>${u.name}</td><td>${u.phone}</td>
+          <td>${u.name}</td><td>${u.phone}</td><td>${u.username || '-'}</td>
           <td>${u.roles.map((r) => r.name).join('، ') || '-'}</td>
           <td>${u.locations.length ? u.locations.map((l) => l.name).join('، ') : 'كل الفروع'}</td>
           <td>${u.isActive ? '✅ نشط' : '⛔ معطّل'}</td>
           <td><button class="link-btn" onclick="toggleUserEdit('${u.id}')">✏️ تعديل</button></td>
         </tr>
-        <tr id="edit-user-row-${u.id}" class="hidden"><td colspan="6"><div class="recipe-box" id="edit-user-box-${u.id}"></div></td></tr>
+        <tr id="edit-user-row-${u.id}" class="hidden"><td colspan="7"><div class="recipe-box" id="edit-user-box-${u.id}"></div></td></tr>
       `).join('')
-      : `<tr><td colspan="6" class="empty">لا يوجد مستخدمون بعد</td></tr>`;
+      : `<tr><td colspan="7" class="empty">لا يوجد مستخدمون بعد</td></tr>`;
     renderCheckboxList('u-roles-checks', rolesCache, [], 'u-role-check');
     renderCheckboxList('u-locations-checks', locationsCache, [], 'u-location-check');
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function createUser() {
-  const name = document.getElementById('u-name').value.trim();
+  const name = document.getElementById('u-full-name').value.trim();
   const phone = document.getElementById('u-phone').value.trim();
+  const username = document.getElementById('u-username').value.trim();
   const password = document.getElementById('u-password').value;
-  if (!name || !phone) { showMsg('u-msg', '⚠️ اكتب الاسم والجوال', 'err'); return; }
-  if (!password || password.length < 8) { showMsg('u-msg', '⚠️ كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'err'); return; }
+  if (!name || !phone) { showMsg('u-msg-users', '⚠️ اكتب الاسم والجوال', 'err'); return; }
+  if (!password || password.length < 8) { showMsg('u-msg-users', '⚠️ كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'err'); return; }
   const roleIds = Array.from(document.querySelectorAll('.u-role-check:checked')).map((el) => el.value);
   const locationIds = Array.from(document.querySelectorAll('.u-location-check:checked')).map((el) => el.value);
   try {
-    await api('/users', { method: 'POST', body: JSON.stringify({ name, phone, password, roleIds, locationIds }) });
-    document.getElementById('u-name').value = '';
+    const body = { name, phone, password, roleIds, locationIds };
+    if (username) body.username = username;
+    await api('/users', { method: 'POST', body: JSON.stringify(body) });
+    document.getElementById('u-full-name').value = '';
     document.getElementById('u-phone').value = '';
+    document.getElementById('u-username').value = '';
     document.getElementById('u-password').value = '';
-    showMsg('u-msg', '✅ تمت إضافة المستخدم', 'ok');
+    showMsg('u-msg-users', '✅ تمت إضافة المستخدم', 'ok');
     loadUsersTab();
-  } catch (e) { showMsg('u-msg', '❌ ' + e.message, 'err'); }
+  } catch (e) { showMsg('u-msg-users', '❌ ' + e.message, 'err'); }
 }
 function toggleUserEdit(id) {
   const row = document.getElementById('edit-user-row-' + id);
@@ -6233,6 +6238,7 @@ function toggleUserEdit(id) {
   box.innerHTML = `
     <div class="row-form">
       <div><label>الاسم</label><input id="eu-name-${id}" value="${u.name}"></div>
+      <div><label>اسم المستخدم لتسجيل الدخول (اختياري)</label><input id="eu-username-${id}" value="${u.username || ''}" placeholder="مثال: cashier1"></div>
       <div><label>كلمة مرور جديدة (اتركها فارغة لعدم التغيير)</label><input id="eu-password-${id}" type="password" placeholder="8 أحرف على الأقل"></div>
       <div><label><input type="checkbox" id="eu-active-${id}" style="width:auto;display:inline" ${u.isActive ? 'checked' : ''}> نشط</label></div>
     </div>
@@ -6247,6 +6253,7 @@ function toggleUserEdit(id) {
 }
 async function saveUserEdit(id) {
   const name = document.getElementById('eu-name-' + id).value.trim();
+  const username = document.getElementById('eu-username-' + id).value.trim();
   const isActive = document.getElementById('eu-active-' + id).checked;
   const password = document.getElementById('eu-password-' + id).value;
   const roleIds = Array.from(document.querySelectorAll('.eu-role-check-' + id + ':checked')).map((el) => el.value);
@@ -6254,6 +6261,7 @@ async function saveUserEdit(id) {
   if (password && password.length < 8) { flashGlobal('⚠️ كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'err'); return; }
   const body = { name, isActive, roleIds, locationIds };
   if (password) body.password = password;
+  if (username) body.username = username;
   try {
     await api('/users/' + id, { method: 'PATCH', body: JSON.stringify(body) });
     flashGlobal('✅ تم حفظ المستخدم', 'ok');

@@ -417,7 +417,7 @@
 
     <!-- BRANCHES -->
     <div id="view-branches" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🏢 الفروع</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🏢 الفروع</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
         <button id="br-tab-list" class="active" onclick="switchSubview('br',['list','add','import'],'list')">الفروع الحالية</button>
         <button id="br-tab-add" class="" onclick="switchSubview('br',['list','add','import'],'add')">➕ إضافة فرع</button>
         <button id="br-tab-import" class="" onclick="switchSubview('br',['list','add','import'],'import'); renderImportExportPanel('br-sub-import','branches')">📥 استيراد / تصدير</button>
@@ -455,7 +455,7 @@
 
     <!-- INGREDIENTS -->
     <div id="view-ingredients" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🥕 الأصناف الخام والنصف مصنّعة</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🥕 الأصناف الخام والنصف مصنّعة</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
         <button id="ing-tab-list" class="active" onclick="switchSubview('ing',['list','add','units','import'],'list')">الأصناف الحالية</button>
         <button id="ing-tab-add" class="" onclick="switchSubview('ing',['list','add','units','import'],'add')">➕ إضافة صنف</button>
         <button id="ing-tab-units" class="" onclick="switchSubview('ing',['list','add','units','import'],'units'); loadUnitsOfMeasure()">📐 وحدات القياس</button>
@@ -518,7 +518,7 @@
 
     <!-- ITEMS -->
     <div id="view-items" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📋 أصناف المنيو</h2><button class="view-close" onclick="closeView()">✕</button></div>
+     <div class="view-card"><div class="view-head"><h2>📋 أصناف المنيو</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
       <div class="subnav">
         <button id="mi-tab-list" class="active" onclick="switchSubview('mi',['list','add','channels','import'],'list')">الأصناف الحالية</button>
         <button id="mi-tab-add" onclick="switchSubview('mi',['list','add','channels','import'],'add')">➕ إضافة صنف</button>
@@ -567,7 +567,7 @@
 
     <!-- INVENTORY -->
     <div id="view-inventory" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📦 المخزون</h2><button class="view-close" onclick="closeView()">✕</button></div>
+     <div class="view-card"><div class="view-head"><h2>📦 المخزون</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
       <div class="subnav">
         <button id="inv-tab-balances" class="active" onclick="switchSubview('inv',['balances','receive','waste'],'balances')">الأرصدة الحالية</button>
         <button id="inv-tab-receive" onclick="switchSubview('inv',['balances','receive','waste'],'receive')">➕ استلام / تسوية</button>
@@ -609,7 +609,7 @@
 
     <!-- SALES -->
     <div id="view-sales" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🧾 المبيعات</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🧾 المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
         <button id="sl-tab-new" class="active" onclick="switchSubview('sl',['new','orders','shifts','staff-meal'],'new')">➕ طلب جديد</button>
         <button id="sl-tab-orders" class="" onclick="switchSubview('sl',['new','orders','shifts','staff-meal'],'orders')">الطلبات</button>
         <button id="sl-tab-shifts" class="" onclick="switchSubview('sl',['new','orders','shifts','staff-meal'],'shifts')">🔚 الورديات</button>
@@ -745,7 +745,7 @@
 
     <!-- RETURNS -->
     <div id="view-returns" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>↩️ المرتجعات</h2><button class="view-close" onclick="closeView()">✕</button></div>
+     <div class="view-card"><div class="view-head"><h2>↩️ المرتجعات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
       <div class="subnav">
         <button id="rt-tab-new" class="active" onclick="switchSubview('rt',['new','history'],'new')">➕ مرتجع جديد</button>
         <button id="rt-tab-history" onclick="switchSubview('rt',['new','history'],'history')">📋 سجل المرتجعات</button>
@@ -774,7 +774,7 @@
 
     <!-- KITCHEN -->
     <div id="view-kitchen" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🍳 المطبخ</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🍳 المطبخ</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <h2>قائمة التحضير الحية</h2>
         <div class="hint">لشاشة تابلت مخصّصة تُعرض دائمًا في المطبخ (خطوط أكبر، تسجيل دخول دائم لا يُطلب في كل مرة)، افتح
@@ -789,7 +789,7 @@
 
     <!-- ALERTS -->
     <div id="view-alerts" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🔔 التنبيهات</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🔔 التنبيهات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <h2>كل التنبيهات الحالية</h2>
         <div class="hint">مخزون منخفض، أصناف قاربت الصلاحية (خلال 3 أيام)، وأوامر شراء أو جرد بانتظار الاعتماد -- كلها مُشتقّة من البيانات الحالية مباشرة، لا سجل منفصل.</div>
@@ -803,7 +803,7 @@
 
     <!-- STOCKTAKE (الجرد اليومي) -->
     <div id="view-stocktake" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📋 الجرد اليومي</h2><button class="view-close" onclick="closeView()">✕</button></div>
+     <div class="view-card"><div class="view-head"><h2>📋 الجرد اليومي</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
       <div class="subnav">
         <button id="stk-tab-list" class="active" onclick="switchSubview('stk',['list','new'],'list'); loadStocktakeList()">📑 السجل</button>
         <button id="stk-tab-new" class="" onclick="switchSubview('stk',['list','new'],'new'); openNewStocktakeTab()">➕ جرد جديد</button>
@@ -850,7 +850,7 @@
     </div>
 
     <div id="view-stocktake-detail" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📋 تفاصيل الجرد</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📋 تفاصيل الجرد</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div id="stkd-meta" class="stats-row"></div>
         <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>النوع</th><th>الرصيد النظري</th><th>الكمية المعدودة</th><th>الفرق</th></tr></thead>
@@ -868,7 +868,7 @@
 
     <!-- PURCHASING -->
     <div id="view-purchasing" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🛒 المشتريات</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🛒 المشتريات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
         <button id="pu-tab-suppliers" class="active" onclick="switchSubview('pu',['suppliers','matrix','new','orders','purchase-return','import'],'suppliers')">الموردون</button>
         <button id="pu-tab-matrix" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','purchase-return','import'],'matrix')">مصفوفة الموافقات</button>
         <button id="pu-tab-new" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','purchase-return','import'],'new')">➕ أمر شراء</button>
@@ -943,7 +943,7 @@
 
     <!-- PRODUCTION -->
     <div id="view-production" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🏭 الإنتاج</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🏭 الإنتاج</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
         <button id="pr-tab-new" class="active" onclick="switchSubview('pr',['new','orders'],'new')">➕ أمر إنتاج</button>
         <button id="pr-tab-orders" class="" onclick="switchSubview('pr',['new','orders'],'orders')">أوامر الإنتاج</button>
       </div>
@@ -974,7 +974,7 @@
 
     <!-- TRANSFERS -->
     <div id="view-transfers" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🚚 التحويلات</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🚚 التحويلات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
         <button id="tf-tab-new" class="active" onclick="switchSubview('tf',['new','list'],'new')">➕ تحويل جديد</button>
         <button id="tf-tab-list" class="" onclick="switchSubview('tf',['new','list'],'list')">التحويلات</button>
       </div>
@@ -1003,7 +1003,7 @@
 
     <!-- PROMOTIONS -->
     <div id="view-promotions" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🎁 العروض</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🎁 العروض</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
         <button id="pm-tab-list" class="active" onclick="switchSubview('pm',['list','add'],'list')">العروض الحالية</button>
         <button id="pm-tab-add" class="" onclick="switchSubview('pm',['list','add'],'add')">➕ عرض جديد</button>
       </div>
@@ -1047,7 +1047,7 @@
 
     <!-- COMBO MEALS -->
     <div id="view-combos" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🍔 وجبات الكمبو والبوكس</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🍔 وجبات الكمبو والبوكس</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
         <button id="cb-tab-list" class="active" onclick="switchSubview('cb',['list','add'],'list')">الكمبو الحالية</button>
         <button id="cb-tab-add" class="" onclick="switchSubview('cb',['list','add'],'add')">➕ كمبو جديد</button>
       </div>
@@ -1078,7 +1078,7 @@
 
     <!-- CUSTOMERS / LOYALTY -->
     <div id="view-customers" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>👤 العملاء</h2><button class="view-close" onclick="closeView()">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>👤 العملاء</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
         <button id="cu-tab-list" class="active" onclick="switchSubview('cu',['list','add','import'],'list')">العملاء</button>
         <button id="cu-tab-add" class="" onclick="switchSubview('cu',['list','add','import'],'add')">➕ عميل جديد</button>
         <button id="cu-tab-import" class="" onclick="switchSubview('cu',['list','add','import'],'import'); renderImportExportPanel('cu-sub-import','customers')">📥 استيراد / تصدير</button>
@@ -1109,7 +1109,7 @@
 
     <!-- PAYMENT METHODS -->
     <div id="view-payment-methods" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>💳 طرق الدفع</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>💳 طرق الدفع</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <h2>طرق الدفع الحالية</h2>
         <div class="hint">"نقدية؟" تحدّد أي الطرق تُحتسب ضمن تسوية صندوق الوردية عند الإغلاق (Shifts) -- طرق مثل البطاقة/المحفظة تُسوَّى عبر جهاتها الخاصة، لا الصندوق.</div>
@@ -1132,7 +1132,7 @@
 
     <!-- GENERAL SETTINGS -->
     <div id="view-settings" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>⚙️ الإعدادات العامة</h2><button class="view-close" onclick="closeView()">✕</button></div>
+     <div class="view-card"><div class="view-head"><h2>⚙️ الإعدادات العامة</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
       <div class="subnav">
         <button id="set-tab-general" class="active" onclick="switchSubview('set',['general','users','roles','danger'],'general')">عام</button>
         <button id="set-tab-users" class="" onclick="switchSubview('set',['general','users','roles','danger'],'users'); loadUsersTab()">👤 المستخدمون</button>
@@ -1241,7 +1241,7 @@
 
     <!-- ANALYTICS / BI -->
     <div id="view-analytics" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📊 التقارير</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📊 التقارير</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <h2>لوحات التحكم التحليلية</h2>
         <div class="hint">رسوم بيانية ومؤشرات حية لكل قسم -- بالإضافة إلى التقارير الجدولية أدناه، وليست بديلًا عنها.</div>
@@ -1306,7 +1306,7 @@
          each its own independent popup exactly like the report popups
          below -- additive, the flat-table reports are untouched. -->
     <div id="view-report-dash-sales" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📊 لوحة تحكم المبيعات</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📊 لوحة تحكم المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshs-location"><option value="">كل المواقع</option></select></div>
@@ -1347,7 +1347,7 @@
     </div>
 
     <div id="view-report-dash-production" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🏭 لوحة تحكم الإنتاج</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🏭 لوحة تحكم الإنتاج</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshp-location"><option value="">كل المواقع</option></select></div>
@@ -1377,7 +1377,7 @@
     </div>
 
     <div id="view-report-dash-purchasing" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🛒 لوحة تحكم المشتريات</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🛒 لوحة تحكم المشتريات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshpu-location"><option value="">كل المواقع</option></select></div>
@@ -1407,7 +1407,7 @@
     </div>
 
     <div id="view-report-dash-items" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📋 لوحة تحكم الأصناف</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📋 لوحة تحكم الأصناف</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshi-location"><option value="">كل المواقع</option></select></div>
@@ -1458,7 +1458,7 @@
     </div>
 
     <div id="view-report-dash-inventory" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📦 لوحة تحكم المخازن</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📦 لوحة تحكم المخازن</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshinv-location"><option value="">كل المواقع</option></select></div>
@@ -1484,7 +1484,7 @@
          reachable only from the Reports hub above -- not part of TABS, so
          they don't show up in the nav bar or home dashboard grid.) -->
     <div id="view-report-sales" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🧾 تقرير المبيعات</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🧾 تقرير المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="slr-location"><option value="">كل المواقع</option></select></div>
@@ -1506,7 +1506,7 @@
     </div>
 
     <div id="view-report-items" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📋 تقرير الأصناف</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📋 تقرير الأصناف</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="mir-location"><option value="">كل المواقع</option></select></div>
@@ -1528,7 +1528,7 @@
     </div>
 
     <div id="view-report-inventory" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📦 تقرير المخزون</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📦 تقرير المخزون</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="ivr-location"><option value="">كل المواقع</option></select></div>
@@ -1548,7 +1548,7 @@
     </div>
 
     <div id="view-report-purchasing" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🛒 تقرير المشتريات</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🛒 تقرير المشتريات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="pur-location"><option value="">كل المواقع</option></select></div>
@@ -1571,7 +1571,7 @@
     </div>
 
     <div id="view-report-returns" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>↩️ تقرير مرتجعات العملاء</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>↩️ تقرير مرتجعات العملاء</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="rtr-location"><option value="">كل المواقع</option></select></div>
@@ -1589,7 +1589,7 @@
     </div>
 
     <div id="view-report-purchase-returns" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🔄 تقرير مرتجعات المشتريات</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🔄 تقرير مرتجعات المشتريات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="por-location"><option value="">كل المواقع</option></select></div>
@@ -1607,7 +1607,7 @@
     </div>
 
     <div id="view-report-shifts" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🧑‍💼 تقرير الورديات والكاشيرات</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🧑‍💼 تقرير الورديات والكاشيرات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="shr-location"><option value="">كل المواقع</option></select></div>
@@ -1629,7 +1629,7 @@
     </div>
 
     <div id="view-report-payment-methods" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>💳 تقرير طرق الدفع</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>💳 تقرير طرق الدفع</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="pmr-location"><option value="">كل المواقع</option></select></div>
@@ -1646,7 +1646,7 @@
     </div>
 
     <div id="view-report-production" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🏭 تقرير الإنتاج والتكاليف</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🏭 تقرير الإنتاج والتكاليف</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="hint">التكلفة الفعلية مأخوذة من الدفعات الحقيقية التي استُهلكت عند بدء كل أمر إنتاج (start) -- ليست تقديرًا من الوصفة. أوامر لا تزال "مخطط" (لم تبدأ بعد) غير محتسبة.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -1665,7 +1665,7 @@
     </div>
 
     <div id="view-report-tax" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🧮 تقرير الضرائب</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🧮 تقرير الضرائب</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="hint">ضريبة المبيعات مأخوذة فعليًا من كل فاتورة (بحسب نوع ضريبة كل صنف وقت الحساب) -- ضريبة المشتريات تقديرية بنسبة الفرع لعدم وجود حقل ضريبة منفصل من المورد.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -1684,7 +1684,7 @@
     </div>
 
     <div id="view-report-peak-hours" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>⏰ تقرير ساعات الذروة</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>⏰ تقرير ساعات الذروة</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="pkr-location"><option value="">كل المواقع</option></select></div>
@@ -1701,7 +1701,7 @@
     </div>
 
     <div id="view-report-customer-experience" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>😊 تقرير تجربة العميل</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>😊 تقرير تجربة العميل</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="hint">مؤشرات مشتقّة من البيانات الحالية (لا يوجد استبيان رضا عملاء) -- نسبة تكرار العملاء، متوسط سرعة الخدمة، ونسبة الإلغاء/المرتجعات.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -1716,7 +1716,7 @@
     </div>
 
     <div id="view-report-kitchen-performance" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🍳 تقرير أداء المطبخ</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🍳 تقرير أداء المطبخ</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="hint">وقت التحضير محسوب من إنشاء الطلب حتى تعليم الصنف "جاهز" في شاشة المطبخ -- الأصناف التي لم تُعلَّم جاهزة بعد غير محتسبة.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -1735,7 +1735,7 @@
     </div>
 
     <div id="view-report-day-close" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📅 إنهاء اليوم</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📅 إنهاء اليوم</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="hint">يلخّص كل ورديات الفرع المغلقة في تاريخ واحد كسجل رسمي لإنهاء اليوم -- لا يمكن إنهاء يوم فيه وردية لا تزال مفتوحة. إذا كان الإغلاق التلقائي مفعّلاً لفرع (شاشة الفروع)، سيُنجز إنهاء اليوم تلقائيًا عند إغلاق آخر وردية منسية من يوم سابق.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -1759,7 +1759,7 @@
     </div>
 
     <div id="view-report-daily-consumption" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📉 تقرير الاستهلاك اليومي</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📉 تقرير الاستهلاك اليومي</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="hint">كل ما خرج فعليًا من المخزون خلال الفترة -- من المبيعات (حسب الوصفة)، ومن استهلاك أصناف نصف مصنّعة كمكوّن في إنتاج أصناف أخرى، والهالك المُسجَّل يدويًا. تسويات الجرد لا تُحتسب هنا (تصحيح رصيد، وليست استهلاكًا). التكلفة الفعلية مأخوذة من تكلفة الدفعة الحقيقية التي استُهلكت، لا تقدير حالي.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -1778,7 +1778,7 @@
 
     <!-- NET SALES REPORT -->
     <div id="view-report-net-sales" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>💰 تقرير صافي المبيعات</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>💰 تقرير صافي المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="hint">صافي المبيعات بعد الخصم -- شامل الضريبة وبدون الضريبة جنبًا إلى جنب -- مع عدد العملاء المميزين (وليس عدد الطلبات فقط، فقد يضع نفس العميل أكثر من طلب) ومتوسط الفاتورة.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -1798,7 +1798,7 @@
 
     <!-- ABC / PARETO ANALYSIS -->
     <div id="view-report-abc-analysis" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🅰️ تحليل ABC (باريتو) للأصناف</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🅰️ تحليل ABC (باريتو) للأصناف</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="hint">تصنيف كل صنف حسب نصيبه التراكمي من إجمالي المبيعات: <b>A</b> الأصناف التي تُشكّل أول ~80% من المبيعات (الأهم -- لا يجب أن تنفد أبدًا)، <b>B</b> الـ15% التالية، <b>C</b> الذيل الطويل (آخر ~5% -- أول مرشح لتقليص المنيو).</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -1817,7 +1817,7 @@
 
     <!-- SALES BY CATEGORY MIX -->
     <div id="view-report-category-mix" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🥧 مزيج المبيعات حسب الفئة</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🥧 مزيج المبيعات حسب الفئة</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="hint">أي فئة من فئات المنيو (رئيسي، مقبلات، حلويات...) تقود الإيراد -- قبل النزول لتفاصيل كل صنف على حدة.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -1836,7 +1836,7 @@
 
     <!-- PERIOD-OVER-PERIOD COMPARISON -->
     <div id="view-report-period-comparison" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📆 مقارنة الفترات</h2><button class="view-close" onclick="closeView()">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📆 مقارنة الفترات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
       <div class="panel">
         <div class="hint">الفترة المحددة مقابل الفترة السابقة لها مباشرة بنفس الطول -- بدون تحديد فترة، الافتراضي آخر 30 يومًا مقابل الـ30 يومًا التي قبلها.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -1865,7 +1865,7 @@
             <button type="button" class="tmpl-btn" data-dim="detail" data-val="BRIEF" onclick="setInvoiceTemplateOption('detail','BRIEF',this)">مختصر</button>
           </div>
           <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
-          <button class="view-close" onclick="closeView()">✕</button>
+          <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
         </div>
       </div>
       <div class="view-body">
@@ -1879,7 +1879,7 @@
       <div class="view-head no-print"><h2>🖨️ تذكرة المطبخ</h2>
         <div style="display:flex;gap:8px">
           <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
-          <button class="view-close" onclick="closeView()">✕</button>
+          <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
         </div>
       </div>
       <div class="view-body">
@@ -1889,7 +1889,7 @@
 
     <!-- SHIFT CLOSE SUMMARY (brief recap shown right after closing a shift) -->
     <div id="view-shift-summary" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📋 ملخص إغلاق الوردية</h2><button class="view-close" onclick="closeView()">✕</button></div>
+     <div class="view-card"><div class="view-head"><h2>📋 ملخص إغلاق الوردية</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
       <div class="view-body">
         <div id="shift-summary-content"></div>
       </div>
@@ -1901,7 +1901,7 @@
       <div class="view-head no-print"><h2>🕒 سجل حركة الوردية</h2>
         <div style="display:flex;gap:8px">
           <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
-          <button class="view-close" onclick="closeView()">✕</button>
+          <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
         </div>
       </div>
       <div class="view-body">
@@ -2627,14 +2627,61 @@ function exportCurrentViewCsv(btn) {
   URL.revokeObjectURL(url);
 }
 
+// Tracks what was on screen right before a popup-on-top-of-a-screen opened
+// (Reports hub -> a report popup, a list -> its detail popup) so "رجوع"
+// (Back) can restore exactly that instead of only ever landing on Home.
+// Each entry is either {type:'tab', name} for a TABS member or {type:'view',
+// id} for a popup like view-analytics/view-stocktake. Whatever function
+// opens a new popup ON TOP of an existing one calls pushNavHistory() first
+// -- switchTab() itself does NOT push, since picking a different top-level
+// section from the nav bar is a fresh destination, not a nested "drill-in".
+let NAV_HISTORY = [];
+function currentNavLocation() {
+  // A TABS member's own view div also carries class="view open" while
+  // active, so the tab check has to come first -- otherwise it would
+  // always match the generic popup branch below and never restore the
+  // nav bar's highlighted tab button on the way back.
+  const activeTab = TABS.find((t) => document.getElementById('tab-' + t).classList.contains('active'));
+  if (activeTab) return { type: 'tab', name: activeTab };
+  const openView = document.querySelector('.view.open');
+  if (openView) return { type: 'view', id: openView.id };
+  return null; // already at Home
+}
+function pushNavHistory() {
+  const loc = currentNavLocation();
+  if (loc) NAV_HISTORY.push(loc);
+}
+// Just the DOM/visual part of leaving whatever is currently shown -- shared
+// by closeView() (which also wipes NAV_HISTORY, since Home has no "back"
+// destination of its own) and goBack() (which must NOT wipe it, only pop
+// one entry off).
+function hideAllViews() {
+  document.querySelectorAll('.view.open').forEach((v) => v.classList.remove('open'));
+  TABS.forEach((t) => document.getElementById('tab-' + t).classList.remove('active'));
+  stopKitchenPolling();
+}
+function goBack() {
+  const prev = NAV_HISTORY.pop();
+  if (!prev) { closeView(); return; }
+  // switchTab() only ever toggles TABS members' own open/active state -- a
+  // popup like a report or a detail view sitting on top (not a TABS member)
+  // would otherwise be left with .open still set, stacked invisibly above
+  // whatever switchTab() just opened underneath it.
+  hideAllViews();
+  if (prev.type === 'tab') { switchTab(prev.name); return; }
+  // Reopening a previously-open view just re-shows its existing DOM (still
+  // populated from before) -- no need to know which loader re-fetches it.
+  document.getElementById(prev.id).classList.add('open');
+}
 function closeView() {
   // Closes WHATEVER is open, not just a TABS member -- report popups
   // (view-report-*) are reachable only from the Reports hub, deliberately
   // not part of TABS (so they don't clutter the nav bar/home grid), so a
-  // TABS-only sweep would leave them stuck open.
-  document.querySelectorAll('.view.open').forEach((v) => v.classList.remove('open'));
-  TABS.forEach((t) => document.getElementById('tab-' + t).classList.remove('active'));
-  stopKitchenPolling();
+  // TABS-only sweep would leave them stuck open. This is also "return to
+  // the main menu" -- it always lands on Home, so the nested-navigation
+  // stack goBack() uses is meaningless once we're here and gets cleared.
+  hideAllViews();
+  NAV_HISTORY = [];
 }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeView(); });
 
@@ -2667,7 +2714,8 @@ const REPORT_POPUPS = {
   'period-comparison': loadPeriodComparisonReport,
 };
 function openReportPopup(key) {
-  closeView();
+  pushNavHistory();
+  hideAllViews();
   document.getElementById('view-report-' + key).classList.add('open');
   REPORT_POPUPS[key]();
   wireAutoRefreshFilters('view-report-' + key, REPORT_POPUPS[key]);
@@ -3950,7 +3998,8 @@ async function closeShiftPrompt(id) {
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function openShiftCloseSummary(shiftId) {
-  closeView();
+  pushNavHistory();
+  hideAllViews();
   document.getElementById('view-shift-summary').classList.add('open');
   document.getElementById('shift-summary-content').innerHTML = '<div class="empty">جارٍ التحميل...</div>';
   try {
@@ -4287,7 +4336,8 @@ function setInvoiceTemplateOption(dim, val, btn) {
 }
 
 async function openInvoicePopup(orderId) {
-  closeView();
+  pushNavHistory();
+  hideAllViews();
   document.getElementById('view-invoice').classList.add('open');
   document.getElementById('inv-content').innerHTML = '<div class="empty">جارِ التحميل...</div>';
   try {
@@ -4654,7 +4704,8 @@ async function loadKitchenQueue() {
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 function renderKitchenTicket(ticket) {
-  closeView();
+  pushNavHistory();
+  hideAllViews();
   document.getElementById('view-kitchen-ticket').classList.add('open');
   const orderNumberLabel = ticket.shiftSequence ? '#' + ticket.shiftSequence : '#' + ticket.orderId.slice(-6);
   document.getElementById('kt-ticket-content').innerHTML = `
@@ -4787,7 +4838,8 @@ async function submitNewStocktake() {
 }
 
 async function openStocktakeDetail(id) {
-  closeView();
+  pushNavHistory();
+  hideAllViews();
   document.getElementById('view-stocktake-detail').classList.add('open');
   document.getElementById('stkd-lines').innerHTML = '<tr><td colspan="5" class="empty">جارٍ التحميل...</td></tr>';
   document.getElementById('stkd-actions').innerHTML = '';
@@ -5166,7 +5218,8 @@ const SHIFT_EVENT_LABEL = {
   SHIFT_CLOSED: { icon: '🔴', label: 'إغلاق الوردية' },
 };
 async function openShiftActivityLog(shiftId) {
-  closeView();
+  pushNavHistory();
+  hideAllViews();
   document.getElementById('view-shift-activity-log').classList.add('open');
   document.getElementById('sal-content').innerHTML = '<div class="empty">جارٍ التحميل...</div>';
   try {

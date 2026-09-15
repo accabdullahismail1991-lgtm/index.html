@@ -525,7 +525,10 @@
 
       <div class="panel subview" id="ing-sub-list">
         <h2>الأصناف الحالية</h2>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>الوحدة</th><th>النوع</th><th>حد أدنى</th><th></th></tr></thead>
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>التصنيف</label><select id="ing-category-filter" onchange="renderIngredientsTable()"><option value="">كل التصنيفات</option></select></div>
+        </div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>التصنيف</th><th>الوحدة</th><th>النوع</th><th>حد أدنى</th><th></th></tr></thead>
           <tbody id="ingredientsTable"></tbody>
         </table></div>
       </div>
@@ -533,6 +536,7 @@
         <h2>➕ إضافة صنف جديد</h2>
         <div class="row-form">
           <div><label>الاسم</label><input id="i-name" placeholder="طماطم"></div>
+          <div><label>التصنيف</label><input id="i-category" placeholder="خضروات" list="ing-category-list"></div>
           <div><label>الوحدة</label>
             <select id="i-unit">
               <option value="g">جرام (g)</option>
@@ -554,9 +558,11 @@
               <option value="FIFO">وارد أولًا يصرف أولًا (FIFO)</option>
             </select>
           </div>
+          <div><label>التكلفة التقديرية لكل وحدة (اختياري)</label><input id="i-opening-cost" type="number" step="0.0001" placeholder="حتى أول عملية شراء/إنتاج فعلية"></div>
           <div><label>الحد الأدنى للتنبيه</label><input id="i-threshold" type="number" value="0"></div>
           <div><button onclick="createIngredient()">إضافة</button></div>
         </div>
+        <datalist id="ing-category-list"></datalist>
       </div>
       <div class="panel subview hidden" id="ing-sub-import"></div>
       <div class="panel subview hidden" id="ing-sub-units">
@@ -588,6 +594,9 @@
       <div class="view-body">
       <div class="panel subview" id="mi-sub-list">
         <h2>أصناف المنيو الحالية</h2>
+        <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>🔍 بحث</label><input id="items-search" placeholder="ابحث بالاسم أو القسم..." oninput="renderItemsTable()"></div>
+        </div>
         <div class="table-wrap"><table class="report-table"><thead><tr><th>الصورة</th><th>الاسم</th><th>القسم</th><th>السعر</th><th>التكلفة الحالية</th><th>الحالة</th><th></th></tr></thead>
           <tbody id="itemsTable"></tbody>
         </table></div>
@@ -1649,6 +1658,10 @@
           <div><button onclick="loadInventoryReport()">تحديث</button></div>
         </div>
         <h3>تقييم المخزون الحالي</h3>
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-weight:400">
+          <input type="checkbox" id="ivr-main-unit" style="width:auto" onchange="renderInventoryValuationTable()">
+          ⚖️ عرض الكميات بالوحدة الرئيسية (كجم/لتر) بدلًا من وحدة الصنف -- لسهولة مقارنة/جمع تكلفة الأصناف ذات الأوزان الصغيرة (جرام)
+        </label>
         <div class="table-wrap"><table><thead><tr><th>الخامة</th><th>الكمية</th><th>القيمة</th></tr></thead>
           <tbody id="ivr-valuation-table"></tbody>
         </table></div>
@@ -2522,8 +2535,10 @@ const IMPORT_MODULES = {
     cache: () => ingredientsCache,
     fields: [
       { key: 'name', label: 'الاسم', required: true, example: 'طماطم' },
+      { key: 'category', label: 'التصنيف', example: 'خضروات' },
       { key: 'unit', label: 'الوحدة (g/kg/ml/l/pcs)', required: true, example: 'g' },
       { key: 'kind', label: 'النوع (RAW_MATERIAL / SEMI_FINISHED)', required: true, example: 'RAW_MATERIAL' },
+      { key: 'openingCost', label: 'التكلفة التقديرية لكل وحدة', numeric: true },
       { key: 'lowStockThreshold', label: 'الحد الأدنى للتنبيه', required: true, numeric: true, example: '10' },
       { key: 'shelfLifeDays', label: 'مدة الصلاحية (أيام)', numeric: true },
     ],
@@ -3383,14 +3398,30 @@ async function loadIngredients() {
     await ensureUnitsOfMeasureCache();
     document.getElementById('i-unit').innerHTML = unitOptionsHtml('g');
     ingredientsCache = await api('/ingredients');
+    renderIngredientCategoryOptions();
     renderIngredientsTable();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+// Both the "التصنيف" filter select and the add-form's <datalist> suggestion
+// list are derived from whatever categories already exist on real
+// ingredients -- no separate categories table, same free-text pattern
+// MenuItem.category already uses (see schema comment on Ingredient.category).
+function renderIngredientCategoryOptions() {
+  const categories = [...new Set(ingredientsCache.map((i) => i.category).filter(Boolean))].sort();
+  const filterSel = document.getElementById('ing-category-filter');
+  const currentFilter = filterSel.value;
+  filterSel.innerHTML = '<option value="">كل التصنيفات</option>' + categories.map((c) => `<option value="${c}">${c}</option>`).join('');
+  filterSel.value = categories.includes(currentFilter) ? currentFilter : '';
+  const list = document.getElementById('ing-category-list');
+  if (list) list.innerHTML = categories.map((c) => `<option value="${c}">`).join('');
+}
 function renderIngredientsTable() {
-  document.getElementById('ingredientsTable').innerHTML = ingredientsCache.length
-    ? ingredientsCache.map((i) => `
+  const filter = document.getElementById('ing-category-filter').value;
+  const rows = filter ? ingredientsCache.filter((i) => i.category === filter) : ingredientsCache;
+  document.getElementById('ingredientsTable').innerHTML = rows.length
+    ? rows.map((i) => `
       <tr>
-        <td>${i.name}</td><td>${i.unit}</td>
+        <td>${i.name}</td><td>${i.category || '-'}</td><td>${i.unit}</td>
         <td><span class="pill ${i.kind === 'SEMI_FINISHED' ? 'semi' : 'raw'}">${i.kind === 'SEMI_FINISHED' ? 'نصف مصنّع' : 'خامة'}</span></td>
         <td>${i.lowStockThreshold}</td>
         <td>
@@ -3398,21 +3429,26 @@ function renderIngredientsTable() {
           ${i.kind === 'SEMI_FINISHED' ? `<button class="link-btn" onclick="toggleIngredientRecipe('${i.id}')">📋 الوصفة</button>` : ''}
         </td>
       </tr>
-      <tr id="edit-ing-row-${i.id}" class="hidden"><td colspan="5"><div class="recipe-box" id="edit-ing-box-${i.id}"></div></td></tr>
-      ${i.kind === 'SEMI_FINISHED' ? `<tr id="recipe-row-${i.id}" class="hidden"><td colspan="5"><div class="recipe-box" id="recipe-box-${i.id}"></div></td></tr>` : ''}
+      <tr id="edit-ing-row-${i.id}" class="hidden"><td colspan="6"><div class="recipe-box" id="edit-ing-box-${i.id}"></div></td></tr>
+      ${i.kind === 'SEMI_FINISHED' ? `<tr id="recipe-row-${i.id}" class="hidden"><td colspan="6"><div class="recipe-box" id="recipe-box-${i.id}"></div></td></tr>` : ''}
     `).join('')
-    : `<tr><td colspan="5" class="empty">لا توجد أصناف بعد</td></tr>`;
+    : `<tr><td colspan="6" class="empty">لا توجد أصناف بعد</td></tr>`;
 }
 async function createIngredient() {
   const name = document.getElementById('i-name').value.trim();
+  const category = document.getElementById('i-category').value.trim() || undefined;
   const unit = document.getElementById('i-unit').value;
   const kind = document.getElementById('i-kind').value;
   const valuationMethod = document.getElementById('i-valuation').value;
+  const openingCostInput = parseFloat(document.getElementById('i-opening-cost').value);
+  const openingCost = !isNaN(openingCostInput) && openingCostInput >= 0 ? openingCostInput : undefined;
   const lowStockThreshold = parseFloat(document.getElementById('i-threshold').value) || 0;
   if (!name) { flashGlobal('⚠️ اكتب اسم الصنف', 'err'); return; }
   try {
-    const created = await api('/ingredients', { method: 'POST', body: JSON.stringify({ name, unit, kind, valuationMethod, lowStockThreshold }) });
+    const created = await api('/ingredients', { method: 'POST', body: JSON.stringify({ name, category, unit, kind, valuationMethod, openingCost, lowStockThreshold }) });
     document.getElementById('i-name').value = '';
+    document.getElementById('i-category').value = '';
+    document.getElementById('i-opening-cost').value = '';
     flashGlobal('✅ تمت إضافة الصنف', 'ok');
     await loadIngredients();
     // Guide the user straight to defining its recipe when it's a
@@ -3434,6 +3470,7 @@ function toggleIngredientEdit(id) {
   box.innerHTML = `
     <div class="row-form" style="margin-top:0">
       <div><label>الاسم</label><input class="ei-name" value="${ing.name}"></div>
+      <div><label>التصنيف</label><input class="ei-category" value="${ing.category || ''}" list="ing-category-list"></div>
       <div><label>الوحدة</label><select class="ei-unit" ${ing.hasMovement ? 'disabled title="لا يمكن تغيير الوحدة بعد وجود حركة مخزنية على هذا الصنف (كميات/تكاليف مسجّلة بالوحدة الحالية)"' : ''}>${unitOptionsHtml(ing.unit)}</select>
         ${ing.hasMovement ? '<div class="hint" style="margin-top:4px">🔒 مقفلة -- يوجد حركة مخزنية على هذا الصنف</div>' : ''}</div>
       <div><label>النوع</label>
@@ -3448,6 +3485,8 @@ function toggleIngredientEdit(id) {
           <option value="FIFO" ${ing.valuationMethod === 'FIFO' ? 'selected' : ''}>وارد أولًا يصرف أولًا (FIFO)</option>
         </select>
       </div>
+      <div><label>التكلفة التقديرية لكل وحدة${ing.hasMovement ? ' (لم تعد تُستخدم -- يوجد بيانات تكلفة فعلية)' : ''}</label>
+        <input class="ei-opening-cost" type="number" step="0.0001" value="${ing.openingCost != null ? ing.openingCost : ''}"></div>
       <div><label>الحد الأدنى للتنبيه</label><input class="ei-threshold" type="number" value="${ing.lowStockThreshold}"></div>
       <div><button onclick="saveIngredientEdit('${id}')">💾 حفظ</button></div>
     </div>
@@ -3456,13 +3495,16 @@ function toggleIngredientEdit(id) {
 async function saveIngredientEdit(id) {
   const box = document.getElementById('edit-ing-box-' + id);
   const name = box.querySelector('.ei-name').value.trim();
+  const category = box.querySelector('.ei-category').value.trim() || null;
   const unit = box.querySelector('.ei-unit').value;
   const kind = box.querySelector('.ei-kind').value;
   const valuationMethod = box.querySelector('.ei-valuation').value;
+  const openingCostInput = parseFloat(box.querySelector('.ei-opening-cost').value);
+  const openingCost = !isNaN(openingCostInput) && openingCostInput >= 0 ? openingCostInput : null;
   const lowStockThreshold = parseFloat(box.querySelector('.ei-threshold').value) || 0;
   if (!name) { flashGlobal('⚠️ اكتب اسم الصنف', 'err'); return; }
   try {
-    await api('/ingredients/' + id, { method: 'PATCH', body: JSON.stringify({ name, unit, kind, valuationMethod, lowStockThreshold }) });
+    await api('/ingredients/' + id, { method: 'PATCH', body: JSON.stringify({ name, category, unit, kind, valuationMethod, openingCost, lowStockThreshold }) });
     flashGlobal('✅ تم حفظ التعديل', 'ok');
     document.getElementById('edit-ing-row-' + id).classList.add('hidden');
     loadIngredients();
@@ -3491,10 +3533,43 @@ async function loadUnitsOfMeasure() {
         <tr>
           <td>${u.code}</td><td>${u.name}</td>
           <td>${u.isActive ? '✅ نشطة' : '⛔ معطّلة'}</td>
-          <td><button class="link-btn" onclick="toggleUnitActive('${u.id}', ${!u.isActive})">${u.isActive ? 'تعطيل' : 'تفعيل'}</button></td>
+          <td>
+            <button class="link-btn" onclick="toggleUnitActive('${u.id}', ${!u.isActive})">${u.isActive ? 'تعطيل' : 'تفعيل'}</button>
+            <button class="link-btn" onclick="toggleUnitEdit('${u.id}')">✏️ تعديل</button>
+          </td>
         </tr>
+        <tr id="edit-unit-row-${u.id}" class="hidden"><td colspan="4"><div class="recipe-box" id="edit-unit-box-${u.id}"></div></td></tr>
       `).join('')
       : `<tr><td colspan="4" class="empty">لا توجد وحدات بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+function toggleUnitEdit(id) {
+  const row = document.getElementById('edit-unit-row-' + id);
+  const box = document.getElementById('edit-unit-box-' + id);
+  const opening = row.classList.contains('hidden');
+  row.classList.toggle('hidden');
+  if (!opening) return;
+  const u = unitsOfMeasureCache.find((x) => x.id === id);
+  box.innerHTML = `
+    <div class="row-form" style="margin-top:0">
+      <div><label>الكود</label><input class="eu-code" value="${u.code}" ${u.hasMovement ? 'disabled title="لا يمكن تغيير الكود بعد وجود حركة مخزنية على أصناف تستخدم هذه الوحدة"' : ''}>
+        ${u.hasMovement ? '<div class="hint" style="margin-top:4px">🔒 مقفل -- يوجد حركة مخزنية على أصناف بهذه الوحدة</div>' : ''}</div>
+      <div><label>الاسم</label><input class="eu-name" value="${u.name}"></div>
+      <div><button onclick="saveUnitEdit('${id}')">💾 حفظ</button></div>
+    </div>
+  `;
+}
+async function saveUnitEdit(id) {
+  const box = document.getElementById('edit-unit-box-' + id);
+  const code = box.querySelector('.eu-code').value.trim();
+  const name = box.querySelector('.eu-name').value.trim();
+  if (!code || !name) { flashGlobal('⚠️ اكتب الكود والاسم', 'err'); return; }
+  try {
+    await api('/units-of-measure/' + id, { method: 'PATCH', body: JSON.stringify({ code, name }) });
+    flashGlobal('✅ تم حفظ التعديل', 'ok');
+    document.getElementById('edit-unit-row-' + id).classList.add('hidden');
+    unitsOfMeasureCache = [];
+    await loadUnitsOfMeasure();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function createUnit() {
@@ -3518,6 +3593,7 @@ async function toggleUnitActive(id, isActive) {
 
 /* ---------------- Items ---------------- */
 let itemsCache = [];
+let itemCostByIdCache = {};
 async function loadItems() {
   try {
     if (!ingredientsCache.length) ingredientsCache = await api('/ingredients');
@@ -3528,46 +3604,55 @@ async function loadItems() {
     // unlike the item list itself which any logged-in user can see. A
     // user without that permission still sees the item catalog fine --
     // just a '-' in the cost column instead of the whole tab breaking.
-    let costByItem = {};
+    itemCostByIdCache = {};
     try {
       const costs = await api('/analytics/menu-item-costs');
-      costByItem = Object.fromEntries(costs.map((c) => [c.menuItemId, c]));
-    } catch (e) { /* no analytics.view -- costByItem stays empty, rendered as '-' below */ }
+      itemCostByIdCache = Object.fromEntries(costs.map((c) => [c.menuItemId, c]));
+    } catch (e) { /* no analytics.view -- itemCostByIdCache stays empty, rendered as '-' below */ }
 
-    document.getElementById('itemsTable').innerHTML = itemsCache.length
-      ? itemsCache.map((m) => {
-          const c = costByItem[m.id];
-          const costCell = c
-            ? `${c.cost.toFixed(2)} <span style="color:var(--muted);font-size:11px">(${c.costPercent.toFixed(0)}% من السعر)</span>`
-            : '<span class="empty">-</span>';
-          const thumb = m.hasImage
-            ? `<img id="item-thumb-${m.id}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;background:var(--bg)">`
-            : `<div style="width:40px;height:40px;border-radius:6px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:16px">🍽️</div>`;
-          return `
-        <tr>
-          <td>${thumb}</td>
-          <td>${m.name}</td><td>${m.category}</td><td>${Number(m.price).toFixed(2)}</td>
-          <td>${costCell}</td>
-          <td><span class="pill ${m.isActive ? 'semi' : 'inactive'}">${m.isActive ? 'نشط' : 'غير نشط'}</span></td>
-          <td>
-            <button class="link-btn" onclick="toggleItemEdit('${m.id}')">✏️ تعديل</button>
-            <button class="link-btn" onclick="toggleItemRecipe('${m.id}')">📋 الوصفة</button>
-          </td>
-        </tr>
-        <tr id="edit-item-row-${m.id}" class="hidden"><td colspan="7"><div class="recipe-box" id="edit-item-box-${m.id}"></div></td></tr>
-        <tr id="mrecipe-row-${m.id}" class="hidden"><td colspan="7"><div class="recipe-box" id="mrecipe-box-${m.id}"></div></td></tr>
-      `;
-        }).join('')
-      : `<tr><td colspan="7" class="empty">لا توجد أصناف منيو بعد</td></tr>`;
-
-    // Thumbnails need an Authorization header (same as every other API
-    // call), which a plain <img src> can't send -- fetched as a blob and
-    // turned into a throwaway object URL instead, same pattern already
-    // used for downloading a generated report's file.
-    itemsCache.filter((m) => m.hasImage).forEach((m) => loadItemThumbnail(m.id));
-
+    renderItemsTable();
     await loadSalesChannelsMatrix();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+function renderItemsTable() {
+  const search = document.getElementById('items-search').value.trim().toLowerCase();
+  const rows = search
+    ? itemsCache.filter((m) => m.name.toLowerCase().includes(search) || (m.category || '').toLowerCase().includes(search))
+    : itemsCache;
+  document.getElementById('itemsTable').innerHTML = rows.length
+    ? rows.map((m) => {
+        const c = itemCostByIdCache[m.id];
+        const costCell = c
+          ? `${c.cost.toFixed(2)} <span style="color:var(--muted);font-size:11px">(${c.costPercent.toFixed(0)}% من السعر)</span>`
+            + (c.costIsEstimated ? ' <span class="pill raw" title="أحد مكوّنات الوصفة ليس له بيانات تكلفة فعلية بعد -- مبني على التكلفة التقديرية المُدخَلة عند تعريف الصنف">🔸 تقديرية</span>' : '')
+          : '<span class="empty">-</span>';
+        const thumb = m.hasImage
+          ? `<img id="item-thumb-${m.id}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;background:var(--bg)">`
+          : `<div style="width:40px;height:40px;border-radius:6px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:16px">🍽️</div>`;
+        return `
+      <tr>
+        <td>${thumb}</td>
+        <td>${m.name}</td><td>${m.category}</td><td>${Number(m.price).toFixed(2)}</td>
+        <td>${costCell}</td>
+        <td><span class="pill ${m.isActive ? 'semi' : 'inactive'}">${m.isActive ? 'نشط' : 'غير نشط'}</span></td>
+        <td>
+          <button class="link-btn" onclick="toggleItemEdit('${m.id}')">✏️ تعديل</button>
+          <button class="link-btn" onclick="toggleItemRecipe('${m.id}')">📋 الوصفة</button>
+        </td>
+      </tr>
+      <tr id="edit-item-row-${m.id}" class="hidden"><td colspan="7"><div class="recipe-box" id="edit-item-box-${m.id}"></div></td></tr>
+      <tr id="mrecipe-row-${m.id}" class="hidden"><td colspan="7"><div class="recipe-box" id="mrecipe-box-${m.id}"></div></td></tr>
+    `;
+      }).join('')
+    : `<tr><td colspan="7" class="empty">${search ? 'لا توجد نتائج مطابقة للبحث' : 'لا توجد أصناف منيو بعد'}</td></tr>`;
+
+  // Thumbnails need an Authorization header (same as every other API
+  // call), which a plain <img src> can't send -- fetched as a blob and
+  // turned into a throwaway object URL instead, same pattern already used
+  // for downloading a generated report's file. Re-run on every render
+  // (including search-triggered ones) since innerHTML above just replaced
+  // the <img> elements those object URLs were attached to.
+  rows.filter((m) => m.hasImage).forEach((m) => loadItemThumbnail(m.id));
 }
 
 /* ---- Sales channel price lists (قوائم تسعير القنوات) ---- */
@@ -3909,6 +3994,7 @@ async function recordWaste() {
     loadInventoryBalances();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+let inventoryValuationCache = null;
 async function loadInventoryReport() {
   const sel = document.getElementById('ivr-location');
   if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
@@ -3916,15 +4002,42 @@ async function loadInventoryReport() {
     const locationId = sel.value;
     const qs = locationId ? '?locationId=' + locationId : '';
     const [valuation, lowStock] = await Promise.all([api('/analytics/inventory-valuation' + qs), api('/analytics/low-stock' + qs)]);
-    document.getElementById('ivr-valuation-table').innerHTML = valuation.lines.length
-      ? valuation.lines.map((l) => `<tr><td>${l.name}</td><td class="num">${l.quantity} ${l.unit}</td><td class="num">${fmtMoney(l.value)}</td></tr>`).join('')
-        + `<tr class="report-total-row"><td>الإجمالي</td><td></td><td class="num">${fmtMoney(valuation.totalValue)}</td></tr>`
-      : `<tr><td colspan="3" class="empty">لا يوجد مخزون بعد</td></tr>`;
-    document.getElementById('ivr-valuation-total').textContent = 'الإجمالي: ' + fmtMoney(valuation.totalValue) + ' ر.س';
+    inventoryValuationCache = valuation;
+    renderInventoryValuationTable();
     document.getElementById('ivr-lowstock-table').innerHTML = lowStock.length
       ? lowStock.map((r) => `<tr><td>${r.name}</td><td>${r.locationName}</td><td class="num">${r.quantity} ${r.unit}</td><td class="num">${r.lowStockThreshold} ${r.unit}</td></tr>`).join('')
       : `<tr><td colspan="4" class="empty">لا توجد تنبيهات انخفاض مخزون</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+// A gram-denominated raw material's stock quantity can run into the
+// thousands, which is awkward to scan/compare against a kg-denominated one
+// -- this re-expresses each line's quantity in its unit FAMILY's "main"
+// unit (kg for mass, l for volume; a pcs-counted item has none, so it's
+// left as-is) purely for display. The already-computed value (cost) column
+// is untouched either way -- it doesn't depend on which unit the quantity
+// happens to be shown in, only the quantity/unit label does, both derived
+// client-side from the same UNIT_FAMILIES table recipes/purchasing already
+// use, so no new backend endpoint or conversion table was needed.
+const MAIN_UNIT_OF_FAMILY = { mass: 'kg', volume: 'l', count: 'pcs' };
+function renderInventoryValuationTable() {
+  if (!inventoryValuationCache) return;
+  const useMainUnit = document.getElementById('ivr-main-unit').checked;
+  const displayLine = (l) => {
+    if (!useMainUnit) return { quantity: l.quantity, unit: l.unit };
+    const fam = unitFamily(l.unit);
+    const mainUnit = fam ? MAIN_UNIT_OF_FAMILY[fam] : null;
+    if (!mainUnit || mainUnit === l.unit) return { quantity: l.quantity, unit: l.unit };
+    const factor = UNIT_FAMILIES[fam][l.unit] / UNIT_FAMILIES[fam][mainUnit];
+    return { quantity: round2Client(l.quantity * factor), unit: mainUnit };
+  };
+  document.getElementById('ivr-valuation-table').innerHTML = inventoryValuationCache.lines.length
+    ? inventoryValuationCache.lines.map((l) => {
+        const d = displayLine(l);
+        return `<tr><td>${l.name}</td><td class="num">${d.quantity} ${d.unit}</td><td class="num">${fmtMoney(l.value)}</td></tr>`;
+      }).join('')
+      + `<tr class="report-total-row"><td>الإجمالي</td><td></td><td class="num">${fmtMoney(inventoryValuationCache.totalValue)}</td></tr>`
+    : `<tr><td colspan="3" class="empty">لا يوجد مخزون بعد</td></tr>`;
+  document.getElementById('ivr-valuation-total').textContent = 'الإجمالي: ' + fmtMoney(inventoryValuationCache.totalValue) + ' ر.س';
 }
 
 /* ================= Sales ================= */

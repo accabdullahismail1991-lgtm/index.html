@@ -397,7 +397,20 @@
   @media print{
     body *{visibility:hidden;}
     .view.open, .view.open *{visibility:visible;}
-    .view.open{position:absolute;inset:0;background:#fff;}
+    .view.open{position:absolute;inset:0;background:#fff;
+      /* .view's own overflow-y:auto clips its content to one screen's
+         height -- position:absolute above lets it flow past a single page,
+         but only once overflow stops constraining it too; without this a
+         report taller than one screen printed/exported as only its
+         currently-scrolled page instead of pagination across as many
+         printed pages as the full report actually needs. */
+      overflow-y:visible !important;height:auto !important;}
+    /* Same clipping problem, horizontally: any report table wide enough to
+       side-scroll on screen (.table-wrap{overflow-x:auto}) otherwise loses
+       its off-screen columns on paper/PDF instead of just letting the row
+       wrap/overflow the page margin, which is still strictly more complete
+       than silently dropping data. */
+    .table-wrap{overflow:visible !important;}
     .no-print{display:none !important;}
     .view-card{box-shadow:none;}
     /* Every report/module popup's filter row (location/date pickers, the
@@ -2825,33 +2838,32 @@ function injectViewToolbars() {
     const head = view.querySelector('.view-head');
     const closeBtns = head ? Array.from(head.querySelectorAll(':scope > .view-close')) : [];
     if (!head || !closeBtns.length || head.querySelector('.view-toolbar')) return;
-    // All controls (طباعة/تصدير CSV + the existing ⬅/✕ buttons) live in ONE
-    // flex group on the same side -- head only has 2 flex children (the h2
-    // title and this group) so `justify-content:space-between` puts them at
-    // opposite edges instead of spreading 3+ items with the toolbar
-    // stranded in an empty middle gap.
+    // All controls (طباعة/تصدير CSV[/PDF] + the existing ⬅/✕ buttons) live
+    // in ONE flex group on the same side -- head only has 2 flex children
+    // (the h2 title and this group) so `justify-content:space-between`
+    // puts them at opposite edges instead of spreading 3+ items with the
+    // toolbar stranded in an empty middle gap.
     const wrap = document.createElement('div');
     wrap.className = 'view-toolbar no-print';
     wrap.style.cssText = 'display:flex;gap:8px;align-items:center';
-    wrap.innerHTML = '<button class="ghost" onclick="printCurrentView()">🖨️ طباعة</button><button class="ghost" onclick="exportCurrentViewCsv(this)">⬇️ تصدير CSV</button>';
+    // The real "export to PDF" button (renders server-side, downloads an
+    // actual .pdf) only makes sense on report screens -- everywhere else
+    // (Branches, Items, Customers...) the existing 🖨️ طباعة button already
+    // covers "save as PDF" via the browser's own print dialog, and adding
+    // a second PDF button there would just be redundant chrome.
+    const pdfBtn = view.id.startsWith('view-report-') ? '<button class="ghost" onclick="exportViewToPdf(this)">📄 تصدير PDF</button>' : '';
+    wrap.innerHTML = '<button class="ghost" onclick="printCurrentView()">🖨️ طباعة</button><button class="ghost" onclick="exportCurrentViewCsv(this)">⬇️ تصدير CSV</button>' + pdfBtn;
     head.appendChild(wrap);
     closeBtns.forEach((btn) => wrap.appendChild(btn));
   });
 }
 function printCurrentView() { window.print(); }
 
-// Fires for ANY print trigger on a popup -- our own 🖨️ button or a plain
-// Ctrl+P/browser print menu -- since @media print hides every .row-form
-// (the live filter/date controls have no meaning on paper) and this is
-// what replaces it: a plain-text line naming the filters actually applied,
-// plus a print timestamp, so the printed report still states its own
-// scope instead of leaving that information only in now-hidden form
-// controls. #view-invoice and #view-kitchen-ticket already carry their
-// own purpose-built print layout and have no .row-form to replace.
-window.addEventListener('beforeprint', () => {
-  const view = document.querySelector('.view.open');
-  if (!view || view.id === 'view-invoice' || view.id === 'view-kitchen-ticket') return;
-  view.querySelectorAll('.print-only-header').forEach((el) => el.remove());
+// Shared by the print flow below and exportViewToPdf() -- a plain-text line
+// naming whichever filters (location/date/etc.) are actually applied on
+// this report right now, since @media print hides the live .row-form
+// controls themselves (they have no meaning on paper/in a PDF).
+function buildPrintOnlyHeaderEl(view) {
   const filters = [];
   view.querySelectorAll('.row-form > div').forEach((field) => {
     const label = field.querySelector('label');
@@ -2865,13 +2877,87 @@ window.addEventListener('beforeprint', () => {
   const header = document.createElement('div');
   header.className = 'print-only-header';
   header.innerHTML = (filters.length ? `<div class="ph-filters">${filters.join('&nbsp;&nbsp;|&nbsp;&nbsp;')}</div>` : '')
-    + `<div class="ph-meta">تاريخ الطباعة: ${fmtDateTime(new Date())}</div>`;
+    + `<div class="ph-meta">تاريخ الإنشاء: ${fmtDateTime(new Date())}</div>`;
+  return header;
+}
+// Fires for ANY print trigger on a popup -- our own 🖨️ button or a plain
+// Ctrl+P/browser print menu. #view-invoice and #view-kitchen-ticket already
+// carry their own purpose-built print layout and have no .row-form to
+// replace.
+window.addEventListener('beforeprint', () => {
+  const view = document.querySelector('.view.open');
+  if (!view || view.id === 'view-invoice' || view.id === 'view-kitchen-ticket') return;
+  view.querySelectorAll('.print-only-header').forEach((el) => el.remove());
   const body = view.querySelector('.view-body');
-  if (body) body.insertBefore(header, body.firstChild);
+  if (body) body.insertBefore(buildPrintOnlyHeaderEl(view), body.firstChild);
 });
 window.addEventListener('afterprint', () => {
   document.querySelectorAll('.print-only-header').forEach((el) => el.remove());
 });
+
+// Real "export to PDF" for a report screen -- unlike the print button
+// (window.print(), which only produces a downloadable PDF if the user
+// picks "Save as PDF" in their OS print dialog), this always downloads an
+// actual .pdf file with one click. Renders server-side through the same
+// headless-Chromium pipeline the dashboard exports use (see
+// ReportsService.renderSnapshotPdf), fed the report view's OWN populated
+// DOM and OWN <style> block -- so the PDF is guaranteed to match the
+// screen's formatting and language exactly, since it IS the screen, not a
+// server-side reconstruction of it that could drift out of sync.
+async function exportViewToPdf(btn) {
+  const view = document.querySelector('.view.open');
+  const card = view && view.querySelector('.view-card');
+  if (!card) return;
+  const originalLabel = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ جارِ التصدير...'; }
+  try {
+    const clone = card.cloneNode(true);
+    const cloneBody = clone.querySelector('.view-body');
+    if (cloneBody) cloneBody.insertBefore(buildPrintOnlyHeaderEl(view), cloneBody.firstChild);
+    // A <canvas> carries no drawn content once serialized via innerHTML/
+    // cloneNode -- every Chart.js chart on screen has to be flattened to a
+    // static image FIRST, from the live (already-rendered) canvas, then
+    // swapped into the matching canvas in the clone.
+    const liveCanvases = view.querySelectorAll('canvas');
+    const cloneCanvases = clone.querySelectorAll('canvas');
+    liveCanvases.forEach((c, i) => {
+      if (!cloneCanvases[i]) return;
+      let dataUrl;
+      try { dataUrl = c.toDataURL('image/png'); } catch (e) { return; }
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.style.maxWidth = '100%';
+      cloneCanvases[i].replaceWith(img);
+    });
+    const css = document.querySelector('style').textContent;
+    // The admin panel's own @media print rules only reveal content nested
+    // inside .view.open (body *{visibility:hidden} / .view.open,.view.open
+    // *{visibility:visible}) -- renderHtmlToPdf forces print-media
+    // emulation, so without this wrapper the clone (just .view-card, never
+    // carrying .view/.open itself) would render as an all-invisible page:
+    // a real PDF, but with nothing actually visible on it.
+    const bodyHtml = '<div class="view open">' + clone.outerHTML + '</div>';
+    const res = await fetch(apiBase() + '/reports/render-snapshot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: 'Bearer ' + accessToken } : {}) },
+      body: JSON.stringify({ css, bodyHtml }),
+    });
+    if (!res.ok) {
+      let msg = 'HTTP ' + res.status;
+      try { const j = await res.json(); if (j && j.message) msg = j.message; } catch (e) { /* not JSON */ }
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const titleEl = view.querySelector('.view-head h2');
+    const name = (titleEl ? titleEl.textContent.trim() : 'تقرير').replace(/[\\/:*?"<>|]+/g, '_');
+    a.href = url; a.download = name + '.pdf';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) { flashGlobal('❌ فشل تصدير PDF: ' + e.message, 'err'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = originalLabel; } }
+}
 // Exports every <table> visible in the currently open .view to one CSV
 // file -- generic (walks whatever tables that screen happens to render)
 // rather than a per-screen column list that would drift out of sync.

@@ -697,7 +697,7 @@
           </div>
           <div><label id="ord-customer-label">العميل (اختياري)</label>
             <input type="text" id="ord-customer-search" placeholder="🔍 بحث برقم جوال العميل..." oninput="onOrderCustomerSearch(this.value)" style="margin-bottom:4px">
-            <select id="ord-customer"><option value="">بدون عميل</option></select>
+            <select id="ord-customer" onchange="onOrderCustomerSelect()"><option value="">بدون عميل</option></select>
           </div>
           <div><label>نوع الفاتورة</label>
             <div class="invoice-type-picker" id="ord-invoice-type-picker">
@@ -1117,7 +1117,7 @@
     <div id="view-customers" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>👤 العملاء</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
         <button id="cu-tab-list" class="active" onclick="switchSubview('cu',['list','add','import'],'list')">العملاء</button>
-        <button id="cu-tab-add" class="" onclick="switchSubview('cu',['list','add','import'],'add')">➕ عميل جديد</button>
+        <button id="cu-tab-add" class="" onclick="switchSubview('cu',['list','add','import'],'add'); loadCustomerPriceListOptions()">➕ عميل جديد</button>
         <button id="cu-tab-import" class="" onclick="switchSubview('cu',['list','add','import'],'import'); renderImportExportPanel('cu-sub-import','customers')">📥 استيراد / تصدير</button>
       </div>
       <div class="view-body">
@@ -1127,7 +1127,7 @@
         <div class="row-form" style="margin-bottom:10px">
           <div><label>بحث بالجوال</label><input id="cust-search" placeholder="+9665..." oninput="loadCustomers()"></div>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الجوال</th><th>النقاط</th><th></th></tr></thead>
+        <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الجوال</th><th>النقاط</th><th>قائمة الأسعار الافتراضية</th><th></th></tr></thead>
           <tbody id="customersTable"></tbody>
         </table></div>
       </div>
@@ -1136,9 +1136,11 @@
         <div class="row-form">
           <div><label>الجوال</label><input id="cust-phone" placeholder="+9665..."></div>
           <div><label>الاسم (اختياري)</label><input id="cust-name" placeholder="اسم العميل"></div>
+          <div><label>قائمة الأسعار الافتراضية (اختياري)</label><select id="cust-price-list"><option value="">السعر الأساسي</option></select></div>
           <div><button onclick="createCustomer()">إضافة</button></div>
         </div>
         <div class="hint">* نقطة واحدة لكل 10 ر.س من إجمالي الفاتورة عند الدفع، وقيمة النقطة عند الاستبدال 0.10 ر.س.</div>
+        <div class="hint">* عند اختيار قائمة أسعار، ستُطبَّق تلقائيًا على أي طلب جديد لهذا العميل (يمكن تغييرها يدويًا من شاشة الطلب نفسها).</div>
       </div>
       <div class="panel subview hidden" id="cu-sub-import"></div>
      </div></div>
@@ -3736,17 +3738,35 @@ function paymentMethodLabelWithIcon(code) {
   return `${paymentMethodIcon(code)} ${paymentMethodLabel(code)}`;
 }
 
+let orderCustomersCache = [];
 async function loadOrderCustomerOptions(phone) {
   try {
-    const customers = await api('/customers' + (phone ? '?phone=' + encodeURIComponent(phone) : ''));
+    orderCustomersCache = await api('/customers' + (phone ? '?phone=' + encodeURIComponent(phone) : ''));
     document.getElementById('ord-customer').innerHTML =
-      '<option value="">بدون عميل</option>' + customers.map((c) => `<option value="${c.id}">${c.name || 'بلا اسم'} -- ${c.phone}</option>`).join('');
+      '<option value="">بدون عميل</option>' + orderCustomersCache.map((c) => `<option value="${c.id}">${c.name || 'بلا اسم'} -- ${c.phone}</option>`).join('');
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 let orderCustomerSearchTimer = null;
 function onOrderCustomerSearch(phone) {
   clearTimeout(orderCustomerSearchTimer);
   orderCustomerSearchTimer = setTimeout(() => loadOrderCustomerOptions(phone.trim()), 300);
+}
+// Selecting a customer with a defaultSalesChannelId (their linked price
+// list, e.g. a delivery-app account or a wholesale customer) auto-applies
+// it to #ord-sales-channel -- same effect the server itself falls back to
+// in OrdersService.create() when the order has no explicit salesChannelId,
+// so the cashier sees the price they'll actually be charged instead of it
+// only becoming visible after the order is placed. Still fully overridable:
+// the cashier can pick a different قائمة أسعار afterwards, and that manual
+// choice wins on the server too (an explicit salesChannelId beats the
+// customer's default).
+function onOrderCustomerSelect() {
+  const customerId = document.getElementById('ord-customer').value;
+  const customer = orderCustomersCache.find((c) => c.id === customerId);
+  if (customer && customer.defaultSalesChannelId) {
+    document.getElementById('ord-sales-channel').value = customer.defaultSalesChannelId;
+    onOrderSalesChannelChange();
+  }
 }
 // Re-derives whether the shift's location requires a customer every time
 // the shift selection changes, straight from locationsCache (already
@@ -6054,30 +6074,51 @@ async function createCombo() {
 
 /* ---------------- Customers / Loyalty ---------------- */
 let customersCache = [];
+// Sales channels ARE the "price list" concept elsewhere in the app (New
+// Order's #ord-sales-channel, Items' channel-price editor) -- reused here,
+// fetched independently of salesChannelsCache (populated by loadSalesTab)
+// so the Customers tab works correctly even if New Order was never opened.
+let custPriceListsCache = [];
+async function loadCustomerPriceListOptions() {
+  try {
+    custPriceListsCache = (await api('/sales-channels')).filter((c) => c.isActive);
+    document.getElementById('cust-price-list').innerHTML =
+      '<option value="">السعر الأساسي</option>' + custPriceListsCache.map((c) => `<option value="${c.id}">${c.name}</option>`).join('');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+function priceListName(id) {
+  if (!id) return '-';
+  const c = custPriceListsCache.find((x) => x.id === id);
+  return c ? c.name : '-';
+}
 async function loadCustomers() {
   try {
     const phone = document.getElementById('cust-search').value.trim();
+    if (!custPriceListsCache.length) await loadCustomerPriceListOptions();
     customersCache = await api('/customers' + (phone ? '?phone=' + encodeURIComponent(phone) : ''));
     document.getElementById('customersTable').innerHTML = customersCache.length
       ? customersCache.map((c) => `
         <tr>
-          <td>${c.name || '-'}</td><td>${c.phone}</td><td>${c.points}</td>
+          <td>${c.name || '-'}</td><td>${c.phone}</td><td>${c.points}</td><td>${priceListName(c.defaultSalesChannelId)}</td>
           <td><button class="link-btn" onclick="toggleCustomerDetail('${c.id}')">التفاصيل</button></td>
         </tr>
-        <tr id="cust-detail-row-${c.id}" class="hidden"><td colspan="4"><div class="recipe-box" id="cust-detail-box-${c.id}"></div></td></tr>
+        <tr id="cust-detail-row-${c.id}" class="hidden"><td colspan="5"><div class="recipe-box" id="cust-detail-box-${c.id}"></div></td></tr>
       `).join('')
-      : `<tr><td colspan="4" class="empty">لا يوجد عملاء بعد</td></tr>`;
+      : `<tr><td colspan="5" class="empty">لا يوجد عملاء بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function createCustomer() {
   const phone = document.getElementById('cust-phone').value.trim();
   const name = document.getElementById('cust-name').value.trim();
+  const priceListId = document.getElementById('cust-price-list').value;
   if (!phone) { flashGlobal('⚠️ اكتب رقم جوال العميل', 'err'); return; }
   try {
     const body = { phone };
     if (name) body.name = name;
+    if (priceListId) body.defaultSalesChannelId = priceListId;
     await api('/customers', { method: 'POST', body: JSON.stringify(body) });
     document.getElementById('cust-phone').value = ''; document.getElementById('cust-name').value = '';
+    document.getElementById('cust-price-list').value = '';
     flashGlobal('✅ تمت إضافة العميل', 'ok');
     loadCustomers();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
@@ -6503,7 +6544,11 @@ async function toggleCustomerDetail(id) {
   if (!opening) return;
   box.innerHTML = '<div class="empty">جارٍ التحميل...</div>';
   try {
+    const customer = customersCache.find((c) => c.id === id);
+    if (!custPriceListsCache.length) await loadCustomerPriceListOptions();
     const ledger = await api(`/customers/${id}/ledger`);
+    const priceListOptions = '<option value="">السعر الأساسي</option>' +
+      custPriceListsCache.map((c) => `<option value="${c.id}" ${customer && customer.defaultSalesChannelId === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
     box.innerHTML = `
       <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>النقاط</th><th>السبب</th></tr></thead>
         <tbody>
@@ -6516,8 +6561,21 @@ async function toggleCustomerDetail(id) {
         <div><label>استبدال نقاط</label><input id="cust-redeem-${id}" type="number" min="1" placeholder="عدد النقاط"></div>
         <div><button onclick="redeemCustomerPoints('${id}')">استبدال</button></div>
       </div>
+      <div class="row-form" style="margin-top:10px">
+        <div><label>قائمة الأسعار الافتراضية</label><select id="cust-price-list-edit-${id}">${priceListOptions}</select></div>
+        <div><button onclick="saveCustomerPriceList('${id}')">حفظ</button></div>
+      </div>
     `;
   } catch (e) { box.innerHTML = '❌ ' + e.message; }
+}
+async function saveCustomerPriceList(id) {
+  const select = document.getElementById('cust-price-list-edit-' + id);
+  const value = select.value || null;
+  try {
+    await api(`/customers/${id}`, { method: 'PATCH', body: JSON.stringify({ defaultSalesChannelId: value }) });
+    flashGlobal('✅ تم تحديث قائمة الأسعار الافتراضية', 'ok');
+    loadCustomers();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function redeemCustomerPoints(id) {
   const input = document.getElementById('cust-redeem-' + id);

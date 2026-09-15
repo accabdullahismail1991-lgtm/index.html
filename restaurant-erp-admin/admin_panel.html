@@ -92,7 +92,13 @@
   .report-table thead th{background:var(--card2);border-bottom:2px solid var(--border);}
   .report-table tbody tr:nth-child(even) td{background:rgba(127,127,127,.04);}
   .report-table tbody tr:nth-child(even):hover td{background:var(--card2);}
-  .report-table td.num,.report-table th.num{font-variant-numeric:tabular-nums;text-align:left;}
+  /* Right-aligned (not left) so a numeric column's values sit directly
+     under its own <th>, matching the RTL page's default right-alignment
+     for header cells -- th.num barely occurs in practice (most tables
+     never add the class to their <th>), so a numeric column's header was
+     otherwise right-aligned while its data cells were forced left,
+     visually reading as "shifted off" its own header/column. */
+  .report-table td.num,.report-table th.num{font-variant-numeric:tabular-nums;text-align:right;}
   .report-table tr.report-total-row td{font-weight:800;border-top:2px solid var(--brand);background:rgba(55,48,163,.06);}
   .report-table tr.report-total-row td:first-child{color:var(--brand);}
   .report-table tr.clickable-row{cursor:pointer;}
@@ -703,7 +709,7 @@
             </select>
           </div>
           <div><label id="ord-customer-label">العميل (اختياري)</label>
-            <input type="text" id="ord-customer-search" placeholder="🔍 بحث برقم جوال العميل..." oninput="onOrderCustomerSearch(this.value)" style="margin-bottom:4px">
+            <input type="text" id="ord-customer-search" placeholder="🔍 بحث بالاسم أو رقم الجوال..." oninput="onOrderCustomerSearch(this.value)" style="margin-bottom:4px">
             <select id="ord-customer" onchange="onOrderCustomerSelect()"><option value="">بدون عميل</option></select>
           </div>
           <div><label>نوع الفاتورة</label>
@@ -1585,7 +1591,7 @@
           <div><label>نوع الطلب</label><select id="slr-channel"><option value="">كل الأنواع</option></select></div>
           <div><label>طريقة الدفع</label><select id="slr-payment"><option value="">كل الطرق</option></select></div>
           <div><label>العميل</label>
-            <input id="slr-customer-search" placeholder="🔍 بحث برقم الجوال..." oninput="onFilteredReportCustomerSearch(this.value,'slr-customer')" style="margin-bottom:4px">
+            <input id="slr-customer-search" placeholder="🔍 بحث بالاسم أو رقم الجوال..." oninput="onFilteredReportCustomerSearch(this.value,'slr-customer')" style="margin-bottom:4px">
             <select id="slr-customer"><option value="">كل العملاء</option></select>
           </div>
           <div><button onclick="loadSalesReport()">تحديث</button></div>
@@ -1899,7 +1905,7 @@
           <div><label>نوع الطلب</label><select id="nsr-channel"><option value="">كل الأنواع</option></select></div>
           <div><label>طريقة الدفع</label><select id="nsr-payment"><option value="">كل الطرق</option></select></div>
           <div><label>العميل</label>
-            <input id="nsr-customer-search" placeholder="🔍 بحث برقم الجوال..." oninput="onFilteredReportCustomerSearch(this.value,'nsr-customer')" style="margin-bottom:4px">
+            <input id="nsr-customer-search" placeholder="🔍 بحث بالاسم أو رقم الجوال..." oninput="onFilteredReportCustomerSearch(this.value,'nsr-customer')" style="margin-bottom:4px">
             <select id="nsr-customer"><option value="">كل العملاء</option></select>
           </div>
           <div><button onclick="loadNetSalesReport()">تحديث</button></div>
@@ -1925,7 +1931,7 @@
           <div><label>نوع الطلب</label><select id="slgr-channel"><option value="">كل الأنواع</option></select></div>
           <div><label>طريقة الدفع</label><select id="slgr-payment"><option value="">كل الطرق</option></select></div>
           <div><label>العميل</label>
-            <input id="slgr-customer-search" placeholder="🔍 بحث برقم الجوال..." oninput="onFilteredReportCustomerSearch(this.value,'slgr-customer')" style="margin-bottom:4px">
+            <input id="slgr-customer-search" placeholder="🔍 بحث بالاسم أو رقم الجوال..." oninput="onFilteredReportCustomerSearch(this.value,'slgr-customer')" style="margin-bottom:4px">
             <select id="slgr-customer"><option value="">كل العملاء</option></select>
           </div>
           <div><button onclick="loadSalesLogReport()">تحديث</button></div>

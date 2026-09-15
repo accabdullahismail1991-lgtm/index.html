@@ -666,7 +666,18 @@
           <div style="display:flex;gap:8px;align-items:center">
             <select id="ord-shift" onchange="onOrderShiftChange()"></select>
             <button type="button" class="ghost" id="ord-close-shift-btn" onclick="closeShiftFromNewOrder()">🔒 إغلاق الوردية</button>
+            <button type="button" class="ghost" onclick="openSettlementDetails()">📅 إنهاء اليوم</button>
           </div>
+        </div>
+
+        <!-- Shown when the shift's branch has a stale open shift from a
+             prior day, or a fully-closed day never "إنهاء اليوم"'d --
+             OrdersService.create() blocks new invoices in both cases
+             server-side; this surfaces WHY before the cashier builds a
+             whole cart and hits it at checkout. -->
+        <div id="ord-unsettled-banner" class="msg err hidden" style="margin-top:10px">
+          <div id="ord-unsettled-text"></div>
+          <div style="margin-top:8px"><button type="button" onclick="openSettlementDetails()">📋 عرض التفاصيل ومعالجتها</button></div>
         </div>
 
         <div id="ord-no-shift-panel" class="panel hidden" style="margin-top:12px">
@@ -2088,6 +2099,21 @@
             <button class="ghost" onclick="holdOrderFromDialog()">🅿️ تعليق الفاتورة</button>
           </div>
           <div id="pay-activity-log" class="activity-log hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTLEMENT STATUS (open stale shifts + un-ended prior days for one
+         branch) -- reached from the "📅 إنهاء اليوم" button and from the
+         unsettled-day banner in New Order, both in the Sales screen. -->
+    <div id="settlementModal" class="modal-backdrop" onclick="if(event.target===this) closeSettlementModal()">
+      <div class="modal-box">
+        <div class="modal-head"><h3>📅 تسوية اليوم/الورديات</h3><button class="view-close" onclick="closeSettlementModal()">✕</button></div>
+        <div class="modal-body">
+          <div class="row-form" style="margin-top:0;margin-bottom:12px">
+            <div><label>الفرع</label><select id="stl-location" onchange="loadSettlementDetails()"></select></div>
+          </div>
+          <div id="stl-body"></div>
         </div>
       </div>
     </div>
@@ -3880,6 +3906,88 @@ function onOrderShiftChange() {
   updatePosTicker(shift ? shift.locationId : null);
   const statusText = document.getElementById('ord-shift-status-text');
   if (shift) statusText.textContent = `الوردية المفتوحة: SH${shift.shiftNumber ?? '-'} -- ${location ? location.name : ''} -- تاريخ الفتح: ${fmtDate(shift.openedAt)}`;
+  refreshSettlementStatus(shift ? shift.locationId : null);
+}
+// Mirrors the server-side gate in OrdersService.create() (a stale open
+// shift or an un-ended prior day blocks new invoices on that branch) so the
+// cashier sees it up front instead of only at checkout -- the checkout
+// button stays enabled either way (the server is still the real guard),
+// this just surfaces the reason clearly and links straight to fixing it.
+let settlementStatusCache = null;
+async function refreshSettlementStatus(locationId) {
+  const banner = document.getElementById('ord-unsettled-banner');
+  settlementStatusCache = null;
+  if (!locationId) { banner.classList.add('hidden'); return; }
+  try {
+    const res = await api(`/shifts/settlement-status?locationId=${locationId}`);
+    settlementStatusCache = res;
+    const parts = [];
+    if (res.openStaleShifts.length) parts.push(`⚠️ يوجد ${res.openStaleShifts.length} وردية مفتوحة من يوم سابق لهذا الفرع`);
+    if (res.unclosedDays.length) parts.push(`⚠️ يوجد ${res.unclosedDays.length} يوم عمل سابق لهذا الفرع لم يُنهَ بعد`);
+    if (!parts.length) { banner.classList.add('hidden'); return; }
+    document.getElementById('ord-unsettled-text').innerHTML = parts.join('<br>') + '<br>يجب معالجة ذلك أولًا قبل إنشاء فاتورة جديدة على هذا الفرع.';
+    banner.classList.remove('hidden');
+  } catch (e) { banner.classList.add('hidden'); }
+}
+function closeSettlementModal() {
+  document.getElementById('settlementModal').classList.remove('open');
+}
+async function openSettlementDetails() {
+  const sel = document.getElementById('stl-location');
+  // Always refetched fresh (not reused from locationsCache) -- this modal
+  // can be reached the moment a branch is created elsewhere in the same
+  // session, before whatever normally repopulates locationsCache runs.
+  try { locationsCache = await api('/locations'); } catch (e) { /* fall back to whatever's cached */ }
+  sel.innerHTML = locationOptions();
+  const shiftId = document.getElementById('ord-shift').value;
+  const shift = shiftsCache.find((s) => s.id === shiftId);
+  if (shift) sel.value = shift.locationId;
+  document.getElementById('settlementModal').classList.add('open');
+  await loadSettlementDetails();
+}
+async function loadSettlementDetails() {
+  const locationId = document.getElementById('stl-location').value;
+  const body = document.getElementById('stl-body');
+  if (!locationId) { body.innerHTML = ''; return; }
+  body.innerHTML = '<div class="empty">جارٍ التحميل...</div>';
+  try {
+    const res = await api(`/shifts/settlement-status?locationId=${locationId}`);
+    settlementStatusCache = res;
+    if (!res.openStaleShifts.length && !res.unclosedDays.length) {
+      body.innerHTML = '<div class="msg ok">✅ لا يوجد ورديات مفتوحة من أيام سابقة، وكل الأيام السابقة منتهية لهذا الفرع.</div>';
+      return;
+    }
+    body.innerHTML = `
+      ${res.openStaleShifts.length ? `
+      <h3 style="margin-top:0">ورديات مفتوحة من يوم سابق</h3>
+      <div class="table-wrap"><table class="report-table"><thead><tr><th>الوردية</th><th>تاريخ الفتح</th><th>فتحها</th><th></th></tr></thead>
+        <tbody>${res.openStaleShifts.map((s) => `
+          <tr><td>SH${s.shiftNumber ?? '-'}</td><td>${fmtDate(s.openedAt)}</td><td>${s.openedByName || '-'}</td>
+          <td><button class="link-btn" onclick="closeShiftFromSettlement('${s.id}')">🔒 إغلاق</button></td></tr>
+        `).join('')}</tbody>
+      </table></div>` : ''}
+      ${res.unclosedDays.length ? `
+      <h3>أيام لم تُنهَ بعد</h3>
+      <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ</th><th></th></tr></thead>
+        <tbody>${res.unclosedDays.map((d) => `
+          <tr><td>${fmtDate(d.businessDate)}</td>
+          <td><button class="link-btn" onclick="endUnclosedDayFromSettlement('${locationId}','${new Date(d.businessDate).toISOString().slice(0, 10)}')">📅 إنهاء اليوم</button></td></tr>
+        `).join('')}</tbody>
+      </table></div>` : ''}
+    `;
+  } catch (e) { body.innerHTML = '<div class="msg err">❌ ' + e.message + '</div>'; }
+}
+async function closeShiftFromSettlement(shiftId) {
+  await closeShiftPrompt(shiftId);
+  await loadSettlementDetails();
+}
+async function endUnclosedDayFromSettlement(locationId, businessDate) {
+  try {
+    await api('/shifts/day-close', { method: 'POST', body: JSON.stringify({ locationId, businessDate }) });
+    flashGlobal('✅ تم إنهاء اليوم بنجاح', 'ok');
+    await loadSettlementDetails();
+    onOrderShiftChange();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 // No order/invoice can be created before some shift is open (backend
 // enforces this too -- OrdersService.create() requires an open, unclosed

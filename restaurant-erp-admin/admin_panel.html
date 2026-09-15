@@ -95,6 +95,8 @@
   .report-table td.num,.report-table th.num{font-variant-numeric:tabular-nums;text-align:left;}
   .report-table tr.report-total-row td{font-weight:800;border-top:2px solid var(--brand);background:rgba(55,48,163,.06);}
   .report-table tr.report-total-row td:first-child{color:var(--brand);}
+  .report-table tr.clickable-row{cursor:pointer;}
+  .report-table tr.clickable-row:hover td{background:rgba(55,48,163,.08);}
   .row-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:10px;}
   .row-form > div{flex:1;min-width:140px;}
   /* Screen-only placeholder for printCurrentView()'s injected summary --
@@ -1334,6 +1336,8 @@
         <div class="hint">كل تقرير يفتح في نافذته المستقلة، بفلاتر موقع/فترة خاصة به.</div>
         <div class="home-grid" style="margin-top:12px">
           <div class="home-card" onclick="openReportPopup('sales')"><div class="ic">🧾</div><div class="lb">تقرير المبيعات</div></div>
+          <div class="home-card" onclick="openReportPopup('sales-log')"><div class="ic">🧾</div><div class="lb">سجل المبيعات التفصيلي</div></div>
+          <div class="home-card" onclick="openReportPopup('top-customers')"><div class="ic">🏆</div><div class="lb">أفضل العملاء</div></div>
           <div class="home-card" onclick="openReportPopup('items')"><div class="ic">📋</div><div class="lb">تقرير الأصناف</div></div>
           <div class="home-card" onclick="openReportPopup('inventory')"><div class="ic">📦</div><div class="lb">تقرير المخزون</div></div>
           <div class="home-card" onclick="openReportPopup('purchasing')"><div class="ic">🛒</div><div class="lb">تقرير المشتريات</div></div>
@@ -1567,6 +1571,12 @@
           <div><label>الموقع</label><select id="slr-location"><option value="">كل المواقع</option></select></div>
           <div><label>من تاريخ</label><input id="slr-from" type="date"></div>
           <div><label>إلى تاريخ</label><input id="slr-to" type="date"></div>
+          <div><label>نوع الطلب</label><select id="slr-channel"><option value="">كل الأنواع</option></select></div>
+          <div><label>طريقة الدفع</label><select id="slr-payment"><option value="">كل الطرق</option></select></div>
+          <div><label>العميل</label>
+            <input id="slr-customer-search" placeholder="🔍 بحث برقم الجوال..." oninput="onFilteredReportCustomerSearch(this.value,'slr-customer')" style="margin-bottom:4px">
+            <select id="slr-customer"><option value="">كل العملاء</option></select>
+          </div>
           <div><button onclick="loadSalesReport()">تحديث</button></div>
         </div>
         <div id="slr-summary-cards" class="stats-row"></div>
@@ -1756,6 +1766,15 @@
         <div class="table-wrap"><table><thead><tr><th>نوع الضريبة</th><th>المبيعات</th></tr></thead>
           <tbody id="txr-by-type-table"></tbody>
         </table></div>
+        <h3 style="margin-top:16px">الضريبة حسب اليوم</h3>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ</th><th>عدد الفواتير</th><th>الوعاء الخاضع للضريبة</th><th>الضريبة</th></tr></thead>
+          <tbody id="txr-by-day-table"></tbody>
+        </table></div>
+        <h3 style="margin-top:16px">الضريبة حسب الفاتورة</h3>
+        <div class="hint">اضغط على أي صف لعرض الفاتورة كاملة.</div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ/الوقت</th><th>رقم الفاتورة</th><th>الفرع</th><th>الوعاء الخاضع للضريبة</th><th>الضريبة</th><th>الإجمالي</th></tr></thead>
+          <tbody id="txr-invoices-table"></tbody>
+        </table></div>
       </div>
      </div></div>
     </div>
@@ -1862,12 +1881,61 @@
           <div><label>الموقع</label><select id="nsr-location"><option value="">كل المواقع</option></select></div>
           <div><label>من تاريخ</label><input id="nsr-from" type="date"></div>
           <div><label>إلى تاريخ</label><input id="nsr-to" type="date"></div>
+          <div><label>نوع الطلب</label><select id="nsr-channel"><option value="">كل الأنواع</option></select></div>
+          <div><label>طريقة الدفع</label><select id="nsr-payment"><option value="">كل الطرق</option></select></div>
+          <div><label>العميل</label>
+            <input id="nsr-customer-search" placeholder="🔍 بحث برقم الجوال..." oninput="onFilteredReportCustomerSearch(this.value,'nsr-customer')" style="margin-bottom:4px">
+            <select id="nsr-customer"><option value="">كل العملاء</option></select>
+          </div>
           <div><button onclick="loadNetSalesReport()">تحديث</button></div>
         </div>
         <div id="nsr-cards" class="stats-row"></div>
         <h2 style="margin-top:18px">التفصيل اليومي</h2>
         <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ</th><th>عدد الطلبات</th><th>صافي المبيعات (بدون ضريبة)</th><th>الضريبة</th><th>صافي المبيعات (شامل الضريبة)</th></tr></thead>
           <tbody id="nsr-table"></tbody>
+        </table></div>
+      </div>
+     </div></div>
+    </div>
+
+    <!-- SALES LOG (DETAILED INVOICE REGISTER) -->
+    <div id="view-report-sales-log" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>🧾 سجل المبيعات التفصيلي</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="hint">سجل كل فاتورة على حدة -- التاريخ/الوقت، رقم الفاتورة، الكاشير، العميل، نوع الطلب، طريقة الدفع، والإجماليات. اضغط على أي صف لعرض الفاتورة كاملة.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="slgr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="slgr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="slgr-to" type="date"></div>
+          <div><label>نوع الطلب</label><select id="slgr-channel"><option value="">كل الأنواع</option></select></div>
+          <div><label>طريقة الدفع</label><select id="slgr-payment"><option value="">كل الطرق</option></select></div>
+          <div><label>العميل</label>
+            <input id="slgr-customer-search" placeholder="🔍 بحث برقم الجوال..." oninput="onFilteredReportCustomerSearch(this.value,'slgr-customer')" style="margin-bottom:4px">
+            <select id="slgr-customer"><option value="">كل العملاء</option></select>
+          </div>
+          <div><button onclick="loadSalesLogReport()">تحديث</button></div>
+        </div>
+        <div id="slgr-cards" class="stats-row"></div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ/الوقت</th><th>رقم الفاتورة</th><th>الفرع</th><th>الكاشير</th><th>العميل</th><th>نوع الطلب</th><th>طريقة الدفع</th><th>قبل الضريبة</th><th>الخصم</th><th>الضريبة</th><th>الإجمالي</th></tr></thead>
+          <tbody id="slgr-table"></tbody>
+        </table></div>
+      </div>
+     </div></div>
+    </div>
+
+    <!-- TOP CUSTOMERS -->
+    <div id="view-report-top-customers" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>🏆 أفضل العملاء</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="hint">العملاء الأعلى إنفاقًا خلال الفترة المحددة -- عدد الطلبات، الإجمالي، متوسط الفاتورة، تاريخ آخر طلب، ورصيد نقاط الولاء الحالي. اضغط "تفاصيل" لعرض فواتير أي عميل.</div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:12px">
+          <div><label>الموقع</label><select id="tcr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="tcr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="tcr-to" type="date"></div>
+          <div><button onclick="loadTopCustomersReport()">تحديث</button></div>
+        </div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>#</th><th>العميل</th><th>الجوال</th><th>عدد الطلبات</th><th>الإجمالي</th><th>متوسط الفاتورة</th><th>آخر طلب</th><th>نقاط الولاء</th><th></th></tr></thead>
+          <tbody id="tcr-table"></tbody>
         </table></div>
       </div>
      </div></div>
@@ -2714,18 +2782,23 @@ function injectViewToolbars() {
     // Both already have their own dedicated print button and no meaningful
     // table to CSV-export -- view-kitchen-ticket's close button also isn't
     // a direct child of .view-head (it's nested in its own button-row div),
-    // which would otherwise throw on insertBefore below and silently abort
-    // this loop for every OTHER view that follows it in the document.
+    // which would otherwise throw below and silently abort this loop for
+    // every OTHER view that follows it in the document.
     if (view.id === 'view-invoice' || view.id === 'view-kitchen-ticket') return;
     const head = view.querySelector('.view-head');
-    const closeBtn = head ? head.querySelector('.view-close') : null;
-    if (!head || !closeBtn || closeBtn.parentElement !== head || head.querySelector('.view-toolbar')) return;
+    const closeBtns = head ? Array.from(head.querySelectorAll(':scope > .view-close')) : [];
+    if (!head || !closeBtns.length || head.querySelector('.view-toolbar')) return;
+    // All controls (طباعة/تصدير CSV + the existing ⬅/✕ buttons) live in ONE
+    // flex group on the same side -- head only has 2 flex children (the h2
+    // title and this group) so `justify-content:space-between` puts them at
+    // opposite edges instead of spreading 3+ items with the toolbar
+    // stranded in an empty middle gap.
     const wrap = document.createElement('div');
     wrap.className = 'view-toolbar no-print';
     wrap.style.cssText = 'display:flex;gap:8px;align-items:center';
     wrap.innerHTML = '<button class="ghost" onclick="printCurrentView()">🖨️ طباعة</button><button class="ghost" onclick="exportCurrentViewCsv(this)">⬇️ تصدير CSV</button>';
-    head.insertBefore(wrap, closeBtn);
-    wrap.appendChild(closeBtn);
+    head.appendChild(wrap);
+    closeBtns.forEach((btn) => wrap.appendChild(btn));
   });
 }
 function printCurrentView() { window.print(); }
@@ -2858,6 +2931,8 @@ const REPORT_POPUPS = {
   'dash-items': loadItemsDashboard,
   'dash-inventory': loadInventoryDashboard,
   sales: loadSalesReport,
+  'sales-log': loadSalesLogReport,
+  'top-customers': loadTopCustomersReport,
   items: loadItemsReport,
   inventory: loadInventoryReport,
   purchasing: loadPurchasingReport,
@@ -4658,18 +4733,44 @@ function renderInvoice(o) {
       .catch(() => { /* invoice still prints fine without the logo */ });
   }
 }
+// Shared by every report offering "نوع الطلب"/"طريقة الدفع" filters (Sales
+// Report, Net Sales, Sales Log) -- fills the <select id="{prefix}-channel">
+// and <select id="{prefix}-payment"> for whichever report calls it, once
+// per screen (guarded by each select already having more than the default
+// option), so this doesn't refetch payment methods on every "تحديث" click.
+async function populateChannelAndPaymentFilters(prefix) {
+  const channelSel = document.getElementById(prefix + '-channel');
+  if (channelSel && channelSel.options.length <= 1) {
+    channelSel.innerHTML = '<option value="">كل الأنواع</option>' + orderTypesCache.filter((t) => t.isActive).map((t) => `<option value="${t.code}">${orderTypeIcon(t.code)}${t.name}</option>`).join('');
+  }
+  const paySel = document.getElementById(prefix + '-payment');
+  if (paySel && paySel.options.length <= 1) {
+    try {
+      const methods = await api('/payment-methods?activeOnly=true');
+      paySel.innerHTML = '<option value="">كل الطرق</option>' + methods.map((m) => `<option value="${m.code}">${paymentMethodLabelWithIcon(m.code)}</option>`).join('');
+    } catch (e) { /* leave the plain default option -- non-fatal */ }
+  }
+}
+function buildReportFilterParams(prefix) {
+  const params = new URLSearchParams();
+  const locationId = document.getElementById(prefix + '-location').value;
+  if (locationId) params.set('locationId', locationId);
+  const from = document.getElementById(prefix + '-from').value; if (from) params.set('from', from);
+  const to = document.getElementById(prefix + '-to').value; if (to) params.set('to', to);
+  const channelEl = document.getElementById(prefix + '-channel');
+  if (channelEl && channelEl.value) params.set('channel', channelEl.value);
+  const paymentEl = document.getElementById(prefix + '-payment');
+  if (paymentEl && paymentEl.value) params.set('paymentMethod', paymentEl.value);
+  const customerEl = document.getElementById(prefix + '-customer');
+  if (customerEl && customerEl.value) params.set('customerId', customerEl.value);
+  return params;
+}
 async function loadSalesReport() {
   const sel = document.getElementById('slr-location');
   if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  await populateChannelAndPaymentFilters('slr');
   try {
-    const locationId = sel.value;
-    const from = document.getElementById('slr-from').value;
-    const to = document.getElementById('slr-to').value;
-    const params = new URLSearchParams();
-    if (locationId) params.set('locationId', locationId);
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
-    const qs = params.toString();
+    const qs = buildReportFilterParams('slr').toString();
     const [summary, topItems] = await Promise.all([api('/analytics/sales-summary?' + qs), api('/analytics/top-items?' + qs)]);
     document.getElementById('slr-summary-cards').innerHTML = [
       statTile('عدد الطلبات', summary.orderCount),
@@ -4691,6 +4792,107 @@ async function loadSalesReport() {
         + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${topItems.reduce((s, i) => s + i.quantity, 0)}</td><td class="num">${fmtMoney(topItems.reduce((s, i) => s + i.revenue, 0))}</td></tr>`
       : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ================= Sales Log (detailed invoice register) ================= */
+let salesLogCache = [];
+async function loadSalesLogReport() {
+  const locSel = document.getElementById('slgr-location');
+  if (!locSel.options.length || locSel.options.length === 1) locSel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  await populateChannelAndPaymentFilters('slgr');
+  try {
+    salesLogCache = await api('/analytics/sales-log?' + buildReportFilterParams('slgr').toString());
+    document.getElementById('slgr-cards').innerHTML = [
+      statTile('عدد الفواتير', salesLogCache.length),
+      statTile('الإجمالي', fmtMoney(salesLogCache.reduce((s, r) => s + r.grandTotal, 0))),
+    ].join('');
+    document.getElementById('slgr-table').innerHTML = salesLogCache.length
+      ? salesLogCache.map((r) => `
+        <tr class="clickable-row" onclick="openInvoicePopup('${r.id}')" title="عرض الفاتورة">
+          <td>${fmtDateTime(r.paidAt)}</td>
+          <td>#${r.dailySequence ?? '-'} (SH${r.shiftSequence ?? '-'})</td>
+          <td>${r.locationName}</td>
+          <td>${r.cashierName || '-'}</td>
+          <td>${r.customerName || 'بدون عميل'}</td>
+          <td>${orderTypeIcon(r.channel)}${orderTypeLabel(r.channel)}</td>
+          <td>${r.paymentMethods.map(paymentMethodLabelWithIcon).join('، ') || '-'}</td>
+          <td class="num">${fmtMoney(r.subtotal - r.discountTotal)}</td>
+          <td class="num">${fmtMoney(r.discountTotal)}</td>
+          <td class="num">${fmtMoney(r.vatTotal)}</td>
+          <td class="num">${fmtMoney(r.grandTotal)}</td>
+        </tr>
+      `).join('')
+      : `<tr><td colspan="11" class="empty">لا توجد فواتير في هذه الفترة</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+// Shared by every report's "العميل" filter (Sales Log, Sales Report, Net
+// Sales) -- searches by phone and fills whichever <select> id is given, so
+// each report doesn't need its own near-identical debounce/fetch copy.
+let filteredReportCustomerSearchTimer = null;
+function onFilteredReportCustomerSearch(phone, selectId) {
+  clearTimeout(filteredReportCustomerSearchTimer);
+  filteredReportCustomerSearchTimer = setTimeout(async () => {
+    try {
+      const customers = await api('/customers' + (phone.trim() ? '?phone=' + encodeURIComponent(phone.trim()) : ''));
+      document.getElementById(selectId).innerHTML = '<option value="">كل العملاء</option>' + customers.map((c) => `<option value="${c.id}">${c.name || 'بلا اسم'} -- ${c.phone}</option>`).join('');
+    } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+  }, 300);
+}
+
+/* ================= Top Customers ================= */
+let topCustomersCache = [];
+async function loadTopCustomersReport() {
+  const sel = document.getElementById('tcr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const params = new URLSearchParams();
+    if (sel.value) params.set('locationId', sel.value);
+    const from = document.getElementById('tcr-from').value; if (from) params.set('from', from);
+    const to = document.getElementById('tcr-to').value; if (to) params.set('to', to);
+    topCustomersCache = await api('/analytics/top-customers?' + params.toString());
+    document.getElementById('tcr-table').innerHTML = topCustomersCache.length
+      ? topCustomersCache.map((c, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${c.name || 'بلا اسم'}</td>
+          <td>${c.phone}</td>
+          <td class="num">${c.orderCount}</td>
+          <td class="num">${fmtMoney(c.revenue)}</td>
+          <td class="num">${fmtMoney(c.averageOrderValue)}</td>
+          <td>${fmtDate(c.lastOrderAt)}</td>
+          <td class="num">${c.points}</td>
+          <td><button class="link-btn" onclick="toggleTopCustomerDetail('${c.customerId}')">تفاصيل</button></td>
+        </tr>
+        <tr id="tcr-detail-row-${c.customerId}" class="hidden"><td colspan="9"><div class="recipe-box" id="tcr-detail-box-${c.customerId}"></div></td></tr>
+      `).join('')
+      : `<tr><td colspan="9" class="empty">لا توجد بيانات عملاء في هذه الفترة</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function toggleTopCustomerDetail(customerId) {
+  const row = document.getElementById('tcr-detail-row-' + customerId);
+  const box = document.getElementById('tcr-detail-box-' + customerId);
+  const opening = row.classList.contains('hidden');
+  row.classList.toggle('hidden');
+  if (!opening) return;
+  box.innerHTML = '<div class="empty">جارٍ التحميل...</div>';
+  try {
+    const params = new URLSearchParams({ customerId });
+    const locationId = document.getElementById('tcr-location').value; if (locationId) params.set('locationId', locationId);
+    const from = document.getElementById('tcr-from').value; if (from) params.set('from', from);
+    const to = document.getElementById('tcr-to').value; if (to) params.set('to', to);
+    const orders = await api('/analytics/sales-log?' + params.toString());
+    box.innerHTML = `
+      <div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>رقم الفاتورة</th><th>نوع الطلب</th><th>الإجمالي</th></tr></thead>
+        <tbody>
+          ${orders.length ? orders.map((o) => `
+            <tr class="clickable-row" onclick="openInvoicePopup('${o.id}')" title="عرض الفاتورة">
+              <td>${fmtDateTime(o.paidAt)}</td><td>#${o.dailySequence ?? '-'}</td><td>${orderTypeIcon(o.channel)}${orderTypeLabel(o.channel)}</td><td>${fmtMoney(o.grandTotal)}</td>
+            </tr>
+          `).join('') : `<tr><td colspan="4" class="empty">لا توجد فواتير</td></tr>`}
+        </tbody>
+      </table></div>
+    `;
+  } catch (e) { box.innerHTML = '❌ ' + e.message; }
 }
 
 /* ================= Staff meal (quick entry) ================= */
@@ -5525,6 +5727,21 @@ async function loadTaxReport() {
     document.getElementById('txr-by-type-table').innerHTML = res.sales.byTaxType.length
       ? res.sales.byTaxType.map((t) => `<tr><td>${TAX_TYPE_LABEL[t.taxType] || t.taxType}</td><td class="num">${fmtMoney(t.revenue)}</td></tr>`).join('')
       : `<tr><td colspan="2" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+    document.getElementById('txr-by-day-table').innerHTML = res.sales.byDay.length
+      ? res.sales.byDay.map((d) => `<tr><td>${fmtDate(d.date)}</td><td class="num">${d.invoiceCount}</td><td class="num">${fmtMoney(d.taxableSubtotal)}</td><td class="num">${fmtMoney(d.vatCollected)}</td></tr>`).join('')
+      : `<tr><td colspan="4" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+    document.getElementById('txr-invoices-table').innerHTML = res.sales.invoices.length
+      ? res.sales.invoices.map((inv) => `
+        <tr class="clickable-row" onclick="openInvoicePopup('${inv.id}')" title="عرض الفاتورة">
+          <td>${fmtDateTime(inv.paidAt)}</td>
+          <td>#${inv.dailySequence ?? '-'} (SH${inv.shiftSequence ?? '-'})</td>
+          <td>${inv.locationName}</td>
+          <td class="num">${fmtMoney(inv.taxableSubtotal)}</td>
+          <td class="num">${fmtMoney(inv.vatTotal)}</td>
+          <td class="num">${fmtMoney(inv.grandTotal)}</td>
+        </tr>
+      `).join('')
+      : `<tr><td colspan="6" class="empty">لا توجد فواتير في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
@@ -5660,15 +5877,9 @@ async function loadDailyConsumptionReport() {
 async function loadNetSalesReport() {
   const sel = document.getElementById('nsr-location');
   if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  await populateChannelAndPaymentFilters('nsr');
   try {
-    const locationId = sel.value;
-    const from = document.getElementById('nsr-from').value;
-    const to = document.getElementById('nsr-to').value;
-    const params = new URLSearchParams();
-    if (locationId) params.set('locationId', locationId);
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
-    const res = await api('/analytics/net-sales?' + params.toString());
+    const res = await api('/analytics/net-sales?' + buildReportFilterParams('nsr').toString());
     document.getElementById('nsr-cards').innerHTML = [
       statTile('عدد الطلبات', res.orderCount),
       statTile('عدد العملاء', res.customerCount),

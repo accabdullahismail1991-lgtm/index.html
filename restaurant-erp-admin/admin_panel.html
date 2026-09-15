@@ -456,6 +456,7 @@
       <h1>🍽️ Restaurant ERP</h1>
     </div>
     <div style="display:flex;align-items:center;gap:16px">
+      <button class="ghost" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.4)" onclick="openOpenShiftModal()">🔓 فتح وردية</button>
       <span class="who" id="whoAmI"></span>
       <button class="ghost" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.4)" onclick="doLogout()">خروج</button>
     </div>
@@ -782,11 +783,7 @@
           <tbody id="shiftsTable"></tbody>
         </table></div>
         <div class="hint" id="sh-open-today" style="margin-bottom:6px"></div>
-        <div class="row-form">
-          <div><label>الموقع</label><select id="sh-location"></select></div>
-          <div><label>رأس المال الافتتاحي</label><input id="sh-float" type="number" step="0.01" value="200"></div>
-          <div><button onclick="openShift()">فتح وردية</button></div>
-        </div>
+        <button onclick="openOpenShiftModal()">🔓 فتح وردية</button>
       </div>
 
       <div class="panel subview hidden" id="sl-sub-staff-meal">
@@ -2139,6 +2136,35 @@
           </div>
           <div id="stl-body"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- OPEN SHIFT -- reachable from anywhere via the header's shortcut
+         button, not just by first navigating into Sales > الورديات. -->
+    <div id="openShiftModal" class="modal-backdrop" onclick="if(event.target===this) closeOpenShiftModal()">
+      <div class="modal-box">
+        <div class="modal-head"><h3>🔓 فتح وردية جديدة</h3><button class="view-close" onclick="closeOpenShiftModal()">✕</button></div>
+        <div class="modal-body">
+          <div class="row-form" style="margin-top:0;margin-bottom:12px">
+            <div><label>الفرع</label><select id="osm-location"></select></div>
+            <div><label>رأس المال الافتتاحي</label><input id="osm-float" type="number" step="0.01" value="200"></div>
+          </div>
+          <div id="osm-msg" class="msg"></div>
+          <button onclick="submitOpenShiftModal()" style="width:100%">فتح وردية</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLOSE SHIFT -- replaces a single window.prompt() with a proper
+         reconciliation screen: reference figures for the custody/opening
+         float and expected cash from sales, the non-cash methods (cards
+         etc, settled through their own terminal so shown for reference/
+         cross-check only, not counted into the till), then one input for
+         what was actually counted in the drawer. -->
+    <div id="closeShiftModal" class="modal-backdrop" onclick="if(event.target===this) closeCloseShiftModal()">
+      <div class="modal-box">
+        <div class="modal-head"><h3>🔒 إغلاق الوردية</h3><button class="view-close" onclick="closeCloseShiftModal()">✕</button></div>
+        <div class="modal-body" id="csm-body"></div>
       </div>
     </div>
     </main>
@@ -3926,7 +3952,6 @@ async function loadSalesTab() {
   document.getElementById('ord-sales-channel').innerHTML =
     '<option value="">السعر الأساسي</option>' + activeChannels.map((c) => `<option value="${c.id}">${c.name}</option>`).join('');
   orderChannelPriceMap = null;
-  document.getElementById('sh-location').innerHTML = locationOptions();
   renderOrderCategories();
   renderOrderMenuGrid('');
   paymentMethodsCache = await api('/payment-methods?activeOnly=true');
@@ -4463,25 +4488,97 @@ async function loadShifts() {
     onOrderShiftChange();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
-async function openShift() {
-  const locationId = document.getElementById('sh-location').value;
-  const openingFloat = parseFloat(document.getElementById('sh-float').value);
-  if (!locationId || isNaN(openingFloat)) { flashGlobal('⚠️ اختر الموقع واكتب رأس المال', 'err'); return; }
+// Reachable from the header shortcut button as well as the Shifts
+// subview's own inline form -- both end up calling the same POST /shifts,
+// so opening one doesn't need whichever tab happens to already be loaded.
+async function openOpenShiftModal() {
+  try {
+    if (!locationsCache.length) locationsCache = await api('/locations');
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); return; }
+  const sel = document.getElementById('osm-location');
+  sel.innerHTML = locationOptions();
+  // A single-branch setup shouldn't leave the cashier guessing which
+  // branch an empty-looking select refers to -- there's only one choice,
+  // so it's already selected the moment the modal opens.
+  if (locationsCache.length === 1) sel.value = locationsCache[0].id;
+  document.getElementById('osm-float').value = 200;
+  document.getElementById('osm-msg').innerHTML = '';
+  document.getElementById('openShiftModal').classList.add('open');
+}
+function closeOpenShiftModal() {
+  document.getElementById('openShiftModal').classList.remove('open');
+}
+async function submitOpenShiftModal() {
+  const locationId = document.getElementById('osm-location').value;
+  const openingFloat = parseFloat(document.getElementById('osm-float').value);
+  if (!locationId || isNaN(openingFloat)) { showMsg('osm-msg', '⚠️ اختر الفرع واكتب رأس المال', 'err'); return; }
   try {
     await api('/shifts', { method: 'POST', body: JSON.stringify({ locationId, openingFloat }) });
     flashGlobal('✅ تم فتح الوردية', 'ok');
-    loadShifts();
-  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+    closeOpenShiftModal();
+    // Refresh whichever shift-dependent screens happen to already be
+    // loaded in the DOM right now -- harmless no-ops when they're not.
+    if (document.getElementById('shiftsTable')) { try { await loadShifts(); } catch (e) { /* ignore */ } }
+    if (document.getElementById('ord-shift')) { try { await loadShifts(); } catch (e) { /* ignore */ } }
+  } catch (e) { showMsg('osm-msg', '❌ ' + e.message, 'err'); }
 }
+
+let closeShiftModalId = null;
 async function closeShiftPrompt(id) {
-  const closingCounted = parseFloat(window.prompt('المبلغ المعدود فعليًا في الدرج؟'));
-  if (isNaN(closingCounted)) return;
+  await openCloseShiftModal(id);
+}
+async function openCloseShiftModal(shiftId) {
+  closeShiftModalId = shiftId;
+  const body = document.getElementById('csm-body');
+  body.innerHTML = '<div class="empty">جارٍ التحميل...</div>';
+  document.getElementById('closeShiftModal').classList.add('open');
+  try {
+    const shift = shiftsCache.find((s) => s.id === shiftId) || await api(`/shifts/${shiftId}`);
+    const summary = await api(`/shifts/${shiftId}/close-summary`);
+    await ensurePaymentMethodsCache();
+    const cashCodes = new Set(paymentMethodsCache.filter((m) => m.isCash).map((m) => m.code));
+    const cashTotal = round2Client(summary.byPaymentMethod.filter((m) => cashCodes.has(m.method)).reduce((s, m) => s + m.amount, 0));
+    const nonCash = summary.byPaymentMethod.filter((m) => !cashCodes.has(m.method));
+    const expectedCash = round2Client(Number(shift.openingFloat) + cashTotal);
+    body.innerHTML = `
+      <div class="stats-row">
+        ${statTile('رصيد العهدة (رأس المال الافتتاحي)', fmtMoney(shift.openingFloat))}
+        ${statTile('نقدية المبيعات (متوقعة)', fmtMoney(cashTotal))}
+        ${statTile('إجمالي النقدية المتوقع بالدرج', fmtMoney(expectedCash))}
+      </div>
+      ${nonCash.length ? `
+      <div class="panel" style="margin-top:10px">
+        <h2>البطاقات وطرق الدفع الأخرى</h2>
+        <div class="hint">تُسوّى عبر جهاز الدفع الخاص بها مباشرةً -- للمراجعة/المطابقة مع إيصال الجهاز فقط، لا تُحسب ضمن نقدية الدرج.</div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الطريقة</th><th>المبلغ</th></tr></thead>
+          <tbody>${nonCash.map((m) => `<tr><td>${paymentMethodLabelWithIcon(m.method)}</td><td class="num">${fmtMoney(m.amount)}</td></tr>`).join('')}</tbody>
+        </table></div>
+      </div>` : ''}
+      <div class="row-form" style="margin-top:14px;margin-bottom:4px">
+        <div><label>المبلغ المعدود فعليًا في الدرج (نقدًا)</label><input id="csm-counted" type="number" step="0.01" value="${expectedCash.toFixed(2)}"></div>
+      </div>
+      <div id="csm-msg" class="msg"></div>
+      <button onclick="submitCloseShiftModal()" style="width:100%">✅ تأكيد إغلاق الوردية</button>
+    `;
+  } catch (e) {
+    body.innerHTML = '<div class="empty">❌ ' + e.message + '</div>';
+  }
+}
+function closeCloseShiftModal() {
+  document.getElementById('closeShiftModal').classList.remove('open');
+  closeShiftModalId = null;
+}
+async function submitCloseShiftModal() {
+  const id = closeShiftModalId;
+  const closingCounted = parseFloat(document.getElementById('csm-counted').value);
+  if (isNaN(closingCounted)) { showMsg('csm-msg', '⚠️ اكتب المبلغ المعدود', 'err'); return; }
   try {
     await api(`/shifts/${id}/close`, { method: 'POST', body: JSON.stringify({ closingCounted }) });
     flashGlobal('✅ تم إغلاق الوردية', 'ok');
-    loadShifts();
+    closeCloseShiftModal();
+    if (document.getElementById('shiftsTable')) { try { await loadShifts(); } catch (e) { /* ignore */ } }
     openShiftCloseSummary(id);
-  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+  } catch (e) { showMsg('csm-msg', '❌ ' + e.message, 'err'); }
 }
 async function openShiftCloseSummary(shiftId) {
   pushNavHistory();
@@ -5211,20 +5308,33 @@ async function loadReturnableLines() {
       wrap.innerHTML = '<div class="empty">كل أصناف هذا الطلب مُرجَعة بالكامل بالفعل</div>';
       return;
     }
-    wrap.innerHTML = `<div class="table-wrap"><table><thead><tr><th>الصنف</th><th>الكمية المباعة</th><th>مُرجَع سابقًا</th><th>المتبقي</th><th>حالة المطبخ</th><th>الكمية المطلوب إرجاعها</th></tr></thead>
+    const anyReturnable = returnable.some((l) => l.kitchenStatus === 'READY' || l.kitchenStatus === 'SERVED');
+    wrap.innerHTML = `
+    ${anyReturnable ? '<button type="button" class="ghost" onclick="fillAllReturnQty()" style="margin-bottom:10px">↩️ إرجاع كل الأصناف</button>' : ''}
+    <div class="table-wrap"><table><thead><tr><th>الصنف</th><th>الكمية المباعة</th><th>مُرجَع سابقًا</th><th>المتبقي</th><th>حالة المطبخ</th><th>الكمية المطلوب إرجاعها</th></tr></thead>
       <tbody>${returnable.map((l) => {
         const kitchenReady = l.kitchenStatus === 'READY' || l.kitchenStatus === 'SERVED';
         return `
         <tr ${kitchenReady ? '' : 'title="لا يمكن الإرجاع قبل خروج الصنف من المطبخ"'}>
           <td>${l.menuItemName}</td><td>${l.quantity}</td><td>${l.alreadyReturned}</td><td>${l.remaining}</td>
           <td><span class="kt-status-badge kt-status-${l.kitchenStatus}">${KITCHEN_STATUS_LABEL[l.kitchenStatus]}</span></td>
-          <td><input type="number" min="0" max="${l.remaining}" step="1" value="0" class="rt-qty" data-line-id="${l.orderLineId}" style="width:70px" ${kitchenReady ? '' : 'disabled title="لم يخرج من المطبخ بعد"'}></td>
+          <td style="display:flex;gap:6px;align-items:center">
+            <input type="number" min="0" max="${l.remaining}" step="1" value="0" class="rt-qty" data-line-id="${l.orderLineId}" style="width:70px" ${kitchenReady ? '' : 'disabled title="لم يخرج من المطبخ بعد"'}>
+            ${kitchenReady ? `<button type="button" class="link-btn" onclick="fillReturnQty('${l.orderLineId}', ${l.remaining})">الكل</button>` : ''}
+          </td>
         </tr>
       `; }).join('')}</tbody>
     </table></div>
     ${returnable.some((l) => l.kitchenStatus !== 'READY' && l.kitchenStatus !== 'SERVED') ? '<div class="hint" style="margin-top:8px">⚠️ بعض الأصناف ما زالت قيد التحضير في المطبخ ولا يمكن إرجاعها حتى تخرج (جاهز/تم التسليم)</div>' : ''}`;
     document.getElementById('rt-submit-btn').disabled = false;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); wrap.innerHTML = ''; }
+}
+function fillReturnQty(lineId, remaining) {
+  const el = document.querySelector(`.rt-qty[data-line-id="${lineId}"]`);
+  if (el) el.value = remaining;
+}
+function fillAllReturnQty() {
+  document.querySelectorAll('.rt-qty:not([disabled])').forEach((el) => { el.value = el.max; });
 }
 async function submitReturn() {
   const orderId = document.getElementById('rt-order').value;

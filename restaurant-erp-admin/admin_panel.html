@@ -1800,7 +1800,11 @@
           <div><button onclick="loadPeakHoursReport()">تحديث</button></div>
         </div>
         <div id="pkr-cards" class="stats-row"></div>
-        <div class="table-wrap"><table><thead><tr><th>الساعة</th><th>عدد الطلبات</th><th>المبيعات</th></tr></thead>
+        <div class="dash-card" style="margin-top:14px">
+          <h3 style="margin:0 0 8px">توزيع الطلبات حسب ساعة اليوم</h3>
+          <canvas id="pkr-chart"></canvas>
+        </div>
+        <div class="table-wrap" style="margin-top:14px"><table class="report-table"><thead><tr><th>الساعة</th><th>عدد الطلبات</th><th>المبيعات</th><th>النسبة من الطلبات</th></tr></thead>
           <tbody id="pkr-hour-table"></tbody>
         </table></div>
       </div>
@@ -5865,13 +5869,38 @@ async function loadPeakHoursReport() {
     if (from) params.set('from', from);
     if (to) params.set('to', to);
     const res = await api('/analytics/peak-hours?' + params.toString());
+    const totalOrders = res.byHour.reduce((s, h) => s + h.orderCount, 0);
+    const totalRevenue = res.byHour.reduce((s, h) => s + h.revenue, 0);
+    const activeHours = res.byHour.filter((h) => h.orderCount > 0).length;
+    // Top-3 hours (not just the single peakHour) so a manager can see the
+    // whole busy window at a glance -- e.g. staffing a whole lunch rush,
+    // not just its single busiest hour.
+    const top3Hours = [...res.byHour].sort((a, b) => b.orderCount - a.orderCount).slice(0, 3).filter((h) => h.orderCount > 0);
     document.getElementById('pkr-cards').innerHTML = [
-      statTile('ساعة الذروة', res.peakHour != null ? `${res.peakHour}:00` : '-'),
+      statTile('ساعة الذروة', res.peakHour != null ? `${res.peakHour}:00 -- ${res.peakHour + 1}:00` : '-'),
+      statTile('إجمالي الطلبات', totalOrders),
+      statTile('إجمالي المبيعات', fmtMoney(totalRevenue)),
+      statTile('متوسط الطلبات/ساعة نشطة', activeHours ? Math.round(totalOrders / activeHours * 10) / 10 : 0),
     ].join('');
+
+    mountChartOrEmpty('pkr-chart', totalOrders > 0, () =>
+      barChartConfig(res.byHour.map((h) => `${h.hour}:00`), res.byHour.map((h) => h.orderCount), 'عدد الطلبات'),
+      'لا توجد طلبات في هذه الفترة');
+
+    const top3HourSet = new Set(top3Hours.map((h) => h.hour));
     document.getElementById('pkr-hour-table').innerHTML = res.byHour
       .filter((h) => h.orderCount > 0)
-      .map((h) => `<tr ${h.hour === res.peakHour ? 'style="font-weight:700;background:var(--card2)"' : ''}><td>${h.hour}:00 -- ${h.hour + 1}:00</td><td class="num">${h.orderCount}</td><td class="num">${fmtMoney(h.revenue)}</td></tr>`).join('')
-      || `<tr><td colspan="3" class="empty">لا توجد طلبات في هذه الفترة</td></tr>`;
+      .map((h) => {
+        const isTop = top3HourSet.has(h.hour);
+        const share = totalOrders > 0 ? Math.round(h.orderCount / totalOrders * 1000) / 10 : 0;
+        return `<tr ${isTop ? 'style="font-weight:700;background:var(--card2)"' : ''}>
+          <td>${isTop ? '🔥 ' : ''}${h.hour}:00 -- ${h.hour + 1}:00</td>
+          <td class="num">${h.orderCount}</td>
+          <td class="num">${fmtMoney(h.revenue)}</td>
+          <td class="num">${share}%</td>
+        </tr>`;
+      }).join('')
+      || `<tr><td colspan="4" class="empty">لا توجد طلبات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 

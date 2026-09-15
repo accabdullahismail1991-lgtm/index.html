@@ -638,9 +638,10 @@
     <div id="view-inventory" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>📦 المخزون</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
       <div class="subnav">
-        <button id="inv-tab-balances" class="active" onclick="switchSubview('inv',['balances','receive','waste'],'balances')">الأرصدة الحالية</button>
-        <button id="inv-tab-receive" onclick="switchSubview('inv',['balances','receive','waste'],'receive')">➕ استلام / تسوية</button>
-        <button id="inv-tab-waste" onclick="switchSubview('inv',['balances','receive','waste'],'waste')">🗑️ تسجيل تالف</button>
+        <button id="inv-tab-balances" class="active" onclick="switchSubview('inv',['balances','receive','waste','cost'],'balances')">الأرصدة الحالية</button>
+        <button id="inv-tab-receive" onclick="switchSubview('inv',['balances','receive','waste','cost'],'receive')">➕ استلام / تسوية</button>
+        <button id="inv-tab-waste" onclick="switchSubview('inv',['balances','receive','waste','cost'],'waste')">🗑️ تسجيل تالف</button>
+        <button id="inv-tab-cost" onclick="switchSubview('inv',['balances','receive','waste','cost'],'cost')">💰 تسوية تكلفة</button>
       </div>
       <div class="view-body">
       <div class="panel subview" id="inv-sub-balances">
@@ -672,6 +673,17 @@
           <div><label>الكمية</label><input id="inv-w-qty" type="number" step="0.001" placeholder="5"></div>
           <div><button class="danger" onclick="recordWaste()">🗑️ تسجيل التالف</button></div>
         </div>
+      </div>
+      <div class="panel subview hidden" id="inv-sub-cost">
+        <h2>💰 تسوية تكلفة المخزون</h2>
+        <div class="hint">تُصحّح تكلفة الوحدة لكل الرصيد الحالي من هذا الصنف في هذا الموقع دون تغيير الكمية إطلاقًا -- لخطأ في تكلفة سابقة أو محاذاتها مع تكلفة استبدال معروفة.</div>
+        <div class="row-form" style="margin-top:10px">
+          <div><label>الموقع</label><select id="inv-c-location"></select></div>
+          <div><label>الصنف</label><select id="inv-c-ingredient"></select></div>
+          <div><label>التكلفة الجديدة للوحدة</label><input id="inv-c-cost" type="number" step="0.0001" placeholder="5.5"></div>
+          <div><button onclick="adjustInventoryCost()">💾 تطبيق التسوية</button></div>
+        </div>
+        <div id="inv-c-msg" class="msg"></div>
       </div>
      </div></div>
     </div>
@@ -909,6 +921,7 @@
             </select>
           </div>
         </div>
+        <button type="button" class="ghost" onclick="fillAllStocktakeZero()" style="margin-bottom:10px">🔄 تصفير الكل (جرد صفري لكل الأصناف)</button>
         <div class="table-wrap"><table><thead><tr><th>الصنف</th><th>النوع</th><th>الرصيد النظري</th><th>الكمية المعدودة</th></tr></thead>
           <tbody id="stkn-table"><tr><td colspan="4" class="empty">اختر الموقع أولًا</td></tr></tbody>
         </table></div>
@@ -976,6 +989,7 @@
         <div class="row-form">
           <div><label>الموقع</label><select id="po-location"></select></div>
           <div><label>المورد</label><select id="po-supplier"></select></div>
+          <div><label><input type="checkbox" id="po-prices-include-vat" style="width:auto;display:inline"> الأسعار المُدخلة شاملة الضريبة (حسب فاتورة المورد)</label></div>
         </div>
         <div id="po-lines"></div>
         <div style="margin-top:8px;display:flex;gap:8px">
@@ -985,7 +999,7 @@
       </div>
       <div class="panel subview hidden" id="pu-sub-orders">
         <h2>أوامر الشراء</h2>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>المورد</th><th>الموقع</th><th>الحالة</th><th>الإجمالي</th><th></th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>المورد</th><th>الموقع</th><th>الحالة</th><th>قبل الضريبة</th><th>الضريبة</th><th>الإجمالي</th><th></th></tr></thead>
           <tbody id="purchaseOrdersTable"></tbody>
         </table></div>
       </div>
@@ -1328,6 +1342,16 @@
       <div class="panel subview hidden" id="set-sub-danger">
         <h2>⚠️ إجراءات حسّاسة -- لا يمكن التراجع عنها</h2>
         <div class="hint">تحتاج صلاحية "حذف/تصفير بيانات النظام"، وتطلب كل واحدة كتابة عبارة تأكيد بالضبط قبل التنفيذ.</div>
+
+        <div class="panel" style="margin-top:14px;border:1px solid var(--border)">
+          <h2>🧾 مسح البيانات التشغيلية فقط</h2>
+          <div class="hint">
+            يحذف نهائيًا: كل طلبات المبيعات والمرتجعات والمدفوعات، أوامر الإنتاج/الشراء/التحويل/الجرد، كل المخزون
+            (دفعات وحركات وأرصدة)، الورديات، وسجلات إغلاق اليوم ونقاط الولاء -- مناسب لبدء بيانات تشغيل تجريبية جديدة.<br>
+            <b>يبقى كما هو:</b> الأصناف والوصفات ووجبات الكمبو، الفروع، الموردون، العملاء، المستخدمون/الأدوار.
+          </div>
+          <div style="margin-top:10px"><button class="danger" onclick="runTransactionsReset()">🧾 مسح البيانات التشغيلية الآن</button></div>
+        </div>
 
         <div class="panel" style="margin-top:14px;border:1px solid var(--border)">
           <h2>🧺 تصفير بيانات الأصناف والوصفات</h2>
@@ -3957,6 +3981,8 @@ async function loadInventoryTab() {
   filterSel.innerHTML = '<option value="">كل المواقع</option>' + opts;
   document.getElementById('inv-r-ingredient').innerHTML = ingredientOptions();
   document.getElementById('inv-w-ingredient').innerHTML = ingredientOptions();
+  document.getElementById('inv-c-location').innerHTML = opts;
+  document.getElementById('inv-c-ingredient').innerHTML = ingredientOptions();
   loadInventoryBalances();
 }
 async function loadInventoryBalances() {
@@ -3993,6 +4019,18 @@ async function recordWaste() {
     document.getElementById('inv-w-qty').value = '';
     loadInventoryBalances();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function adjustInventoryCost() {
+  const locationId = document.getElementById('inv-c-location').value;
+  const ingredientId = document.getElementById('inv-c-ingredient').value;
+  const newUnitCost = parseFloat(document.getElementById('inv-c-cost').value);
+  if (!locationId || !ingredientId || !newUnitCost) { showMsg('inv-c-msg', '⚠️ اكمل كل الحقول', 'err'); return; }
+  try {
+    const res = await api('/inventory/cost-adjustments', { method: 'POST', body: JSON.stringify({ locationId, ingredientId, newUnitCost }) });
+    showMsg('inv-c-msg', `✅ تم تحديث تكلفة ${res.batchesUpdated} دفعة (إجمالي الكمية ${res.totalQuantity})`, 'ok');
+    document.getElementById('inv-c-cost').value = '';
+    loadInventoryBalances();
+  } catch (e) { showMsg('inv-c-msg', '❌ ' + e.message, 'err'); }
 }
 let inventoryValuationCache = null;
 async function loadInventoryReport() {
@@ -5675,6 +5713,12 @@ async function loadStocktakeCountSheet() {
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
+function fillAllStocktakeZero() {
+  document.querySelectorAll('#stkn-table tr[data-ingredient-id]').forEach((row) => {
+    row.querySelector('.stkn-count').value = '0';
+  });
+}
+
 async function submitNewStocktake() {
   const locationId = document.getElementById('stkn-location').value;
   if (!locationId) { showMsg('stkn-msg', '⚠️ اختر الموقع', 'err'); return; }
@@ -5831,6 +5875,11 @@ function addPoLineRow() {
     <input class="po-qty" type="number" step="0.001" placeholder="الكمية">
     <select class="po-unit"></select>
     <input class="po-cost" type="number" step="0.0001" placeholder="تكلفة الوحدة (بوحدة الشراء المختارة)">
+    <select class="po-taxtype" title="نوع الضريبة لهذا السطر">
+      <option value="STANDARD">خاضع للضريبة</option>
+      <option value="ZERO_RATED">نسبة صفرية</option>
+      <option value="EXEMPT">معفى</option>
+    </select>
     <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
   container.appendChild(div);
   syncRowUnitOptions(div.querySelector('.po-ing'));
@@ -5838,6 +5887,7 @@ function addPoLineRow() {
 async function createPurchaseOrder() {
   const locationId = document.getElementById('po-location').value;
   const supplierId = document.getElementById('po-supplier').value;
+  const pricesIncludeVat = document.getElementById('po-prices-include-vat').checked;
   const container = document.getElementById('po-lines');
   // Purchase unit can differ from the ingredient's stock unit (e.g. buying
   // by the kg for an ingredient tracked in g) -- quantity AND unitCost both
@@ -5848,17 +5898,20 @@ async function createPurchaseOrder() {
     const unit = row.querySelector('.po-unit').value;
     const enteredQty = parseFloat(row.querySelector('.po-qty').value);
     const enteredCost = parseFloat(row.querySelector('.po-cost').value);
+    const taxType = row.querySelector('.po-taxtype').value;
     return {
       ingredientId,
       quantity: convertToIngredientUnit(ingredientId, enteredQty, unit),
       unitCost: convertUnitCostToIngredientUnit(ingredientId, enteredCost, unit),
+      taxType,
     };
   }).filter((l) => l.ingredientId && l.quantity > 0 && l.unitCost > 0);
   if (!locationId || !supplierId) { flashGlobal('⚠️ اختر الموقع والمورد', 'err'); return; }
   if (!lines.length) { flashGlobal('⚠️ أضف مكوّن واحد على الأقل بكمية وتكلفة', 'err'); return; }
   try {
-    await api('/purchase-orders', { method: 'POST', body: JSON.stringify({ locationId, supplierId, lines }) });
+    await api('/purchase-orders', { method: 'POST', body: JSON.stringify({ locationId, supplierId, pricesIncludeVat, lines }) });
     container.innerHTML = '';
+    document.getElementById('po-prices-include-vat').checked = false;
     flashGlobal('✅ تم إنشاء أمر الشراء (مسودة)', 'ok');
     loadPurchaseOrders();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
@@ -5882,8 +5935,8 @@ async function loadPurchaseOrders() {
       return btns.join(' ');
     };
     document.getElementById('purchaseOrdersTable').innerHTML = pos.length
-      ? pos.map((po) => `<tr><td>${supName(po.supplierId)}</td><td>${locName(po.locationId)}</td><td>${po.status}</td><td>${Number(po.totalAmount).toFixed(2)}</td><td>${actionsFor(po)}</td></tr>`).join('')
-      : `<tr><td colspan="5" class="empty">لا توجد أوامر شراء بعد</td></tr>`;
+      ? pos.map((po) => `<tr><td>${supName(po.supplierId)}</td><td>${locName(po.locationId)}</td><td>${po.status}</td><td class="num">${Number(po.subtotal).toFixed(2)}</td><td class="num">${Number(po.vatTotal).toFixed(2)}</td><td class="num">${Number(po.totalAmount).toFixed(2)}</td><td>${actionsFor(po)}</td></tr>`).join('')
+      : `<tr><td colspan="7" class="empty">لا توجد أوامر شراء بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function poAction(id, action, method) {
@@ -5916,7 +5969,7 @@ async function loadPurchasingReport() {
     document.getElementById('pur-cards').innerHTML = [
       statTile('عدد الأوامر', res.orderCount),
       statTile('الإنفاق الفعلي', fmtMoney(res.totalSpend)),
-      statTile('ضريبة مدخلات مقدّرة', fmtMoney(res.estimatedVat)),
+      statTile('ضريبة المدخلات', fmtMoney(res.vatTotal)),
     ].join('');
     document.getElementById('pur-status-table').innerHTML = res.byStatus.length
       ? res.byStatus.map((s) => `<tr><td>${PO_STATUS_LABEL[s.status] || s.status}</td><td class="num">${s.count}</td></tr>`).join('')
@@ -6166,8 +6219,10 @@ async function loadTaxReport() {
     if (to) params.set('to', to);
     const res = await api('/analytics/tax-summary?' + params.toString());
     document.getElementById('txr-cards').innerHTML = [
+      statTile('إجمالي المبيعات قبل الضريبة', fmtMoney(res.sales.taxableSubtotal)),
       statTile('ضريبة المبيعات المحصّلة', fmtMoney(res.sales.vatCollected)),
-      statTile('ضريبة المشتريات (تقديرية)', fmtMoney(res.purchasing.estimatedVat)),
+      statTile('إجمالي المبيعات شامل الضريبة', fmtMoney(res.sales.grandTotal)),
+      statTile('ضريبة المشتريات (المدخلات)', fmtMoney(res.purchasing.vatTotal)),
       statTile('صافي مركز الضريبة', fmtMoney(res.netVatPosition)),
     ].join('');
     document.getElementById('txr-by-type-table').innerHTML = res.sales.byTaxType.length
@@ -7246,6 +7301,16 @@ async function restoreBackupFromUpload() {
 // in this app for an irreversible action, on top of the system.reset_data
 // permission check the API itself enforces. A mismatched or cancelled prompt
 // never reaches the network at all.
+async function runTransactionsReset() {
+  const phrase = 'RESET-TRANSACTIONS';
+  const typed = window.prompt('لا يمكن التراجع عن هذا الإجراء.\nسيُحذف كل طلبات المبيعات والمشتريات والإنتاج والتحويل والجرد وكل حركات المخزون والورديات.\n\nاكتب "' + phrase + '" للتأكيد:');
+  if (typed !== phrase) { if (typed !== null) showMsg('danger-msg', '⚠️ العبارة غير مطابقة -- لم يتم تنفيذ أي شيء', 'err'); return; }
+  try {
+    const result = await api('/admin/reset-transactions', { method: 'POST', body: JSON.stringify({ confirm: phrase }) });
+    showMsg('danger-msg', `✅ تم مسح البيانات التشغيلية: ${result.orders} طلب مبيعات، ${result.purchaseOrders} أمر شراء، ${result.stockMovements} حركة مخزون، ${result.shifts} وردية`, 'ok');
+  } catch (e) { showMsg('danger-msg', '❌ ' + e.message, 'err'); }
+}
+
 async function runMasterDataReset() {
   const phrase = 'RESET-MASTER-DATA';
   const typed = window.prompt('لا يمكن التراجع عن هذا الإجراء.\nسيُحذف كل الأصناف والوصفات وكل طلبات المبيعات والمخزون المرتبطة بها.\n\nاكتب "' + phrase + '" للتأكيد:');
@@ -7514,7 +7579,7 @@ async function loadPurchasingDashboard() {
     if (to) params.set('to', to);
     const res = await api('/analytics/purchasing-summary?' + params.toString());
     document.getElementById('dshpu-kpis').innerHTML = [
-      statTile('عدد الأوامر', res.orderCount), statTile('إجمالي الإنفاق', fmtMoney(res.totalSpend)), statTile('ضريبة تقديرية', fmtMoney(res.estimatedVat)),
+      statTile('عدد الأوامر', res.orderCount), statTile('إجمالي الإنفاق', fmtMoney(res.totalSpend)), statTile('ضريبة المدخلات', fmtMoney(res.vatTotal)),
     ].join('');
     mountChartOrEmpty('dshpu-status-chart', res.byStatus.length > 0, () => doughnutChartConfig(res.byStatus.map((s) => PO_STATUS_LABEL[s.status] || s.status), res.byStatus.map((s) => s.count)), 'لا توجد أوامر شراء في هذه الفترة');
     mountChartOrEmpty('dshpu-suppliers-chart', res.topSuppliers.length > 0, () => barChartConfig(res.topSuppliers.map((s) => s.supplierName), res.topSuppliers.map((s) => s.spend), 'الإنفاق', true), 'لا يوجد إنفاق معتمد بعد لهذه الفترة');

@@ -682,13 +682,7 @@
           <div style="flex:2">
             <label>نوع الطلب</label>
             <input type="hidden" id="ord-channel" value="DINE_IN">
-            <div class="invoice-type-picker order-type-picker" id="ord-channel-picker">
-              <button type="button" class="invoice-type-btn active" onclick="selectOrderChannel('DINE_IN', this)">🍽️ صالة</button>
-              <button type="button" class="invoice-type-btn" onclick="selectOrderChannel('TAKEAWAY', this)">🥡 تيك أواي</button>
-              <button type="button" class="invoice-type-btn" onclick="selectOrderChannel('DRIVE_THRU', this)">🚗 Drive-thru</button>
-              <button type="button" class="invoice-type-btn" onclick="selectOrderChannel('DELIVERY_PARTNER', this)">🛵 توصيل خارجي</button>
-              <button type="button" class="invoice-type-btn" onclick="selectOrderChannel('BRAND_APP', this)">📱 تطبيق العلامة</button>
-            </div>
+            <div class="invoice-type-picker order-type-picker" id="ord-channel-picker"></div>
           </div>
           <div><label>قائمة الأسعار (اختياري)</label>
             <select id="ord-sales-channel" onchange="onOrderSalesChannelChange()">
@@ -1063,15 +1057,8 @@
             </select>
           </div>
           <div><label>القيمة (% أو ر.س حسب النوع)</label><input id="promo-value" type="number" step="0.01" placeholder="10"></div>
-          <div><label>مخصص لقناة (اختياري)</label>
-            <select id="promo-channel">
-              <option value="">كل القنوات</option>
-              <option value="DINE_IN">صالة</option>
-              <option value="TAKEAWAY">تيك أواي</option>
-              <option value="DRIVE_THRU">Drive-thru</option>
-              <option value="DELIVERY_PARTNER">توصيل خارجي</option>
-              <option value="BRAND_APP">تطبيق العلامة</option>
-            </select>
+          <div><label>مخصص لنوع طلب (اختياري)</label>
+            <select id="promo-channel"><option value="">كل الأنواع</option></select>
           </div>
           <div><label>يبدأ (اختياري)</label><input id="promo-starts" type="datetime-local"></div>
           <div><label>ينتهي (اختياري)</label><input id="promo-ends" type="datetime-local"></div>
@@ -1169,6 +1156,29 @@
      </div></div>
     </div>
 
+    <!-- ORDER TYPES -->
+    <div id="view-order-types" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>🧭 أنواع الطلبات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+      <div class="panel">
+        <h2>أنواع الطلبات الحالية</h2>
+        <div class="hint">التصنيف العام للطلب (صالة/تيك أواي/توصيل...) المستخدم في شاشة الطلب الجديد والتقارير والعروض -- منفصل تمامًا عن "قوائم الأسعار" (قنوات البيع). تعطيل نوع لا يمس الطلبات القديمة التي استخدمته.</div>
+        <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>الاسم</th><th>الأيقونة</th><th>الكود</th><th>الحالة</th><th></th></tr></thead>
+          <tbody id="orderTypesTable"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>➕ نوع طلب جديد</h2>
+        <div class="row-form">
+          <div><label>الاسم</label><input id="ot-name" placeholder="مثال: استلام من السيارة"></div>
+          <div><label>الأيقونة (اختياري، إيموجي واحد)</label><input id="ot-icon" placeholder="مثال: 🚙"></div>
+          <div><label>الكود (حروف إنجليزية كبيرة، بدون مسافات)</label><input id="ot-code" placeholder="مثال: CURBSIDE"></div>
+          <div><button onclick="createOrderType()">إضافة</button></div>
+        </div>
+        <div id="ot-msg" class="msg"></div>
+      </div>
+     </div></div>
+    </div>
+
     <!-- GENERAL SETTINGS -->
     <div id="view-settings" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>⚙️ الإعدادات العامة</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
@@ -1212,6 +1222,7 @@
           <div class="home-card" onclick="switchTab('items')"><div class="ic">🍽️</div><div class="lb">أصناف المنيو -- نوع الضريبة لكل صنف</div></div>
           <div class="home-card" onclick="switchTab('promotions')"><div class="ic">🏷️</div><div class="lb">العروض والخصومات</div></div>
           <div class="home-card" onclick="switchTab('payment-methods')"><div class="ic">💳</div><div class="lb">طرق الدفع</div></div>
+          <div class="home-card" onclick="switchTab('order-types')"><div class="ic">🧭</div><div class="lb">أنواع الطلبات</div></div>
         </div>
       </div>
 
@@ -2574,6 +2585,11 @@ async function doLogin() {
     myPermissions = me.permissions;
     document.getElementById('whoAmI').textContent = me.name || phone;
     await loadBranches();
+    // Every screen that shows an order's channel (kitchen ticket, shift-close
+    // summary, sales reports/dashboards, the New Order picker itself) reads
+    // labels/icons from this cache instead of a hardcoded map -- loaded once
+    // here, same reasoning as myPermissions above.
+    await ensureOrderTypesCache(true);
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('appScreen').classList.remove('hidden');
     updateOfflineBanner();
@@ -2591,6 +2607,7 @@ function doLogout(message) {
   accessToken = null;
   refreshToken = null;
   myPermissions = [];
+  orderTypesCache = [];
   document.getElementById('appScreen').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
   if (message) showMsg('loginMsg', 'ℹ️ ' + message, 'err');
@@ -2628,6 +2645,7 @@ const TAB_META = {
   combos: { icon: '🍔', label: 'وجبات الكمبو', group: 'service' },
   customers: { icon: '👤', label: 'العملاء', group: 'service' },
   'payment-methods': { icon: '💳', label: 'طرق الدفع', group: 'service' },
+  'order-types': { icon: '🧭', label: 'أنواع الطلبات', group: 'service' },
   settings: { icon: '⚙️', label: 'الإعدادات العامة', group: 'setup' },
   alerts: { icon: '🔔', label: 'التنبيهات', group: 'insight' },
   analytics: { icon: '📊', label: 'التقارير', group: 'insight' },
@@ -2930,6 +2948,7 @@ function switchTab(name) {
   if (name === 'combos') { switchSubview('cb', ['list', 'add'], 'list'); loadCombos(); }
   if (name === 'customers') { switchSubview('cu', ['list', 'add', 'import'], 'list'); loadCustomers(); }
   if (name === 'payment-methods') loadPaymentMethodsTab();
+  if (name === 'order-types') loadOrderTypesTab();
   if (name === 'settings') { switchSubview('set', ['general', 'users', 'roles', 'backup', 'danger'], 'general'); loadGeneralSettingsTab(); }
   if (name === 'analytics') { document.getElementById('an-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadReportsList(); }
 }
@@ -3702,6 +3721,8 @@ async function loadSalesTab() {
   // requiring a full page reload first.
   menuItemsCache = await api('/items');
   combosCache = (await api('/combos')).filter((c) => c.isActive);
+  await ensureOrderTypesCache(true);
+  renderOrderChannelPicker();
   salesChannelsCache = await api('/sales-channels');
   const activeChannels = salesChannelsCache.filter((c) => c.isActive);
   document.getElementById('ord-sales-channel').innerHTML =
@@ -4216,7 +4237,7 @@ async function openShiftCloseSummary(shiftId) {
         <h2>حسب نوع الطلب</h2>
         <div class="table-wrap"><table class="report-table"><thead><tr><th>نوع الطلب</th><th>عدد الطلبات</th><th>المبيعات (شامل الضريبة)</th></tr></thead>
           <tbody>${s.byChannel.length
-            ? s.byChannel.map((c) => `<tr><td>${AN_CHANNEL_LABEL[c.channel] || c.channel}</td><td class="num">${c.orderCount}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`).join('')
+            ? s.byChannel.map((c) => `<tr><td>${orderTypeLabel(c.channel)}</td><td class="num">${c.orderCount}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`).join('')
             : `<tr><td colspan="3" class="empty">لا توجد طلبات هذه الوردية</td></tr>`}</tbody>
         </table></div>
       </div>
@@ -4346,7 +4367,7 @@ async function loadOrders() {
           <td>يومي #${o.dailySequence ?? '-'} / وردية #${o.shiftSequence ?? '-'}</td>
           <td>${fmtDateTime(o.createdAt)}</td>
           <td>${locName(o.locationId)}</td>
-          <td>${AN_CHANNEL_LABEL[o.channel] || o.channel}</td>
+          <td>${orderTypeLabel(o.channel)}</td>
           <td>${o.servedBy ? o.servedBy.name : '-'}</td>
           <td>${INVOICE_TYPE_LABEL[o.invoiceType] || o.invoiceType}</td>
           <td>${o.status}</td>
@@ -4662,7 +4683,7 @@ async function loadSalesReport() {
       statTile('الإيراد بعد المرتجعات', fmtMoney(summary.revenueAfterReturns)),
     ].join('');
     document.getElementById('slr-channel-table').innerHTML = summary.byChannel.length
-      ? summary.byChannel.map((c) => `<tr><td>${AN_CHANNEL_LABEL[c.channel] || c.channel}</td><td class="num">${c.orderCount}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`).join('')
+      ? summary.byChannel.map((c) => `<tr><td>${orderTypeLabel(c.channel)}</td><td class="num">${c.orderCount}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`).join('')
         + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${summary.byChannel.reduce((s, c) => s + c.orderCount, 0)}</td><td class="num">${fmtMoney(summary.byChannel.reduce((s, c) => s + c.revenue, 0))}</td></tr>`
       : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
     document.getElementById('slr-topitems-table').innerHTML = topItems.length
@@ -4838,7 +4859,6 @@ async function loadReturnsReport() {
 
 /* ================= Kitchen (KDS) ================= */
 const KITCHEN_STATUS_LABEL = { QUEUED: 'قيد الانتظار', PREPARING: 'قيد التحضير', READY: 'جاهز', SERVED: 'تم التسليم' };
-const KITCHEN_CHANNEL_LABEL = { DINE_IN: 'صالة', TAKEAWAY: 'تيك أواي', DRIVE_THRU: 'Drive-thru', DELIVERY_PARTNER: 'توصيل خارجي', BRAND_APP: 'تطبيق' };
 // Minutes an order can sit SENT_TO_KITCHEN before its elapsed-time badge
 // turns urgent (red) -- a plain "8 دقائق" number doesn't grab attention on
 // a busy line the way a color change does.
@@ -4874,7 +4894,7 @@ async function loadKitchenQueue() {
       ? orders.map((o) => `
         <div class="kt-ticket">
           <div class="kt-ticket-head">
-            <span>${KITCHEN_CHANNEL_LABEL[o.channel] || o.channel}${o.tableLabel ? ' -- ' + o.tableLabel : ''}${o.shiftSequence ? ' -- #' + o.shiftSequence : ''}</span>
+            <span>${orderTypeLabel(o.channel)}${o.tableLabel ? ' -- ' + o.tableLabel : ''}${o.shiftSequence ? ' -- #' + o.shiftSequence : ''}</span>
             <span style="display:flex;align-items:center;gap:6px">
               ${elapsedMinutesLabel(o.createdAt)}
               <button class="link-btn" onclick="printKitchenTicketFromQueue('${o.orderId}')" title="طباعة تذكرة">🖨️</button>
@@ -4903,7 +4923,7 @@ function renderKitchenTicket(ticket) {
       <div class="kt-ticket-order-number">رقم الطلب <span>${orderNumberLabel}</span></div>
       <div class="kt-ticket-meta">
         ${ticket.shiftNumber != null ? 'SH' + ticket.shiftNumber : '-'}${ticket.dailySequence ? ' -- الرقم اليومي #' + ticket.dailySequence : ''}<br>
-        ${KITCHEN_CHANNEL_LABEL[ticket.channel] || ticket.channel}${ticket.tableLabel ? ' -- ' + ticket.tableLabel : ''}<br>
+        ${orderTypeLabel(ticket.channel)}${ticket.tableLabel ? ' -- ' + ticket.tableLabel : ''}<br>
         ${fmtDateTime(ticket.createdAt)}
       </div>
       ${ticket.lines.map((l) => `<div class="kt-ticket-line"><span>${l.menuItemName}</span><span class="qty">× ${l.quantity}</span></div>`).join('')}
@@ -5912,9 +5932,11 @@ async function confirmTransferReceive(id) {
 
 /* ---------------- Promotions ---------------- */
 const PROMO_TYPE_LABEL = { PERCENTAGE_DISCOUNT: 'نسبة مئوية', FIXED_DISCOUNT: 'مبلغ ثابت', BOGO: 'اشترِ واحصل على', COMBO: 'كومبو' };
-const PROMO_CHANNEL_LABEL = { DINE_IN: 'صالة', TAKEAWAY: 'تيك أواي', DRIVE_THRU: 'Drive-thru', DELIVERY_PARTNER: 'توصيل خارجي', BRAND_APP: 'تطبيق العلامة' };
 async function loadPromotions() {
   try {
+    await ensureOrderTypesCache();
+    document.getElementById('promo-channel').innerHTML =
+      '<option value="">كل الأنواع</option>' + orderTypesCache.filter((t) => t.isActive).map((t) => `<option value="${t.code}">${orderTypeIcon(t.code)}${t.name}</option>`).join('');
     const promotions = await api('/promotions');
     document.getElementById('promotionsTable').innerHTML = promotions.length
       ? promotions.map((p) => {
@@ -5926,7 +5948,7 @@ async function loadPromotions() {
               <td>${p.name}</td>
               <td>${PROMO_TYPE_LABEL[p.type] || p.type}</td>
               <td>${valueLabel}</td>
-              <td>${p.channelLimit ? (PROMO_CHANNEL_LABEL[p.channelLimit] || p.channelLimit) : 'كل القنوات'}</td>
+              <td>${p.channelLimit ? (orderTypeLabel(p.channelLimit)) : 'كل القنوات'}</td>
               <td>${period}</td>
               <td>${p.isActive ? '✅ فعّال' : '⛔ معطّل'}</td>
               <td><button class="link-btn" onclick="togglePromotion('${p.id}', ${!p.isActive})">${p.isActive ? 'تعطيل' : 'تفعيل'}</button></td>
@@ -6156,6 +6178,72 @@ async function togglePaymentMethodField(id, field, value) {
   try {
     await api(`/payment-methods/${id}`, { method: 'PATCH', body: JSON.stringify({ [field]: value }) });
     loadPaymentMethodsTab();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ================= Order Types ================= */
+// Replaces the old fixed DINE_IN/TAKEAWAY/... list -- admin-manageable,
+// same pattern as Payment Methods. orderTypesCache holds EVERY type
+// (active and inactive, needed so a historical order's code still shows
+// a real label/icon instead of the raw code); pickers that let someone
+// CHOOSE a type (New Order's #ord-channel-picker, the promotion
+// channel-limit dropdown) filter to isActive themselves.
+let orderTypesCache = [];
+async function ensureOrderTypesCache(force) {
+  if (orderTypesCache.length && !force) return;
+  orderTypesCache = await api('/order-types');
+}
+function orderTypeLabel(code) {
+  const t = orderTypesCache.find((x) => x.code === code);
+  return t ? t.name : code;
+}
+function orderTypeIcon(code) {
+  const t = orderTypesCache.find((x) => x.code === code);
+  return t && t.icon ? t.icon + ' ' : '';
+}
+// New Order screen's "نوع الطلب" picker -- rendered from active order types
+// instead of a fixed 5-button list, so an admin-added type shows up here
+// immediately. Keeps the same selectOrderChannel()/#ord-channel wiring the
+// static buttons used before.
+function renderOrderChannelPicker() {
+  const active = orderTypesCache.filter((t) => t.isActive);
+  document.getElementById('ord-channel-picker').innerHTML = active
+    .map((t, i) => `<button type="button" class="invoice-type-btn${i === 0 ? ' active' : ''}" onclick="selectOrderChannel('${t.code}', this)">${orderTypeIcon(t.code)}${t.name}</button>`)
+    .join('');
+  document.getElementById('ord-channel').value = active[0] ? active[0].code : '';
+}
+async function loadOrderTypesTab() {
+  try {
+    await ensureOrderTypesCache(true);
+    document.getElementById('orderTypesTable').innerHTML = orderTypesCache.length
+      ? orderTypesCache.map((t) => `
+        <tr>
+          <td>${t.name}</td><td>${t.icon || '-'}</td><td>${t.code}</td>
+          <td>${t.isActive ? '✅ نشط' : '⛔ معطّل'}</td>
+          <td><button class="link-btn" onclick="toggleOrderTypeActive('${t.id}',${!t.isActive})">${t.isActive ? 'تعطيل' : 'تفعيل'}</button></td>
+        </tr>
+      `).join('')
+      : `<tr><td colspan="5" class="empty">لا توجد أنواع طلبات بعد</td></tr>`;
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function createOrderType() {
+  const name = document.getElementById('ot-name').value.trim();
+  const icon = document.getElementById('ot-icon').value.trim();
+  const code = document.getElementById('ot-code').value.trim().toUpperCase();
+  if (!name || !code) { showMsg('ot-msg', '⚠️ اكتب الاسم والكود', 'err'); return; }
+  try {
+    const body = { name, code };
+    if (icon) body.icon = icon;
+    await api('/order-types', { method: 'POST', body: JSON.stringify(body) });
+    document.getElementById('ot-name').value = ''; document.getElementById('ot-icon').value = ''; document.getElementById('ot-code').value = '';
+    showMsg('ot-msg', '✅ تمت إضافة نوع الطلب', 'ok');
+    loadOrderTypesTab();
+  } catch (e) { showMsg('ot-msg', '❌ ' + e.message, 'err'); }
+}
+async function toggleOrderTypeActive(id, value) {
+  try {
+    await api(`/order-types/${id}`, { method: 'PATCH', body: JSON.stringify({ isActive: value }) });
+    loadOrderTypesTab();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
@@ -6590,7 +6678,6 @@ async function redeemCustomerPoints(id) {
 }
 
 /* ---------------- Analytics / BI ---------------- */
-const AN_CHANNEL_LABEL = { DINE_IN: 'صالة', TAKEAWAY: 'تيك أواي', DRIVE_THRU: 'Drive-thru', DELIVERY_PARTNER: 'توصيل خارجي', BRAND_APP: 'تطبيق العلامة' };
 function statTile(label, value) { return `<div class="stat-tile"><div class="label">${label}</div><div class="value">${value}</div></div>`; }
 // Thousands-separated, fixed-2-decimal money formatting for report tables
 // (e.g. "12,345.00") -- Odoo/Foodics-style reports always group large
@@ -6681,7 +6768,7 @@ async function loadSalesDashboard() {
       statTile('المرتجعات', `${summary.returnCount} (${fmtMoney(summary.returnsTotal)})`),
     ].join('');
     mountChartOrEmpty('dshs-trend-chart', trend.length > 0, () => lineChartConfig(trend.map((t) => t.date), trend.map((t) => t.revenue), 'الإيراد'), 'لا توجد مبيعات في هذه الفترة');
-    mountChartOrEmpty('dshs-channel-chart', summary.byChannel.length > 0, () => doughnutChartConfig(summary.byChannel.map((c) => AN_CHANNEL_LABEL[c.channel] || c.channel), summary.byChannel.map((c) => c.revenue)), 'لا توجد مبيعات في هذه الفترة');
+    mountChartOrEmpty('dshs-channel-chart', summary.byChannel.length > 0, () => doughnutChartConfig(summary.byChannel.map((c) => orderTypeLabel(c.channel)), summary.byChannel.map((c) => c.revenue)), 'لا توجد مبيعات في هذه الفترة');
     mountChartOrEmpty('dshs-payment-chart', paymentMethods.byMethod.length > 0, () => doughnutChartConfig(paymentMethods.byMethod.map((m) => paymentMethodLabel(m.method)), paymentMethods.byMethod.map((m) => m.total)), 'لا توجد مدفوعات في هذه الفترة');
     document.getElementById('dshs-topitems-list').innerHTML = topItems.length
       ? topItems.slice(0, 5).map((i) => dashListRow(i.name, `${i.quantity} × ${fmtMoney(i.revenue)}`)).join('') : dashEmptyList('لا توجد مبيعات في هذه الفترة');
@@ -6692,7 +6779,7 @@ async function loadSalesDashboard() {
       ? trend.map((t) => `<tr><td>${t.date}</td><td class="num">${t.orderCount}</td><td class="num">${fmtMoney(t.revenue)}</td><td class="num">${fmtMoney(t.orderCount ? t.revenue / t.orderCount : 0)}</td></tr>`).join('')
       : `<tr><td colspan="4" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
     document.getElementById('dshs-channel-table').innerHTML = summary.byChannel.length
-      ? summary.byChannel.map((c) => `<tr><td>${AN_CHANNEL_LABEL[c.channel] || c.channel}</td><td class="num">${c.orderCount}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`).join('')
+      ? summary.byChannel.map((c) => `<tr><td>${orderTypeLabel(c.channel)}</td><td class="num">${c.orderCount}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`).join('')
         + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${summary.byChannel.reduce((s, c) => s + c.orderCount, 0)}</td><td class="num">${fmtMoney(summary.byChannel.reduce((s, c) => s + c.revenue, 0))}</td></tr>`
       : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
     document.getElementById('dshs-payment-table').innerHTML = paymentMethods.byMethod.length

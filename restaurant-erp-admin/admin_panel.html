@@ -2025,6 +2025,7 @@
             <button type="button" class="tmpl-btn" data-dim="detail" data-val="BRIEF" onclick="setInvoiceTemplateOption('detail','BRIEF',this)">مختصر</button>
           </div>
           <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
+          <button class="ghost" onclick="startReturnFromOrder(invoiceRenderCache && invoiceRenderCache.id)">↩️ إرجاع</button>
           <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
         </div>
       </div>
@@ -4569,6 +4570,7 @@ async function loadOrders() {
             ${o.status === 'PAID' ? `
               <button class="link-btn" onclick="openInvoicePopup('${o.id}')">🧾 عرض/طباعة الفاتورة</button>
               <button class="link-btn" onclick="printKitchenTicketFromOrder('${o.id}')">🖨️ تذكرة</button>
+              <button class="link-btn" onclick="startReturnFromOrder('${o.id}')">↩️ إرجاع</button>
             ` : ''}
           </td>
         </tr>
@@ -5072,6 +5074,23 @@ async function submitStaffMeal() {
 
 /* ================= Returns ================= */
 let returnableOrdersCache = [];
+// Shortcut from a specific known order (Orders list row, or the invoice
+// popup) straight into "مرتجع جديد" with that order already selected --
+// previously the only way in was searching a truncated-id dropdown
+// (rt-order), which meant re-finding the same order the cashier just had
+// open. switchTab('returns') itself fires loadReturnsTab() (not awaited),
+// so this awaits its own call to guarantee #rt-order is populated before
+// picking a value on it.
+async function startReturnFromOrder(orderId) {
+  if (!orderId) { flashGlobal('⚠️ لا يوجد طلب محدد', 'err'); return; }
+  switchTab('returns');
+  await loadReturnsTab();
+  const sel = document.getElementById('rt-order');
+  const exists = Array.from(sel.options).some((o) => o.value === orderId);
+  if (!exists) { flashGlobal('⚠️ هذا الطلب غير متاح للإرجاع', 'err'); return; }
+  sel.value = orderId;
+  await loadReturnableLines();
+}
 async function loadReturnsTab() {
   document.getElementById('rt-order').innerHTML = '<option value="">اختر طلبًا...</option>';
   document.getElementById('rt-lines-wrap').innerHTML = '';

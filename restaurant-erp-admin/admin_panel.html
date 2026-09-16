@@ -2083,6 +2083,7 @@
           <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
           <button class="ghost" onclick="startReturnFromOrder(invoiceRenderCache && invoiceRenderCache.id)">↩️ إرجاع</button>
           <button class="ghost" onclick="openOrderActivityLog(invoiceRenderCache && invoiceRenderCache.id)">🕒 سجل الحركة</button>
+          <button class="danger hidden" id="inv-void-paid-btn" onclick="voidPaidOrder(invoiceRenderCache && invoiceRenderCache.id)">❌ إلغاء الفاتورة</button>
           <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
         </div>
       </div>
@@ -4931,6 +4932,7 @@ async function loadOrders() {
               <button class="link-btn" onclick="printKitchenTicketFromOrder('${o.id}')">🖨️ تذكرة</button>
               <button class="link-btn" onclick="startReturnFromOrder('${o.id}')">↩️ إرجاع</button>
               <button class="link-btn" onclick="openOrderActivityLog('${o.id}')">🕒 سجل الحركة</button>
+              ${myPermissions.includes('pos.void_paid_order') ? `<button class="link-btn danger-link" onclick="voidPaidOrder('${o.id}')">❌ إلغاء الفاتورة</button>` : ''}
             ` : ''}
             ${o.status === 'VOIDED' ? `<button class="link-btn" onclick="openOrderActivityLog('${o.id}')">🕒 سجل الحركة</button>` : ''}
           </td>
@@ -5082,6 +5084,24 @@ async function voidOrder(id) {
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 
+// Cancels a PAID order in full (pos.void_paid_order, manager-only) --
+// distinct from voidOrder() above which only works pre-payment. Restocks
+// every remaining un-returned line and refunds the whole invoice, same math
+// as a normal return, then flips the order to VOIDED.
+async function voidPaidOrder(id) {
+  if (!id) { flashGlobal('⚠️ لا يوجد طلب محدد', 'err'); return; }
+  const reason = window.prompt('لا يمكن التراجع عن هذا الإجراء -- سيُعاد كل صنف للمخزون وتُلغى الفاتورة بالكامل.\nسبب الإلغاء (اختياري)؟', '');
+  if (reason === null) return;
+  try {
+    await api(`/returns/void-paid-order/${id}`, { method: 'POST', body: JSON.stringify({ reason: reason || undefined }) });
+    flashGlobal('✅ تم إلغاء الفاتورة بالكامل', 'ok');
+    closeView();
+    switchTab('sales');
+    switchSubview('sl', ['new', 'orders', 'shifts', 'staff-meal'], 'orders');
+    loadOrders();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
 /* ================= Order activity log (per-invoice timeline popup) ================= */
 const ORDER_ACTIVITY_ICON = {
   HELD: '🅿️',
@@ -5146,6 +5166,7 @@ function renderInvoice(o) {
   // actually rendered below it.
   document.querySelectorAll('.invoice-template-picker .tmpl-btn[data-dim="size"]').forEach((b) => b.classList.toggle('active', b.dataset.val === invoiceTemplate.size));
   document.querySelectorAll('.invoice-template-picker .tmpl-btn[data-dim="detail"]').forEach((b) => b.classList.toggle('active', b.dataset.val === invoiceTemplate.detail));
+  document.getElementById('inv-void-paid-btn').classList.toggle('hidden', !(o.status === 'PAID' && myPermissions.includes('pos.void_paid_order')));
   const round2 = (n) => Math.round(n * 100) / 100;
   // Per-branch rate (Location.vatRate, a percentage) -- only used here to
   // show a per-LINE VAT/total breakdown for readability; the order-level

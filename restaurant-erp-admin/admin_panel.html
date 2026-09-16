@@ -838,6 +838,9 @@
           <div><label>الطلب المدفوع</label><select id="rt-order" onchange="loadReturnableLines()"><option value="">اختر طلبًا...</option></select></div>
           <div><label>سبب المرتجع (اختياري)</label><input id="rt-reason" placeholder="مثال: العميل غيّر رأيه"></div>
         </div>
+        <div id="rt-override-wrap" class="hint hidden" style="margin-top:8px">
+          <label><input type="checkbox" id="rt-override-kitchen" onchange="loadReturnableLines()"> ⚠️ تجاوز حظر عدم اكتمال المطبخ لهذا المرتجع (صلاحية إدارية) -- يُسجَّل في سجل حركة الفاتورة</label>
+        </div>
         <div id="rt-lines-wrap" style="margin-top:14px"></div>
         <div style="margin-top:10px">
           <button onclick="submitReturn()" id="rt-submit-btn" disabled>تسجيل المرتجع</button>
@@ -2079,6 +2082,7 @@
           </div>
           <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
           <button class="ghost" onclick="startReturnFromOrder(invoiceRenderCache && invoiceRenderCache.id)">↩️ إرجاع</button>
+          <button class="ghost" onclick="openOrderActivityLog(invoiceRenderCache && invoiceRenderCache.id)">🕒 سجل الحركة</button>
           <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
         </div>
       </div>
@@ -2120,6 +2124,20 @@
       </div>
       <div class="view-body">
         <div id="sal-content"></div>
+      </div>
+     </div></div>
+
+    <!-- ORDER ACTIVITY LOG (full chronological timeline for one invoice -- hold/void/return/override events) -->
+    <div id="view-order-activity-log" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card">
+      <div class="view-head no-print"><h2>🕒 سجل حركة الفاتورة</h2>
+        <div style="display:flex;gap:8px">
+          <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
+          <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
+        </div>
+      </div>
+      <div class="view-body">
+        <div id="oal-content"></div>
       </div>
      </div></div>
 
@@ -4906,12 +4924,15 @@ async function loadOrders() {
               <button class="link-btn" onclick="openPaymentDialog('${o.id}')">💰 دفع${o._count && o._count.activityLog ? ' 🅿️' : ''}</button>
               <button class="link-btn" onclick="printKitchenTicketFromOrder('${o.id}')">🖨️ تذكرة</button>
               <button class="link-btn" onclick="voidOrder('${o.id}')">إلغاء</button>
+              <button class="link-btn" onclick="openOrderActivityLog('${o.id}')">🕒 سجل الحركة</button>
             ` : ''}
             ${o.status === 'PAID' ? `
               <button class="link-btn" onclick="openInvoicePopup('${o.id}')">🧾 عرض/طباعة الفاتورة</button>
               <button class="link-btn" onclick="printKitchenTicketFromOrder('${o.id}')">🖨️ تذكرة</button>
               <button class="link-btn" onclick="startReturnFromOrder('${o.id}')">↩️ إرجاع</button>
+              <button class="link-btn" onclick="openOrderActivityLog('${o.id}')">🕒 سجل الحركة</button>
             ` : ''}
+            ${o.status === 'VOIDED' ? `<button class="link-btn" onclick="openOrderActivityLog('${o.id}')">🕒 سجل الحركة</button>` : ''}
           </td>
         </tr>
       `).join('')
@@ -5059,6 +5080,35 @@ async function voidOrder(id) {
     flashGlobal('✅ تم إلغاء الطلب', 'ok');
     loadOrders();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ================= Order activity log (per-invoice timeline popup) ================= */
+const ORDER_ACTIVITY_ICON = {
+  HELD: '🅿️',
+  VOIDED: '❌',
+  RETURNED: '↩️',
+  RETURN_KITCHEN_BLOCK_OVERRIDDEN: '🔓',
+};
+async function openOrderActivityLog(orderId) {
+  if (!orderId) { flashGlobal('⚠️ لا يوجد طلب محدد', 'err'); return; }
+  pushNavHistory();
+  hideAllViews();
+  document.getElementById('view-order-activity-log').classList.add('open');
+  const content = document.getElementById('oal-content');
+  content.innerHTML = '<div class="empty">جارِ التحميل...</div>';
+  try {
+    const o = await api('/orders/' + orderId);
+    content.innerHTML = `
+      <div style="margin-bottom:10px;font-size:13px">
+        <b>طلب #${o.dailySequence ?? o.shiftSequence ?? '-'}</b> -- ${locationsCache.find((l) => l.id === o.locationId)?.name || ''} -- ${fmtDateTime(o.createdAt)}
+      </div>
+      ${o.activityLog && o.activityLog.length
+        ? o.activityLog.map((a) => `<div class="entry">${ORDER_ACTIVITY_ICON[a.action] || '🕒'} ${a.action} -- ${a.createdBy ? a.createdBy.name : '-'} في ${fmtDateTime(a.createdAt)}${a.note ? ' -- ' + a.note : ''}</div>`).join('')
+        : '<div class="empty">لا توجد أي حركة مسجّلة لهذا الطلب بعد</div>'}
+    `;
+  } catch (e) {
+    content.innerHTML = '<div class="empty">❌ ' + e.message + '</div>';
+  }
 }
 
 /* ================= Invoice (ZATCA-compliant view/print) ================= */
@@ -5435,6 +5485,7 @@ async function loadReturnsTab() {
   document.getElementById('rt-order').innerHTML = '<option value="">اختر طلبًا...</option>';
   document.getElementById('rt-lines-wrap').innerHTML = '';
   document.getElementById('rt-submit-btn').disabled = true;
+  document.getElementById('rt-override-wrap').classList.toggle('hidden', !myPermissions.includes('pos.override_kitchen_block'));
   try {
     // Only PAID orders are returnable -- the server enforces this too,
     // this is just so the dropdown doesn't offer orders that would 400.
@@ -5459,24 +5510,28 @@ async function loadReturnableLines() {
       wrap.innerHTML = '<div class="empty">كل أصناف هذا الطلب مُرجَعة بالكامل بالفعل</div>';
       return;
     }
-    const anyReturnable = returnable.some((l) => l.kitchenStatus === 'READY' || l.kitchenStatus === 'SERVED');
+    const overrideActive = myPermissions.includes('pos.override_kitchen_block') && !!document.getElementById('rt-override-kitchen').checked;
+    const anyReturnable = returnable.some((l) => l.kitchenStatus === 'READY' || l.kitchenStatus === 'SERVED') || overrideActive;
     wrap.innerHTML = `
     ${anyReturnable ? '<button type="button" class="ghost" onclick="fillAllReturnQty()" style="margin-bottom:10px">↩️ إرجاع كل الأصناف</button>' : ''}
     <div class="table-wrap"><table><thead><tr><th>الصنف</th><th>الكمية المباعة</th><th>مُرجَع سابقًا</th><th>المتبقي</th><th>حالة المطبخ</th><th>الكمية المطلوب إرجاعها</th></tr></thead>
       <tbody>${returnable.map((l) => {
         const kitchenReady = l.kitchenStatus === 'READY' || l.kitchenStatus === 'SERVED';
+        const canReturn = kitchenReady || overrideActive;
         return `
-        <tr ${kitchenReady ? '' : 'title="لا يمكن الإرجاع قبل خروج الصنف من المطبخ"'}>
+        <tr ${canReturn ? '' : 'title="لا يمكن الإرجاع قبل خروج الصنف من المطبخ"'}>
           <td>${l.menuItemName}</td><td>${l.quantity}</td><td>${l.alreadyReturned}</td><td>${l.remaining}</td>
-          <td><span class="kt-status-badge kt-status-${l.kitchenStatus}">${KITCHEN_STATUS_LABEL[l.kitchenStatus]}</span></td>
+          <td><span class="kt-status-badge kt-status-${l.kitchenStatus}">${KITCHEN_STATUS_LABEL[l.kitchenStatus]}</span>${!kitchenReady && overrideActive ? ' 🔓' : ''}</td>
           <td style="display:flex;gap:6px;align-items:center">
-            <input type="number" min="0" max="${l.remaining}" step="1" value="0" class="rt-qty" data-line-id="${l.orderLineId}" style="width:70px" ${kitchenReady ? '' : 'disabled title="لم يخرج من المطبخ بعد"'}>
-            ${kitchenReady ? `<button type="button" class="link-btn" onclick="fillReturnQty('${l.orderLineId}', ${l.remaining})">الكل</button>` : ''}
+            <input type="number" min="0" max="${l.remaining}" step="1" value="0" class="rt-qty" data-line-id="${l.orderLineId}" style="width:70px" ${canReturn ? '' : 'disabled title="لم يخرج من المطبخ بعد"'}>
+            ${canReturn ? `<button type="button" class="link-btn" onclick="fillReturnQty('${l.orderLineId}', ${l.remaining})">الكل</button>` : ''}
           </td>
         </tr>
       `; }).join('')}</tbody>
     </table></div>
-    ${returnable.some((l) => l.kitchenStatus !== 'READY' && l.kitchenStatus !== 'SERVED') ? '<div class="hint" style="margin-top:8px">⚠️ بعض الأصناف ما زالت قيد التحضير في المطبخ ولا يمكن إرجاعها حتى تخرج (جاهز/تم التسليم)</div>' : ''}`;
+    ${returnable.some((l) => l.kitchenStatus !== 'READY' && l.kitchenStatus !== 'SERVED') ? (overrideActive
+      ? '<div class="hint" style="margin-top:8px">🔓 تجاوز حظر المطبخ مُفعَّل -- سيُسجَّل هذا في سجل حركة الفاتورة</div>'
+      : '<div class="hint" style="margin-top:8px">⚠️ بعض الأصناف ما زالت قيد التحضير في المطبخ ولا يمكن إرجاعها حتى تخرج (جاهز/تم التسليم)</div>') : ''}`;
     document.getElementById('rt-submit-btn').disabled = false;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); wrap.innerHTML = ''; }
 }
@@ -5495,10 +5550,12 @@ async function submitReturn() {
     .filter((l) => l.quantity > 0);
   if (!orderId) { showMsg('rt-msg', '⚠️ اختر طلبًا', 'err'); return; }
   if (!lines.length) { showMsg('rt-msg', '⚠️ حدد كمية صنف واحد على الأقل لإرجاعه', 'err'); return; }
+  const overrideKitchenBlock = myPermissions.includes('pos.override_kitchen_block') && document.getElementById('rt-override-kitchen').checked ? true : undefined;
   try {
-    const ret = await api('/returns', { method: 'POST', body: JSON.stringify({ orderId, reason, lines }) });
+    const ret = await api('/returns', { method: 'POST', body: JSON.stringify({ orderId, reason, lines, overrideKitchenBlock }) });
     showMsg('rt-msg', `✅ تم تسجيل المرتجع -- مبلغ الاسترداد: ${Number(ret.refundTotal).toFixed(2)}`, 'ok');
     document.getElementById('rt-reason').value = '';
+    document.getElementById('rt-override-kitchen').checked = false;
     await loadReturnableLines();
     await loadReturnsHistory();
   } catch (e) { showMsg('rt-msg', '❌ ' + e.message, 'err'); }

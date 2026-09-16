@@ -61,6 +61,10 @@
      from across the pass, not just readable up close. */
   .ticket.aging{border-color:#e0a100;box-shadow:0 0 0 2px rgba(224,161,0,.25);}
   .ticket.stale{border-color:var(--danger);box-shadow:0 0 0 2px rgba(208,69,63,.3);}
+  .ticket.cancelled{background:rgba(208,69,63,.06);border-color:var(--danger);box-shadow:0 0 0 2px rgba(208,69,63,.3);}
+  .cancelled-banner{background:var(--danger);color:#fff;font-weight:800;font-size:14px;padding:8px 12px;border-radius:8px;margin-bottom:10px;text-align:center;}
+  .ack-btn{width:100%;margin-top:10px;background:var(--danger);}
+  .ack-btn:hover{background:#a5322d;}
 </style>
 </head>
 <body>
@@ -191,7 +195,7 @@ function onLocationChange() {
 }
 
 function startClock() {
-  const tick = () => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('ar-SA'); };
+  const tick = () => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('ar-SA-u-ca-gregory-nu-latn'); };
   tick();
   setInterval(tick, 1000);
 }
@@ -216,7 +220,8 @@ async function loadBoard() {
       const ageMin = (now - new Date(o.createdAt).getTime()) / 60000;
       const ageClass = ageMin >= STALE_MINUTES ? 'stale' : ageMin >= AGING_MINUTES ? 'aging' : '';
       return `
-      <div class="ticket ${ageClass}">
+      <div class="ticket ${o.cancelled ? 'cancelled' : ageClass}">
+        ${o.cancelled ? '<div class="cancelled-banner">❌ تم إلغاء هذا الطلب -- أوقف التحضير</div>' : ''}
         <div class="ticket-head">
           <span>${CHANNEL_LABEL[o.channel] || o.channel}${o.tableLabel ? ' -- ' + o.tableLabel : ''}</span>
           <span class="age">${Math.floor(ageMin)} د</span>
@@ -225,9 +230,10 @@ async function loadBoard() {
           <div class="ticket-line">
             <span class="name">${l.menuItemName} × ${l.quantity}</span>
             <span class="status-pill status-${l.kitchenStatus}">${STATUS_LABEL[l.kitchenStatus]}</span>
-            ${l.kitchenStatus !== 'SERVED' ? `<button class="bump-btn" onclick="bump('${l.lineId}')">تقدّم ▶</button>` : ''}
+            ${!o.cancelled && l.kitchenStatus !== 'SERVED' ? `<button class="bump-btn" onclick="bump('${l.lineId}')">تقدّم ▶</button>` : ''}
           </div>
         `).join('')}
+        ${o.cancelled ? `<button class="ack-btn" onclick="acknowledgeCancel('${o.orderId}')">✓ تم الاطلاع -- إخفاء التذكرة</button>` : ''}
       </div>`;
     }).join('');
   } catch (e) { /* a transient network hiccup shouldn't blank the board -- keep showing the last successful render */ }
@@ -236,6 +242,13 @@ async function loadBoard() {
 async function bump(lineId) {
   try {
     await api(`/kitchen/lines/${lineId}/advance`, { method: 'POST' });
+    await loadBoard();
+  } catch (e) { /* swallow -- the board's next poll will reflect the true state either way */ }
+}
+
+async function acknowledgeCancel(orderId) {
+  try {
+    await api(`/kitchen/orders/${orderId}/acknowledge-cancel`, { method: 'POST' });
     await loadBoard();
   } catch (e) { /* swallow -- the board's next poll will reflect the true state either way */ }
 }

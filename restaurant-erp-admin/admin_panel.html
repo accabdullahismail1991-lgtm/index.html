@@ -235,6 +235,8 @@
   /* ---- kitchen display (live queue tickets) ---- */
   .kitchen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
   .kt-ticket{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;}
+  .kt-ticket.cancelled{background:rgba(208,69,63,.06);border-color:var(--danger);}
+  .kt-cancelled-banner{background:var(--danger);color:#fff;font-weight:800;font-size:13px;padding:6px 10px;border-radius:6px;margin-bottom:8px;text-align:center;}
   .kt-ticket-head{display:flex;justify-content:space-between;font-weight:700;font-size:13px;margin-bottom:8px;color:var(--muted);}
   .kt-line{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;}
   .kt-line:last-child{border-bottom:none;}
@@ -5656,7 +5658,8 @@ async function loadKitchenQueue() {
     kitchenQueueCache = orders;
     grid.innerHTML = orders.length
       ? orders.map((o) => `
-        <div class="kt-ticket">
+        <div class="kt-ticket ${o.cancelled ? 'cancelled' : ''}">
+          ${o.cancelled ? '<div class="kt-cancelled-banner">❌ تم إلغاء هذا الطلب -- أوقف التحضير</div>' : ''}
           <div class="kt-ticket-head">
             <span>${orderTypeLabel(o.channel)}${o.tableLabel ? ' -- ' + o.tableLabel : ''}${o.shiftSequence ? ' -- #' + o.shiftSequence : ''}</span>
             <span style="display:flex;align-items:center;gap:6px">
@@ -5668,12 +5671,19 @@ async function loadKitchenQueue() {
             <div class="kt-line">
               <span>${l.menuItemName} × ${l.quantity}</span>
               <span class="kt-status-badge kt-status-${l.kitchenStatus}">${KITCHEN_STATUS_LABEL[l.kitchenStatus]}</span>
-              ${l.kitchenStatus !== 'SERVED' ? `<button class="link-btn" onclick="advanceKitchenLine('${l.lineId}')">تقدّم ▶</button>` : ''}
+              ${!o.cancelled && l.kitchenStatus !== 'SERVED' ? `<button class="link-btn" onclick="advanceKitchenLine('${l.lineId}')">تقدّم ▶</button>` : ''}
             </div>
           `).join('')}
+          ${o.cancelled ? `<button class="danger" style="margin-top:8px;width:100%" onclick="acknowledgeKitchenCancel('${o.orderId}')">✓ تم الاطلاع -- إخفاء التذكرة</button>` : ''}
         </div>
       `).join('')
       : '<div class="empty">لا توجد طلبات قيد التحضير حاليًا 🎉</div>';
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function acknowledgeKitchenCancel(orderId) {
+  try {
+    await api(`/kitchen/orders/${orderId}/acknowledge-cancel`, { method: 'POST' });
+    loadKitchenQueue();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 function renderKitchenTicket(ticket) {

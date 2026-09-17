@@ -851,7 +851,7 @@
       </div>
       <div class="panel subview hidden" id="rt-sub-history">
         <h2>سجل المرتجعات</h2>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ</th><th>الموقع</th><th>الأصناف</th><th>السبب</th><th>الاسترداد</th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ</th><th>الموقع</th><th>الكاشير</th><th>الأصناف</th><th>السبب</th><th>الاسترداد</th><th>إشعار الدائن</th><th></th></tr></thead>
           <tbody id="returnsTable"></tbody>
         </table></div>
       </div>
@@ -2094,6 +2094,20 @@
       </div>
      </div></div>
 
+    <!-- CREDIT NOTE (ZATCA-style return receipt, printable) -->
+    <div id="view-credit-note" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card">
+      <div class="view-head no-print"><h2>🧾 إشعار دائن (مرتجع)</h2>
+        <div style="display:flex;gap:8px">
+          <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
+          <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
+        </div>
+      </div>
+      <div class="view-body">
+        <div id="cn-content"></div>
+      </div>
+     </div></div>
+
     <!-- KITCHEN TICKET (printable, no prices -- item names/qty only) -->
     <div id="view-kitchen-ticket" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card">
@@ -2920,7 +2934,7 @@ function injectViewToolbars() {
     // a direct child of .view-head (it's nested in its own button-row div),
     // which would otherwise throw below and silently abort this loop for
     // every OTHER view that follows it in the document.
-    if (view.id === 'view-invoice' || view.id === 'view-kitchen-ticket') return;
+    if (view.id === 'view-invoice' || view.id === 'view-kitchen-ticket' || view.id === 'view-credit-note') return;
     const head = view.querySelector('.view-head');
     const closeBtns = head ? Array.from(head.querySelectorAll(':scope > .view-close')) : [];
     if (!head || !closeBtns.length || head.querySelector('.view-toolbar')) return;
@@ -2972,7 +2986,7 @@ function buildPrintOnlyHeaderEl(view) {
 // replace.
 window.addEventListener('beforeprint', () => {
   const view = document.querySelector('.view.open');
-  if (!view || view.id === 'view-invoice' || view.id === 'view-kitchen-ticket') return;
+  if (!view || view.id === 'view-invoice' || view.id === 'view-kitchen-ticket' || view.id === 'view-credit-note') return;
   view.querySelectorAll('.print-only-header').forEach((el) => el.remove());
   const body = view.querySelector('.view-body');
   if (body) body.insertBefore(buildPrintOnlyHeaderEl(view), body.firstChild);
@@ -5591,14 +5605,108 @@ async function loadReturnsHistory() {
       ? returns.map((r) => `
         <tr>
           <td>${fmtDateTime(r.createdAt)}</td>
-          <td>${locName(r.order.locationId)}</td>
-          <td>${r.lines.map((l) => `${l.orderLine.menuItem.name} × ${l.quantity}`).join('، ')}</td>
+          <td>${(r.order.location && r.order.location.name) || locName(r.order.locationId)}</td>
+          <td>${(r.createdBy && r.createdBy.name) || '-'}</td>
+          <td>${r.lines.map((l) => `${l.orderLine.menuItem ? l.orderLine.menuItem.name : (l.orderLine.comboMeal ? l.orderLine.comboMeal.name : '-')} × ${l.quantity}`).join('، ')}</td>
           <td>${r.reason || '-'}</td>
           <td>${Number(r.refundTotal).toFixed(2)}</td>
+          <td>${r.zatcaSyncStatus === 'GENERATED' ? '<span class="kt-status-badge kt-status-READY">✅ مُولَّد</span>' : '<span class="kt-status-badge">-</span>'}</td>
+          <td><button class="link-btn" onclick="openCreditNotePopup('${r.id}')">🧾 التفاصيل</button></td>
         </tr>
       `).join('')
-      : `<tr><td colspan="5" class="empty">لا توجد مرتجعات بعد</td></tr>`;
+      : `<tr><td colspan="8" class="empty">لا توجد مرتجعات بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+/* ================= Credit note (per-return ZATCA receipt + own activity log) ================= */
+const RETURN_ACTIVITY_ICON = { CREATED: '↩️', ZATCA_CREDIT_NOTE_GENERATED: '🧾' };
+const RETURN_ACTIVITY_LABEL = { CREATED: 'تسجيل المرتجع', ZATCA_CREDIT_NOTE_GENERATED: 'توليد إشعار الدائن الضريبي' };
+
+async function openCreditNotePopup(returnId) {
+  pushNavHistory();
+  hideAllViews();
+  document.getElementById('view-credit-note').classList.add('open');
+  document.getElementById('cn-content').innerHTML = '<div class="empty">جارِ التحميل...</div>';
+  try {
+    const ret = await api('/returns/' + returnId);
+    renderCreditNote(ret);
+  } catch (e) {
+    document.getElementById('cn-content').innerHTML = '<div class="empty">❌ ' + e.message + '</div>';
+  }
+}
+
+function renderCreditNote(ret) {
+  const order = ret.order || {};
+  const loc = order.location || {};
+
+  const linesHtml = ret.lines.map((l) => {
+    const label = l.orderLine.menuItem
+      ? l.orderLine.menuItem.name
+      : (l.orderLine.comboMeal ? `🍔 ${l.orderLine.comboMeal.name}` : '-');
+    return `<tr>
+      <td>${label}</td>
+      <td>${l.quantity}</td>
+      <td>${fmtMoney(l.netAmount)}</td>
+      <td>${fmtMoney(l.vatAmount)}</td>
+      <td>${fmtMoney(l.refundAmount)}</td>
+    </tr>`;
+  }).join('');
+
+  const activityHtml = ret.activityLog && ret.activityLog.length
+    ? ret.activityLog.map((a) => `<div class="entry">${RETURN_ACTIVITY_ICON[a.action] || '🕒'} ${RETURN_ACTIVITY_LABEL[a.action] || a.action} -- ${a.createdBy ? a.createdBy.name : '-'} في ${fmtDateTime(a.createdAt)}${a.note ? ' -- ' + a.note : ''}</div>`).join('')
+    : '<div class="empty">لا توجد أي حركة مسجّلة لهذا المرتجع بعد</div>';
+
+  document.getElementById('cn-content').innerHTML = `
+    <div class="invoice-box">
+      <div class="biz-logo-slot" id="cn-logo-slot"></div>
+      <div class="biz-name">${loc.name || '-'}</div>
+      ${loc.vatNumber ? `<div class="biz-meta">الرقم الضريبي / VAT No: ${loc.vatNumber}</div>` : ''}
+      ${loc.address ? `<div class="biz-meta">${loc.address}</div>` : ''}
+      <div class="invoice-title">إشعار دائن ضريبي مبسّط<br>Simplified Tax Credit Note</div>
+      <div class="invoice-order-number">مرجع الفاتورة الأصلية <span>#${order.dailySequence ?? '-'}</span></div>
+      <div class="invoice-meta-grid">
+        <div><span class="k">رقم إشعار الدائن (ICV):</span> ${ret.zatcaInvoiceCounter ?? '-'}</div>
+        <div><span class="k">التاريخ والوقت:</span> ${fmtDateTime(ret.createdAt)}</div>
+        <div><span class="k">الكاشير:</span> ${ret.createdBy ? ret.createdBy.name : '-'}</div>
+        ${order.customer ? `<div><span class="k">العميل:</span> ${order.customer.name || order.customer.phone}</div>` : ''}
+        <div><span class="k">السبب:</span> ${ret.reason || '-'}</div>
+        <div><span class="k">حالة إشعار الدائن الضريبي:</span> ${ret.zatcaSyncStatus === 'GENERATED' ? '✅ مُولَّد وموقَّع' : '⏳ غير مُولَّد (لا يوجد رقم ضريبي للفرع)'}</div>
+      </div>
+      <table>
+        <thead><tr><th>الصنف</th><th>الكمية</th><th>صافي المبلغ</th><th>الضريبة</th><th>الاسترداد</th></tr></thead>
+        <tbody>${linesHtml}</tbody>
+      </table>
+      <div class="invoice-totals">
+        <div class="row grand"><span>إجمالي الاسترداد</span><span>${fmtMoney(ret.refundTotal)} ر.س</span></div>
+      </div>
+      ${ret.zatcaQrCode ? `
+        <div class="invoice-qr">
+          <canvas id="cn-qr-canvas"></canvas>
+          <div class="invoice-note">امسح الرمز للتحقق من إشعار الدائن عبر تطبيق "فاتورة" التابع لهيئة الزكاة والضريبة والجمارك</div>
+        </div>
+      ` : ''}
+      <div class="invoice-activity-log" style="margin-top:14px;font-size:12px;text-align:right">
+        <div style="font-weight:700;margin-bottom:4px">سجل حركة المرتجع</div>
+        ${activityHtml}
+      </div>
+    </div>
+  `;
+
+  if (ret.zatcaQrCode && window.QRCode) {
+    QRCode.toCanvas(document.getElementById('cn-qr-canvas'), ret.zatcaQrCode, { width: 160, margin: 1 }, (err) => {
+      if (err) console.error('QR render failed', err);
+    });
+  }
+  if (loc.logoMimeType) {
+    fetch(apiBase() + '/locations/' + order.locationId + '/logo', { headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {} })
+      .then((res) => (res.ok ? res.blob() : null))
+      .then((blob) => {
+        if (!blob) return;
+        const slot = document.getElementById('cn-logo-slot');
+        if (slot) slot.innerHTML = `<img class="biz-logo" src="${URL.createObjectURL(blob)}">`;
+      })
+      .catch(() => { /* credit note still prints fine without the logo */ });
+  }
 }
 async function loadReturnsReport() {
   const sel = document.getElementById('rtr-location');

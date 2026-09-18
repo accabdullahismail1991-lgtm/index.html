@@ -870,6 +870,7 @@
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
           <div><label>الموقع</label><select id="kt-location" onchange="loadKitchenQueue()"></select></div>
         </div>
+        <div id="kt-category-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
         <div id="kt-queue" class="kitchen-grid"></div>
       </div>
      </div></div>
@@ -5818,16 +5819,29 @@ async function loadKitchenTab() {
 async function loadKitchenQueue() {
   const locationId = document.getElementById('kt-location').value;
   const grid = document.getElementById('kt-queue');
-  if (!locationId) { grid.innerHTML = '<div class="empty">لا توجد مواقع بعد</div>'; return; }
+  const catBar = document.getElementById('kt-category-actions');
+  if (!locationId) { grid.innerHTML = '<div class="empty">لا توجد مواقع بعد</div>'; catBar.innerHTML = ''; return; }
   try {
     const orders = await api('/kitchen/queue?locationId=' + locationId);
     kitchenQueueCache = orders;
+
+    // One "إنهاء [القسم]" button per distinct category still owed work --
+    // bumps every not-yet-served line of that category, across every
+    // ticket on the board, one step forward in a single click (same
+    // "تقدّم" semantics as the per-line button, just applied in bulk).
+    const activeCategories = [...new Set(
+      orders.filter((o) => !o.cancelled).flatMap((o) => o.lines.filter((l) => l.kitchenStatus !== 'SERVED').map((l) => l.category || 'غير مصنّف')),
+    )].sort();
+    catBar.innerHTML = activeCategories.length
+      ? activeCategories.map((c) => `<button class="ghost" onclick="advanceKitchenCategory('${c.replace(/'/g, "\\'")}')">⏩ إنهاء قسم "${c}"</button>`).join('')
+      : '';
+
     grid.innerHTML = orders.length
       ? orders.map((o) => `
         <div class="kt-ticket ${o.cancelled ? 'cancelled' : ''}">
           ${o.cancelled ? '<div class="kt-cancelled-banner">❌ تم إلغاء هذا الطلب -- أوقف التحضير</div>' : ''}
           <div class="kt-ticket-head">
-            <span>${orderTypeLabel(o.channel)}${o.tableLabel ? ' -- ' + o.tableLabel : ''}${o.shiftSequence ? ' -- #' + o.shiftSequence : ''}</span>
+            <span>${orderTypeLabel(o.channel)}${o.tableLabel ? ' -- ' + o.tableLabel : ''}${o.shiftSequence ? ' -- #' + o.shiftSequence : ''}${o.paid ? ' -- 💰 مدفوعة' : ''}</span>
             <span style="display:flex;align-items:center;gap:6px">
               ${elapsedMinutesLabel(o.createdAt)}
               <button class="link-btn" onclick="printKitchenTicketFromQueue('${o.orderId}')" title="طباعة تذكرة">🖨️</button>
@@ -5844,6 +5858,14 @@ async function loadKitchenQueue() {
         </div>
       `).join('')
       : '<div class="empty">لا توجد طلبات قيد التحضير حاليًا 🎉</div>';
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function advanceKitchenCategory(category) {
+  const locationId = document.getElementById('kt-location').value;
+  try {
+    const res = await api('/kitchen/advance-category', { method: 'POST', body: JSON.stringify({ locationId, category }) });
+    flashGlobal(`✅ تم تقديم ${res.advancedCount} صنف`, 'ok');
+    loadKitchenQueue();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function acknowledgeKitchenCancel(orderId) {

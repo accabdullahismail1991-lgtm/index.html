@@ -489,7 +489,7 @@
 
       <div class="panel subview" id="br-sub-list">
         <h2>الفروع الحالية</h2>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>نسبة الضريبة</th><th>الأسعار شاملة الضريبة</th><th>الحالة</th><th>إلزام اختيار العميل</th><th>البيع بالسالب</th><th>الإغلاق التلقائي للوردية</th><th>نهاية السنة المالية</th><th>الإجراءات</th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>نسبة الضريبة</th><th>الأسعار شاملة الضريبة</th><th>الحالة</th><th>إلزام اختيار العميل</th><th>البيع بالسالب</th><th>أمر إنتاج تلقائي عند النقص</th><th>الإغلاق التلقائي للوردية</th><th>نهاية السنة المالية</th><th>الإجراءات</th></tr></thead>
           <tbody id="branchesTable"></tbody>
         </table></div>
       </div>
@@ -3269,6 +3269,7 @@ async function loadBranches() {
           <td>${b.isActive ? '✅ نشط' : '⛔ معطّل'}</td>
           <td><button class="link-btn" onclick="toggleRequireCustomer('${b.id}', ${!b.requireCustomerForOrders})">${b.requireCustomerForOrders ? '✅ إلزامي' : '⛔ اختياري'}</button></td>
           <td><button class="link-btn" onclick="toggleAllowNegativeStock('${b.id}', ${!b.allowNegativeStock})">${b.allowNegativeStock ? '✅ مسموح' : '⛔ ممنوع'}</button></td>
+          <td title="عند البيع بالسالب لصنف نصف مصنّع، أنشئ أمر إنتاج تلقائي (PLANNED) يغطي النقص"><button class="link-btn" onclick="toggleAutoGenerateProductionOrders('${b.id}', ${!b.autoGenerateProductionOrders})">${b.autoGenerateProductionOrders ? '✅ مفعّل' : '⛔ معطّل'}</button></td>
           <td>
             <button class="link-btn" onclick="toggleAutoClose('${b.id}', ${!b.autoCloseEnabled})">${b.autoCloseEnabled ? '✅ مفعّل' : '⛔ معطّل'}</button>
             ${b.autoCloseEnabled ? `<button class="link-btn" onclick="editAutoCloseCutoffHour('${b.id}', ${b.autoCloseCutoffHour})">🕓 الساعة ${b.autoCloseCutoffHour}</button>` : ''}
@@ -3276,8 +3277,8 @@ async function loadBranches() {
           <td title="اليوم الذي لا يُرحَّل بعده يوم عمل يبدأ قبل الساعة المحددة أعلاه إلى اليوم السابق"><button class="link-btn" onclick="editFiscalYearEnd('${b.id}', ${b.fiscalYearEndMonth ?? 'null'}, ${b.fiscalYearEndDay ?? 'null'})">${b.fiscalYearEndMonth && b.fiscalYearEndDay ? `📅 ${String(b.fiscalYearEndDay).padStart(2, '0')}/${String(b.fiscalYearEndMonth).padStart(2, '0')}` : '⛔ غير محدد'}</button></td>
           <td><button class="link-btn" onclick="toggleBranchEdit('${b.id}')">✏️ تعديل</button></td>
         </tr>
-        <tr id="edit-branch-row-${b.id}" class="hidden"><td colspan="12"><div class="recipe-box" id="edit-branch-box-${b.id}"></div></td></tr>`).join('')
-      : `<tr><td colspan="12" class="empty">لا توجد فروع بعد</td></tr>`;
+        <tr id="edit-branch-row-${b.id}" class="hidden"><td colspan="13"><div class="recipe-box" id="edit-branch-box-${b.id}"></div></td></tr>`).join('')
+      : `<tr><td colspan="13" class="empty">لا توجد فروع بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function createBranch() {
@@ -3315,6 +3316,13 @@ async function toggleRequireCustomer(id, value) {
 async function toggleAllowNegativeStock(id, value) {
   try {
     await api(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify({ allowNegativeStock: value }) });
+    flashGlobal('✅ تم التحديث', 'ok');
+    loadBranches();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+async function toggleAutoGenerateProductionOrders(id, value) {
+  try {
+    await api(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify({ autoGenerateProductionOrders: value }) });
     flashGlobal('✅ تم التحديث', 'ok');
     loadBranches();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }

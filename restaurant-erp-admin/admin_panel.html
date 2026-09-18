@@ -240,6 +240,7 @@
   .kt-ticket-head{display:flex;justify-content:space-between;font-weight:700;font-size:13px;margin-bottom:8px;color:var(--muted);}
   .kt-line{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;}
   .kt-line:last-child{border-bottom:none;}
+  .kt-line-note{color:var(--danger);font-weight:700;font-size:12px;}
   .kt-status-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;white-space:nowrap;}
   .kt-status-QUEUED{background:rgba(104,116,138,.15);color:var(--muted);}
   .kt-status-PREPARING{background:rgba(219,150,0,.18);color:#a66b00;}
@@ -379,6 +380,7 @@
   .invoice-totals .grand{font-weight:800;font-size:14px;border-top:1px solid #000;margin-top:4px;padding-top:4px;}
   .invoice-qr{display:flex;flex-direction:column;align-items:center;margin-top:14px;gap:6px;}
   .invoice-note{font-size:10.5px;color:#666;text-align:center;margin-top:8px;line-height:1.6;}
+  .invoice-line-note td{font-size:10.5px;color:#555;font-style:italic;padding-top:0 !important;padding-bottom:4px !important;}
 
   /* ---- Kitchen ticket: thermal-style, no prices, big enough to read
      across a busy kitchen line ---- */
@@ -4597,6 +4599,7 @@ function addOrderComboToCart() {
   div.innerHTML = `
     <span style="flex:1">🍔 ${combo.name} (${unitPrice.toFixed(2)} ر.س) -- ${composition}</span>
     <input class="ol-qty" type="number" min="1" step="1" value="1" placeholder="الكمية" oninput="updateOrderCartTotals()">
+    <button type="button" class="link-btn" onclick="editOrderLineNote(this)" title="ملاحظة للمطبخ (مثال: بدون بصل)">📝</button>
     <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateOrderCartTotals();">✕</button>
   `;
   container.appendChild(div);
@@ -4856,9 +4859,24 @@ function addOrderLineRow() {
   div.className = 'recipe-row';
   div.innerHTML = `<select class="ol-item" onchange="updateOrderCartTotals()">${menuItemsCache.map((m) => `<option value="${m.id}">${m.name} (${Number(m.price).toFixed(2)})</option>`).join('')}</select>
     <input class="ol-qty" type="number" min="1" step="1" value="1" placeholder="الكمية" oninput="updateOrderCartTotals()">
+    <button type="button" class="link-btn" onclick="editOrderLineNote(this)" title="ملاحظة للمطبخ (مثال: بدون بصل)">📝</button>
     <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateOrderCartTotals();">✕</button>`;
   container.appendChild(div);
   updateOrderCartTotals();
+}
+// A per-line free-text note for the kitchen (e.g. "بدون بصل") -- stored on
+// the row itself (dataset.note) rather than a visible input, since the
+// cart row is already tight (item + qty + remove); createOrder() reads it
+// off when building each line's payload. Shown on the invoice, the KDS
+// ticket, and the printable kitchen ticket once the order exists.
+function editOrderLineNote(btn) {
+  const row = btn.closest('.recipe-row');
+  const current = row.dataset.note || '';
+  const input = window.prompt('ملاحظة لهذا الصنف (تظهر في المطبخ والفاتورة):', current);
+  if (input === null) return;
+  const trimmed = input.trim();
+  if (trimmed) { row.dataset.note = trimmed; btn.textContent = '🗒️'; btn.title = trimmed; }
+  else { delete row.dataset.note; btn.textContent = '📝'; btn.title = 'ملاحظة للمطبخ (مثال: بدون بصل)'; }
 }
 async function createOrder() {
   const shiftId = document.getElementById('ord-shift').value;
@@ -4868,10 +4886,11 @@ async function createOrder() {
   const container = document.getElementById('ord-lines');
   const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => {
     const quantity = parseInt(row.querySelector('.ol-qty').value, 10);
+    const note = row.dataset.note || undefined;
     if (row.classList.contains('combo-row')) {
-      return { comboMealId: row.dataset.comboMealId, comboSelections: JSON.parse(row.dataset.comboSelections), quantity };
+      return { comboMealId: row.dataset.comboMealId, comboSelections: JSON.parse(row.dataset.comboSelections), quantity, note };
     }
-    return { menuItemId: row.querySelector('.ol-item').value, quantity };
+    return { menuItemId: row.querySelector('.ol-item').value, quantity, note };
   }).filter((l) => (l.menuItemId || l.comboMealId) && l.quantity > 0);
   if (!shiftId) { flashGlobal('⚠️ افتح وردية أولًا', 'err'); return; }
   if (!lines.length) { flashGlobal('⚠️ أضف صنف واحد على الأقل', 'err'); return; }
@@ -5241,7 +5260,7 @@ function renderInvoice(o) {
       <td>${fmtMoney(l.unitPrice)}</td>
       <td>${fmtMoney(lineVat)}</td>
       <td>${fmtMoney(lineTotal)}</td>
-    </tr>`;
+    </tr>${l.note ? `<tr class="invoice-line-note"><td colspan="5">📝 ${l.note}</td></tr>` : ''}`;
   }).join('');
 
   const paymentsText = o.payments && o.payments.length
@@ -5808,7 +5827,7 @@ async function loadKitchenQueue() {
           </div>
           ${o.lines.map((l) => `
             <div class="kt-line">
-              <span>${l.menuItemName} × ${l.quantity}</span>
+              <span>${l.menuItemName} × ${l.quantity}${l.note ? `<br><span class="kt-line-note">📝 ${l.note}</span>` : ''}</span>
               <span class="kt-status-badge kt-status-${l.kitchenStatus}">${KITCHEN_STATUS_LABEL[l.kitchenStatus]}</span>
               ${!o.cancelled && l.kitchenStatus !== 'SERVED' ? `<button class="link-btn" onclick="advanceKitchenLine('${l.lineId}')">تقدّم ▶</button>` : ''}
             </div>
@@ -5839,7 +5858,7 @@ function renderKitchenTicket(ticket) {
         ${orderTypeLabel(ticket.channel)}${ticket.tableLabel ? ' -- ' + ticket.tableLabel : ''}<br>
         ${fmtDateTime(ticket.createdAt)}
       </div>
-      ${ticket.lines.map((l) => `<div class="kt-ticket-line"><span>${l.menuItemName}</span><span class="qty">× ${l.quantity}</span></div>`).join('')}
+      ${ticket.lines.map((l) => `<div class="kt-ticket-line"><span>${l.menuItemName}${l.note ? `<br><span style="font-size:12px;font-weight:700">📝 ${l.note}</span>` : ''}</span><span class="qty">× ${l.quantity}</span></div>`).join('')}
     </div>
   `;
 }
@@ -5864,6 +5883,7 @@ async function printKitchenTicketFromOrder(orderId) {
           ? l.menuItem.name
           : `🍔 ${l.comboMeal.name}: ${l.comboSelections.map((s) => `${s.menuItem.name}${s.quantity > 1 ? ' × ' + s.quantity : ''}`).join('، ')}`,
         quantity: l.quantity,
+        note: l.note,
       })),
     });
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }

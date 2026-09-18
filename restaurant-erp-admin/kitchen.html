@@ -49,6 +49,7 @@
   .ticket-line{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
   .ticket-line:last-child{border-bottom:none;}
   .ticket-line .name{font-size:16px;font-weight:600;}
+  .line-note{color:var(--danger);font-weight:700;font-size:13px;}
   .status-pill{font-size:13px;padding:4px 10px;border-radius:12px;font-weight:700;white-space:nowrap;}
   .status-QUEUED{background:rgba(104,116,138,.15);color:var(--muted);}
   .status-PREPARING{background:rgba(219,150,0,.18);color:#a66b00;}
@@ -228,7 +229,7 @@ async function loadBoard() {
         </div>
         ${o.lines.map((l) => `
           <div class="ticket-line">
-            <span class="name">${l.menuItemName} × ${l.quantity}</span>
+            <span class="name">${l.menuItemName} × ${l.quantity}${l.note ? `<br><span class="line-note">📝 ${l.note}</span>` : ''}</span>
             <span class="status-pill status-${l.kitchenStatus}">${STATUS_LABEL[l.kitchenStatus]}</span>
             ${!o.cancelled && l.kitchenStatus !== 'SERVED' ? `<button class="bump-btn" onclick="bump('${l.lineId}')">تقدّم ▶</button>` : ''}
           </div>

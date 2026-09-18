@@ -487,7 +487,7 @@
 
       <div class="panel subview" id="br-sub-list">
         <h2>الفروع الحالية</h2>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>نسبة الضريبة</th><th>الأسعار شاملة الضريبة</th><th>الحالة</th><th>إلزام اختيار العميل</th><th>البيع بالسالب</th><th>الإغلاق التلقائي للوردية</th><th>الإجراءات</th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>النوع</th><th>العنوان</th><th>الرقم الضريبي</th><th>نسبة الضريبة</th><th>الأسعار شاملة الضريبة</th><th>الحالة</th><th>إلزام اختيار العميل</th><th>البيع بالسالب</th><th>الإغلاق التلقائي للوردية</th><th>نهاية السنة المالية</th><th>الإجراءات</th></tr></thead>
           <tbody id="branchesTable"></tbody>
         </table></div>
       </div>
@@ -802,7 +802,7 @@
       </div>
       <div class="panel subview hidden" id="sl-sub-shifts">
         <h2>الورديات</h2>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>الوردية</th><th>الموقع</th><th>الحالة</th><th>فتحها</th><th>أغلقها</th><th>رأس المال</th><th>المتوقع</th><th>المعدود</th><th>الفرق</th><th></th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الوردية</th><th>الموقع</th><th>تاريخ العمل</th><th>الحالة</th><th>فتحها</th><th>أغلقها</th><th>رأس المال</th><th>المتوقع</th><th>المعدود</th><th>الفرق</th><th></th></tr></thead>
           <tbody id="shiftsTable"></tbody>
         </table></div>
         <div class="hint" id="sh-open-today" style="margin-bottom:6px"></div>
@@ -3271,10 +3271,11 @@ async function loadBranches() {
             <button class="link-btn" onclick="toggleAutoClose('${b.id}', ${!b.autoCloseEnabled})">${b.autoCloseEnabled ? '✅ مفعّل' : '⛔ معطّل'}</button>
             ${b.autoCloseEnabled ? `<button class="link-btn" onclick="editAutoCloseCutoffHour('${b.id}', ${b.autoCloseCutoffHour})">🕓 الساعة ${b.autoCloseCutoffHour}</button>` : ''}
           </td>
+          <td title="اليوم الذي لا يُرحَّل بعده يوم عمل يبدأ قبل الساعة المحددة أعلاه إلى اليوم السابق"><button class="link-btn" onclick="editFiscalYearEnd('${b.id}', ${b.fiscalYearEndMonth ?? 'null'}, ${b.fiscalYearEndDay ?? 'null'})">${b.fiscalYearEndMonth && b.fiscalYearEndDay ? `📅 ${String(b.fiscalYearEndDay).padStart(2, '0')}/${String(b.fiscalYearEndMonth).padStart(2, '0')}` : '⛔ غير محدد'}</button></td>
           <td><button class="link-btn" onclick="toggleBranchEdit('${b.id}')">✏️ تعديل</button></td>
         </tr>
-        <tr id="edit-branch-row-${b.id}" class="hidden"><td colspan="11"><div class="recipe-box" id="edit-branch-box-${b.id}"></div></td></tr>`).join('')
-      : `<tr><td colspan="11" class="empty">لا توجد فروع بعد</td></tr>`;
+        <tr id="edit-branch-row-${b.id}" class="hidden"><td colspan="12"><div class="recipe-box" id="edit-branch-box-${b.id}"></div></td></tr>`).join('')
+      : `<tr><td colspan="12" class="empty">لا توجد فروع بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function createBranch() {
@@ -3342,6 +3343,35 @@ async function editAutoCloseCutoffHour(id, current) {
   try {
     await api(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify({ autoCloseCutoffHour: hour }) });
     flashGlobal('✅ تم تحديث ساعة الإغلاق التلقائي', 'ok');
+    loadBranches();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+// نهاية السنة المالية (شهر/يوم فقط، بلا سنة -- تتكرر كل عام): عندما يُحسب
+// تاريخ عمل وردية فُتحت قبل ساعة الإغلاق التلقائي أعلاه بالترحيل ليوم أمس
+// (وردية تبدأ 5ص وتستمر لما بعد منتصف الليل)، وكان يوم أمس هو هذا التاريخ
+// بالضبط، يُلغى الترحيل فيبقى تاريخ العمل هو تاريخ اليوم الفعلي -- حتى لا
+// تُطوى أول ساعات السنة المالية الجديدة داخل آخر يوم من السنة السابقة.
+async function editFiscalYearEnd(id, currentMonth, currentDay) {
+  const input = window.prompt(
+    'نهاية السنة المالية لهذا الفرع، بصيغة يوم/شهر (مثال: 31/12) -- اتركه فارغًا لإلغاء التحديد',
+    currentMonth && currentDay ? `${String(currentDay).padStart(2, '0')}/${String(currentMonth).padStart(2, '0')}` : '',
+  );
+  if (input === null) return;
+  const trimmed = input.trim();
+  let body;
+  if (!trimmed) {
+    body = { fiscalYearEndMonth: null, fiscalYearEndDay: null };
+  } else {
+    const match = trimmed.match(/^(\d{1,2})\s*\/\s*(\d{1,2})$/);
+    if (!match) { flashGlobal('⚠️ الصيغة يجب أن تكون يوم/شهر، مثال: 31/12', 'err'); return; }
+    const day = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10);
+    if (month < 1 || month > 12) { flashGlobal('⚠️ شهر غير صالح', 'err'); return; }
+    body = { fiscalYearEndMonth: month, fiscalYearEndDay: day };
+  }
+  try {
+    await api(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+    flashGlobal('✅ تم تحديث نهاية السنة المالية', 'ok');
     loadBranches();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -4651,6 +4681,7 @@ async function loadShifts() {
         <tr>
           <td><b>SH${s.shiftNumber ?? '-'}</b></td>
           <td>${locName(s.locationId)}</td>
+          <td title="اليوم الذي تُحتسب عليه كل طلبات هذه الوردية، حتى لو استمرت بعد منتصف الليل">${s.businessDate ? fmtDate(s.businessDate) : '-'}</td>
           <td>${s.closedAt ? '⛔ مغلقة' : '✅ مفتوحة'}</td>
           <td>${s.openedBy ? s.openedBy.name : '-'}</td>
           <td>${s.closedBy ? s.closedBy.name : '-'}</td>
@@ -4661,7 +4692,7 @@ async function loadShifts() {
           <td>${s.closedAt ? '' : `<button class="link-btn" onclick="closeShiftPrompt('${s.id}')">إغلاق</button>`}</td>
         </tr>
       `).join('')
-      : `<tr><td colspan="10" class="empty">لا توجد ورديات بعد</td></tr>`;
+      : `<tr><td colspan="11" class="empty">لا توجد ورديات بعد</td></tr>`;
     const openShifts = shifts.filter((s) => !s.closedAt);
     document.getElementById('ord-shift').innerHTML = openShifts.length
       ? openShifts.map((s) => `<option value="${s.id}">SH${s.shiftNumber ?? '-'} -- ${locName(s.locationId)}</option>`).join('')

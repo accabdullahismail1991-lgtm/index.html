@@ -41,24 +41,31 @@
   #clock{font-size:15px;font-variant-numeric:tabular-nums;opacity:.9;}
   .icon-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);width:40px;height:40px;border-radius:8px;font-size:16px;padding:0;}
   .icon-btn:hover{background:rgba(255,255,255,.22);}
-  main{flex:1;padding:20px;}
-  .category-actions{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
-  .cat-btn{background:var(--card);color:var(--brand);border:2px solid var(--brand);padding:10px 18px;font-size:15px;font-weight:700;border-radius:10px;}
+  main{flex:1;padding:20px;overflow-x:auto;}
+  /* ---- board, split into one scrollable column ("section") per menu
+     category (like the admin panel's grid), instead of one grid of fully
+     mixed tickets -- see renderSections() ---- */
+  .sections{display:flex;gap:16px;align-items:flex-start;}
+  .section{background:var(--card);border:1px solid var(--border);border-radius:14px;flex:0 0 340px;max-height:calc(100vh - 130px);display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(20,20,40,.05);}
+  .section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;border-bottom:2px solid var(--border);font-weight:800;font-size:17px;position:sticky;top:0;background:var(--card);border-radius:14px 14px 0 0;}
+  .section-count{display:inline-block;background:var(--brand);color:#fff;font-size:12px;font-weight:700;border-radius:10px;padding:2px 8px;margin-inline-start:6px;}
+  .cat-btn{background:var(--card);color:var(--brand);border:2px solid var(--brand);padding:6px 14px;font-size:13px;font-weight:700;border-radius:8px;flex-shrink:0;}
   .cat-btn:hover{background:var(--brand);color:#fff;}
-  .board-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
-  .ticket{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(20,20,40,.05);}
-  .ticket-head{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:16px;margin-bottom:10px;padding-bottom:10px;border-bottom:2px solid var(--border);}
-  .ticket-head .age{font-size:13px;color:var(--muted);font-weight:600;}
-  .ticket-line{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .section-body{padding:14px;overflow-y:auto;flex:1;}
+  .ticket{background:var(--card2,#f7f8fc);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;}
+  .ticket:last-child{margin-bottom:0;}
+  .ticket-head{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:15px;margin-bottom:8px;padding-bottom:8px;border-bottom:2px solid var(--border);}
+  .ticket-head .age{font-size:12px;color:var(--muted);font-weight:600;}
+  .ticket-line{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
   .ticket-line:last-child{border-bottom:none;}
-  .ticket-line .name{font-size:16px;font-weight:600;}
+  .ticket-line .name{font-size:15px;font-weight:600;}
   .line-note{color:var(--danger);font-weight:700;font-size:13px;}
   .status-pill{font-size:13px;padding:4px 10px;border-radius:12px;font-weight:700;white-space:nowrap;}
   .status-QUEUED{background:rgba(104,116,138,.15);color:var(--muted);}
   .status-PREPARING{background:rgba(219,150,0,.18);color:#a66b00;}
   .status-READY{background:rgba(31,157,104,.15);color:var(--ok);}
   .status-SERVED{background:rgba(55,48,163,.1);color:var(--brand);}
-  .bump-btn{padding:10px 16px;font-size:14px;}
+  .bump-btn{padding:8px 14px;font-size:13px;}
   .empty-board{text-align:center;color:var(--muted);font-size:20px;padding:80px 20px;}
   /* Longer a ticket sits without being touched, the more it stands out --
      a real kitchen screen needs "this one's been waiting" to be visible
@@ -98,8 +105,7 @@
     </div>
   </header>
   <main>
-    <div id="category-actions" class="category-actions"></div>
-    <div id="board" class="board-grid"></div>
+    <div id="board" class="sections"></div>
   </main>
 </div>
 
@@ -213,46 +219,59 @@ const STALE_MINUTES = 20; // red past this
 async function loadBoard() {
   const locationId = document.getElementById('kt-location').value;
   const board = document.getElementById('board');
-  const catBar = document.getElementById('category-actions');
-  if (!locationId) { board.innerHTML = '<div class="empty-board">لا توجد فروع بعد</div>'; catBar.innerHTML = ''; return; }
+  if (!locationId) { board.innerHTML = '<div class="empty-board">لا توجد فروع بعد</div>'; return; }
   try {
     const orders = await api('/kitchen/queue?locationId=' + locationId);
-
-    // One "إنهاء [القسم]" button per distinct menu category still owed
-    // work -- bumps every not-yet-served line of that category, across
-    // every ticket on the board, one step forward in a single tap (same
-    // "تقدّم" semantics as the per-line button, just applied in bulk).
-    const activeCategories = [...new Set(
-      orders.filter((o) => !o.cancelled).flatMap((o) => o.lines.filter((l) => l.kitchenStatus !== 'SERVED').map((l) => l.category || 'غير مصنّف')),
-    )].sort();
-    catBar.innerHTML = activeCategories.map((c) => `<button class="cat-btn" onclick="advanceCategory('${c.replace(/'/g, "\\'")}')">⏩ إنهاء قسم "${c}"</button>`).join('');
-
-    if (!orders.length) {
-      board.innerHTML = '<div class="empty-board">🎉 لا توجد طلبات قيد التحضير حاليًا</div>';
-      return;
-    }
-    const now = Date.now();
-    board.innerHTML = orders.map((o) => {
-      const ageMin = (now - new Date(o.createdAt).getTime()) / 60000;
-      const ageClass = ageMin >= STALE_MINUTES ? 'stale' : ageMin >= AGING_MINUTES ? 'aging' : '';
-      return `
-      <div class="ticket ${o.cancelled ? 'cancelled' : ageClass}">
-        ${o.cancelled ? '<div class="cancelled-banner">❌ تم إلغاء هذا الطلب -- أوقف التحضير</div>' : ''}
-        <div class="ticket-head">
-          <span>${CHANNEL_LABEL[o.channel] || o.channel}${o.tableLabel ? ' -- ' + o.tableLabel : ''}${o.paid ? ' -- 💰 مدفوعة' : ''}</span>
-          <span class="age">${Math.floor(ageMin)} د</span>
-        </div>
-        ${o.lines.map((l) => `
-          <div class="ticket-line">
-            <span class="name">${l.menuItemName} × ${l.quantity}${l.note ? `<br><span class="line-note">📝 ${l.note}</span>` : ''}</span>
-            <span class="status-pill status-${l.kitchenStatus}">${STATUS_LABEL[l.kitchenStatus]}</span>
-            ${!o.cancelled && l.kitchenStatus !== 'SERVED' ? `<button class="bump-btn" onclick="bump('${l.lineId}')">تقدّم ▶</button>` : ''}
-          </div>
-        `).join('')}
-        ${o.cancelled ? `<button class="ack-btn" onclick="acknowledgeCancel('${o.orderId}')">✓ تم الاطلاع -- إخفاء التذكرة</button>` : ''}
-      </div>`;
-    }).join('');
+    board.innerHTML = renderSections(orders);
   } catch (e) { /* a transient network hiccup shouldn't blank the board -- keep showing the last successful render */ }
+}
+
+// Splits the board into one scrollable column per menu category (l.category,
+// from the API's /kitchen/queue) instead of one grid of fully mixed
+// tickets -- each station only needs its own items, tagged with the order
+// they belong to, so a grill cook isn't scanning past drink lines to find
+// theirs. An order with lines across several categories shows up once per
+// relevant column, each time listing only that column's lines from it.
+function renderSections(orders) {
+  if (!orders.length) return '<div class="empty-board">🎉 لا توجد طلبات قيد التحضير حاليًا</div>';
+  const now = Date.now();
+  const categories = [...new Set(orders.flatMap((o) => o.lines.map((l) => l.category || 'غير مصنّف')))].sort();
+  return categories.map((cat) => {
+    const sectionOrders = orders
+      .map((o) => ({ ...o, lines: o.lines.filter((l) => (l.category || 'غير مصنّف') === cat) }))
+      .filter((o) => o.lines.length);
+    const pendingCount = sectionOrders.reduce((sum, o) => sum + o.lines.filter((l) => l.kitchenStatus !== 'SERVED').length, 0);
+    return `
+      <div class="section">
+        <div class="section-head">
+          <span>${cat}${pendingCount ? `<span class="section-count">${pendingCount}</span>` : ''}</span>
+          ${pendingCount ? `<button class="cat-btn" onclick="advanceCategory('${cat.replace(/'/g, "\\'")}')">⏩ إنهاء</button>` : ''}
+        </div>
+        <div class="section-body">
+          ${sectionOrders.map((o) => {
+            const ageMin = (now - new Date(o.createdAt).getTime()) / 60000;
+            const ageClass = ageMin >= STALE_MINUTES ? 'stale' : ageMin >= AGING_MINUTES ? 'aging' : '';
+            return `
+            <div class="ticket ${o.cancelled ? 'cancelled' : ageClass}">
+              ${o.cancelled ? '<div class="cancelled-banner">❌ تم إلغاء هذا الطلب -- أوقف التحضير</div>' : ''}
+              <div class="ticket-head">
+                <span>${CHANNEL_LABEL[o.channel] || o.channel}${o.tableLabel ? ' -- ' + o.tableLabel : ''}${o.shiftSequence ? ' -- #' + o.shiftSequence : ''}${o.paid ? ' -- 💰 مدفوعة' : ''}</span>
+                <span class="age">${Math.floor(ageMin)} د</span>
+              </div>
+              ${o.lines.map((l) => `
+                <div class="ticket-line">
+                  <span class="name">${l.menuItemName} × ${l.quantity}${l.note ? `<br><span class="line-note">📝 ${l.note}</span>` : ''}</span>
+                  <span class="status-pill status-${l.kitchenStatus}">${STATUS_LABEL[l.kitchenStatus]}</span>
+                  ${!o.cancelled && l.kitchenStatus !== 'SERVED' ? `<button class="bump-btn" onclick="bump('${l.lineId}')">تقدّم ▶</button>` : ''}
+                </div>
+              `).join('')}
+              ${o.cancelled ? `<button class="ack-btn" onclick="acknowledgeCancel('${o.orderId}')">✓ تم الاطلاع -- إخفاء التذكرة</button>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 async function bump(lineId) {

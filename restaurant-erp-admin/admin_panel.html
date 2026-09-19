@@ -240,10 +240,8 @@
   .order-clear-btn{width:100%;padding:8px;border:none;background:transparent;color:var(--pos-ink-soft);
     font-family:inherit;font-size:12.5px;cursor:pointer;margin-top:4px;text-decoration:underline;}
 
-  /* ---- kitchen display (live queue tickets) ---- */
-  .kitchen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
-  .kt-ticket{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;}
-  .kt-ticket.cancelled{background:rgba(208,69,63,.06);border-color:var(--danger);}
+  /* ---- kitchen display (live queue tickets, grouped into one column per
+     menu category -- see renderKitchenSections()) ---- */
   .kt-cancelled-banner{background:var(--danger);color:#fff;font-weight:800;font-size:13px;padding:6px 10px;border-radius:6px;margin-bottom:8px;text-align:center;}
   .kt-ticket-head{display:flex;justify-content:space-between;font-weight:700;font-size:13px;margin-bottom:8px;color:var(--muted);}
   .kt-line{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;}
@@ -254,6 +252,14 @@
   .kt-status-PREPARING{background:rgba(219,150,0,.18);color:#a66b00;}
   .kt-status-READY{background:rgba(31,157,104,.15);color:var(--ok);}
   .kt-status-SERVED{background:rgba(55,48,163,.1);color:var(--brand);}
+  .kt-sections{display:flex;gap:14px;align-items:flex-start;overflow-x:auto;padding-bottom:10px;}
+  .kt-section{background:var(--card2);border:1px solid var(--border);border-radius:10px;flex:0 0 300px;max-height:78vh;display:flex;flex-direction:column;}
+  .kt-section-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border-bottom:2px solid var(--border);font-weight:800;font-size:14px;position:sticky;top:0;background:var(--card2);border-radius:10px 10px 0 0;}
+  .kt-section-count{display:inline-block;background:var(--brand);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 7px;margin-inline-start:4px;}
+  .kt-section-body{padding:10px;overflow-y:auto;flex:1;}
+  .kt-order-card{border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;}
+  .kt-order-card:last-child{margin-bottom:0;}
+  .kt-order-card.cancelled{background:rgba(208,69,63,.06);border-color:var(--danger);}
 
   /* ---- alerts feed ---- */
   .alert-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);margin-bottom:8px;}
@@ -878,8 +884,7 @@
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
           <div><label>الموقع</label><select id="kt-location" onchange="loadKitchenQueue()"></select></div>
         </div>
-        <div id="kt-category-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
-        <div id="kt-queue" class="kitchen-grid"></div>
+        <div id="kt-queue" class="kt-sections"></div>
       </div>
      </div></div>
     </div>
@@ -5894,46 +5899,61 @@ async function loadKitchenTab() {
 async function loadKitchenQueue() {
   const locationId = document.getElementById('kt-location').value;
   const grid = document.getElementById('kt-queue');
-  const catBar = document.getElementById('kt-category-actions');
-  if (!locationId) { grid.innerHTML = '<div class="empty">لا توجد مواقع بعد</div>'; catBar.innerHTML = ''; return; }
+  if (!locationId) { grid.innerHTML = '<div class="empty">لا توجد مواقع بعد</div>'; return; }
   try {
     const orders = await api('/kitchen/queue?locationId=' + locationId);
     kitchenQueueCache = orders;
-
-    // One "إنهاء [القسم]" button per distinct category still owed work --
-    // bumps every not-yet-served line of that category, across every
-    // ticket on the board, one step forward in a single click (same
-    // "تقدّم" semantics as the per-line button, just applied in bulk).
-    const activeCategories = [...new Set(
-      orders.filter((o) => !o.cancelled).flatMap((o) => o.lines.filter((l) => l.kitchenStatus !== 'SERVED').map((l) => l.category || 'غير مصنّف')),
-    )].sort();
-    catBar.innerHTML = activeCategories.length
-      ? activeCategories.map((c) => `<button class="ghost" onclick="advanceKitchenCategory('${c.replace(/'/g, "\\'")}')">⏩ إنهاء قسم "${c}"</button>`).join('')
-      : '';
-
-    grid.innerHTML = orders.length
-      ? orders.map((o) => `
-        <div class="kt-ticket ${o.cancelled ? 'cancelled' : ''}">
-          ${o.cancelled ? '<div class="kt-cancelled-banner">❌ تم إلغاء هذا الطلب -- أوقف التحضير</div>' : ''}
-          <div class="kt-ticket-head">
-            <span>${orderTypeLabel(o.channel)}${o.tableLabel ? ' -- ' + o.tableLabel : ''}${o.shiftSequence ? ' -- #' + o.shiftSequence : ''}${o.paid ? ' -- 💰 مدفوعة' : ''}</span>
-            <span style="display:flex;align-items:center;gap:6px">
-              ${elapsedMinutesLabel(o.createdAt)}
-              <button class="link-btn" onclick="printKitchenTicketFromQueue('${o.orderId}')" title="طباعة تذكرة">🖨️</button>
-            </span>
-          </div>
-          ${o.lines.map((l) => `
-            <div class="kt-line">
-              <span>${l.menuItemName} × ${l.quantity}${l.note ? `<br><span class="kt-line-note">📝 ${l.note}</span>` : ''}</span>
-              <span class="kt-status-badge kt-status-${l.kitchenStatus}">${KITCHEN_STATUS_LABEL[l.kitchenStatus]}</span>
-              ${!o.cancelled && l.kitchenStatus !== 'SERVED' ? `<button class="link-btn" onclick="advanceKitchenLine('${l.lineId}')">تقدّم ▶</button>` : ''}
+    grid.innerHTML = renderKitchenSections(orders);
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+// Splits the board into one column per menu category -- same grouping the
+// Sales screen's item grid uses (l.category, from KitchenService.queue())
+// -- instead of one full mixed ticket per order. Each station only needs
+// its own items, tagged with the order they belong to (order type + table
+// + shift sequence #, same label the old full-ticket head used), so a
+// grill cook isn't scanning past drink lines to find theirs. An order
+// with lines across 3 categories shows up once per relevant column, each
+// time listing only that column's lines from it -- the same underlying
+// order, split by where the work actually happens.
+function renderKitchenSections(orders) {
+  if (!orders.length) return '<div class="empty">لا توجد طلبات قيد التحضير حاليًا 🎉</div>';
+  const categories = [...new Set(orders.flatMap((o) => o.lines.map((l) => l.category || 'غير مصنّف')))].sort();
+  return categories.map((cat) => {
+    const sectionOrders = orders
+      .map((o) => ({ ...o, lines: o.lines.filter((l) => (l.category || 'غير مصنّف') === cat) }))
+      .filter((o) => o.lines.length);
+    const pendingCount = sectionOrders.reduce((sum, o) => sum + o.lines.filter((l) => l.kitchenStatus !== 'SERVED').length, 0);
+    return `
+      <div class="kt-section">
+        <div class="kt-section-head">
+          <span>${cat}${pendingCount ? `<span class="kt-section-count">${pendingCount}</span>` : ''}</span>
+          ${pendingCount ? `<button class="link-btn" onclick="advanceKitchenCategory('${cat.replace(/'/g, "\\'")}')" title="تقديم كل عناصر هذا القسم خطوة واحدة">⏩ إنهاء</button>` : ''}
+        </div>
+        <div class="kt-section-body">
+          ${sectionOrders.map((o) => `
+            <div class="kt-order-card ${o.cancelled ? 'cancelled' : ''}">
+              ${o.cancelled ? '<div class="kt-cancelled-banner">❌ طلب ملغى</div>' : ''}
+              <div class="kt-ticket-head">
+                <span>${orderTypeLabel(o.channel)}${o.tableLabel ? ' -- ' + o.tableLabel : ''}${o.shiftSequence ? ' -- #' + o.shiftSequence : ''}${o.paid ? ' -- 💰' : ''}</span>
+                <span style="display:flex;align-items:center;gap:6px">
+                  ${elapsedMinutesLabel(o.createdAt)}
+                  <button class="link-btn" onclick="printKitchenTicketFromQueue('${o.orderId}')" title="طباعة تذكرة">🖨️</button>
+                </span>
+              </div>
+              ${o.lines.map((l) => `
+                <div class="kt-line">
+                  <span>${l.menuItemName} × ${l.quantity}${l.note ? `<br><span class="kt-line-note">📝 ${l.note}</span>` : ''}</span>
+                  <span class="kt-status-badge kt-status-${l.kitchenStatus}">${KITCHEN_STATUS_LABEL[l.kitchenStatus]}</span>
+                  ${!o.cancelled && l.kitchenStatus !== 'SERVED' ? `<button class="link-btn" onclick="advanceKitchenLine('${l.lineId}')">تقدّم ▶</button>` : ''}
+                </div>
+              `).join('')}
+              ${o.cancelled ? `<button class="danger" style="margin-top:8px;width:100%" onclick="acknowledgeKitchenCancel('${o.orderId}')">✓ تم الاطلاع -- إخفاء التذكرة</button>` : ''}
             </div>
           `).join('')}
-          ${o.cancelled ? `<button class="danger" style="margin-top:8px;width:100%" onclick="acknowledgeKitchenCancel('${o.orderId}')">✓ تم الاطلاع -- إخفاء التذكرة</button>` : ''}
         </div>
-      `).join('')
-      : '<div class="empty">لا توجد طلبات قيد التحضير حاليًا 🎉</div>';
-  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+      </div>
+    `;
+  }).join('');
 }
 async function advanceKitchenCategory(category) {
   const locationId = document.getElementById('kt-location').value;

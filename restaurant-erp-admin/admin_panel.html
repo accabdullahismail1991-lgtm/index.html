@@ -1069,6 +1069,8 @@
       </div>
       <div class="panel subview hidden" id="pr-sub-orders">
         <h2>أوامر الإنتاج</h2>
+        <div class="hint">عند نقص أحد المكوّنات، يبقى أمر الإنتاج "مخطط" حتى تتوفر مكوّناته الفعلية. بعد استلام مشترى جديد، اضغط الزر التالي لإتمام كل الأوامر التي أصبحت مكوّناتها متوفرة الآن دفعة واحدة -- أي أمر ما زال ناقصًا يبقى "مخطط" كما هو.</div>
+        <div style="margin:10px 0"><button class="ghost" onclick="processReadyProductionOrders()">🔄 إتمام الأوامر التي توفّرت مكوّناتها الآن</button></div>
         <div class="table-wrap"><table class="report-table"><thead><tr><th>الموقع</th><th>الصنف الناتج</th><th>الكمية</th><th>الحالة</th><th>التكلفة الفعلية</th><th></th></tr></thead>
           <tbody id="productionOrdersTable"></tbody>
         </table></div>
@@ -6965,6 +6967,23 @@ async function prodAction(id, action) {
 function startProd(id) { prodAction(id, 'start'); }
 function completeProd(id) { prodAction(id, 'complete'); }
 function cancelProd(id) { prodAction(id, 'cancel'); }
+// Bulk "some/all of the shortage is stocked now" action -- goes through
+// every PLANNED order (oldest first, server-side) and finishes whichever
+// ones now have their full components in stock, leaving anything still
+// short exactly as it was. One click instead of clicking بدء/إكمال on
+// each order one at a time after a delivery comes in.
+async function processReadyProductionOrders() {
+  try {
+    const res = await api('/production-orders/process-ready', { method: 'POST' });
+    if (!res.completedCount && !res.stillShortCount) { flashGlobal('ℹ️ لا توجد أوامر "مخطط" لمعالجتها حاليًا', 'ok'); return; }
+    const kind = res.completedCount ? 'ok' : 'err';
+    const msg = res.completedCount
+      ? `✅ تم إتمام ${res.completedCount} أمر إنتاج${res.stillShortCount ? ` -- ولا يزال ${res.stillShortCount} أمر ناقص المكوّنات` : ''}`
+      : `⚠️ لا يزال ${res.stillShortCount} أمر ناقص المكوّنات -- لم يكتمل أي أمر بعد`;
+    flashGlobal(msg, kind);
+    loadProductionOrders(); loadInventoryBalances();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
 
 /* ================= Transfers ================= */
 let transfersCache = [];

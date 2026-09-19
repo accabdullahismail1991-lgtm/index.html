@@ -2418,8 +2418,7 @@ function enhanceIngredientSelect(selectEl, kind) {
 // production-order list, without losing their place by hunting for it
 // manually in a long ingredients table.
 async function jumpToIngredientEdit(id) {
-  switchTab('ingredients');
-  await loadIngredients();
+  await switchTab('ingredients');
   const row = document.getElementById('edit-ing-row-' + id);
   if (!row) { flashGlobal('❌ تعذّر إيجاد الصنف', 'err'); return; }
   if (row.classList.contains('hidden')) toggleIngredientEdit(id);
@@ -2427,8 +2426,7 @@ async function jumpToIngredientEdit(id) {
 }
 // Same idea as jumpToIngredientEdit() but for الأصناف (menu items).
 async function jumpToItemEdit(id) {
-  switchTab('items');
-  await loadItems();
+  await switchTab('items');
   const row = document.getElementById('edit-item-row-' + id);
   if (!row) { flashGlobal('❌ تعذّر إيجاد الصنف', 'err'); return; }
   if (row.classList.contains('hidden')) toggleItemEdit(id);
@@ -3303,25 +3301,30 @@ function switchTab(name) {
     document.getElementById('view-' + t).classList.toggle('open', t === name);
   });
   stopKitchenPolling(); // only the currently-open tab, if it's Kitchen, restarts it below
-  if (name === 'branches') { switchSubview('br', ['list', 'add', 'import'], 'list'); loadBranches(); }
-  if (name === 'ingredients') { switchSubview('ing', ['list', 'add', 'units', 'import'], 'list'); loadIngredients(); }
-  if (name === 'items') { switchSubview('mi', ['list', 'add', 'channels', 'import'], 'list'); loadItems(); }
-  if (name === 'inventory') { switchSubview('inv', ['balances', 'receive', 'waste'], 'balances'); loadInventoryTab(); }
-  if (name === 'stocktake') { switchSubview('stk', ['list', 'new'], 'list'); loadStocktakeList(); }
-  if (name === 'sales') { switchSubview('sl', ['new', 'orders', 'shifts', 'staff-meal'], 'new'); loadSalesTab(); }
-  if (name === 'returns') { switchSubview('rt', ['new', 'history'], 'new'); loadReturnsTab(); }
-  if (name === 'kitchen') loadKitchenTab();
-  if (name === 'alerts') { document.getElementById('al-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadAlerts(); }
-  if (name === 'purchasing') { switchSubview('pu', ['suppliers', 'matrix', 'new', 'orders', 'purchase-return', 'import'], 'suppliers'); loadPurchasingTab(); }
-  if (name === 'production') { switchSubview('pr', ['new', 'orders'], 'new'); loadProductionTab(); }
-  if (name === 'transfers') { switchSubview('tf', ['new', 'list'], 'new'); loadTransfersTab(); }
-  if (name === 'promotions') { switchSubview('pm', ['list', 'add'], 'list'); loadPromotions(); }
-  if (name === 'combos') { switchSubview('cb', ['list', 'add'], 'list'); loadCombos(); }
-  if (name === 'customers') { switchSubview('cu', ['list', 'add', 'import'], 'list'); loadCustomers(); }
-  if (name === 'payment-methods') loadPaymentMethodsTab();
-  if (name === 'order-types') loadOrderTypesTab();
-  if (name === 'settings') { switchSubview('set', ['general', 'users', 'roles', 'backup', 'danger'], 'general'); loadGeneralSettingsTab(); }
-  if (name === 'analytics') { document.getElementById('an-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadReportsList(); }
+  // Returned so a caller that needs the tab's data ready (e.g.
+  // jumpToIngredientEdit()) can `await switchTab(...)` instead of
+  // triggering its own separate, redundant load right after this one.
+  let loadPromise;
+  if (name === 'branches') { switchSubview('br', ['list', 'add', 'import'], 'list'); loadPromise = loadBranches(); }
+  if (name === 'ingredients') { switchSubview('ing', ['list', 'add', 'units', 'import'], 'list'); loadPromise = loadIngredients(); }
+  if (name === 'items') { switchSubview('mi', ['list', 'add', 'channels', 'import'], 'list'); loadPromise = loadItems(); }
+  if (name === 'inventory') { switchSubview('inv', ['balances', 'receive', 'waste'], 'balances'); loadPromise = loadInventoryTab(); }
+  if (name === 'stocktake') { switchSubview('stk', ['list', 'new'], 'list'); loadPromise = loadStocktakeList(); }
+  if (name === 'sales') { switchSubview('sl', ['new', 'orders', 'shifts', 'staff-meal'], 'new'); loadPromise = loadSalesTab(); }
+  if (name === 'returns') { switchSubview('rt', ['new', 'history'], 'new'); loadPromise = loadReturnsTab(); }
+  if (name === 'kitchen') loadPromise = loadKitchenTab();
+  if (name === 'alerts') { document.getElementById('al-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadPromise = loadAlerts(); }
+  if (name === 'purchasing') { switchSubview('pu', ['suppliers', 'matrix', 'new', 'orders', 'purchase-return', 'import'], 'suppliers'); loadPromise = loadPurchasingTab(); }
+  if (name === 'production') { switchSubview('pr', ['new', 'orders'], 'new'); loadPromise = loadProductionTab(); }
+  if (name === 'transfers') { switchSubview('tf', ['new', 'list'], 'new'); loadPromise = loadTransfersTab(); }
+  if (name === 'promotions') { switchSubview('pm', ['list', 'add'], 'list'); loadPromise = loadPromotions(); }
+  if (name === 'combos') { switchSubview('cb', ['list', 'add'], 'list'); loadPromise = loadCombos(); }
+  if (name === 'customers') { switchSubview('cu', ['list', 'add', 'import'], 'list'); loadPromise = loadCustomers(); }
+  if (name === 'payment-methods') loadPromise = loadPaymentMethodsTab();
+  if (name === 'order-types') loadPromise = loadOrderTypesTab();
+  if (name === 'settings') { switchSubview('set', ['general', 'users', 'roles', 'backup', 'danger'], 'general'); loadPromise = loadGeneralSettingsTab(); }
+  if (name === 'analytics') { document.getElementById('an-location').innerHTML = '<option value="">كل المواقع</option>' + locationOptions(); loadPromise = loadReportsList(); }
+  return loadPromise;
 }
 
 function flashGlobal(text, kind) { showMsg('globalMsg', text, kind); }
@@ -6853,7 +6856,12 @@ async function closeDayNow() {
 
 /* ================= Production ================= */
 async function loadProductionTab() {
-  await ensureIngredientsCache();
+  // A force-refresh, not ensureIngredientsCache()'s sticky fetch-once --
+  // usedInSaleRecipe below can flip the moment a manager saves a menu
+  // item's sale recipe on a completely different tab, so this list needs
+  // the live value every time it's opened, not whatever was cached the
+  // first time any screen touched ingredientsCache this session.
+  ingredientsCache = await api('/ingredients');
   document.getElementById('prod-location').innerHTML = locationOptions();
   // Any ingredient can be a production order's output now, not just
   // "نصف مصنّع" -- a SEMI_FINISHED one still auto-fills its own registered

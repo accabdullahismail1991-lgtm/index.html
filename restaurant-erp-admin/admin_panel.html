@@ -122,6 +122,14 @@
   .recipe-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;}
   .recipe-row select{flex:2;min-width:120px;}
   .recipe-row input{flex:1;min-width:80px;}
+  /* Live-filter search box + "✏️" edit shortcut wrapped around an
+     ingredient <select> -- see enhanceIngredientSelect(). Sits as one
+     flex item wherever the bare select used to be, so it drops into
+     .recipe-row/.row-form layouts without any other markup changes. */
+  .searchable-select-wrap{display:flex;gap:4px;align-items:center;flex:2;min-width:200px;}
+  .searchable-select-wrap select{flex:1;min-width:0;}
+  .searchable-select-filter{width:84px;flex-shrink:0;font-size:12px;padding:6px 8px;}
+  .searchable-select-edit{flex-shrink:0;padding:2px 4px;font-size:14px;}
   .recipe-row select.rq-unit,.recipe-row select.po-unit{flex:0 0 90px;min-width:90px;}
   .empty{color:var(--muted);font-size:12.5px;padding:10px 0;white-space:normal;}
   .hint{color:var(--muted);font-size:12px;margin-top:10px;}
@@ -1044,7 +1052,7 @@
         <h2>➕ أمر إنتاج جديد</h2>
         <div class="row-form">
           <div><label>الموقع</label><select id="prod-location"></select></div>
-          <div><label>الصنف الناتج (نصف مصنّع)</label><select id="prod-output"></select></div>
+          <div><label>الصنف الناتج</label><select id="prod-output"></select></div>
           <div><label>الكمية المطلوب إنتاجها</label><input id="prod-qty" type="number" step="0.001" placeholder="100"></div>
           <div><label><input type="checkbox" id="prod-override" style="width:auto;display:inline" onchange="toggleProdOverride()"> تخصيص المكوّنات يدويًا</label></div>
           <div><button onclick="createProductionOrder()">إنشاء</button></div>
@@ -2364,6 +2372,68 @@ function ingredientOptions(filterFn) {
 async function ensureIngredientsCache() { if (!ingredientsCache.length) ingredientsCache = await api('/ingredients'); }
 async function ensureMenuItemsCache() { if (!menuItemsCache.length) menuItemsCache = await api('/items'); }
 async function ensurePaymentMethodsCache() { if (!paymentMethodsCache.length) paymentMethodsCache = await api('/payment-methods'); }
+
+// Wraps an already-populated ingredient/item <select> with a live-filter
+// search box and a "✏️" shortcut to jump straight to editing whichever
+// option is currently selected -- called once right after setting the
+// select's innerHTML (idempotent via data-searchable, so it's safe to
+// call again on every re-render). Reusable across every screen with a
+// long ingredient <select> (Recipes, Production Orders so far; the same
+// call drops into any other one later). `kind` picks which editor
+// jumpToXEdit() opens -- 'ingredient' (default) or 'item'.
+function enhanceIngredientSelect(selectEl, kind) {
+  if (!selectEl || selectEl.dataset.searchable) return;
+  selectEl.dataset.searchable = '1';
+  const parent = selectEl.parentNode;
+  const wrap = document.createElement('div');
+  wrap.className = 'searchable-select-wrap';
+  parent.insertBefore(wrap, selectEl);
+
+  const filterInput = document.createElement('input');
+  filterInput.type = 'text';
+  filterInput.className = 'searchable-select-filter';
+  filterInput.placeholder = '🔍 بحث';
+  filterInput.oninput = () => {
+    const q = filterInput.value.trim().toLowerCase();
+    Array.from(selectEl.options).forEach((opt) => { opt.hidden = !!q && !opt.textContent.toLowerCase().includes(q); });
+  };
+
+  const editBtn = document.createElement('button');
+  editBtn.type = 'button';
+  editBtn.className = 'link-btn searchable-select-edit';
+  editBtn.title = 'تعديل الصنف المختار';
+  editBtn.textContent = '✏️';
+  editBtn.onclick = () => {
+    if (!selectEl.value) { flashGlobal('⚠️ اختر صنفًا أولًا', 'err'); return; }
+    if (kind === 'item') jumpToItemEdit(selectEl.value); else jumpToIngredientEdit(selectEl.value);
+  };
+
+  wrap.appendChild(filterInput);
+  wrap.appendChild(selectEl);
+  wrap.appendChild(editBtn);
+}
+// Leaves the current screen, opens المكوّنات, and expands the inline
+// editor for one specific ingredient -- lets a manager fix a name/unit/
+// category they noticed was wrong while picking it from a recipe or
+// production-order list, without losing their place by hunting for it
+// manually in a long ingredients table.
+async function jumpToIngredientEdit(id) {
+  switchTab('ingredients');
+  await loadIngredients();
+  const row = document.getElementById('edit-ing-row-' + id);
+  if (!row) { flashGlobal('❌ تعذّر إيجاد الصنف', 'err'); return; }
+  if (row.classList.contains('hidden')) toggleIngredientEdit(id);
+  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+// Same idea as jumpToIngredientEdit() but for الأصناف (menu items).
+async function jumpToItemEdit(id) {
+  switchTab('items');
+  await loadItems();
+  const row = document.getElementById('edit-item-row-' + id);
+  if (!row) { flashGlobal('❌ تعذّر إيجاد الصنف', 'err'); return; }
+  if (row.classList.contains('hidden')) toggleItemEdit(id);
+  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 
 function apiBase() { return document.getElementById('apiBase').value.trim().replace(/\/$/, ''); }
 
@@ -4021,7 +4091,7 @@ function renderRecipeEditor(box, parentId, lines, parentKind) {
   // to that same unit (no conversion needed for an unchanged saved line).
   const rowEls = box.querySelectorAll('.recipe-row');
   lines.forEach((l, idx) => { if (rowEls[idx] && l.ingredient) rowEls[idx].querySelector('.rq-ing').value = l.ingredient.id; });
-  rowEls.forEach((row) => syncRowUnitOptions(row.querySelector('.rq-ing')));
+  rowEls.forEach((row) => { const sel = row.querySelector('.rq-ing'); syncRowUnitOptions(sel); enhanceIngredientSelect(sel); });
 }
 function addRecipeRow(parentId) {
   const options = ingredientsCache.map((i) => `<option value="${i.id}">${i.name} (${i.unit})</option>`).join('');
@@ -4030,7 +4100,9 @@ function addRecipeRow(parentId) {
   div.className = 'recipe-row';
   div.innerHTML = `<select class="rq-ing" onchange="syncRowUnitOptions(this)">${options}</select><input class="rq-qty" type="number" step="0.001" placeholder="الكمية"><select class="rq-unit"></select><button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
   container.appendChild(div);
-  syncRowUnitOptions(div.querySelector('.rq-ing'));
+  const sel = div.querySelector('.rq-ing');
+  syncRowUnitOptions(sel);
+  enhanceIngredientSelect(sel);
 }
 async function saveRecipe(parentId, parentKind) {
   const container = document.getElementById('rows-' + parentId);
@@ -6783,7 +6855,18 @@ async function closeDayNow() {
 async function loadProductionTab() {
   await ensureIngredientsCache();
   document.getElementById('prod-location').innerHTML = locationOptions();
-  document.getElementById('prod-output').innerHTML = ingredientOptions((i) => i.kind === 'SEMI_FINISHED');
+  // Any ingredient can be a production order's output now, not just
+  // "نصف مصنّع" -- a SEMI_FINISHED one still auto-fills its own registered
+  // recipe as inputs; anything else (a RAW_MATERIAL actually used in some
+  // menu item's sale recipe) creates a plain "produce/restock N more"
+  // note with no inputs, same as the auto-generated shortfall orders do.
+  // usedInSaleRecipe (from GET /ingredients) is what filters out
+  // irrelevant/unused ingredients from this list.
+  const producible = ingredientsCache.filter((i) => i.kind === 'SEMI_FINISHED' || i.usedInSaleRecipe);
+  document.getElementById('prod-output').innerHTML = producible
+    .map((i) => `<option value="${i.id}">${i.name} (${i.unit})${i.kind === 'SEMI_FINISHED' ? ' -- نصف مصنّع' : ''}</option>`)
+    .join('');
+  enhanceIngredientSelect(document.getElementById('prod-output'));
   await loadProductionOrders();
 }
 function toggleProdOverride() {
@@ -6799,6 +6882,7 @@ function addProdLineRow() {
     <input class="pr-qty" type="number" step="0.001" placeholder="الكمية">
     <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
   container.appendChild(div);
+  enhanceIngredientSelect(div.querySelector('.pr-ing'));
 }
 async function createProductionOrder() {
   const locationId = document.getElementById('prod-location').value;

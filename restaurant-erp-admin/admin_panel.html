@@ -1717,6 +1717,12 @@
         <div class="table-wrap"><table><thead><tr><th>الخامة</th><th>الموقع</th><th>الكمية الحالية</th><th>الحد الأدنى</th></tr></thead>
           <tbody id="ivr-lowstock-table"></tbody>
         </table></div>
+        <h3 style="margin-top:16px">⚠️ أرصدة سالبة</h3>
+        <div class="hint">تنتج عن بيع أو استهلاك صنف بعد نفاد رصيده فعليًا (عندما يكون "السماح بالسالب" مفعّلاً للفرع) -- دَين حقيقي على المخزون. التسوية أدناه تُعيد كل رصيد سالب إلى صفر دفعة واحدة عبر استلام تعويضي بنفس الكمية الناقصة.</div>
+        <div id="ivr-negstock-actions" style="margin:10px 0"></div>
+        <div class="table-wrap"><table><thead><tr><th>الخامة</th><th>الموقع</th><th>الكمية السالبة</th></tr></thead>
+          <tbody id="ivr-negstock-table"></tbody>
+        </table></div>
       </div>
      </div></div>
     </div>
@@ -4261,12 +4267,38 @@ async function loadInventoryReport() {
   try {
     const locationId = sel.value;
     const qs = locationId ? '?locationId=' + locationId : '';
-    const [valuation, lowStock] = await Promise.all([api('/analytics/inventory-valuation' + qs), api('/analytics/low-stock' + qs)]);
+    const [valuation, lowStock, negativeStock] = await Promise.all([
+      api('/analytics/inventory-valuation' + qs), api('/analytics/low-stock' + qs), api('/analytics/negative-stock' + qs),
+    ]);
     inventoryValuationCache = valuation;
     renderInventoryValuationTable();
     document.getElementById('ivr-lowstock-table').innerHTML = lowStock.length
       ? lowStock.map((r) => `<tr><td>${r.name}</td><td>${r.locationName}</td><td class="num">${r.quantity} ${r.unit}</td><td class="num">${r.lowStockThreshold} ${r.unit}</td></tr>`).join('')
       : `<tr><td colspan="4" class="empty">لا توجد تنبيهات انخفاض مخزون</td></tr>`;
+    document.getElementById('ivr-negstock-table').innerHTML = negativeStock.length
+      ? negativeStock.map((r) => `<tr><td>${r.name}</td><td>${r.locationName}</td><td class="num" style="color:var(--danger);font-weight:700">${r.quantity} ${r.unit}</td></tr>`).join('')
+      : `<tr><td colspan="3" class="empty">لا توجد أرصدة سالبة -- كل الأرصدة سليمة</td></tr>`;
+    document.getElementById('ivr-negstock-actions').innerHTML = negativeStock.length
+      ? `<button class="danger" onclick="settleAllNegativeStock()">✅ تسوية كل الأرصدة السالبة (${negativeStock.length})</button>`
+      : '';
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+// Brings every negative balance shown above back to 0 in one call --
+// scoped to whichever location the report's own filter is currently set
+// to (all locations if it's on "كل المواقع"), same scoping the report
+// itself already uses. Each one is a real inventory receipt at that
+// ingredient's current cost (0 when there's no open batch to price it
+// from -- see InventoryService.settleAllNegativeStock()'s own comment),
+// not a silent balance overwrite.
+async function settleAllNegativeStock() {
+  const locationId = document.getElementById('ivr-location').value;
+  const ok = confirm('سيتم تسوية كل الأرصدة السالبة إلى صفر عبر استلام تعويضي بنفس الكمية الناقصة لكل صنف. متابعة؟');
+  if (!ok) return;
+  try {
+    const qs = locationId ? '?locationId=' + locationId : '';
+    const res = await api('/inventory/settle-negative-stock' + qs, { method: 'POST' });
+    flashGlobal(`✅ تمت تسوية ${res.settledCount} رصيد سالب`, 'ok');
+    await loadInventoryReport();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 // A gram-denominated raw material's stock quantity can run into the

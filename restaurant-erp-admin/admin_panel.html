@@ -2343,6 +2343,20 @@ function unitLabel(unit) {
   }
   return (UNIT_OPTIONS.find((u) => u.value === unit) || {}).label || unit;
 }
+
+// Mirrors GRAM_UNITS/KG_UNITS in IngredientsService.convertUnit() -- the only
+// pair PATCH /ingredients/:id/convert-unit currently supports. Used to show
+// a "🔁 تحويل الوحدة" action once an ingredient's unit is LOCKED (hasMovement)
+// instead of the free-text unit dropdown, since that's exactly the case
+// update() refuses outright but convertUnit() can still handle correctly.
+const GRAM_UNIT_VARIANTS = new Set(['جم', 'جرام', 'g', 'gram', 'grams']);
+const KG_UNIT_VARIANTS = new Set(['كجم', 'كيلوجرام', 'كيلو', 'kg', 'kilo', 'kilogram']);
+function gramKgConvertTarget(unit) {
+  const opposite = GRAM_UNIT_VARIANTS.has(unit) ? KG_UNIT_VARIANTS : KG_UNIT_VARIANTS.has(unit) ? GRAM_UNIT_VARIANTS : null;
+  if (!opposite) return null;
+  const matchInCatalog = unitsOfMeasureCache.find((u) => opposite.has(u.code) || opposite.has(u.name));
+  return matchInCatalog ? matchInCatalog.code : (GRAM_UNIT_VARIANTS.has(unit) ? 'kg' : 'g');
+}
 // quantity entered in `fromUnit` -> the equivalent quantity in `ingredient.unit`.
 function convertToIngredientUnit(ingredientId, quantity, fromUnit) {
   const ing = ingredientsCache.find((i) => i.id === ingredientId);
@@ -3652,7 +3666,8 @@ function toggleIngredientEdit(id) {
       <div><label>الاسم</label><input class="ei-name" value="${ing.name}"></div>
       <div><label>التصنيف</label><input class="ei-category" value="${ing.category || ''}" list="ing-category-list"></div>
       <div><label>الوحدة</label><select class="ei-unit" ${ing.hasMovement ? 'disabled title="لا يمكن تغيير الوحدة بعد وجود حركة مخزنية على هذا الصنف (كميات/تكاليف مسجّلة بالوحدة الحالية)"' : ''}>${unitOptionsHtml(ing.unit)}</select>
-        ${ing.hasMovement ? '<div class="hint" style="margin-top:4px">🔒 مقفلة -- يوجد حركة مخزنية على هذا الصنف</div>' : ''}</div>
+        ${ing.hasMovement ? '<div class="hint" style="margin-top:4px">🔒 مقفلة -- يوجد حركة مخزنية على هذا الصنف</div>' : ''}
+        ${ing.hasMovement && gramKgConvertTarget(ing.unit) ? `<button type="button" class="link-btn" style="margin-top:4px" onclick="convertIngredientUnit('${id}', '${gramKgConvertTarget(ing.unit)}')">🔁 تحويل الوحدة إلى ${unitLabel(gramKgConvertTarget(ing.unit))}</button>` : ''}</div>
       <div><label>النوع</label>
         <select class="ei-kind">
           <option value="RAW_MATERIAL" ${ing.kind === 'RAW_MATERIAL' ? 'selected' : ''}>خامة</option>
@@ -3688,6 +3703,26 @@ async function saveIngredientEdit(id) {
     flashGlobal('✅ تم حفظ التعديل', 'ok');
     document.getElementById('edit-ing-row-' + id).classList.add('hidden');
     loadIngredients();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+// Unlike saveIngredientEdit()'s locked unit field above, this doesn't just
+// change the label -- PATCH /ingredients/:id/convert-unit rescales every
+// stored quantity/cost (batches, balances, recipe lines, thresholds...) so
+// the same physical amount stays correct under the new unit. Only offered
+// for the gram<->kg pair (see gramKgConvertTarget), and the backend itself
+// blocks it while any pending production/purchase/transfer/stocktake still
+// references the ingredient -- that error is shown to the user as-is.
+async function convertIngredientUnit(id, toUnit) {
+  const ing = ingredientsCache.find((i) => i.id === id);
+  if (!ing) return;
+  const ok = confirm(`تحويل وحدة "${ing.name}" من ${unitLabel(ing.unit)} إلى ${unitLabel(toUnit)}؟\n\nسيتم تحويل كل الكميات والتكاليف المسجّلة (المخزون، الأرصدة، الوصفات، الحد الأدنى...) تلقائيًا للحفاظ على نفس الكمية الفعلية.`);
+  if (!ok) return;
+  try {
+    await api('/ingredients/' + id + '/convert-unit', { method: 'PATCH', body: JSON.stringify({ toUnit }) });
+    flashGlobal('✅ تم تحويل الوحدة بنجاح', 'ok');
+    document.getElementById('edit-ing-row-' + id).classList.add('hidden');
+    await loadIngredients();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 

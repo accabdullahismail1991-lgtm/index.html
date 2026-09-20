@@ -1846,6 +1846,12 @@
           <div><label>الموقع</label><select id="txr-location"><option value="">كل المواقع</option></select></div>
           <div><label>من تاريخ</label><input id="txr-from" type="date"></div>
           <div><label>إلى تاريخ</label><input id="txr-to" type="date"></div>
+          <div><label>نوع الطلب</label><select id="txr-channel"><option value="">كل الأنواع</option></select></div>
+          <div><label>طريقة الدفع</label><select id="txr-payment"><option value="">كل الطرق</option></select></div>
+          <div><label>العميل</label>
+            <input id="txr-customer-search" placeholder="🔍 بحث بالاسم أو رقم الجوال..." oninput="onFilteredReportCustomerSearch(this.value,'txr-customer')" style="margin-bottom:4px">
+            <select id="txr-customer"><option value="">كل العملاء</option></select>
+          </div>
           <div><button onclick="loadTaxReport()">تحديث</button></div>
         </div>
         <div id="txr-cards" class="stats-row"></div>
@@ -1873,6 +1879,12 @@
           <div><label>الموقع</label><select id="pkr-location"><option value="">كل المواقع</option></select></div>
           <div><label>من تاريخ</label><input id="pkr-from" type="date"></div>
           <div><label>إلى تاريخ</label><input id="pkr-to" type="date"></div>
+          <div><label>نوع الطلب</label><select id="pkr-channel"><option value="">كل الأنواع</option></select></div>
+          <div><label>طريقة الدفع</label><select id="pkr-payment"><option value="">كل الطرق</option></select></div>
+          <div><label>العميل</label>
+            <input id="pkr-customer-search" placeholder="🔍 بحث بالاسم أو رقم الجوال..." oninput="onFilteredReportCustomerSearch(this.value,'pkr-customer')" style="margin-bottom:4px">
+            <select id="pkr-customer"><option value="">كل العملاء</option></select>
+          </div>
           <div><button onclick="loadPeakHoursReport()">تحديث</button></div>
         </div>
         <div id="pkr-cards" class="stats-row"></div>
@@ -1895,6 +1907,12 @@
           <div><label>الموقع</label><select id="cxr-location"><option value="">كل المواقع</option></select></div>
           <div><label>من تاريخ</label><input id="cxr-from" type="date"></div>
           <div><label>إلى تاريخ</label><input id="cxr-to" type="date"></div>
+          <div><label>نوع الطلب</label><select id="cxr-channel"><option value="">كل الأنواع</option></select></div>
+          <div><label>طريقة الدفع</label><select id="cxr-payment"><option value="">كل الطرق</option></select></div>
+          <div><label>العميل</label>
+            <input id="cxr-customer-search" placeholder="🔍 بحث بالاسم أو رقم الجوال..." oninput="onFilteredReportCustomerSearch(this.value,'cxr-customer')" style="margin-bottom:4px">
+            <select id="cxr-customer"><option value="">كل العملاء</option></select>
+          </div>
           <div><button onclick="loadCustomerExperienceReport()">تحديث</button></div>
         </div>
         <div id="cxr-cards" class="stats-row"></div>
@@ -1910,6 +1928,12 @@
           <div><label>الموقع</label><select id="kpr-location"><option value="">كل المواقع</option></select></div>
           <div><label>من تاريخ</label><input id="kpr-from" type="date"></div>
           <div><label>إلى تاريخ</label><input id="kpr-to" type="date"></div>
+          <div><label>نوع الطلب</label><select id="kpr-channel"><option value="">كل الأنواع</option></select></div>
+          <div><label>طريقة الدفع</label><select id="kpr-payment"><option value="">كل الطرق</option></select></div>
+          <div><label>العميل</label>
+            <input id="kpr-customer-search" placeholder="🔍 بحث بالاسم أو رقم الجوال..." oninput="onFilteredReportCustomerSearch(this.value,'kpr-customer')" style="margin-bottom:4px">
+            <select id="kpr-customer"><option value="">كل العملاء</option></select>
+          </div>
           <div><button onclick="loadKitchenPerformanceReport()">تحديث</button></div>
         </div>
         <div id="kpr-cards" class="stats-row"></div>
@@ -2023,6 +2047,8 @@
           <div><label>الموقع</label><select id="tcr-location"><option value="">كل المواقع</option></select></div>
           <div><label>من تاريخ</label><input id="tcr-from" type="date"></div>
           <div><label>إلى تاريخ</label><input id="tcr-to" type="date"></div>
+          <div><label>نوع الطلب</label><select id="tcr-channel"><option value="">كل الأنواع</option></select></div>
+          <div><label>طريقة الدفع</label><select id="tcr-payment"><option value="">كل الطرق</option></select></div>
           <div><button onclick="loadTopCustomersReport()">تحديث</button></div>
         </div>
         <div class="table-wrap"><table class="report-table"><thead><tr><th>#</th><th>العميل</th><th>الجوال</th><th>عدد الطلبات</th><th>الإجمالي</th><th>متوسط الفاتورة</th><th>آخر طلب</th><th>نقاط الولاء</th><th></th></tr></thead>
@@ -4173,9 +4199,12 @@ async function loadInventoryTab() {
   const filterSel = document.getElementById('inv-filter-location');
   filterSel.innerHTML = '<option value="">كل المواقع</option>' + opts;
   document.getElementById('inv-r-ingredient').innerHTML = ingredientOptions();
+  enhanceIngredientSelect(document.getElementById('inv-r-ingredient'));
   document.getElementById('inv-w-ingredient').innerHTML = ingredientOptions();
+  enhanceIngredientSelect(document.getElementById('inv-w-ingredient'));
   document.getElementById('inv-c-location').innerHTML = opts;
   document.getElementById('inv-c-ingredient').innerHTML = ingredientOptions();
+  enhanceIngredientSelect(document.getElementById('inv-c-ingredient'));
   loadInventoryBalances();
 }
 async function loadInventoryBalances() {
@@ -5561,12 +5590,9 @@ let topCustomersCache = [];
 async function loadTopCustomersReport() {
   const sel = document.getElementById('tcr-location');
   if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  await populateChannelAndPaymentFilters('tcr');
   try {
-    const params = new URLSearchParams();
-    if (sel.value) params.set('locationId', sel.value);
-    const from = document.getElementById('tcr-from').value; if (from) params.set('from', from);
-    const to = document.getElementById('tcr-to').value; if (to) params.set('to', to);
-    topCustomersCache = await api('/analytics/top-customers?' + params.toString());
+    topCustomersCache = await api('/analytics/top-customers?' + buildReportFilterParams('tcr').toString());
     document.getElementById('tcr-table').innerHTML = topCustomersCache.length
       ? topCustomersCache.map((c, i) => `
         <tr>
@@ -5642,6 +5668,7 @@ function addStaffMealLineRow() {
     <input class="stfm-qty" type="number" min="1" step="1" value="1" placeholder="الكمية" oninput="updateStaffMealTotal()">
     <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateStaffMealTotal();">✕</button>`;
   container.appendChild(div);
+  enhanceIngredientSelect(div.querySelector('.stfm-item'), 'item');
   updateStaffMealTotal();
 }
 function updateStaffMealTotal() {
@@ -6292,6 +6319,7 @@ function addPoLineRow() {
     <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
   container.appendChild(div);
   syncRowUnitOptions(div.querySelector('.po-ing'));
+  enhanceIngredientSelect(div.querySelector('.po-ing'));
 }
 async function createPurchaseOrder() {
   const locationId = document.getElementById('po-location').value;
@@ -6618,15 +6646,9 @@ const TAX_TYPE_LABEL = { STANDARD: 'خاضع للضريبة', ZERO_RATED: 'نس�
 async function loadTaxReport() {
   const sel = document.getElementById('txr-location');
   if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  await populateChannelAndPaymentFilters('txr');
   try {
-    const locationId = sel.value;
-    const from = document.getElementById('txr-from').value;
-    const to = document.getElementById('txr-to').value;
-    const params = new URLSearchParams();
-    if (locationId) params.set('locationId', locationId);
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
-    const res = await api('/analytics/tax-summary?' + params.toString());
+    const res = await api('/analytics/tax-summary?' + buildReportFilterParams('txr').toString());
     document.getElementById('txr-cards').innerHTML = [
       statTile('إجمالي المبيعات قبل الضريبة', fmtMoney(res.sales.taxableSubtotal)),
       statTile('ضريبة المبيعات المحصّلة', fmtMoney(res.sales.vatCollected)),
@@ -6658,15 +6680,9 @@ async function loadTaxReport() {
 async function loadPeakHoursReport() {
   const sel = document.getElementById('pkr-location');
   if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  await populateChannelAndPaymentFilters('pkr');
   try {
-    const locationId = sel.value;
-    const from = document.getElementById('pkr-from').value;
-    const to = document.getElementById('pkr-to').value;
-    const params = new URLSearchParams();
-    if (locationId) params.set('locationId', locationId);
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
-    const res = await api('/analytics/peak-hours?' + params.toString());
+    const res = await api('/analytics/peak-hours?' + buildReportFilterParams('pkr').toString());
     const totalOrders = res.byHour.reduce((s, h) => s + h.orderCount, 0);
     const totalRevenue = res.byHour.reduce((s, h) => s + h.revenue, 0);
     const activeHours = res.byHour.filter((h) => h.orderCount > 0).length;
@@ -6705,15 +6721,9 @@ async function loadPeakHoursReport() {
 async function loadCustomerExperienceReport() {
   const sel = document.getElementById('cxr-location');
   if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  await populateChannelAndPaymentFilters('cxr');
   try {
-    const locationId = sel.value;
-    const from = document.getElementById('cxr-from').value;
-    const to = document.getElementById('cxr-to').value;
-    const params = new URLSearchParams();
-    if (locationId) params.set('locationId', locationId);
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
-    const res = await api('/analytics/customer-experience?' + params.toString());
+    const res = await api('/analytics/customer-experience?' + buildReportFilterParams('cxr').toString());
     document.getElementById('cxr-cards').innerHTML = [
       statTile('إجمالي الطلبات', res.totalOrders),
       statTile('عملاء مُعرَّفون', res.distinctCustomersIdentified),
@@ -6728,15 +6738,9 @@ async function loadCustomerExperienceReport() {
 async function loadKitchenPerformanceReport() {
   const sel = document.getElementById('kpr-location');
   if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  await populateChannelAndPaymentFilters('kpr');
   try {
-    const locationId = sel.value;
-    const from = document.getElementById('kpr-from').value;
-    const to = document.getElementById('kpr-to').value;
-    const params = new URLSearchParams();
-    if (locationId) params.set('locationId', locationId);
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
-    const res = await api('/analytics/kitchen-performance?' + params.toString());
+    const res = await api('/analytics/kitchen-performance?' + buildReportFilterParams('kpr').toString());
     document.getElementById('kpr-cards').innerHTML = [
       statTile('أصناف جاهزة', res.linesReady),
       statTile('متوسط وقت التحضير (دقيقة)', res.avgPrepMinutes),
@@ -7037,6 +7041,7 @@ function addTransferLineRow() {
     <input class="tl-qty" type="number" step="0.001" placeholder="الكمية">
     <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
   container.appendChild(div);
+  enhanceIngredientSelect(div.querySelector('.tl-ing'));
 }
 async function createTransfer() {
   const fromLocationId = document.getElementById('tr-from').value;
@@ -7200,6 +7205,7 @@ function addComboOptionRow(slotId) {
   div.className = 'recipe-row';
   div.innerHTML = `<select class="cbo-item">${options}</select><input class="cbo-extra" type="number" step="0.01" value="0" placeholder="زيادة سعر"><button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
   document.getElementById('cb-slot-' + slotId + '-options').appendChild(div);
+  enhanceIngredientSelect(div.querySelector('.cbo-item'), 'item');
 }
 async function loadCombos() {
   await ensureMenuItemsCache();
@@ -8121,6 +8127,7 @@ async function addCostImpactRow() {
     <input class="ci-cost" type="number" step="0.01" min="0" placeholder="التكلفة الجديدة للوحدة">
     <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
   container.appendChild(div);
+  enhanceIngredientSelect(div.querySelector('.ci-ing'));
 }
 async function runCostImpactSimulation() {
   const container = document.getElementById('ci-rows');

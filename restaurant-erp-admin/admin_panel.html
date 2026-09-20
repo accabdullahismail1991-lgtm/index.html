@@ -669,7 +669,7 @@
             <select id="inv-filter-location" onchange="loadInventoryBalances()"><option value="">كل المواقع</option></select>
           </div>
         </div>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>الموقع</th><th>الصنف</th><th>الرصيد</th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الموقع</th><th>الصنف</th><th>الرصيد</th><th>الوحدة</th></tr></thead>
           <tbody id="inventoryTable"></tbody>
         </table></div>
       </div>
@@ -4217,10 +4217,15 @@ async function loadInventoryBalances() {
   try {
     const locationId = document.getElementById('inv-filter-location').value;
     const balances = await api('/inventory/balances' + (locationId ? '?locationId=' + locationId : ''));
-    const ingName = (id) => (ingredientsCache.find((i) => i.id === id) || {}).name || id;
+    const ingOf = (id) => ingredientsCache.find((i) => i.id === id) || {};
     document.getElementById('inventoryTable').innerHTML = balances.length
-      ? balances.map((b) => `<tr><td>${(b.location || {}).name || '-'}</td><td>${ingName(b.ingredientId)}</td><td>${Number(b.quantity)}</td></tr>`).join('')
-      : `<tr><td colspan="3" class="empty">لا توجد أرصدة بعد</td></tr>`;
+      ? balances.map((b) => {
+          const ing = ingOf(b.ingredientId);
+          const qty = Number(b.quantity);
+          return `<tr><td>${(b.location || {}).name || '-'}</td><td>${ing.name || b.ingredientId}</td>
+            <td class="num" ${qty < 0 ? 'style="color:var(--danger);font-weight:700"' : ''}>${qty}</td><td>${ing.unit || '-'}</td></tr>`;
+        }).join('')
+      : `<tr><td colspan="4" class="empty">لا توجد أرصدة بعد</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function receiveInventory() {
@@ -7115,7 +7120,7 @@ async function toggleTransferReceive(id) {
   row.classList.toggle('hidden');
   if (!opening) return;
   box.innerHTML = '<div class="empty">جارٍ التحميل...</div>';
-  const ingName = (ingId) => (ingredientsCache.find((i) => i.id === ingId) || {}).name || ingId;
+  const ingOf = (ingId) => ingredientsCache.find((i) => i.id === ingId) || {};
   try {
     // GET /transfers list doesn't include line detail -- fetch this one
     // transfer's full record (which does) rather than assuming the
@@ -7123,12 +7128,15 @@ async function toggleTransferReceive(id) {
     const transfer = await api('/transfers/' + id);
     box.innerHTML = `
       <div id="tr-receive-rows-${id}">
-        ${transfer.lines.map((l) => `
+        ${transfer.lines.map((l) => {
+          const ing = ingOf(l.ingredientId);
+          return `
           <div class="recipe-row" data-ingredient-id="${l.ingredientId}">
-            <span style="flex:2">${ingName(l.ingredientId)} (أُرسل: ${Number(l.quantitySent)})</span>
+            <span style="flex:2">${ing.name || l.ingredientId} (أُرسل: ${Number(l.quantitySent)} ${ing.unit || ''})</span>
             <input class="tr-recv-qty" type="number" step="0.001" value="${Number(l.quantitySent)}" style="flex:1">
           </div>
-        `).join('')}
+        `;
+        }).join('')}
       </div>
       <div style="margin-top:8px"><button onclick="confirmTransferReceive('${id}')">✅ تأكيد الاستلام</button></div>
     `;

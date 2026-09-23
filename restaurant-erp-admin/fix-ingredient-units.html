@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تصحيح وحدات قياس الأصناف</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 20px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 24px 0 8px; color: #93c5fd; }
+  p.hint { color: #94a3b8; font-size: 13px; margin: 4px 0 16px; line-height: 1.7; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  label { font-size: 13px; color: #cbd5e1; display: block; margin-bottom: 4px; }
+  input[type=text], input[type=password] {
+    background: #0f172a; border: 1px solid #475569; color: #e2e8f0; border-radius: 6px; padding: 8px 10px; font-size: 13px; width: 100%;
+  }
+  .field { flex: 1; min-width: 200px; }
+  button {
+    background: #2563eb; color: #fff; border: none; border-radius: 6px; padding: 9px 16px; font-size: 13px; cursor: pointer; font-weight: 600;
+  }
+  button:hover { background: #1d4ed8; }
+  button.danger { background: #b91c1c; }
+  button.danger:hover { background: #991b1b; }
+  button:disabled { background: #475569; cursor: not-allowed; opacity: .6; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid #334155; vertical-align: middle; }
+  th { background: #0f172a; color: #93c5fd; position: sticky; top: 0; }
+  tr.ok { background: rgba(34,197,94,.06); }
+  tr.skip { background: rgba(148,163,184,.06); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .badge.ok { background: #14532d; color: #86efac; }
+  .badge.warn { background: #713f12; color: #fde68a; }
+  .badge.bad { background: #7f1d1d; color: #fca5a5; }
+  .badge.info { background: #1e3a5f; color: #93c5fd; }
+  .num { font-variant-numeric: tabular-nums; }
+  #log { background: #000; color: #4ade80; font-family: 'Consolas', monospace; font-size: 12px; padding: 12px; border-radius: 8px; height: 260px; overflow-y: auto; white-space: pre-wrap; }
+  #log .err { color: #f87171; }
+  .stat { display: inline-block; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; margin-inline-end: 8px; margin-bottom: 8px; }
+  .stat b { display: block; font-size: 18px; }
+  .table-wrap { max-height: 560px; overflow: auto; border: 1px solid #334155; border-radius: 8px; }
+  .muted { color: #64748b; }
+  .small { font-size: 11px; }
+  input[type=checkbox] { width: 16px; height: 16px; }
+</style>
+</head>
+<body>
+
+<h1>📏 تصحيح وحدات قياس الأصناف</h1>
+<p class="hint">
+  هذه الأداة تُطبّق مباشرة على النظام الحي (Live). تقرأ الأصناف الحالية، تقارنها بالوحدات الصحيحة التي حدّدتها، وتُصحّح كل صنف بالطريقة الآمنة
+  التي <b>لا تُخلّ بالكميات الحقيقية في الوصفات والمخزون</b>:
+  إن كان التصحيح مجرد اختلاف تسمية لنفس الوحدة (مثل "كجم" و"kg") تُطبَّق كإعادة تسمية بدون أي حساب.
+  إن كان تغييرًا حقيقيًا بالحجم (مثل جرام إلى كيلوجرام) تُطبَّق عبر آلية "تحويل الوحدة" التي تُعيد حساب كل الكميات والتكاليف المخزّنة تلقائيًا
+  حتى تبقى الوصفات صحيحة. الحالات التي لا يمكن للنظام أن يخمّن فيها المعامل الحقيقي (كعلبة أو ظرف أو حصة) تُستثنى وتُعرض لمراجعتك اليدوية.
+</p>
+
+<div class="card">
+  <div class="row">
+    <div class="field">
+      <label>رابط الـ API</label>
+      <input type="text" id="apiBase" value="https://restaurant-erp-api-rbb9.onrender.com">
+    </div>
+    <div class="field">
+      <label>رقم الجوال أو اسم المستخدم</label>
+      <input type="text" id="phone" placeholder="+9665xxxxxxxx">
+    </div>
+    <div class="field">
+      <label>كلمة المرور</label>
+      <input type="password" id="password">
+    </div>
+    <div>
+      <label>&nbsp;</label>
+      <button id="btnLogin" onclick="doLogin()">دخول</button>
+    </div>
+  </div>
+  <div class="row" style="margin-top:8px; align-items:center;">
+    <label style="display:flex; align-items:center; gap:6px; margin:0;">
+      <input type="checkbox" id="remember"> تذكّر بيانات الدخول على هذا الجهاز فقط (لا تُرفع لأي مكان)
+    </label>
+  </div>
+  <div id="loginStatus" class="small muted" style="margin-top:8px;"></div>
+</div>
+
+<div class="card" id="loadCard" style="display:none;">
+  <button id="btnLoad" onclick="loadAndPlan()">1) تحميل الأصناف الحالية وحساب التصحيحات</button>
+  <span class="small muted" style="margin-inline-start:10px;">يقرأ /ingredients فقط، لا يكتب شيئًا بعد.</span>
+</div>
+
+<div id="summaryCard" class="card" style="display:none;">
+  <div id="stats"></div>
+  <div class="row" style="margin-top:8px;">
+    <button id="btnApply" class="danger" onclick="applyChanges()" disabled>2) تطبيق التصحيحات على النظام الحي</button>
+  </div>
+</div>
+
+<div id="tableCard" class="card" style="display:none;">
+  <h2>التصحيحات الآمنة (إعادة تسمية أو تحويل حقيقي محسوب تلقائيًا)</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>تجاهل</th><th>الصنف</th><th>الوحدة الحالية</th><th>الوحدة الصحيحة</th><th>الإجراء</th><th>الحالة</th></tr>
+      </thead>
+      <tbody id="mainBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="manualCard" class="card" style="display:none;">
+  <h2>⚠️ يحتاج مراجعة يدوية (لا يعرف النظام المعامل الحقيقي بين الوحدتين)</h2>
+  <p class="hint small">
+    هذه الأصناف تتحول بين وحدات من عائلات مختلفة (مثل "علبة" أو "ظرف" أو "حصة" إلى وزن أو عدد) لا يمكن تخمين نسبة التحويل بينها تلقائيًا.
+    صحّحها يدويًا من شاشة الأصناف بعد تحديد الكمية الحقيقية بنفسك، أو أرسل لي معامل التحويل الفعلي (مثلاً: 1 علبة = X كيلوجرام) لأُدرجها في نسخة قادمة من الأداة.
+  </p>
+  <div class="table-wrap" style="max-height:300px;">
+    <table>
+      <thead><tr><th>الصنف</th><th>الوحدة الحالية</th><th>الوحدة الصحيحة</th></tr></thead>
+      <tbody id="manualBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>سجل التنفيذ</h2>
+  <div id="log">في انتظار البدء...</div>
+</div>
+
+<script>
+const MASS_UNITS = { 'جم': 1, 'جرام': 1, g: 1, gram: 1, grams: 1, 'كجم': 1000, 'كيلوجرام': 1000, 'كيلو': 1000, kg: 1000, kilo: 1000, kilogram: 1000 };
+const VOLUME_UNITS = { 'مل': 1, 'مليلتر': 1, ml: 1, milliliter: 1, millilitre: 1, 'لتر': 1000, l: 1000, liter: 1000, litre: 1000 };
+const COUNT_UNITS = { 'حبة': 1, 'قطعة': 1, pcs: 1, piece: 1, pieces: 1 };
+const UNIT_FAMILIES = [MASS_UNITS, VOLUME_UNITS, COUNT_UNITS];
+function unitConversionFactor(fromUnit, toUnit) {
+  for (const fam of UNIT_FAMILIES) {
+    if (fromUnit in fam && toUnit in fam) return fam[fromUnit] / fam[toUnit];
+  }
+  return null;
+}
+
+/* === target units, cross-referenced by the operator against the correct
+   real-world unit for each ingredient (see the uploaded corrected sheet).
+   The tool re-checks each one against the LIVE current unit at load time --
+   this list is just "what it should be", not "what it currently is". === */
+const TARGET_ROWS = [{"name": "استريبس", "targetUnit": "kg"}, {"name": "باذنجان", "targetUnit": "kg"}, {"name": "باربكيو", "targetUnit": "kg"}, {"name": "باكنج بودر", "targetUnit": "kg"}, {"name": "برجر", "targetUnit": "kg"}, {"name": "بسطرمة", "targetUnit": "kg"}, {"name": "بصل", "targetUnit": "kg"}, {"name": "بصل+ بقدونس", "targetUnit": "kg"}, {"name": "بطاطس", "targetUnit": "kg"}, {"name": "بطاطس جمبري", "targetUnit": "kg"}, {"name": "بطاطس نص مقلية", "targetUnit": "kg"}, {"name": "بقدونس 1 كجم", "targetUnit": "kg"}, {"name": "تركى مدخن", "targetUnit": "kg"}, {"name": "تكساس صوص", "targetUnit": "kg"}, {"name": "ثلج", "targetUnit": "kg"}, {"name": "ثومية", "targetUnit": "kg"}, {"name": "جبنة بالطماطم نصف مصنعة", "targetUnit": "kg"}, {"name": "جبنة روما", "targetUnit": "kg"}, {"name": "جبنة سائلة", "targetUnit": "kg"}, {"name": "جبنة شيدر", "targetUnit": "kg"}, {"name": "جبنة فيتا", "targetUnit": "kg"}, {"name": "حمص جاهز", "targetUnit": "kg"}, {"name": "حمص نصف مصنع 4.50 كجم", "targetUnit": "kg"}, {"name": "خس", "targetUnit": "kg"}, {"name": "خل ابيض", "targetUnit": "kg"}, {"name": "خلطة بطاطس جمبري", "targetUnit": "kg"}, {"name": "خيار مخلل", "targetUnit": "kg"}, {"name": "رانش", "targetUnit": "kg"}, {"name": "رغيف خبز وزنه 70 جم", "targetUnit": "pcs"}, {"name": "زبدة", "targetUnit": "kg"}, {"name": "زيت", "targetUnit": "kg"}, {"name": "زيت زيتون", "targetUnit": "kg"}, {"name": "زيتون", "targetUnit": "kg"}, {"name": "سجق", "targetUnit": "kg"}, {"name": "سكر", "targetUnit": "kg"}, {"name": "سلطة", "targetUnit": "kg"}, {"name": "سلطة اسكندراني نصف مصنعة", "targetUnit": "kg"}, {"name": "سلطة بصل+ بقدونس", "targetUnit": "kg"}, {"name": "سلطة خضراء نصف مصنعة", "targetUnit": "kg"}, {"name": "سماق", "targetUnit": "kg"}, {"name": "سمسم", "targetUnit": "kg"}, {"name": "سوسيس", "targetUnit": "kg"}, {"name": "سويت شيلى", "targetUnit": "kg"}, {"name": "شاورما", "targetUnit": "kg"}, {"name": "شاورما دجاج", "targetUnit": "kg"}, {"name": "شاورما لحم", "targetUnit": "kg"}, {"name": "شطة رنا", "targetUnit": "kg"}, {"name": "شطة ودقة الباذنجان نصف المصنعة", "targetUnit": "kg"}, {"name": "شكشوكة نصف مصنعة", "targetUnit": "kg"}, {"name": "شمر", "targetUnit": "kg"}, {"name": "صوص باربكيو", "targetUnit": "kg"}, {"name": "صوص تكساس", "targetUnit": "kg"}, {"name": "صوص ثومية", "targetUnit": "kg"}, {"name": "صوص راشى", "targetUnit": "kg"}, {"name": "صوص رانش", "targetUnit": "kg"}, {"name": "صوص سويت شيلى", "targetUnit": "kg"}, {"name": "صوص شطة", "targetUnit": "kg"}, {"name": "صوص شيدر", "targetUnit": "kg"}, {"name": "صوص كوكتيل", "targetUnit": "kg"}, {"name": "طاووق", "targetUnit": "kg"}, {"name": "طاووق نيىء", "targetUnit": "kg"}, {"name": "طحينة", "targetUnit": "kg"}, {"name": "طحينة خام", "targetUnit": "kg"}, {"name": "طحينة نصف مصنعه", "targetUnit": "kg"}, {"name": "طماطم", "targetUnit": "kg"}, {"name": "علبة بلاستيك 250", "targetUnit": "pcs"}, {"name": "علبة بلاستيك 350", "targetUnit": "pcs"}, {"name": "علبة بلاستيك 450", "targetUnit": "pcs"}, {"name": "فانيليا", "targetUnit": "kg"}, {"name": "فلفل", "targetUnit": "kg"}, {"name": "فلفل احمر حار", "targetUnit": "kg"}, {"name": "فلفل اسود", "targetUnit": "kg"}, {"name": "فلفل رومي", "targetUnit": "kg"}, {"name": "فول جاهز للبيع نصف مصنع", "targetUnit": "kg"}, {"name": "فول سادة", "targetUnit": "kg"}, {"name": "كاتشاب (جرام)", "targetUnit": "kg"}, {"name": "كاتشاب (ظرف)", "targetUnit": "pcs"}, {"name": "كبدة", "targetUnit": "kg"}, {"name": "كبدة نصف مصنعة", "targetUnit": "kg"}, {"name": "كرات ربطة 1كجم", "targetUnit": "kg"}, {"name": "كربونات الصوديم", "targetUnit": "kg"}, {"name": "كريب", "targetUnit": "pcs"}, {"name": "كزبرة", "targetUnit": "kg"}, {"name": "كمون", "targetUnit": "kg"}, {"name": "كوكتيل", "targetUnit": "kg"}, {"name": "لحم", "targetUnit": "kg"}, {"name": "لحم كفتة", "targetUnit": "kg"}, {"name": "لون زعفران", "targetUnit": "kg"}, {"name": "ماء تجهيزات", "targetUnit": "kg"}, {"name": "مايونيز", "targetUnit": "kg"}, {"name": "مايونيز حار", "targetUnit": "kg"}, {"name": "مخلل (جرام)", "targetUnit": "kg"}, {"name": "مخلل (علبة)", "targetUnit": "kg"}, {"name": "مستردة", "targetUnit": "kg"}, {"name": "مسقعة نصف مصنعة", "targetUnit": "kg"}, {"name": "ملح", "targetUnit": "kg"}, {"name": "ملح ليمون", "targetUnit": "kg"}, {"name": "موزريلا", "targetUnit": "kg"}, {"name": "هاليبينو", "targetUnit": "kg"}, {"name": "هوت دوج", "targetUnit": "KG"}];
+
+let accessToken = null, refreshToken = null;
+function apiBase() { return document.getElementById('apiBase').value.trim().replace(/\/$/, ''); }
+
+function log(msg, cls) {
+  const el = document.getElementById('log');
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function rawApi(path, options = {}) {
+  const res = await fetch(apiBase() + path, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}), ...(options.headers || {}) },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  return res;
+}
+async function api(path, options = {}) {
+  let res = await rawApi(path, options);
+  if (res.status === 401 && refreshToken) {
+    const r = await fetch(apiBase() + '/auth/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken }) });
+    if (r.ok) {
+      const body = await r.json();
+      accessToken = body.accessToken; refreshToken = body.refreshToken || refreshToken;
+      res = await rawApi(path, options);
+    }
+  }
+  if (!res.ok) {
+    let msg = res.statusText;
+    try { const b = await res.json(); msg = b.message || msg; } catch (e) {}
+    throw new Error(`${res.status} ${Array.isArray(msg) ? msg.join(', ') : msg}`);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+const REMEMBER_KEY = 'fix-units-tool-saved-login';
+function restoreSavedLogin() {
+  try {
+    const raw = localStorage.getItem(REMEMBER_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.apiBase) document.getElementById('apiBase').value = saved.apiBase;
+    if (saved.phone) document.getElementById('phone').value = saved.phone;
+    if (saved.password) document.getElementById('password').value = saved.password;
+    document.getElementById('remember').checked = true;
+  } catch (e) { /* private browsing / blocked storage -- just skip */ }
+}
+restoreSavedLogin();
+
+async function doLogin() {
+  const phone = document.getElementById('phone').value.trim();
+  const password = document.getElementById('password').value;
+  const statusEl = document.getElementById('loginStatus');
+  statusEl.textContent = 'جارٍ تسجيل الدخول...';
+  try {
+    const res = await rawApi('/auth/login', { method: 'POST', body: { phone, password } });
+    if (!res.ok) { statusEl.textContent = '❌ فشل تسجيل الدخول (' + res.status + ')'; return; }
+    const body = await res.json();
+    accessToken = body.accessToken; refreshToken = body.refreshToken;
+    statusEl.textContent = '✅ تم تسجيل الدخول';
+    document.getElementById('loadCard').style.display = '';
+    try {
+      if (document.getElementById('remember').checked) {
+        localStorage.setItem(REMEMBER_KEY, JSON.stringify({ apiBase: apiBase(), phone, password }));
+      } else {
+        localStorage.removeItem(REMEMBER_KEY);
+      }
+    } catch (e) { /* storage unavailable -- login still works, just won't be remembered */ }
+  } catch (e) {
+    statusEl.textContent = '❌ خطأ في الاتصال: ' + e.message;
+  }
+}
+
+let plan = []; // { name, ingredient, fromUnit, toUnit, kind: 'relabel'|'convert'|'unsupported', excluded }
+function normalizeArabic(s) {
+  return (s || '').replace(/\s+/g, ' ').trim();
+}
+
+async function loadAndPlan() {
+  const btn = document.getElementById('btnLoad');
+  btn.disabled = true;
+  log('جارٍ تحميل /ingredients ...');
+  let ingredients;
+  try {
+    ingredients = await api('/ingredients');
+    log(`تم تحميل ${ingredients.length} صنف.`);
+  } catch (e) {
+    log('❌ فشل التحميل: ' + e.message, 'err');
+    btn.disabled = false;
+    return;
+  }
+
+  const byName = new Map(ingredients.map((i) => [normalizeArabic(i.name), i]));
+  plan = [];
+  for (const row of TARGET_ROWS) {
+    const ing = byName.get(normalizeArabic(row.name));
+    if (!ing) continue; // ingredient no longer exists / renamed -- nothing to correct
+    if (ing.unit === row.targetUnit) continue; // already correct on the live system
+    const factor = unitConversionFactor(ing.unit, row.targetUnit);
+    plan.push({
+      name: row.name,
+      ingredient: ing,
+      fromUnit: ing.unit,
+      toUnit: row.targetUnit,
+      kind: factor == null ? 'unsupported' : (factor === 1 ? 'relabel' : 'convert'),
+      excluded: false,
+    });
+  }
+
+  renderTable();
+  renderManual();
+  recomputeStats();
+  document.getElementById('summaryCard').style.display = '';
+  document.getElementById('tableCard').style.display = '';
+  document.getElementById('manualCard').style.display = '';
+  btn.disabled = false;
+}
+
+function renderTable() {
+  const body = document.getElementById('mainBody');
+  const safe = plan.filter((p) => p.kind !== 'unsupported');
+  body.innerHTML = safe.map((p, idx) => {
+    const actionLabel = p.kind === 'relabel'
+      ? 'إعادة تسمية فقط (بدون أي تغيير بالكمية)'
+      : `تحويل حقيقي (${p.fromUnit} → ${p.toUnit}) — إعادة حساب الكميات والتكاليف تلقائيًا`;
+    return `
+      <tr id="plan-row-${idx}" class="${p.excluded ? 'skip' : 'ok'}">
+        <td><input type="checkbox" ${p.excluded ? 'checked' : ''} onchange="planItems()[${idx}].excluded=this.checked; renderTable(); recomputeStats();"></td>
+        <td>${p.name}</td>
+        <td class="num">${p.fromUnit}</td>
+        <td class="num">${p.toUnit}</td>
+        <td class="small">${actionLabel}</td>
+        <td>${p.excluded ? '<span class="badge">متجاهَل</span>' : `<span class="badge ${p.kind === 'relabel' ? 'info' : 'ok'}">جاهز</span>`}</td>
+      </tr>
+    `;
+  }).join('');
+}
+// safe.forEach uses `plan` indices that don't match `safe`'s own index --
+// expose the full `plan` array (filtered view is only for display) so the
+// inline onchange handlers above mutate the right object regardless.
+function planItems() { return plan.filter((p) => p.kind !== 'unsupported'); }
+
+function renderManual() {
+  const body = document.getElementById('manualBody');
+  const unsupported = plan.filter((p) => p.kind === 'unsupported');
+  body.innerHTML = unsupported.map((p) => `
+    <tr><td>${p.name}</td><td class="num">${p.fromUnit}</td><td class="num">${p.toUnit}</td></tr>
+  `).join('');
+}
+
+function recomputeStats() {
+  const safe = plan.filter((p) => p.kind !== 'unsupported');
+  const relabel = safe.filter((p) => p.kind === 'relabel' && !p.excluded).length;
+  const convert = safe.filter((p) => p.kind === 'convert' && !p.excluded).length;
+  const excluded = safe.filter((p) => p.excluded).length;
+  const unsupported = plan.filter((p) => p.kind === 'unsupported').length;
+  const ready = relabel + convert;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><b>${plan.length}</b>إجمالي أصناف تحتاج تصحيح</div>
+    <div class="stat"><b style="color:#86efac">${ready}</b>جاهزة للتطبيق (${relabel} إعادة تسمية، ${convert} تحويل حقيقي)</div>
+    <div class="stat"><b class="muted">${excluded}</b>متجاهَل يدويًا</div>
+    <div class="stat"><b style="color:#fde68a">${unsupported}</b>يحتاج مراجعة يدوية</div>
+  `;
+  document.getElementById('btnApply').disabled = ready === 0;
+}
+
+async function applyChanges() {
+  const toApply = plan.filter((p) => p.kind !== 'unsupported' && !p.excluded);
+  if (!toApply.length) return;
+  if (!confirm(`سيتم تصحيح وحدة ${toApply.length} صنفًا على النظام الحي الآن. هل أنت متأكد؟`)) return;
+
+  document.getElementById('btnApply').disabled = true;
+  log(`\n=== بدء التطبيق: ${toApply.length} صنف ===`);
+  let success = 0, failed = 0;
+
+  for (const p of toApply) {
+    try {
+      if (p.ingredient.hasMovement) {
+        await api(`/ingredients/${p.ingredient.id}/convert-unit`, { method: 'PATCH', body: { toUnit: p.toUnit } });
+      } else {
+        await api(`/ingredients/${p.ingredient.id}`, { method: 'PATCH', body: { unit: p.toUnit } });
+      }
+      log(`✅ ${p.name}: ${p.fromUnit} → ${p.toUnit}`);
+      success++;
+    } catch (e) {
+      log(`❌ ${p.name}: ${e.message}`, 'err');
+      failed++;
+    }
+  }
+  log(`\n=== انتهى: ${success} نجح، ${failed} فشل ===`);
+  document.getElementById('btnApply').disabled = false;
+}
+</script>
+</body>
+</html>

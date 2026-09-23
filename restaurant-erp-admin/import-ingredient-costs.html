@@ -80,6 +80,11 @@
       <button id="btnLogin" onclick="doLogin()">دخول</button>
     </div>
   </div>
+  <div class="row" style="margin-top:8px; align-items:center;">
+    <label style="display:flex; align-items:center; gap:6px; margin:0;">
+      <input type="checkbox" id="remember"> تذكّر بيانات الدخول على هذا الجهاز فقط (لا تُرفع لأي مكان)
+    </label>
+  </div>
   <div id="loginStatus" class="small muted" style="margin-top:8px;"></div>
 </div>
 
@@ -193,6 +198,20 @@ async function api(path, options = {}) {
   return res.json();
 }
 
+const REMEMBER_KEY = 'cost-import-tool-saved-login';
+function restoreSavedLogin() {
+  try {
+    const raw = localStorage.getItem(REMEMBER_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.apiBase) document.getElementById('apiBase').value = saved.apiBase;
+    if (saved.phone) document.getElementById('phone').value = saved.phone;
+    if (saved.password) document.getElementById('password').value = saved.password;
+    document.getElementById('remember').checked = true;
+  } catch (e) { /* private browsing / blocked storage -- just skip */ }
+}
+restoreSavedLogin();
+
 async function doLogin() {
   const phone = document.getElementById('phone').value.trim();
   const password = document.getElementById('password').value;
@@ -205,6 +224,13 @@ async function doLogin() {
     accessToken = body.accessToken; refreshToken = body.refreshToken;
     statusEl.textContent = '✅ تم تسجيل الدخول';
     document.getElementById('loadCard').style.display = '';
+    try {
+      if (document.getElementById('remember').checked) {
+        localStorage.setItem(REMEMBER_KEY, JSON.stringify({ apiBase: apiBase(), phone, password }));
+      } else {
+        localStorage.removeItem(REMEMBER_KEY);
+      }
+    } catch (e) { /* storage unavailable -- login still works, just won't be remembered */ }
   } catch (e) {
     statusEl.textContent = '❌ خطأ في الاتصال: ' + e.message;
   }

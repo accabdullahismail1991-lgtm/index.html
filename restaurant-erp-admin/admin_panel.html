@@ -3621,30 +3621,38 @@ async function saveBranchEdit(id) {
 
 /* ---------------- Ingredients ---------------- */
 let ingredientCostByIdCache = {};
+// Best-effort, same pattern as menu-item costs: gated behind analytics.view
+// (commercially sensitive), so a user without that permission still sees
+// ingredient/recipe screens fine -- just no cost figures instead of the
+// whole screen breaking. Real weighted-average cost from open batches wins;
+// an ingredient with no batches yet falls back to its own openingCost (see
+// Ingredient.openingCost schema comment), and is flagged "تقديرية" since it
+// isn't a real purchase/production cost yet. Requires ingredientsCache to
+// already be populated (for the openingCost fallback).
+async function fetchIngredientCostCache() {
+  const cache = {};
+  try {
+    const valuation = await api('/analytics/inventory-valuation');
+    const byId = new Map(valuation.lines.filter((l) => l.quantity > 0).map((l) => [l.ingredientId, l.value / l.quantity]));
+    for (const i of ingredientsCache) {
+      if (byId.has(i.id)) cache[i.id] = { cost: byId.get(i.id), estimated: false };
+      else if (i.openingCost != null) cache[i.id] = { cost: Number(i.openingCost), estimated: true };
+    }
+  } catch (e) { /* no analytics.view -- cache stays empty, rendered as '-' by callers */ }
+  return cache;
+}
+// Lazy, cached version for screens (recipe editors) that may open without
+// the Ingredients tab ever having been visited this session.
+async function ensureIngredientCostCache() {
+  await ensureIngredientsCache();
+  if (!Object.keys(ingredientCostByIdCache).length) ingredientCostByIdCache = await fetchIngredientCostCache();
+}
 async function loadIngredients() {
   try {
     await ensureUnitsOfMeasureCache();
     document.getElementById('i-unit').innerHTML = unitOptionsHtml('g');
     ingredientsCache = await api('/ingredients');
-
-    // Best-effort, same pattern as menu-item costs: gated behind
-    // analytics.view (commercially sensitive), so a user without that
-    // permission still sees the ingredient catalog fine -- just a '-' in
-    // the cost column instead of the whole tab breaking. Real weighted-
-    // average cost from open batches wins; an ingredient with no batches
-    // yet falls back to its own openingCost (see Ingredient.openingCost
-    // schema comment), and is flagged "تقديرية" since it isn't a real
-    // purchase/production cost yet.
-    ingredientCostByIdCache = {};
-    try {
-      const valuation = await api('/analytics/inventory-valuation');
-      const byId = new Map(valuation.lines.filter((l) => l.quantity > 0).map((l) => [l.ingredientId, l.value / l.quantity]));
-      for (const i of ingredientsCache) {
-        if (byId.has(i.id)) ingredientCostByIdCache[i.id] = { cost: byId.get(i.id), estimated: false };
-        else if (i.openingCost != null) ingredientCostByIdCache[i.id] = { cost: Number(i.openingCost), estimated: true };
-      }
-    } catch (e) { /* no analytics.view -- ingredientCostByIdCache stays empty, rendered as '-' below */ }
-
+    ingredientCostByIdCache = await fetchIngredientCostCache();
     renderIngredientCategoryOptions();
     renderIngredientsTable();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
@@ -3796,7 +3804,7 @@ async function toggleIngredientRecipe(id) {
   if (!opening) return;
   box.innerHTML = '<div class="empty">جارٍ التحميل...</div>';
   try {
-    const lines = await api('/ingredients/' + id + '/recipe');
+    const [lines] = await Promise.all([api('/ingredients/' + id + '/recipe'), ensureIngredientCostCache()]);
     renderRecipeEditor(box, id, lines, 'ingredient');
   } catch (e) { box.innerHTML = '❌ ' + e.message; }
 }
@@ -4170,7 +4178,7 @@ async function toggleItemRecipe(id) {
   if (!opening) return;
   box.innerHTML = '<div class="empty">جارٍ التحميل...</div>';
   try {
-    const lines = await api('/items/' + id + '/recipe');
+    const [lines] = await Promise.all([api('/items/' + id + '/recipe'), ensureIngredientCostCache()]);
     renderRecipeEditor(box, id, lines, 'item');
   } catch (e) { box.innerHTML = '❌ ' + e.message; }
 }
@@ -4180,14 +4188,16 @@ function renderRecipeEditor(box, parentId, lines, parentKind) {
   const options = ingredientsCache.map((i) => `<option value="${i.id}">${i.name} (${i.unit})</option>`).join('');
   const rowsHtml = (lines.length ? lines : [{ ingredient: { id: '' }, quantity: '' }]).map((l) => `
     <div class="recipe-row">
-      <select class="rq-ing" onchange="syncRowUnitOptions(this)">${options}</select>
-      <input class="rq-qty" type="number" step="0.001" value="${l.quantity || ''}" placeholder="الكمية">
-      <select class="rq-unit"></select>
-      <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>
+      <select class="rq-ing" onchange="syncRowUnitOptions(this); updateRecipeCosts('${parentId}')">${options}</select>
+      <input class="rq-qty" type="number" step="0.001" value="${l.quantity || ''}" placeholder="الكمية" oninput="updateRecipeCosts('${parentId}')">
+      <select class="rq-unit" onchange="updateRecipeCosts('${parentId}')"></select>
+      <span class="rq-cost num" style="min-width:70px;display:inline-block;color:var(--muted);font-size:12px"></span>
+      <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateRecipeCosts('${parentId}')">✕</button>
     </div>
   `).join('');
   box.innerHTML = `
     <div id="rows-${parentId}">${rowsHtml}</div>
+    <div id="recipe-total-${parentId}" class="hint" style="margin-top:8px;font-weight:600"></div>
     <div style="margin-top:8px;display:flex;gap:8px">
       <button class="ghost" onclick="addRecipeRow('${parentId}')">➕ مكوّن</button>
       <button onclick="saveRecipe('${parentId}','${parentKind}')">💾 حفظ الوصفة</button>
@@ -4199,17 +4209,51 @@ function renderRecipeEditor(box, parentId, lines, parentKind) {
   const rowEls = box.querySelectorAll('.recipe-row');
   lines.forEach((l, idx) => { if (rowEls[idx] && l.ingredient) rowEls[idx].querySelector('.rq-ing').value = l.ingredient.id; });
   rowEls.forEach((row) => { const sel = row.querySelector('.rq-ing'); syncRowUnitOptions(sel); enhanceIngredientSelect(sel); });
+  updateRecipeCosts(parentId);
 }
 function addRecipeRow(parentId) {
   const options = ingredientsCache.map((i) => `<option value="${i.id}">${i.name} (${i.unit})</option>`).join('');
   const container = document.getElementById('rows-' + parentId);
   const div = document.createElement('div');
   div.className = 'recipe-row';
-  div.innerHTML = `<select class="rq-ing" onchange="syncRowUnitOptions(this)">${options}</select><input class="rq-qty" type="number" step="0.001" placeholder="الكمية"><select class="rq-unit"></select><button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+  div.innerHTML = `<select class="rq-ing" onchange="syncRowUnitOptions(this); updateRecipeCosts('${parentId}')">${options}</select><input class="rq-qty" type="number" step="0.001" placeholder="الكمية" oninput="updateRecipeCosts('${parentId}')"><select class="rq-unit" onchange="updateRecipeCosts('${parentId}')"></select><span class="rq-cost num" style="min-width:70px;display:inline-block;color:var(--muted);font-size:12px"></span><button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateRecipeCosts('${parentId}')">✕</button>`;
   container.appendChild(div);
   const sel = div.querySelector('.rq-ing');
   syncRowUnitOptions(sel);
   enhanceIngredientSelect(sel);
+  updateRecipeCosts(parentId);
+}
+// Recomputes and displays each row's line cost (quantity converted into the
+// ingredient's own unit × its registered cost per that unit -- same figures
+// the ingredients list and Items tab already show) plus the running total,
+// live as the user edits the recipe, before anything is saved. Costs come
+// from ingredientCostByIdCache (populated by ensureIngredientCostCache());
+// a user without analytics.view sees no cost figures at all, same as
+// everywhere else costs are gated in this app.
+function updateRecipeCosts(parentId) {
+  const container = document.getElementById('rows-' + parentId);
+  const totalEl = document.getElementById('recipe-total-' + parentId);
+  if (!container || !totalEl) return;
+  if (!Object.keys(ingredientCostByIdCache).length) { totalEl.textContent = ''; return; }
+  let total = 0;
+  let anyEstimated = false;
+  let anyMissing = false;
+  container.querySelectorAll('.recipe-row').forEach((row) => {
+    const ingredientId = row.querySelector('.rq-ing').value;
+    const qty = parseFloat(row.querySelector('.rq-qty').value);
+    const unit = row.querySelector('.rq-unit').value;
+    const costEl = row.querySelector('.rq-cost');
+    if (!ingredientId || !qty) { costEl.textContent = ''; return; }
+    const info = ingredientCostByIdCache[ingredientId];
+    if (!info) { costEl.textContent = '-'; anyMissing = true; return; }
+    const lineCost = convertToIngredientUnit(ingredientId, qty, unit) * info.cost;
+    total += lineCost;
+    if (info.estimated) anyEstimated = true;
+    costEl.textContent = lineCost.toFixed(3);
+  });
+  totalEl.textContent = 'إجمالي تكلفة الوصفة: ' + total.toFixed(3)
+    + (anyEstimated ? ' 🔸 (تتضمن تكلفة تقديرية لبعض المكوّنات)' : '')
+    + (anyMissing ? ' ⚠️ (يوجد مكوّن بدون بيانات تكلفة)' : '');
 }
 async function saveRecipe(parentId, parentKind) {
   const container = document.getElementById('rows-' + parentId);

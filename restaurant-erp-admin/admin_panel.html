@@ -455,14 +455,39 @@
 <div id="loginScreen">
   <div class="login-card">
     <h1>🍽️ Restaurant ERP — لوحة التحكم</h1>
-    <label>عنوان الـ API</label>
-    <input id="apiBase" value="http://localhost:3000">
-    <label>رقم الجوال أو اسم المستخدم</label>
-    <input id="phone" value="+966500000000" placeholder="رقم الجوال أو اسم المستخدم">
-    <label>كلمة المرور</label>
-    <input id="password" type="password" value="ChangeMe123!">
-    <button class="full" id="loginBtn" onclick="doLogin()">تسجيل الدخول</button>
+    <!-- A real <form> (not just a button's onclick) plus name/autocomplete
+         on each field is what actually gets a browser's own password
+         manager to offer saving/autofilling the login -- no custom storage
+         of the password itself needed or wanted. -->
+    <form id="loginForm" autocomplete="on" onsubmit="event.preventDefault(); doLogin(); return false;">
+      <label>عنوان الـ API</label>
+      <input id="apiBase" value="http://localhost:3000">
+      <label>رقم الجوال أو اسم المستخدم</label>
+      <input id="phone" name="username" autocomplete="username" value="+966500000000" placeholder="رقم الجوال أو اسم المستخدم">
+      <label>كلمة المرور</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" value="ChangeMe123!">
+      <button class="full" id="loginBtn" type="submit">تسجيل الدخول</button>
+    </form>
     <div id="loginMsg" class="msg"></div>
+    <!-- No self-service request here on purpose -- see resetPasswordScreen
+         below and its accompanying script comment for why. -->
+    <div class="hint" style="margin-top:10px;text-align:center">🔑 نسيت كلمة المرور؟ تواصل مع مدير النظام لإصدار رابط استعادة</div>
+  </div>
+</div>
+
+<!-- ============ PASSWORD RESET (opened via ?resetToken=... in the URL) ============ -->
+<div id="resetPasswordScreen" class="hidden">
+  <div class="login-card">
+    <h1>🔑 تعيين كلمة مرور جديدة</h1>
+    <div class="hint">تم إصدار هذا الرابط لك من مدير النظام. أدخل كلمة مرور جديدة لحسابك أدناه.</div>
+    <label>عنوان الـ API</label>
+    <input id="rp-apiBase" value="http://localhost:3000">
+    <label>كلمة المرور الجديدة</label>
+    <input id="rp-password" type="password" autocomplete="new-password" placeholder="8 أحرف على الأقل">
+    <label>تأكيد كلمة المرور</label>
+    <input id="rp-password2" type="password" autocomplete="new-password" placeholder="أعد كتابة كلمة المرور">
+    <button class="full" id="rpSubmitBtn" onclick="submitPasswordReset()">تعيين كلمة المرور وتسجيل الدخول</button>
+    <div id="rpMsg" class="msg"></div>
   </div>
 </div>
 
@@ -1312,6 +1337,7 @@
           <div><label>الاسم</label><input id="u-full-name" placeholder="اسم المستخدم"></div>
           <div><label>الجوال</label><input id="u-phone" placeholder="+9665..."></div>
           <div><label>اسم المستخدم لتسجيل الدخول (اختياري)</label><input id="u-username" placeholder="مثال: cashier1"></div>
+          <div><label>البريد الإلكتروني (اختياري -- لملاحظة رابط استعادة كلمة المرور فقط، لا يُرسل إليه أي شيء)</label><input id="u-email" type="email" placeholder="user@example.com"></div>
           <div><label>كلمة المرور</label><input id="u-password" type="password" placeholder="8 أحرف على الأقل"></div>
         </div>
         <div class="row-form" style="margin-top:6px">
@@ -2313,6 +2339,54 @@ let menuItemsCache = [];
 document.getElementById('apiBase').addEventListener('change', (e) => {
   try { localStorage.setItem('restaurant_erp_admin_api_base', e.target.value.trim()); } catch (err) { /* ignore */ }
 });
+
+// Password reset: this app sends no email of its own (no SMTP/email
+// provider configured -- see User.email schema comment on the API side).
+// An admin generates a one-time link from the Users screen and forwards it
+// to the user themselves through whatever channel they like; that link is
+// just this same page with ?resetToken=... appended. If present, show the
+// "set a new password" panel INSTEAD of the normal login form -- consuming
+// the token is a public endpoint, no login needed first.
+(function checkForPasswordResetLink() {
+  const token = new URLSearchParams(location.search).get('resetToken');
+  if (!token) return;
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('resetPasswordScreen').classList.remove('hidden');
+  const savedApiBase = (() => { try { return localStorage.getItem('restaurant_erp_admin_api_base'); } catch (e) { return null; } })();
+  document.getElementById('rp-apiBase').value = savedApiBase || document.getElementById('apiBase').value;
+})();
+async function submitPasswordReset() {
+  const token = new URLSearchParams(location.search).get('resetToken');
+  const apiBaseVal = document.getElementById('rp-apiBase').value.trim().replace(/\/$/, '');
+  const password = document.getElementById('rp-password').value;
+  const password2 = document.getElementById('rp-password2').value;
+  if (!password || password.length < 8) { showMsg('rpMsg', '⚠️ كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'err'); return; }
+  if (password !== password2) { showMsg('rpMsg', '⚠️ كلمتا المرور غير متطابقتين', 'err'); return; }
+  const btn = document.getElementById('rpSubmitBtn');
+  btn.disabled = true; btn.textContent = 'جارٍ الحفظ...';
+  try {
+    const res = await fetch(apiBaseVal + '/auth/reset-password', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, newPassword: password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
+    showMsg('rpMsg', '✅ تم تعيين كلمة المرور. يمكنك الآن تسجيل الدخول بها.', 'ok');
+    // Drop ?resetToken from the URL (it's single-use and now spent either
+    // way) and switch back to the normal login form, pre-filled with the
+    // same API base, ready to log in with the password just set.
+    history.replaceState(null, '', location.pathname);
+    document.getElementById('apiBase').value = apiBaseVal;
+    setTimeout(() => {
+      document.getElementById('resetPasswordScreen').classList.add('hidden');
+      document.getElementById('loginScreen').classList.remove('hidden');
+    }, 1200);
+  } catch (e) {
+    showMsg('rpMsg', '❌ ' + e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'تعيين كلمة المرور وتسجيل الدخول';
+  }
+}
 
 // App-shell caching only (see service-worker.js) -- requires a secure
 // context (https or localhost), same browser restriction Service Workers
@@ -7650,9 +7724,13 @@ async function loadUsersTab() {
           <td>${u.roles.map((r) => r.name).join('، ') || '-'}</td>
           <td>${u.locations.length ? u.locations.map((l) => l.name).join('، ') : 'كل الفروع'}</td>
           <td>${u.isActive ? '✅ نشط' : '⛔ معطّل'}</td>
-          <td><button class="link-btn" onclick="toggleUserEdit('${u.id}')">✏️ تعديل</button></td>
+          <td>
+            <button class="link-btn" onclick="toggleUserEdit('${u.id}')">✏️ تعديل</button>
+            <button class="link-btn" onclick="generatePasswordResetLink('${u.id}')">🔑 رابط استعادة</button>
+          </td>
         </tr>
         <tr id="edit-user-row-${u.id}" class="hidden"><td colspan="7"><div class="recipe-box" id="edit-user-box-${u.id}"></div></td></tr>
+        <tr id="reset-link-row-${u.id}" class="hidden"><td colspan="7"><div class="recipe-box" id="reset-link-box-${u.id}"></div></td></tr>
       `).join('')
       : `<tr><td colspan="7" class="empty">لا يوجد مستخدمون بعد</td></tr>`;
     renderCheckboxList('u-roles-checks', rolesCache, [], 'u-role-check');
@@ -7663,6 +7741,7 @@ async function createUser() {
   const name = document.getElementById('u-full-name').value.trim();
   const phone = document.getElementById('u-phone').value.trim();
   const username = document.getElementById('u-username').value.trim();
+  const email = document.getElementById('u-email').value.trim();
   const password = document.getElementById('u-password').value;
   if (!name || !phone) { showMsg('u-msg-users', '⚠️ اكتب الاسم والجوال', 'err'); return; }
   if (!password || password.length < 8) { showMsg('u-msg-users', '⚠️ كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'err'); return; }
@@ -7671,14 +7750,54 @@ async function createUser() {
   try {
     const body = { name, phone, password, roleIds, locationIds };
     if (username) body.username = username;
+    if (email) body.email = email;
     await api('/users', { method: 'POST', body: JSON.stringify(body) });
     document.getElementById('u-full-name').value = '';
     document.getElementById('u-phone').value = '';
     document.getElementById('u-username').value = '';
+    document.getElementById('u-email').value = '';
     document.getElementById('u-password').value = '';
     showMsg('u-msg-users', '✅ تمت إضافة المستخدم', 'ok');
     loadUsersTab();
   } catch (e) { showMsg('u-msg-users', '❌ ' + e.message, 'err'); }
+}
+// Generates a one-time password-reset link (see the reset-password screen
+// script comment at the top of this file for why there is no email
+// sending involved) and shows it in a copyable box for the admin to
+// forward to the user themselves. The raw token is only ever available
+// right here, right now -- regenerating discards it.
+async function generatePasswordResetLink(id) {
+  const row = document.getElementById('reset-link-row-' + id);
+  const box = document.getElementById('reset-link-box-' + id);
+  row.classList.remove('hidden');
+  box.innerHTML = '<div class="empty">جارٍ الإصدار...</div>';
+  try {
+    const res = await api('/users/' + id + '/password-reset-token', { method: 'POST' });
+    const link = location.origin + location.pathname + '?resetToken=' + res.token;
+    const expiresLabel = new Date(res.expiresAt).toLocaleString('ar-SA');
+    box.innerHTML = `
+      <div class="hint" style="margin-bottom:6px">⏳ صالح حتى ${expiresLabel} -- استخدام واحد فقط. انسخ الرابط وأرسله للمستخدم بنفسك (واتساب/بريد/شخصيًا).</div>
+      <div class="row-form" style="margin-top:0">
+        <div style="flex:3"><input id="reset-link-text-${id}" value="${link}" readonly onclick="this.select()"></div>
+        <div><button type="button" onclick="copyResetLink('${id}')">📋 نسخ</button></div>
+        <div><button type="button" class="ghost" onclick="document.getElementById('reset-link-row-${id}').classList.add('hidden')">إخفاء</button></div>
+      </div>
+    `;
+  } catch (e) {
+    box.innerHTML = '❌ ' + e.message;
+  }
+}
+async function copyResetLink(id) {
+  const input = document.getElementById('reset-link-text-' + id);
+  try {
+    await navigator.clipboard.writeText(input.value);
+    flashGlobal('✅ تم نسخ الرابط', 'ok');
+  } catch (e) {
+    // Clipboard API unavailable (non-secure context, older browser) --
+    // select the text so the admin can still copy it with Ctrl/Cmd+C.
+    input.select();
+    flashGlobal('⚠️ انسخ الرابط يدويًا (تم تحديد النص)', 'err');
+  }
 }
 function toggleUserEdit(id) {
   const row = document.getElementById('edit-user-row-' + id);
@@ -7691,6 +7810,7 @@ function toggleUserEdit(id) {
     <div class="row-form">
       <div><label>الاسم</label><input id="eu-name-${id}" value="${u.name}"></div>
       <div><label>اسم المستخدم لتسجيل الدخول (اختياري)</label><input id="eu-username-${id}" value="${u.username || ''}" placeholder="مثال: cashier1"></div>
+      <div><label>البريد الإلكتروني (اختياري -- لملاحظة رابط استعادة كلمة المرور فقط)</label><input id="eu-email-${id}" type="email" value="${u.email || ''}" placeholder="user@example.com"></div>
       <div><label>كلمة مرور جديدة (اتركها فارغة لعدم التغيير)</label><input id="eu-password-${id}" type="password" placeholder="8 أحرف على الأقل"></div>
       <div><label><input type="checkbox" id="eu-active-${id}" style="width:auto;display:inline" ${u.isActive ? 'checked' : ''}> نشط</label></div>
     </div>
@@ -7706,6 +7826,7 @@ function toggleUserEdit(id) {
 async function saveUserEdit(id) {
   const name = document.getElementById('eu-name-' + id).value.trim();
   const username = document.getElementById('eu-username-' + id).value.trim();
+  const email = document.getElementById('eu-email-' + id).value.trim();
   const isActive = document.getElementById('eu-active-' + id).checked;
   const password = document.getElementById('eu-password-' + id).value;
   const roleIds = Array.from(document.querySelectorAll('.eu-role-check-' + id + ':checked')).map((el) => el.value);
@@ -7714,6 +7835,7 @@ async function saveUserEdit(id) {
   const body = { name, isActive, roleIds, locationIds };
   if (password) body.password = password;
   if (username) body.username = username;
+  if (email) body.email = email;
   try {
     await api('/users/' + id, { method: 'PATCH', body: JSON.stringify(body) });
     flashGlobal('✅ تم حفظ المستخدم', 'ok');

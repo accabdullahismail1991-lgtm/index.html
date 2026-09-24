@@ -120,7 +120,10 @@
   <h2>مقارنة وصفة الشبه مصنّع — عجينة كريب (صنف "كريب" في النظام)</h2>
   <div class="table-wrap" style="max-height:320px;">
     <table>
-      <thead><tr><th>المكوّن</th><th>الكمية لكل لقمة (المطلوب)</th><th>وحدة الصنف بالنظام</th><th>الكمية المسجّلة حاليًا</th><th>الحالة</th></tr></thead>
+      <thead><tr>
+        <th>المكوّن</th><th>الكمية لكل لقمة (المطلوب)</th><th>وحدة الصنف بالنظام</th><th>تكلفة الوحدة (المسجّلة)</th>
+        <th>تكلفة لكل لقمة (مطلوب)</th><th>الكمية المسجّلة حاليًا</th><th>تكلفة المسجّل حاليًا</th><th>الحالة</th>
+      </tr></thead>
       <tbody id="semiBody"></tbody>
     </table>
   </div>
@@ -396,19 +399,31 @@ function toggleDetail(idx) {
   const p = plan[idx];
   const map = computeDiff(p);
   const rows = [...map.entries()].map(([id, v]) => {
+    const unitCost = avgCost(id);
+    const targetCost = v.targetQty != null ? v.targetQty * unitCost : null;
+    const existingCost = v.existingQty != null ? v.existingQty * unitCost : null;
     const tClass = v.targetQty == null ? 'extra' : v.existingQty == null ? 'miss' : (Math.abs(v.targetQty - v.existingQty) > Math.max(0.001, Math.abs(v.targetQty) * 0.01) ? 'miss' : 'close-enough');
     return `<tr class="${tClass}">
-      <td>${v.name}</td><td class="num">${v.targetQty != null ? v.targetQty.toFixed(4) : '—'}</td>
-      <td class="num">${v.existingQty != null ? v.existingQty.toFixed(4) : '—'}</td><td>${v.unit}</td>
+      <td>${v.name}</td><td>${v.unit}</td><td class="num">${unitCost.toFixed(4)}</td>
+      <td class="num">${v.targetQty != null ? v.targetQty.toFixed(4) : '—'}</td>
+      <td class="num">${targetCost != null ? targetCost.toFixed(4) : '—'}</td>
+      <td class="num">${v.existingQty != null ? v.existingQty.toFixed(4) : '—'}</td>
+      <td class="num">${existingCost != null ? existingCost.toFixed(4) : '—'}</td>
     </tr>`;
   }).join('');
   const tr = document.createElement('tr');
   tr.id = 'detail-' + idx;
   tr.className = 'detail-row';
   tr.innerHTML = `<td colspan="7">
-    <table class="detail-table"><thead><tr><th>المكوّن</th><th>المطلوب</th><th>المسجّل حاليًا</th><th>الوحدة</th></tr></thead>
-    <tbody>${rows}</tbody></table>
-    <div class="small muted" style="margin-top:6px;">أزرق = موجود بالنظام وغير مطلوب بالكشف. أحمر = فرق بالكمية أو غير مسجّل أصلًا. رمادي = مطابق تقريبًا.</div>
+    <table class="detail-table">
+      <thead><tr>
+        <th>المكوّن</th><th>الوحدة</th><th>تكلفة الوحدة (المسجّلة حاليًا)</th>
+        <th>الكمية المطلوبة</th><th>تكلفة المطلوب</th>
+        <th>الكمية المسجّلة حاليًا</th><th>تكلفة المسجّل حاليًا</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="small muted" style="margin-top:6px;">أزرق = موجود بالنظام وغير مطلوب بالكشف. أحمر = فرق بالكمية أو غير مسجّل أصلًا. رمادي = مطابق تقريبًا. تكلفة الوحدة = متوسط التكلفة المسجّلة حاليًا لكل وحدة قياس (وحدة الصنف نفسها بالنظام) من أرصدة المخزون، أو التكلفة الابتدائية إن لم توجد حركة.</div>
   </td>`;
   document.getElementById('plan-row-' + idx).after(tr);
 }
@@ -424,11 +439,17 @@ function renderSemi() {
       : !existing ? '<span class="badge warn">غير مسجّل</span>'
       : Math.abs(Number(existing.quantity) - l.resolved.qty) > Math.max(0.0001, l.resolved.qty * 0.01) ? '<span class="badge warn">يختلف</span>'
       : '<span class="badge ok">مطابق</span>';
+    const unitCost = ok ? avgCost(l.resolved.ingredient.id) : null;
+    const targetCost = ok ? l.resolved.qty * unitCost : null;
+    const existingCost = ok && existing ? Number(existing.quantity) * unitCost : null;
     return `<tr>
       <td>${l.targetName}</td>
       <td class="num">${l.qtyPerPortion.toFixed(4)} ${l.word}</td>
       <td>${ok ? l.resolved.ingredient.unit : '—'}</td>
+      <td class="num">${unitCost != null ? unitCost.toFixed(4) : '—'}</td>
+      <td class="num">${targetCost != null ? targetCost.toFixed(4) : '—'}</td>
       <td class="num">${existing ? Number(existing.quantity).toFixed(4) : '—'}</td>
+      <td class="num">${existingCost != null ? existingCost.toFixed(4) : '—'}</td>
       <td>${status}</td>
     </tr>`;
   }).join('');

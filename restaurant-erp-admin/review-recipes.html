@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>مراجعة وصفات الأصناف والشبه مصنّع</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 20px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 24px 0 8px; color: #93c5fd; }
+  p.hint { color: #94a3b8; font-size: 13px; margin: 4px 0 16px; line-height: 1.7; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  label { font-size: 13px; color: #cbd5e1; display: block; margin-bottom: 4px; }
+  input[type=text], input[type=password] {
+    background: #0f172a; border: 1px solid #475569; color: #e2e8f0; border-radius: 6px; padding: 8px 10px; font-size: 13px; width: 100%;
+  }
+  .field { flex: 1; min-width: 200px; }
+  button {
+    background: #2563eb; color: #fff; border: none; border-radius: 6px; padding: 9px 16px; font-size: 13px; cursor: pointer; font-weight: 600;
+  }
+  button:hover { background: #1d4ed8; }
+  button.small { padding: 4px 10px; font-size: 11px; }
+  button.danger { background: #b91c1c; } button.danger:hover { background: #991b1b; }
+  button.secondary { background: #334155; } button.secondary:hover { background: #475569; }
+  button:disabled { background: #475569; cursor: not-allowed; opacity: .6; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid #334155; vertical-align: middle; }
+  th { background: #0f172a; color: #93c5fd; position: sticky; top: 0; }
+  tr.cat-header td { background: #16233b; color: #fbbf24; font-weight: 700; padding-top: 12px; }
+  tr.ok { background: rgba(34,197,94,.05); }
+  tr.diff { background: rgba(234,179,8,.06); }
+  tr.notfound { background: rgba(239,68,68,.05); }
+  tr.excluded td { opacity: .45; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .badge.ok { background: #14532d; color: #86efac; }
+  .badge.warn { background: #713f12; color: #fde68a; }
+  .badge.bad { background: #7f1d1d; color: #fca5a5; }
+  .badge.info { background: #1e3a5f; color: #93c5fd; }
+  .num { font-variant-numeric: tabular-nums; }
+  #log { background: #000; color: #4ade80; font-family: 'Consolas', monospace; font-size: 12px; padding: 12px; border-radius: 8px; height: 260px; overflow-y: auto; white-space: pre-wrap; }
+  #log .err { color: #f87171; }
+  .stat { display: inline-block; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; margin-inline-end: 8px; margin-bottom: 8px; }
+  .stat b { display: block; font-size: 18px; }
+  .table-wrap { max-height: 640px; overflow: auto; border: 1px solid #334155; border-radius: 8px; }
+  .muted { color: #64748b; }
+  .small { font-size: 11px; }
+  .detail-row td { background: #0b1322; padding: 10px 14px; }
+  .detail-table { font-size: 11.5px; }
+  .detail-table th, .detail-table td { padding: 3px 6px; border-bottom: 1px solid #1e293b; }
+  .miss { color: #fca5a5; }
+  .extra { color: #93c5fd; }
+  .close-enough { color: #64748b; }
+  input[type=checkbox] { width: 16px; height: 16px; }
+</style>
+</head>
+<body>
+
+<h1>🧾 مراجعة وصفات الأصناف والشبه مصنّع</h1>
+<p class="hint">
+  هذه الأداة تُطبّق مباشرة على النظام الحي (Live). تقارن الوصفة (المكوّنات والكميات) الصحيحة من الملف الذي رفعته لـ41 صنف منيو بالإضافة لعجينة الكريب
+  (شبه مصنّع)، مع الوصفة <b>المسجّلة فعليًا</b> في النظام الآن — وتحسب تكلفة كل وصفة مقترحة باستخدام <b>متوسط التكلفة المسجّلة حاليًا</b> لكل مكوّن
+  (من أرصدة المخزون المفتوحة، أو التكلفة الابتدائية إن لم توجد حركة بعد) — تمامًا كما طلبت. لا شيء يُكتب إلا بعد مراجعتك والضغط على "تطبيق" لكل صنف
+  على حدة أو دفعة واحدة للجاهز منها.
+</p>
+
+<div class="card">
+  <div class="row">
+    <div class="field">
+      <label>رابط الـ API</label>
+      <input type="text" id="apiBase" value="https://restaurant-erp-api-rbb9.onrender.com">
+    </div>
+    <div class="field">
+      <label>رقم الجوال أو اسم المستخدم</label>
+      <input type="text" id="phone" placeholder="+9665xxxxxxxx">
+    </div>
+    <div class="field">
+      <label>كلمة المرور</label>
+      <input type="password" id="password">
+    </div>
+    <div>
+      <label>&nbsp;</label>
+      <button id="btnLogin" onclick="doLogin()">دخول</button>
+    </div>
+  </div>
+  <div class="row" style="margin-top:8px; align-items:center;">
+    <label style="display:flex; align-items:center; gap:6px; margin:0;">
+      <input type="checkbox" id="remember"> تذكّر بيانات الدخول على هذا الجهاز فقط (لا تُرفع لأي مكان)
+    </label>
+  </div>
+  <div id="loginStatus" class="small muted" style="margin-top:8px;"></div>
+</div>
+
+<div class="card" id="loadCard" style="display:none;">
+  <button id="btnLoad" onclick="loadAndCompare()">1) تحميل الوصفات الحالية ومقارنتها</button>
+  <span class="small muted" style="margin-inline-start:10px;">يقرأ /ingredients و /items ووصفة كل صنف و/analytics/inventory-valuation فقط، لا يكتب شيئًا بعد.</span>
+</div>
+
+<div id="summaryCard" class="card" style="display:none;">
+  <div id="stats"></div>
+  <div class="row" style="margin-top:8px;">
+    <button id="btnApply" class="danger" onclick="applyChanges()" disabled>2) تطبيق الوصفات المؤكدة على النظام الحي</button>
+  </div>
+</div>
+
+<div id="tableCard" class="card" style="display:none;">
+  <h2>مقارنة وصفات أصناف المنيو (41 صنفًا)</h2>
+  <p class="hint small">اضغط على اسم الصنف لعرض تفاصيل المكوّنات (المطلوب مقابل المسجّل حاليًا). علّم "تجاهل" لأي صنف لا تريد تطبيقه.</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>تجاهل</th><th>الصنف</th><th>عدد المكوّنات (المطلوب)</th><th>الحالة الحالية</th><th>التكلفة المقترحة (بالتكلفة المسجّلة)</th><th>سعر البيع</th><th>الحالة</th></tr>
+      </thead>
+      <tbody id="mainBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="semiCard" class="card" style="display:none;">
+  <h2>مقارنة وصفة الشبه مصنّع — عجينة كريب (صنف "كريب" في النظام)</h2>
+  <div class="table-wrap" style="max-height:320px;">
+    <table>
+      <thead><tr><th>المكوّن</th><th>الكمية لكل لقمة (المطلوب)</th><th>وحدة الصنف بالنظام</th><th>الكمية المسجّلة حاليًا</th><th>الحالة</th></tr></thead>
+      <tbody id="semiBody"></tbody>
+    </table>
+  </div>
+  <div class="row" style="margin-top:10px;">
+    <button id="btnApplySemi" class="danger small" onclick="applySemi()" disabled>تطبيق وصفة عجينة الكريب</button>
+    <span id="semiStatus" class="small muted"></span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>سجل التنفيذ</h2>
+  <div id="log">في انتظار البدء...</div>
+</div>
+
+<script>
+const MASS_UNITS = { 'جم': 1, 'جرام': 1, g: 1, gram: 1, grams: 1, 'كجم': 1000, 'كيلوجرام': 1000, 'كيلو': 1000, kg: 1000, kilo: 1000, kilogram: 1000 };
+const VOLUME_UNITS = { 'مل': 1, 'مليلتر': 1, ml: 1, milliliter: 1, millilitre: 1, 'لتر': 1000, l: 1000, liter: 1000, litre: 1000 };
+const COUNT_WORDS = new Set(['حبة', 'قطعة', 'عدد', 'لقمة', 'صباع', 'علبة', 'ظرف', 'pcs', 'piece', 'pieces']);
+function unitFamilyOfSystemUnit(u) {
+  if (u in MASS_UNITS) return 'mass';
+  if (u in VOLUME_UNITS) return 'volume';
+  return 'count'; // pcs and anything else the system doesn't recognize as mass/volume is treated as count
+}
+// converts a quantity given in `word` (Excel's free-text unit word) into
+// the ingredient's own system unit -- returns null if the word's implied
+// family doesn't match the ingredient's real unit family (a genuine data
+// problem, not something to silently guess through).
+function convertToSystemUnit(qty, word, systemUnit) {
+  const fam = unitFamilyOfSystemUnit(systemUnit);
+  if (fam === 'mass') {
+    if (word == null || !(word in MASS_UNITS)) return null;
+    return qty * (MASS_UNITS[word] / (MASS_UNITS[systemUnit] || 1));
+  }
+  if (fam === 'volume') {
+    if (word == null || !(word in VOLUME_UNITS)) return null;
+    return qty * (VOLUME_UNITS[word] / (VOLUME_UNITS[systemUnit] || 1));
+  }
+  // count family: any recognized count word, or no word at all, is fine -- it's already a plain unit count
+  if (word != null && !(word in MASS_UNITS) && !(word in VOLUME_UNITS) && !COUNT_WORDS.has(word)) return null;
+  return qty;
+}
+
+/* === target recipes, built by reading the uploaded "تكاليف الأصناف" /
+   "الأصناف شبه المصنعة" sheets and resolving each free-text ingredient
+   name + quantity word to a specific live-system ingredient name (see the
+   session notes -- generic names like "كاتشاب"/"مخلل" cover more than one
+   real ingredient variant in the system, disambiguated here by the unit
+   word used: "ظرف" -> كاتشاب (ظرف), "جم" -> كاتشاب (جرام), etc.) === */
+const TARGET = {"menuItems": [{"category": "البرجر", "name": "برجر لحم مشوى ع الفحم", "sellingPrice": 15, "lines": [{"targetName": "خبز", "qty": 1.0, "word": null, "excelCost": 0.75}, {"targetName": "لحم", "qty": 100.0, "word": "جم", "excelCost": 3.4}, {"targetName": "خس", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "خيار مخلل", "qty": 20.0, "word": "جم", "excelCost": 0.05}, {"targetName": "طماطم", "qty": 20.0, "word": "جم", "excelCost": 0.035}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "تكساس صوص", "qty": 20.0, "word": "جم", "excelCost": 0.45}, {"targetName": "باربكيو", "qty": 10.0, "word": "جم", "excelCost": 0.5}, {"targetName": "موزريلا", "qty": 20.0, "word": "جم", "excelCost": 0.4}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.4}]}, {"category": "البرجر", "name": "دبل شماس برجر لحم", "sellingPrice": 23, "lines": [{"targetName": "خبز", "qty": 1.0, "word": null, "excelCost": 0.75}, {"targetName": "لحم", "qty": 200.0, "word": "جم", "excelCost": 6.8}, {"targetName": "خس", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "خيار مخلل", "qty": 20.0, "word": "جم", "excelCost": 0.05}, {"targetName": "طماطم", "qty": 20.0, "word": "جم", "excelCost": 0.035}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "تكساس صوص", "qty": 20.0, "word": "جم", "excelCost": 0.45}, {"targetName": "باربكيو", "qty": 10.0, "word": "جم", "excelCost": 0.5}, {"targetName": "موزريلا", "qty": 20.0, "word": "جم", "excelCost": 0.4}, {"targetName": "بصل", "qty": 20.0, "word": "جم", "excelCost": 0.1}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.4}]}, {"category": "البرجر", "name": "سندوتش شاورما دجاج صاج (صغير)", "sellingPrice": 8, "lines": [{"targetName": "لقمة", "qty": 1.0, "word": null, "excelCost": 0.6}, {"targetName": "شاورما", "qty": 50.0, "word": "جم", "excelCost": 1.42}, {"targetName": "ثومية", "qty": 20.0, "word": "جم", "excelCost": 0.08}, {"targetName": "كوكتيل", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "خيار مخلل", "qty": 20.0, "word": "جم", "excelCost": 0.05}, {"targetName": "بطاطس", "qty": 30.0, "word": "جم", "excelCost": 0.2}, {"targetName": "كاتشاب (جرام)", "qty": 10.0, "word": "جم", "excelCost": 0.04}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}]}, {"category": "البرجر", "name": "سندوتش شاورما دجاج صاج (كبير)", "sellingPrice": 11, "lines": [{"targetName": "لقمة", "qty": 1.0, "word": null, "excelCost": 0.6}, {"targetName": "شاورما", "qty": 70.0, "word": "جم", "excelCost": 1.96}, {"targetName": "ثومية", "qty": 20.0, "word": "جم", "excelCost": 0.08}, {"targetName": "كوكتيل", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "خيار مخلل", "qty": 20.0, "word": "جم", "excelCost": 0.05}, {"targetName": "بطاطس", "qty": 30.0, "word": "جم", "excelCost": 0.2}, {"targetName": "كاتشاب (جرام)", "qty": 10.0, "word": "جم", "excelCost": 0.04}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}]}, {"category": "البرجر", "name": "بوكس شاورما دجاج عربى (صغير)", "sellingPrice": 14, "lines": [{"targetName": "لقمة", "qty": 1.0, "word": null, "excelCost": 0.6}, {"targetName": "شاورما", "qty": 70.0, "word": "جم", "excelCost": 1.96}, {"targetName": "ثومية", "qty": 50.0, "word": "جم", "excelCost": 0.2}, {"targetName": "كوكتيل", "qty": 50.0, "word": "جم", "excelCost": 0.37}, {"targetName": "كاتشاب (جرام)", "qty": 40.0, "word": "جم", "excelCost": 0.16}, {"targetName": "خيار مخلل", "qty": 20.0, "word": "جم", "excelCost": 0.05}, {"targetName": "بطاطس", "qty": 200.0, "word": "جم", "excelCost": 1.33}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.6}]}, {"category": "البرجر", "name": "بوكس شاورما دجاج عربى (كبير)", "sellingPrice": 25, "lines": [{"targetName": "لقمة", "qty": 1.0, "word": null, "excelCost": 1.2}, {"targetName": "شاورما", "qty": 140.0, "word": "جم", "excelCost": 3.92}, {"targetName": "ثومية", "qty": 70.0, "word": "جم", "excelCost": 0.28}, {"targetName": "كوكتيل", "qty": 70.0, "word": "جم", "excelCost": 0.51}, {"targetName": "كاتشاب (جرام)", "qty": 50.0, "word": "جم", "excelCost": 0.2}, {"targetName": "خيار مخلل", "qty": 40.0, "word": "جم", "excelCost": 0.1}, {"targetName": "بطاطس", "qty": 230.0, "word": "جم", "excelCost": 1.52}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.6}]}, {"category": "البرجر", "name": "بوكس شاورما عربى مكس (كبير)", "sellingPrice": 26, "lines": [{"targetName": "لقمة", "qty": 1.0, "word": null, "excelCost": 1.2}, {"targetName": "شاورما دجاج", "qty": 70.0, "word": "جم", "excelCost": 1.96}, {"targetName": "شاورما لحم", "qty": 70.0, "word": "جم", "excelCost": 3.99}, {"targetName": "ثومية", "qty": 50.0, "word": "جم", "excelCost": 0.2}, {"targetName": "طحينة", "qty": 20.0, "word": "جم", "excelCost": 0.1}, {"targetName": "كوكتيل", "qty": 70.0, "word": "جم", "excelCost": 0.51}, {"targetName": "كاتشاب (جرام)", "qty": 40.0, "word": "جم", "excelCost": 0.16}, {"targetName": "خيار مخلل", "qty": 20.0, "word": "جم", "excelCost": 0.1}, {"targetName": "بصل+ بقدونس", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "بطاطس", "qty": 230.0, "word": "جم", "excelCost": 1.52}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.6}]}, {"category": "البرجر", "name": "سندوتش شاورما لحم صاج (صغير)", "sellingPrice": 8, "lines": [{"targetName": "لقمة", "qty": 1.0, "word": null, "excelCost": 0.6}, {"targetName": "شاورما لحم", "qty": 50.0, "word": "جم", "excelCost": 2.85}, {"targetName": "طحينة", "qty": 20.0, "word": "جم", "excelCost": 0.1}, {"targetName": "كوكتيل", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "سلطة بصل+ بقدونس", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "بطاطس", "qty": 30.0, "word": "جم", "excelCost": 0.2}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}]}, {"category": "البرجر", "name": "سندوتش شاورما لحم صاج (كبير)", "sellingPrice": 12, "lines": [{"targetName": "لقمة", "qty": 1.0, "word": null, "excelCost": 0.6}, {"targetName": "شاورما لحم", "qty": 70.0, "word": "جم", "excelCost": 3.99}, {"targetName": "طحينة", "qty": 20.0, "word": "جم", "excelCost": 0.1}, {"targetName": "كوكتيل", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "بصل+ بقدونس", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "بطاطس", "qty": 30.0, "word": "جم", "excelCost": 0.2}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}]}, {"category": "البرجر", "name": "بوكس شاورما لحم عربى صغير", "sellingPrice": 15, "lines": [{"targetName": "لقمة", "qty": 1.0, "word": null, "excelCost": 0.6}, {"targetName": "شاورما لحم", "qty": 70.0, "word": "جم", "excelCost": 3.99}, {"targetName": "طحينة", "qty": 20.0, "word": "جم", "excelCost": 0.1}, {"targetName": "كوكتيل", "qty": 50.0, "word": "جم", "excelCost": 0.37}, {"targetName": "ثومية", "qty": 30.0, "word": "جم", "excelCost": 0.12}, {"targetName": "سلطة", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "بطاطس", "qty": 20.0, "word": "جم", "excelCost": 1.33}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.6}, {"targetName": "كاتشاب (جرام)", "qty": 30.0, "word": "جم", "excelCost": 0.13}]}, {"category": "البرجر", "name": "بوكس شاورما لحم عربى كبير", "sellingPrice": 28, "lines": [{"targetName": "لقمة", "qty": 1.0, "word": null, "excelCost": 1.2}, {"targetName": "شاورما لحم", "qty": 140.0, "word": "جم", "excelCost": 7.98}, {"targetName": "طحينة", "qty": 40.0, "word": "جم", "excelCost": 0.2}, {"targetName": "كوكتيل", "qty": 70.0, "word": "جم", "excelCost": 0.51}, {"targetName": "ثومية", "qty": 30.0, "word": "جم", "excelCost": 0.12}, {"targetName": "سلطة", "qty": 40.0, "word": "جم", "excelCost": 0.3}, {"targetName": "بطاطس", "qty": 230.0, "word": "جم", "excelCost": 1.52}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.6}, {"targetName": "كاتشاب (جرام)", "qty": 30.0, "word": "جم", "excelCost": 0.13}]}, {"category": "البرجر", "name": "رغيف حواوشى صغير", "sellingPrice": 10, "lines": [{"targetName": "رغيف صغير", "qty": 1.0, "word": null, "excelCost": 0.25}, {"targetName": "لحم", "qty": 100.0, "word": "جم", "excelCost": 2.61}, {"targetName": "طحينة", "qty": 20.0, "word": "جم", "excelCost": 0.1}, {"targetName": "مخلل (جرام)", "qty": 30.0, "word": "جم", "excelCost": 0.3}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.4}]}, {"category": "البرجر", "name": "رغيف حواوشى كبير", "sellingPrice": 15, "lines": [{"targetName": "رغيف كبير", "qty": 1.0, "word": null, "excelCost": 0.33}, {"targetName": "لحم", "qty": 180.0, "word": "جم", "excelCost": 4.68}, {"targetName": "طحينة", "qty": 20.0, "word": "جم", "excelCost": 0.1}, {"targetName": "مخلل (جرام)", "qty": 30.0, "word": "جم", "excelCost": 0.3}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.4}]}, {"category": "كريب", "name": "كريب شاورما دجاج (عادى)", "sellingPrice": 25, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "شاورما دجاج", "qty": 140.0, "word": "جم", "excelCost": 3.92}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "صوص كوكتيل", "qty": 25.0, "word": "جم", "excelCost": 0.18}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص ثومية", "qty": 25.0, "word": "جم", "excelCost": 0.08}, {"targetName": "موزريلا", "qty": 70.0, "word": "جم", "excelCost": 1.4}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب شاورما دجاج (كونو)", "sellingPrice": 35, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "شاورما دجاج", "qty": 200.0, "word": "جم", "excelCost": 5.6}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "صوص كوكتيل", "qty": 25.0, "word": "جم", "excelCost": 0.18}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص ثومية", "qty": 25.0, "word": "جم", "excelCost": 0.08}, {"targetName": "موزريلا", "qty": 140.0, "word": "جم", "excelCost": 2.8}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.3}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب طاووق ع الفحم (عادى)", "sellingPrice": 25, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "طاووق نيىء", "qty": 200.0, "word": "جم", "excelCost": 4.6}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "صوص كوكتيل", "qty": 25.0, "word": "جم", "excelCost": 0.18}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "موزريلا", "qty": 70.0, "word": "جم", "excelCost": 1.4}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب طاووق ع الفحم (كونو)", "sellingPrice": 35, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "طاووق نيىء", "qty": 350.0, "word": "جم", "excelCost": 8.05}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "صوص كوكتيل", "qty": 25.0, "word": "جم", "excelCost": 0.18}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "موزريلا", "qty": 140.0, "word": "جم", "excelCost": 2.8}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب  سوبر كرانشى (عادى)", "sellingPrice": 25, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "استريبس", "qty": 200.0, "word": "جم", "excelCost": 5.4}, {"targetName": "صوص رانش", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "تركى مدخن", "qty": 10.0, "word": "جم", "excelCost": 0.54}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "موزريلا", "qty": 70.0, "word": "جم", "excelCost": 1.4}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب  سوبر كرانشى (كونو)", "sellingPrice": 35, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "استريبس", "qty": 300.0, "word": "جم", "excelCost": 8.1}, {"targetName": "صوص رانش", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "تركى مدخن", "qty": 10.0, "word": "جم", "excelCost": 0.54}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "موزريلا", "qty": 140.0, "word": "جم", "excelCost": 2.8}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب زنجر(عادى)", "sellingPrice": 25, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "استريبس", "qty": 200.0, "word": "جم", "excelCost": 5.4}, {"targetName": "صوص رانش", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "تركى مدخن", "qty": 10.0, "word": "جم", "excelCost": 0.54}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "موزريلا", "qty": 70.0, "word": "جم", "excelCost": 1.4}, {"targetName": "مايونيز حار", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "هاليبينو", "qty": 10.0, "word": "جم", "excelCost": 0.4}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب زنجر(كونو)", "sellingPrice": 35, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "استريبس", "qty": 300.0, "word": "جم", "excelCost": 8.1}, {"targetName": "صوص رانش", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "تركى مدخن", "qty": 10.0, "word": "جم", "excelCost": 0.54}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "هاليبينو", "qty": 10.0, "word": "جم", "excelCost": 0.4}, {"targetName": "موزريلا", "qty": 140.0, "word": "جم", "excelCost": 2.8}, {"targetName": "مايونيز", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب شاورما لحم (عادى)", "sellingPrice": 27, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "شاورما لحم", "qty": 140.0, "word": "جم", "excelCost": 7.98}, {"targetName": "طماطم", "qty": 20.0, "word": "جم", "excelCost": 0.035}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "طحينة", "qty": 20.0, "word": "جم", "excelCost": 0.1}, {"targetName": "موزريلا", "qty": 70.0, "word": "جم", "excelCost": 1.4}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب شاورما لحم (كونو)", "sellingPrice": 37, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "شاورما لحم", "qty": 200.0, "word": "جم", "excelCost": 11.4}, {"targetName": "طماطم", "qty": 20.0, "word": "جم", "excelCost": 0.035}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "طحينة", "qty": 20.0, "word": "جم", "excelCost": 0.1}, {"targetName": "موزريلا", "qty": 140.0, "word": "جم", "excelCost": 2.8}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب شيز برجر (عادى)", "sellingPrice": 24, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "شاورما لحم", "qty": 280.0, "word": "جم", "excelCost": 6.8}, {"targetName": "طماطم", "qty": 20.0, "word": "جم", "excelCost": 0.035}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص شيدر", "qty": 30.0, "word": "جم", "excelCost": 0.3}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "صوص تكساس", "qty": 10.0, "word": "جم", "excelCost": 0.45}, {"targetName": "موزريلا", "qty": 70.0, "word": "جم", "excelCost": 1.4}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب شيز برجر (كونو)", "sellingPrice": 34, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "شاورما لحم", "qty": 300.0, "word": "جم", "excelCost": 10.2}, {"targetName": "طماطم", "qty": 20.0, "word": "جم", "excelCost": 0.035}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص شيدر", "qty": 30.0, "word": "جم", "excelCost": 0.3}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "صوص تكساس", "qty": 20.0, "word": "جم", "excelCost": 0.45}, {"targetName": "موزريلا", "qty": 140.0, "word": "جم", "excelCost": 2.8}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": "ظرف", "excelCost": 0.1}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب السجق (عادى)", "sellingPrice": 33, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "سجق", "qty": 200.0, "word": "جم", "excelCost": 9}, {"targetName": "طماطم", "qty": 20.0, "word": "جم", "excelCost": 0.035}, {"targetName": "بصل", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "طحينة", "qty": 10.0, "word": "جم", "excelCost": 0.1}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "موزريلا", "qty": 70.0, "word": "جم", "excelCost": 1.4}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب السجق (كونو)", "sellingPrice": 43, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "سجق", "qty": 350.0, "word": "جم", "excelCost": 15.75}, {"targetName": "طماطم", "qty": 20.0, "word": "جم", "excelCost": 0.035}, {"targetName": "بصل", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "طحينة", "qty": 10.0, "word": "جم", "excelCost": 0.1}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "موزريلا", "qty": 140.0, "word": "جم", "excelCost": 2.8}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب سوسيس (عادى)", "sellingPrice": 25, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "هوت دوج", "qty": 2.0, "word": "صباع", "excelCost": 5.78}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "سويت شيلى", "qty": 10.0, "word": "جم", "excelCost": 0.28}, {"targetName": "رانش", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "موزريلا", "qty": 70.0, "word": "جم", "excelCost": 1.4}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب سوسيس (كونو)", "sellingPrice": 35, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "هوت دوج", "qty": 3.0, "word": "صباع", "excelCost": 8.67}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "سويت شيلى", "qty": 10.0, "word": "جم", "excelCost": 0.28}, {"targetName": "رانش", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "موزريلا", "qty": 140.0, "word": "جم", "excelCost": 2.8}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب حركات (عادى)", "sellingPrice": 25, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "برجر", "qty": 50.0, "word": "جم", "excelCost": 1.7}, {"targetName": "سوسيس", "qty": 50.0, "word": "جم", "excelCost": 1.445}, {"targetName": "شاورما دجاج", "qty": 50.0, "word": "جم", "excelCost": 1.42}, {"targetName": "استريبس", "qty": 50.0, "word": "جم", "excelCost": 1.35}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص كوكتيل", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "مستردة", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "موزريلا", "qty": 70.0, "word": "جم", "excelCost": 1.4}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب حركات (كونو)", "sellingPrice": 35, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "برجر", "qty": 100.0, "word": "جم", "excelCost": 3.4}, {"targetName": "سوسيس", "qty": 100.0, "word": "جم", "excelCost": 2.89}, {"targetName": "شاورما دجاج", "qty": 50.0, "word": "جم", "excelCost": 1.42}, {"targetName": "استريبس", "qty": 100.0, "word": "جم", "excelCost": 2.7}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص كوكتيل", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "مستردة", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "موزريلا", "qty": 140.0, "word": "جم", "excelCost": 2.8}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب بطاطس بالجبنة (عادى)", "sellingPrice": 14, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "بطاطس نص مقلية", "qty": 165.0, "word": "جم", "excelCost": 1.09}, {"targetName": "صوص شيدر", "qty": 40.0, "word": "جم", "excelCost": 0.4}, {"targetName": "صوص كوكتيل", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "موزريلا", "qty": 70.0, "word": "جم", "excelCost": 1.4}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب مكس جبن بسطرمة (عادى)", "sellingPrice": 25, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "بسطرمة", "qty": 30.0, "word": "جم", "excelCost": 3.84}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "جبنة روما", "qty": 40.0, "word": "جم", "excelCost": 1.4}, {"targetName": "صوص شيدر", "qty": 40.0, "word": "جم", "excelCost": 0.4}, {"targetName": "موزريلا", "qty": 100.0, "word": "جم", "excelCost": 2}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب كفته ع الفحم (عادى)", "sellingPrice": 25, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "لحم", "qty": 20.0, "word": "جم", "excelCost": 6.18}, {"targetName": "طماطم", "qty": 20.0, "word": "جم", "excelCost": 0.035}, {"targetName": "بصل", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "موزريلا", "qty": 70.0, "word": "جم", "excelCost": 1.4}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "طحينة", "qty": 20.0, "word": "جم", "excelCost": 0.1}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب كفته ع الفحم (كونو)", "sellingPrice": 35, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "لحم", "qty": 350.0, "word": "جم", "excelCost": 10.81}, {"targetName": "طماطم", "qty": 20.0, "word": "جم", "excelCost": 0.035}, {"targetName": "بصل", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "موزريلا", "qty": 140.0, "word": "جم", "excelCost": 2.8}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "طحينة", "qty": 20.0, "word": "جم", "excelCost": 0.1}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب  جمبرى بانية (عادى)", "sellingPrice": 35, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "جمبرى", "qty": 13.0, "word": "قطعة", "excelCost": 8.66}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "صوص راشى", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "صوص سويت شيلى", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "موزريلا", "qty": 70.0, "word": "جم", "excelCost": 1.4}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب  جمبرى بانية (كونو)", "sellingPrice": 45, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "جمبرى", "qty": 20.0, "word": "قطعة", "excelCost": 13.32}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "صوص راشى", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "صوص سويت شيلى", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "موزريلا", "qty": 140.0, "word": "جم", "excelCost": 2.8}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب مكس دجاج (عادى)", "sellingPrice": 25, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "استريبس", "qty": 100.0, "word": "جم", "excelCost": 2.7}, {"targetName": "طاووق", "qty": 100.0, "word": "جم", "excelCost": 2.3}, {"targetName": "مستردة", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "صوص كوكتيل", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "صوص شطة", "qty": 20.0, "word": "جم", "excelCost": 0.25}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "موزريلا", "qty": 70.0, "word": "جم", "excelCost": 1.4}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب مكس دجاج (كونو)", "sellingPrice": 35, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "استريبس", "qty": 150.0, "word": "جم", "excelCost": 4.05}, {"targetName": "طاووق", "qty": 200.0, "word": "جم", "excelCost": 4.6}, {"targetName": "مستردة", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "صوص كوكتيل", "qty": 20.0, "word": "جم", "excelCost": 0.15}, {"targetName": "صوص شطة", "qty": 20.0, "word": "جم", "excelCost": 0.25}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "موزريلا", "qty": 140.0, "word": "جم", "excelCost": 2.8}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب  مكس لحوم (عادى)", "sellingPrice": 25, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "لحم كفتة", "qty": 50.0, "word": "جم", "excelCost": 1.54}, {"targetName": "سوسيس", "qty": 50.0, "word": "جم", "excelCost": 1.44}, {"targetName": "شاورما لحم", "qty": 50.0, "word": "جم", "excelCost": 2.85}, {"targetName": "سجق", "qty": 50.0, "word": "جم", "excelCost": 2.25}, {"targetName": "صوص تكساس", "qty": 20.0, "word": "جم", "excelCost": 0.45}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "موزريلا", "qty": 70.0, "word": "جم", "excelCost": 1.4}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}, {"category": "كريب", "name": "كريب  مكس لحوم (كونو)", "sellingPrice": 35, "lines": [{"targetName": "كريب", "qty": 1.0, "word": "لقمة", "excelCost": 0.5}, {"targetName": "لحم كفتة", "qty": 100.0, "word": "جم", "excelCost": 3.08}, {"targetName": "سوسيس", "qty": 100.0, "word": "جم", "excelCost": 2.88}, {"targetName": "شاورما لحم", "qty": 50.0, "word": "جم", "excelCost": 2.85}, {"targetName": "سجق", "qty": 100.0, "word": "جم", "excelCost": 4.5}, {"targetName": "صوص تكساس", "qty": 20.0, "word": "جم", "excelCost": 0.45}, {"targetName": "صوص باربكيو", "qty": 20.0, "word": "جم", "excelCost": 0.28}, {"targetName": "صوص شطة", "qty": 10.0, "word": "جم", "excelCost": 0.25}, {"targetName": "كاتشاب (ظرف)", "qty": 2.0, "word": null, "excelCost": 0.1}, {"targetName": "موزريلا", "qty": 140.0, "word": "جم", "excelCost": 2.8}, {"targetName": "زيتون", "qty": 5.0, "word": "جم", "excelCost": 0.05}, {"targetName": "صوص شيدر", "qty": 20.0, "word": "جم", "excelCost": 0.2}, {"targetName": "فلفل", "qty": 20.0, "word": "جم", "excelCost": 0.11}, {"targetName": "باكينج", "qty": 1.0, "word": null, "excelCost": 0.3}, {"targetName": "مخلل (علبة)", "qty": 1.0, "word": "علبة", "excelCost": 0.3}]}], "semiFinished": {"name": "كريب", "producesLabel": "45 لقمة", "lines": [{"targetName": "دقيق", "qtyPerPortion": 0.111111111111111, "word": "كجم"}, {"targetName": "بيض", "qtyPerPortion": 0.0444444444444444, "word": "عدد"}, {"targetName": "حليب", "qtyPerPortion": 0.0444444444444444, "word": "لتر"}, {"targetName": "ملح", "qtyPerPortion": 0.555555555555556, "word": "جم"}, {"targetName": "سكر", "qtyPerPortion": 0.777777777777778, "word": "جم"}, {"targetName": "زيت", "qtyPerPortion": 1.11111111111111, "word": "جم"}, {"targetName": "زبدة", "qtyPerPortion": 2.22222222222222, "word": "جم"}, {"targetName": "فانيليا", "qtyPerPortion": 0.0444444444444444, "word": "علبة"}]}};
+
+let accessToken = null, refreshToken = null;
+function apiBase() { return document.getElementById('apiBase').value.trim().replace(/\/$/, ''); }
+function log(msg, cls) {
+  const el = document.getElementById('log');
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+async function rawApi(path, options = {}) {
+  return fetch(apiBase() + path, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}), ...(options.headers || {}) },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+}
+async function api(path, options = {}) {
+  let res = await rawApi(path, options);
+  if (res.status === 401 && refreshToken) {
+    const r = await fetch(apiBase() + '/auth/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken }) });
+    if (r.ok) {
+      const body = await r.json();
+      accessToken = body.accessToken; refreshToken = body.refreshToken || refreshToken;
+      res = await rawApi(path, options);
+    }
+  }
+  if (!res.ok) {
+    let msg = res.statusText;
+    try { const b = await res.json(); msg = b.message || msg; } catch (e) {}
+    throw new Error(`${res.status} ${Array.isArray(msg) ? msg.join(', ') : msg}`);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+const REMEMBER_KEY = 'review-recipes-tool-saved-login';
+function restoreSavedLogin() {
+  try {
+    const raw = localStorage.getItem(REMEMBER_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.apiBase) document.getElementById('apiBase').value = saved.apiBase;
+    if (saved.phone) document.getElementById('phone').value = saved.phone;
+    if (saved.password) document.getElementById('password').value = saved.password;
+    document.getElementById('remember').checked = true;
+  } catch (e) {}
+}
+restoreSavedLogin();
+
+async function doLogin() {
+  const phone = document.getElementById('phone').value.trim();
+  const password = document.getElementById('password').value;
+  const statusEl = document.getElementById('loginStatus');
+  statusEl.textContent = 'جارٍ تسجيل الدخول...';
+  try {
+    const res = await rawApi('/auth/login', { method: 'POST', body: { phone, password } });
+    if (!res.ok) { statusEl.textContent = '❌ فشل تسجيل الدخول (' + res.status + ')'; return; }
+    const body = await res.json();
+    accessToken = body.accessToken; refreshToken = body.refreshToken;
+    statusEl.textContent = '✅ تم تسجيل الدخول';
+    document.getElementById('loadCard').style.display = '';
+    try {
+      if (document.getElementById('remember').checked) {
+        localStorage.setItem(REMEMBER_KEY, JSON.stringify({ apiBase: apiBase(), phone, password }));
+      } else {
+        localStorage.removeItem(REMEMBER_KEY);
+      }
+    } catch (e) {}
+  } catch (e) {
+    statusEl.textContent = '❌ خطأ في الاتصال: ' + e.message;
+  }
+}
+
+let ingredientsCache = [], itemsCache = [], avgCostByIngredientId = new Map(), openingCostByIngredientId = new Map();
+let plan = []; // one entry per TARGET.menuItems row
+let semiPlan = null;
+function normalizeArabic(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
+
+function resolveLine(line, ingByName) {
+  const ing = ingByName.get(normalizeArabic(line.targetName));
+  if (!ing) return { ok: false, reason: `لا يوجد صنف بهذا الاسم في النظام: ${line.targetName}` };
+  const qtyInSystemUnit = convertToSystemUnit(line.qty, line.word, ing.unit);
+  if (qtyInSystemUnit == null) {
+    return { ok: false, reason: `وحدة غير متوافقة: الكشف يعطي "${line.word || 'بدون وحدة'}" لكن وحدة الصنف بالنظام "${ing.unit}"` };
+  }
+  return { ok: true, ingredient: ing, qty: qtyInSystemUnit };
+}
+
+function avgCost(ingredientId) {
+  if (avgCostByIngredientId.has(ingredientId)) return avgCostByIngredientId.get(ingredientId);
+  if (openingCostByIngredientId.has(ingredientId)) return openingCostByIngredientId.get(ingredientId);
+  return 0;
+}
+
+async function loadAndCompare() {
+  const btn = document.getElementById('btnLoad');
+  btn.disabled = true;
+  log('جارٍ تحميل /ingredients و /items و /analytics/inventory-valuation ...');
+  try {
+    ingredientsCache = await api('/ingredients');
+    itemsCache = await api('/items');
+    const valuation = await api('/analytics/inventory-valuation');
+    for (const l of valuation.lines) {
+      if (l.quantity > 0) avgCostByIngredientId.set(l.ingredientId, l.value / l.quantity);
+    }
+    for (const i of ingredientsCache) {
+      if (i.openingCost != null) openingCostByIngredientId.set(i.id, Number(i.openingCost));
+    }
+    log(`تم تحميل ${ingredientsCache.length} صنف مكوّن، ${itemsCache.length} صنف منيو.`);
+  } catch (e) {
+    log('❌ فشل التحميل: ' + e.message, 'err');
+    btn.disabled = false;
+    return;
+  }
+
+  const ingByName = new Map(ingredientsCache.map((i) => [normalizeArabic(i.name), i]));
+  const itemByName = new Map(itemsCache.map((i) => [normalizeArabic(i.name), i]));
+
+  plan = [];
+  for (const target of TARGET.menuItems) {
+    const liveItem = itemByName.get(normalizeArabic(target.name));
+    const resolvedLines = target.lines.map((l) => ({ ...l, resolved: resolveLine(l, ingByName) }));
+    const allResolved = resolvedLines.every((l) => l.resolved.ok);
+    let existingLines = null;
+    if (liveItem) {
+      try {
+        existingLines = await api(`/items/${liveItem.id}/recipe`);
+      } catch (e) {
+        existingLines = [];
+      }
+    }
+    plan.push({ target, liveItem, resolvedLines, existingLines, excluded: false, allResolved });
+  }
+
+  // semi-finished "كريب"
+  const criepIng = ingByName.get(normalizeArabic(TARGET.semiFinished.name));
+  const semiResolvedLines = TARGET.semiFinished.lines.map((l) => ({ ...l, resolved: resolveLine({ targetName: l.targetName, qty: l.qtyPerPortion, word: l.word }, ingByName) }));
+  let semiExisting = null;
+  if (criepIng) {
+    try { semiExisting = await api(`/ingredients/${criepIng.id}/recipe`); } catch (e) { semiExisting = []; }
+  }
+  semiPlan = { ingredient: criepIng, resolvedLines: semiResolvedLines, existing: semiExisting, allResolved: semiResolvedLines.every((l) => l.resolved.ok) };
+
+  renderTable();
+  renderSemi();
+  recomputeStats();
+  document.getElementById('summaryCard').style.display = '';
+  document.getElementById('tableCard').style.display = '';
+  document.getElementById('semiCard').style.display = '';
+  btn.disabled = false;
+}
+
+function computeDiff(p) {
+  // maps ingredientId -> {targetQty, existingQty}
+  const map = new Map();
+  for (const l of p.resolvedLines) {
+    if (!l.resolved.ok) continue;
+    map.set(l.resolved.ingredient.id, { name: l.resolved.ingredient.name, unit: l.resolved.ingredient.unit, targetQty: l.resolved.qty, existingQty: null });
+  }
+  if (p.existingLines) {
+    for (const el of p.existingLines) {
+      const id = el.ingredient.id;
+      if (map.has(id)) map.get(id).existingQty = Number(el.quantity);
+      else map.set(id, { name: el.ingredient.name, unit: el.ingredient.unit, targetQty: null, existingQty: Number(el.quantity) });
+    }
+  }
+  return map;
+}
+
+function diffStatus(p) {
+  if (!p.liveItem) return 'notfound';
+  if (!p.existingLines || p.existingLines.length === 0) return 'missing';
+  const map = computeDiff(p);
+  for (const v of map.values()) {
+    if (v.targetQty == null || v.existingQty == null) return 'diff';
+    if (Math.abs(v.targetQty - v.existingQty) > Math.max(0.001, Math.abs(v.targetQty) * 0.01)) return 'diff';
+  }
+  return 'match';
+}
+
+function proposedCost(p) {
+  return p.resolvedLines.reduce((s, l) => s + (l.resolved.ok ? l.resolved.qty * avgCost(l.resolved.ingredient.id) : 0), 0);
+}
+
+function renderTable() {
+  const body = document.getElementById('mainBody');
+  body.innerHTML = '';
+  let lastCat = null;
+  plan.forEach((p, idx) => {
+    if (p.target.category !== lastCat) {
+      lastCat = p.target.category;
+      const tr = document.createElement('tr');
+      tr.className = 'cat-header';
+      tr.innerHTML = `<td colspan="7">${lastCat}</td>`;
+      body.appendChild(tr);
+    }
+    const status = diffStatus(p);
+    const cost = proposedCost(p);
+    const tr = document.createElement('tr');
+    tr.id = 'plan-row-' + idx;
+    tr.className = p.excluded ? 'excluded' : (status === 'notfound' ? 'notfound' : (status === 'match' ? 'ok' : 'diff'));
+    const statusBadge = status === 'notfound' ? '<span class="badge bad">الصنف غير موجود بالنظام</span>'
+      : status === 'missing' ? '<span class="badge warn">لا توجد وصفة مسجّلة</span>'
+      : status === 'diff' ? '<span class="badge warn">تختلف عن المسجّل</span>'
+      : '<span class="badge ok">مطابقة</span>';
+    tr.innerHTML = `
+      <td><input type="checkbox" ${p.excluded ? 'checked' : ''} onchange="plan[${idx}].excluded=this.checked; renderTable(); recomputeStats();"></td>
+      <td><a href="#" class="small" style="color:#93c5fd;" onclick="toggleDetail(${idx}); return false;">${p.target.name}</a>${!p.allResolved ? ' <span class="badge bad small">مكوّن غير مطابق</span>' : ''}</td>
+      <td class="num">${p.target.lines.length}</td>
+      <td class="small">${p.existingLines ? p.existingLines.length + ' مكوّن مسجّل' : '—'}</td>
+      <td class="num">${cost.toFixed(3)}</td>
+      <td class="num">${p.target.sellingPrice ?? '—'}</td>
+      <td>${statusBadge}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function toggleDetail(idx) {
+  const existingDetail = document.getElementById('detail-' + idx);
+  if (existingDetail) { existingDetail.remove(); return; }
+  const p = plan[idx];
+  const map = computeDiff(p);
+  const rows = [...map.entries()].map(([id, v]) => {
+    const tClass = v.targetQty == null ? 'extra' : v.existingQty == null ? 'miss' : (Math.abs(v.targetQty - v.existingQty) > Math.max(0.001, Math.abs(v.targetQty) * 0.01) ? 'miss' : 'close-enough');
+    return `<tr class="${tClass}">
+      <td>${v.name}</td><td class="num">${v.targetQty != null ? v.targetQty.toFixed(4) : '—'}</td>
+      <td class="num">${v.existingQty != null ? v.existingQty.toFixed(4) : '—'}</td><td>${v.unit}</td>
+    </tr>`;
+  }).join('');
+  const tr = document.createElement('tr');
+  tr.id = 'detail-' + idx;
+  tr.className = 'detail-row';
+  tr.innerHTML = `<td colspan="7">
+    <table class="detail-table"><thead><tr><th>المكوّن</th><th>المطلوب</th><th>المسجّل حاليًا</th><th>الوحدة</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    <div class="small muted" style="margin-top:6px;">أزرق = موجود بالنظام وغير مطلوب بالكشف. أحمر = فرق بالكمية أو غير مسجّل أصلًا. رمادي = مطابق تقريبًا.</div>
+  </td>`;
+  document.getElementById('plan-row-' + idx).after(tr);
+}
+
+function renderSemi() {
+  const body = document.getElementById('semiBody');
+  const existingByName = new Map((semiPlan.existing || []).map((l) => [l.ingredient.id, l]));
+  body.innerHTML = semiPlan.resolvedLines.map((l) => {
+    const ok = l.resolved.ok;
+    const existing = ok ? existingByName.get(l.resolved.ingredient.id) : null;
+    const status = !semiPlan.ingredient ? '<span class="badge bad">صنف "كريب" غير موجود</span>'
+      : !ok ? `<span class="badge bad">${l.resolved.reason}</span>`
+      : !existing ? '<span class="badge warn">غير مسجّل</span>'
+      : Math.abs(Number(existing.quantity) - l.resolved.qty) > Math.max(0.0001, l.resolved.qty * 0.01) ? '<span class="badge warn">يختلف</span>'
+      : '<span class="badge ok">مطابق</span>';
+    return `<tr>
+      <td>${l.targetName}</td>
+      <td class="num">${l.qtyPerPortion.toFixed(4)} ${l.word}</td>
+      <td>${ok ? l.resolved.ingredient.unit : '—'}</td>
+      <td class="num">${existing ? Number(existing.quantity).toFixed(4) : '—'}</td>
+      <td>${status}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('btnApplySemi').disabled = !(semiPlan.ingredient && semiPlan.allResolved);
+}
+
+function recomputeStats() {
+  const total = plan.length;
+  const notFound = plan.filter((p) => diffStatus(p) === 'notfound').length;
+  const unresolved = plan.filter((p) => !p.allResolved).length;
+  const ready = plan.filter((p) => p.liveItem && p.allResolved && !p.excluded).length;
+  const match = plan.filter((p) => diffStatus(p) === 'match').length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><b>${total}</b>إجمالي أصناف المنيو بالكشف</div>
+    <div class="stat"><b style="color:#86efac">${match}</b>مطابقة بالفعل (لا تحتاج تعديل)</div>
+    <div class="stat"><b style="color:#fde68a">${ready - match}</b>جاهزة للتطبيق (تختلف عن المسجّل)</div>
+    <div class="stat"><b style="color:#fca5a5">${notFound}</b>الصنف غير موجود بالنظام (راجع الاسم يدويًا)</div>
+    <div class="stat"><b class="muted">${unresolved}</b>بها مكوّن غير مطابق لوحدة النظام</div>
+  `;
+  document.getElementById('btnApply').disabled = ready === 0;
+}
+
+async function applyChanges() {
+  const toApply = plan.filter((p) => p.liveItem && p.allResolved && !p.excluded && diffStatus(p) !== 'match');
+  if (!toApply.length) return;
+  if (!confirm(`سيتم استبدال وصفة ${toApply.length} صنفًا على النظام الحي بالكامل (استبدال كلي وليس دمج). هل أنت متأكد؟`)) return;
+  document.getElementById('btnApply').disabled = true;
+  log(`\n=== بدء تطبيق وصفات الأصناف: ${toApply.length} صنف ===`);
+  let success = 0, failed = 0;
+  for (const p of toApply) {
+    try {
+      const lines = p.resolvedLines.map((l) => ({ ingredientId: l.resolved.ingredient.id, quantity: l.resolved.qty }));
+      await api(`/items/${p.liveItem.id}/recipe`, { method: 'PUT', body: { lines } });
+      log(`✅ ${p.target.name}: تم تحديث الوصفة (${lines.length} مكوّن)`);
+      success++;
+    } catch (e) {
+      log(`❌ ${p.target.name}: ${e.message}`, 'err');
+      failed++;
+    }
+  }
+  log(`\n=== انتهى: ${success} نجح، ${failed} فشل ===`);
+  document.getElementById('btnApply').disabled = false;
+}
+
+async function applySemi() {
+  if (!semiPlan.ingredient || !semiPlan.allResolved) return;
+  if (!confirm('سيتم استبدال وصفة "كريب" (عجينة الكريب) بالكامل على النظام الحي. هل أنت متأكد؟')) return;
+  const statusEl = document.getElementById('semiStatus');
+  try {
+    const lines = semiPlan.resolvedLines.map((l) => ({ ingredientId: l.resolved.ingredient.id, quantity: l.resolved.qty }));
+    await api(`/ingredients/${semiPlan.ingredient.id}/recipe`, { method: 'PUT', body: { lines } });
+    log(`✅ عجينة كريب: تم تحديث الوصفة (${lines.length} مكوّن)`);
+    statusEl.textContent = '✅ تم التطبيق';
+  } catch (e) {
+    log(`❌ عجينة كريب: ${e.message}`, 'err');
+    statusEl.textContent = '❌ ' + e.message;
+  }
+}
+</script>
+</body>
+</html>

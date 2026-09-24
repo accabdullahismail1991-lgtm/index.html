@@ -544,9 +544,10 @@
       <div class="panel subview" id="ing-sub-list">
         <h2>الأصناف الحالية</h2>
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
+          <div><label>🔍 بحث</label><input id="ing-search" placeholder="ابحث بالاسم أو التصنيف..." oninput="renderIngredientsTable()"></div>
           <div><label>التصنيف</label><select id="ing-category-filter" onchange="renderIngredientsTable()"><option value="">كل التصنيفات</option></select></div>
         </div>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>التصنيف</th><th>الوحدة</th><th>النوع</th><th>حد أدنى</th><th></th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>التصنيف</th><th>الوحدة</th><th>النوع</th><th>التكلفة / الوحدة</th><th>حد أدنى</th><th></th></tr></thead>
           <tbody id="ingredientsTable"></tbody>
         </table></div>
       </div>
@@ -3619,11 +3620,31 @@ async function saveBranchEdit(id) {
 }
 
 /* ---------------- Ingredients ---------------- */
+let ingredientCostByIdCache = {};
 async function loadIngredients() {
   try {
     await ensureUnitsOfMeasureCache();
     document.getElementById('i-unit').innerHTML = unitOptionsHtml('g');
     ingredientsCache = await api('/ingredients');
+
+    // Best-effort, same pattern as menu-item costs: gated behind
+    // analytics.view (commercially sensitive), so a user without that
+    // permission still sees the ingredient catalog fine -- just a '-' in
+    // the cost column instead of the whole tab breaking. Real weighted-
+    // average cost from open batches wins; an ingredient with no batches
+    // yet falls back to its own openingCost (see Ingredient.openingCost
+    // schema comment), and is flagged "تقديرية" since it isn't a real
+    // purchase/production cost yet.
+    ingredientCostByIdCache = {};
+    try {
+      const valuation = await api('/analytics/inventory-valuation');
+      const byId = new Map(valuation.lines.filter((l) => l.quantity > 0).map((l) => [l.ingredientId, l.value / l.quantity]));
+      for (const i of ingredientsCache) {
+        if (byId.has(i.id)) ingredientCostByIdCache[i.id] = { cost: byId.get(i.id), estimated: false };
+        else if (i.openingCost != null) ingredientCostByIdCache[i.id] = { cost: Number(i.openingCost), estimated: true };
+      }
+    } catch (e) { /* no analytics.view -- ingredientCostByIdCache stays empty, rendered as '-' below */ }
+
     renderIngredientCategoryOptions();
     renderIngredientsTable();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
@@ -3643,22 +3664,31 @@ function renderIngredientCategoryOptions() {
 }
 function renderIngredientsTable() {
   const filter = document.getElementById('ing-category-filter').value;
-  const rows = filter ? ingredientsCache.filter((i) => i.category === filter) : ingredientsCache;
+  const search = document.getElementById('ing-search').value.trim().toLowerCase();
+  let rows = filter ? ingredientsCache.filter((i) => i.category === filter) : ingredientsCache;
+  if (search) rows = rows.filter((i) => i.name.toLowerCase().includes(search) || (i.category || '').toLowerCase().includes(search));
   document.getElementById('ingredientsTable').innerHTML = rows.length
-    ? rows.map((i) => `
+    ? rows.map((i) => {
+        const c = ingredientCostByIdCache[i.id];
+        const costCell = c
+          ? `${c.cost.toFixed(4)} / ${i.unit}${c.estimated ? ' <span class="pill raw" title="لا توجد عمليات شراء/إنتاج فعلية بعد لهذا الصنف -- مبنية على التكلفة التقديرية المُدخَلة عند تعريف الصنف">🔸 تقديرية</span>' : ''}`
+          : '<span class="empty">-</span>';
+        return `
       <tr>
         <td>${i.name}</td><td>${i.category || '-'}</td><td>${i.unit}</td>
         <td><span class="pill ${i.kind === 'SEMI_FINISHED' ? 'semi' : 'raw'}">${i.kind === 'SEMI_FINISHED' ? 'نصف مصنّع' : 'خامة'}</span></td>
+        <td>${costCell}</td>
         <td>${i.lowStockThreshold}</td>
         <td>
           <button class="link-btn" onclick="toggleIngredientEdit('${i.id}')">✏️ تعديل</button>
           ${i.kind === 'SEMI_FINISHED' ? `<button class="link-btn" onclick="toggleIngredientRecipe('${i.id}')">📋 الوصفة</button>` : ''}
         </td>
       </tr>
-      <tr id="edit-ing-row-${i.id}" class="hidden"><td colspan="6"><div class="recipe-box" id="edit-ing-box-${i.id}"></div></td></tr>
-      ${i.kind === 'SEMI_FINISHED' ? `<tr id="recipe-row-${i.id}" class="hidden"><td colspan="6"><div class="recipe-box" id="recipe-box-${i.id}"></div></td></tr>` : ''}
-    `).join('')
-    : `<tr><td colspan="6" class="empty">لا توجد أصناف بعد</td></tr>`;
+      <tr id="edit-ing-row-${i.id}" class="hidden"><td colspan="7"><div class="recipe-box" id="edit-ing-box-${i.id}"></div></td></tr>
+      ${i.kind === 'SEMI_FINISHED' ? `<tr id="recipe-row-${i.id}" class="hidden"><td colspan="7"><div class="recipe-box" id="recipe-box-${i.id}"></div></td></tr>` : ''}
+    `;
+      }).join('')
+    : `<tr><td colspan="7" class="empty">${search || filter ? 'لا توجد نتائج مطابقة' : 'لا توجد أصناف بعد'}</td></tr>`;
 }
 async function createIngredient() {
   const name = document.getElementById('i-name').value.trim();

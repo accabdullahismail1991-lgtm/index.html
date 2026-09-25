@@ -112,6 +112,21 @@
   .report-table thead th{background:var(--card2);border-bottom:2px solid var(--border);}
   .report-table tbody tr:nth-child(even) td{background:rgba(127,127,127,.04);}
   .report-table tbody tr:nth-child(even):hover td{background:var(--card2);}
+  /* A long report scrolls within its own bounded panel instead of the
+     whole popup growing arbitrarily tall -- and with its own scroll
+     container, the header row can pin to ITS top:0 with no stacking fight
+     against .view-head's own sticky positioning (which also sits at
+     top:0 of the outer .view). Scoped to :has(.report-table) so plain
+     data-management tables (branches, items...) keep their old behavior. */
+  .table-wrap:has(.report-table){max-height:64vh;overflow-y:auto;}
+  .report-table thead th{position:sticky;top:0;z-index:3;}
+  /* Some older report/dashboard screens still use a plain <table> instead
+     of .report-table -- the same pinned-header/bounded-height treatment
+     applies to those too, but only inside a report/dashboard popup
+     (id starts with view-report-), never inside a plain CRUD tab's table
+     (branches, items, orders...), which keeps growing with the page. */
+  .view[id^="view-report-"] .table-wrap:has(table){max-height:64vh;overflow-y:auto;}
+  .view[id^="view-report-"] table thead th{position:sticky;top:0;z-index:3;background:var(--card);}
   /* Right-aligned (not left) so a numeric column's values sit directly
      under its own <th>, matching the RTL page's default right-alignment
      for header cells -- th.num barely occurs in practice (most tables
@@ -153,10 +168,15 @@
   .recipe-row select.rq-unit,.recipe-row select.po-unit{flex:0 0 90px;min-width:90px;}
   .empty{color:var(--muted);font-size:12.5px;padding:10px 0;white-space:normal;}
   .hint{color:var(--muted);font-size:12px;margin-top:10px;}
-  .stats-row{display:flex;flex-wrap:wrap;gap:12px;}
-  .stat-tile{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:130px;}
-  .stat-tile .label{font-size:11.5px;color:var(--muted);margin-bottom:4px;}
-  .stat-tile .value{font-size:19px;font-weight:700;}
+  .stats-row{display:flex;flex-wrap:wrap;gap:14px;}
+  .stat-tile{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md,10px);padding:14px 16px;min-width:150px;
+    box-shadow:0 1px 3px rgba(20,20,40,.05);transition:box-shadow .15s,transform .15s;}
+  .stat-tile:hover{box-shadow:0 4px 14px rgba(20,20,40,.09);transform:translateY(-1px);}
+  .stat-tile .label{font-size:11.5px;color:var(--muted);margin-bottom:6px;font-weight:600;}
+  .stat-tile .value{font-size:23px;font-weight:800;letter-spacing:-.01em;}
+  .stat-tile .trend{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:6px;}
+  .stat-tile .trend.up{background:rgba(31,157,104,.12);color:#1f9d68;}
+  .stat-tile .trend.down{background:rgba(208,69,63,.12);color:#d0453f;}
   #apiBaseRow{font-size:11px;color:rgba(255,255,255,.75);}
   #apiBaseRow input{width:180px;padding:4px 8px;font-size:11px;background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff;}
 
@@ -165,8 +185,10 @@
      these are additive, not a replacement: every existing report popup
      keeps working exactly as before. ---- */
   .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px;}
-  .dash-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;}
-  .dash-card h4{margin:0 0 10px;font-size:13px;color:var(--muted);font-weight:700;}
+  .dash-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md,10px);padding:16px;
+    box-shadow:0 1px 3px rgba(20,20,40,.05);}
+  .dash-card h4{margin:0 0 12px;font-size:12.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+    padding-bottom:10px;border-bottom:1px solid var(--border);}
   .dash-card canvas{max-height:220px;}
   .dash-card.wide{grid-column:1/-1;}
   .dash-list{list-style:none;margin:0;padding:0;font-size:12.5px;}
@@ -337,6 +359,7 @@
   .pay-method-btn .pay-method-icon{font-size:17px;line-height:1;}
   .pay-method-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700;box-shadow:0 2px 8px rgba(55,48,163,.35);}
   .pay-method-btn:hover:not(.active){border-color:var(--brand);}
+  .order-meta-bar > label{display:block;font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:8px;}
   .invoice-type-picker{display:flex;gap:6px;}
   .order-type-picker{flex-wrap:wrap;}
   .order-type-picker .invoice-type-btn{flex:none;white-space:nowrap;}
@@ -356,9 +379,12 @@
   .pay-numpad button.ghost{background:none;}
   .pay-numpad-fill{grid-column:span 3;background:var(--brand) !important;color:#fff !important;font-size:13.5px !important;}
 
-  /* ---- New Order: shift status bar (gates order entry on an open shift) */
+  /* ---- Sales module: shift status bar (gates order entry on an open
+     shift) -- sits as a full-width toolbar directly under the module's
+     .view-head, above the subnav, so it's visible on every Sales subtab
+     (طلب جديد/الطلبات/الورديات/وجبة موظف), not just New Order. ---- */
   .shift-status-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
-    background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:10px;}
+    background:var(--card2);border-bottom:1px solid var(--border);padding:10px 20px;}
   .shift-status-bar #ord-shift-status-text{font-weight:700;}
 
   /* ---- Settings: checkbox lists (user roles/locations) and the grouped
@@ -812,7 +838,21 @@
 
     <!-- SALES -->
     <div id="view-sales" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🧾 المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🧾 المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
+      <!-- Wردية status/actions live at the top of the WHOLE Sales module
+           (not just inside "طلب جديد") -- a cashier switching to الطلبات/
+           الورديات mid-shift still needs to close it, end the day, or open
+           the customer display without hopping back to New Order first. -->
+      <div class="shift-status-bar" id="ord-shift-status-bar">
+        <div id="ord-shift-status-text"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="ord-shift" onchange="onOrderShiftChange()"></select>
+          <button type="button" class="ghost" onclick="openCustomerDisplay()">🖥️ فتح شاشة العميل</button>
+          <button type="button" class="ghost" onclick="openSettlementDetails()">📅 إنهاء اليوم</button>
+          <button type="button" class="ghost" id="ord-close-shift-btn" onclick="closeShiftFromNewOrder()">🔒 إغلاق الوردية</button>
+        </div>
+      </div>
+      <div class="subnav">
         <button id="sl-tab-new" class="active" onclick="switchSubview('sl',['new','orders','shifts','staff-meal'],'new')">➕ طلب جديد</button>
         <button id="sl-tab-orders" class="" onclick="switchSubview('sl',['new','orders','shifts','staff-meal'],'orders')">الطلبات</button>
         <button id="sl-tab-shifts" class="" onclick="switchSubview('sl',['new','orders','shifts','staff-meal'],'shifts')">🔚 الورديات</button>
@@ -823,16 +863,6 @@
       <div class="panel subview" id="sl-sub-new">
         <h2>➕ طلب جديد</h2>
         <div class="pos-ticker hidden" id="pos-ticker"><div class="pos-ticker-track" id="pos-ticker-track"></div></div>
-
-        <div class="shift-status-bar" id="ord-shift-status-bar">
-          <div id="ord-shift-status-text"></div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <select id="ord-shift" onchange="onOrderShiftChange()"></select>
-            <button type="button" class="ghost" id="ord-close-shift-btn" onclick="closeShiftFromNewOrder()">🔒 إغلاق الوردية</button>
-            <button type="button" class="ghost" onclick="openSettlementDetails()">📅 إنهاء اليوم</button>
-            <button type="button" class="ghost" onclick="openCustomerDisplay()">🖥️ فتح شاشة العميل</button>
-          </div>
-        </div>
 
         <!-- Shown when the shift's branch has a stale open shift from a
              prior day, or a fully-closed day never "إنهاء اليوم"'d --
@@ -855,31 +885,31 @@
         </div>
 
         <div id="ord-order-form">
-        <div class="row-form">
-          <div style="flex:2">
-            <label>نوع الطلب</label>
-            <input type="hidden" id="ord-channel" value="DINE_IN">
-            <div class="invoice-type-picker order-type-picker" id="ord-channel-picker"></div>
-          </div>
-          <div><label>قائمة الأسعار (اختياري)</label>
-            <select id="ord-sales-channel" onchange="onOrderSalesChannelChange()">
-              <option value="">السعر الأساسي</option>
-            </select>
-          </div>
-          <div><label id="ord-customer-label">العميل (اختياري)</label>
-            <input type="text" id="ord-customer-search" placeholder="🔍 بحث بالاسم أو رقم الجوال..." oninput="onOrderCustomerSearch(this.value)" style="margin-bottom:4px">
-            <select id="ord-customer" onchange="onOrderCustomerSelect()"><option value="">بدون عميل</option></select>
-          </div>
-          <div><label>نوع الفاتورة</label>
-            <div class="invoice-type-picker" id="ord-invoice-type-picker">
-              <button type="button" class="invoice-type-btn active" onclick="selectOrderInvoiceType('CASH', this)">نقدي</button>
-              <button type="button" class="invoice-type-btn" onclick="selectOrderInvoiceType('CREDIT', this)">آجل</button>
+        <div class="panel order-meta-bar">
+          <label>نوع الطلب</label>
+          <input type="hidden" id="ord-channel" value="DINE_IN">
+          <div class="invoice-type-picker order-type-picker" id="ord-channel-picker"></div>
+          <div class="row-form" style="margin-top:14px">
+            <div><label>نوع الفاتورة</label>
+              <div class="invoice-type-picker" id="ord-invoice-type-picker">
+                <button type="button" class="invoice-type-btn active" onclick="selectOrderInvoiceType('CASH', this)">نقدي</button>
+                <button type="button" class="invoice-type-btn" onclick="selectOrderInvoiceType('CREDIT', this)">آجل</button>
+              </div>
+            </div>
+            <div><label>قائمة الأسعار (اختياري)</label>
+              <select id="ord-sales-channel" onchange="onOrderSalesChannelChange()">
+                <option value="">السعر الأساسي</option>
+              </select>
+            </div>
+            <div><label>خصم يدوي (اختياري -- يتطلب صلاحية)</label><input id="ord-manual-discount" type="number" step="0.01" min="0" placeholder="0.00"></div>
+            <div style="flex:1.4"><label id="ord-customer-label">العميل (اختياري)</label>
+              <input type="text" id="ord-customer-search" placeholder="🔍 بحث بالاسم أو رقم الجوال..." oninput="onOrderCustomerSearch(this.value)" style="margin-bottom:4px">
+              <select id="ord-customer" onchange="onOrderCustomerSelect()"><option value="">بدون عميل</option></select>
             </div>
           </div>
-          <div><label>خصم يدوي (اختياري -- يتطلب صلاحية)</label><input id="ord-manual-discount" type="number" step="0.01" min="0" placeholder="0.00"></div>
+          <div id="ord-customer-required-note" class="msg err hidden" style="margin-top:8px">⚠️ هذا الفرع يُلزم اختيار عميل لإنشاء الطلب</div>
+          <div id="ord-credit-requires-customer-note" class="msg err hidden" style="margin-top:8px">⚠️ الفاتورة الآجلة تتطلب اختيار عميل</div>
         </div>
-        <div id="ord-customer-required-note" class="msg err hidden" style="margin-top:8px">⚠️ هذا الفرع يُلزم اختيار عميل لإنشاء الطلب</div>
-        <div id="ord-credit-requires-customer-note" class="msg err hidden" style="margin-top:8px">⚠️ الفاتورة الآجلة تتطلب اختيار عميل</div>
 
         <div class="pos-theme">
           <div class="pos-cat-row" id="ord-categories"></div>
@@ -1531,43 +1561,8 @@
     <!-- ANALYTICS / BI -->
     <div id="view-analytics" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>📊 التقارير</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
-      <div class="panel">
-        <h2>لوحات التحكم التحليلية</h2>
-        <div class="hint">رسوم بيانية ومؤشرات حية لكل قسم -- بالإضافة إلى التقارير الجدولية أدناه، وليست بديلًا عنها.</div>
-        <div class="home-grid" style="margin-top:12px">
-          <div class="home-card" onclick="openReportPopup('dash-sales')"><div class="ic">📊</div><div class="lb">لوحة تحكم المبيعات</div></div>
-          <div class="home-card" onclick="openReportPopup('dash-production')"><div class="ic">🏭</div><div class="lb">لوحة تحكم الإنتاج</div></div>
-          <div class="home-card" onclick="openReportPopup('dash-purchasing')"><div class="ic">🛒</div><div class="lb">لوحة تحكم المشتريات</div></div>
-          <div class="home-card" onclick="openReportPopup('dash-items')"><div class="ic">📋</div><div class="lb">لوحة تحكم الأصناف</div></div>
-          <div class="home-card" onclick="openReportPopup('dash-inventory')"><div class="ic">📦</div><div class="lb">لوحة تحكم المخازن</div></div>
-        </div>
-
-        <h2 style="margin-top:22px">التقارير المتاحة</h2>
-        <div class="hint">كل تقرير يفتح في نافذته المستقلة، بفلاتر موقع/فترة خاصة به.</div>
-        <div class="home-grid" style="margin-top:12px">
-          <div class="home-card" onclick="openReportPopup('sales')"><div class="ic">🧾</div><div class="lb">تقرير المبيعات</div></div>
-          <div class="home-card" onclick="openReportPopup('sales-log')"><div class="ic">🧾</div><div class="lb">سجل المبيعات التفصيلي</div></div>
-          <div class="home-card" onclick="openReportPopup('top-customers')"><div class="ic">🏆</div><div class="lb">أفضل العملاء</div></div>
-          <div class="home-card" onclick="openReportPopup('items')"><div class="ic">📋</div><div class="lb">تقرير الأصناف</div></div>
-          <div class="home-card" onclick="openReportPopup('inventory')"><div class="ic">📦</div><div class="lb">تقرير المخزون</div></div>
-          <div class="home-card" onclick="openReportPopup('purchasing')"><div class="ic">🛒</div><div class="lb">تقرير المشتريات</div></div>
-          <div class="home-card" onclick="openReportPopup('returns')"><div class="ic">↩️</div><div class="lb">تقرير مرتجعات العملاء</div></div>
-          <div class="home-card" onclick="openReportPopup('purchase-returns')"><div class="ic">🔄</div><div class="lb">تقرير مرتجعات المشتريات</div></div>
-          <div class="home-card" onclick="openReportPopup('shifts')"><div class="ic">🧑‍💼</div><div class="lb">تقرير الورديات والكاشيرات</div></div>
-          <div class="home-card" onclick="openReportPopup('payment-methods')"><div class="ic">💳</div><div class="lb">تقرير طرق الدفع</div></div>
-          <div class="home-card" onclick="openReportPopup('production')"><div class="ic">🏭</div><div class="lb">تقرير الإنتاج والتكاليف</div></div>
-          <div class="home-card" onclick="openReportPopup('tax')"><div class="ic">🧮</div><div class="lb">تقرير الضرائب</div></div>
-          <div class="home-card" onclick="openReportPopup('peak-hours')"><div class="ic">⏰</div><div class="lb">تقرير ساعات الذروة</div></div>
-          <div class="home-card" onclick="openReportPopup('customer-experience')"><div class="ic">😊</div><div class="lb">تقرير تجربة العميل</div></div>
-          <div class="home-card" onclick="openReportPopup('kitchen-performance')"><div class="ic">🍳</div><div class="lb">تقرير أداء المطبخ</div></div>
-          <div class="home-card" onclick="openReportPopup('day-close')"><div class="ic">📅</div><div class="lb">إنهاء اليوم</div></div>
-          <div class="home-card" onclick="openReportPopup('daily-consumption')"><div class="ic">📉</div><div class="lb">تقرير الاستهلاك اليومي</div></div>
-          <div class="home-card" onclick="openReportPopup('net-sales')"><div class="ic">💰</div><div class="lb">تقرير صافي المبيعات</div></div>
-          <div class="home-card" onclick="openReportPopup('abc-analysis')"><div class="ic">🅰️</div><div class="lb">تحليل ABC (باريتو) للأصناف</div></div>
-          <div class="home-card" onclick="openReportPopup('category-mix')"><div class="ic">🥧</div><div class="lb">مزيج المبيعات حسب الفئة</div></div>
-          <div class="home-card" onclick="openReportPopup('period-comparison')"><div class="ic">📆</div><div class="lb">مقارنة الفترات</div></div>
-        </div>
-      </div>
+      <div class="hint" style="margin-bottom:10px">التقارير ولوحات التحكم مُنظّمة حسب القسم -- كل تقرير يفتح في نافذته المستقلة بفلاتر موقع/فترة خاصة به.</div>
+      <div id="reportsHubCategories"></div>
       <div class="panel">
         <h2>تصدير التقارير (Excel / PDF)</h2>
         <div class="hint">التقرير المُولَّد يبقى محفوظًا هنا للتحميل لاحقًا -- بما فيها النسخة التي تتولّد تلقائيًا كل يوم لكل فرع (docs/DECISIONS.md).</div>
@@ -2455,6 +2450,16 @@
   </div>
 </div>
 
+<!-- Generic popup for a report section that splitMultiTableReports() pulled
+     out of its report screen -- any report with more than one table keeps
+     its first table inline and moves the rest here, one at a time. -->
+<div id="genericTablePopup" class="modal-backdrop" onclick="if(event.target===this) closeGenericTablePopup()">
+  <div class="modal-box" style="max-width:900px">
+    <div class="modal-head"><h3 id="gtp-title"></h3><button class="view-close" onclick="closeGenericTablePopup()">✕</button></div>
+    <div class="modal-body"><div id="gtp-content"></div></div>
+  </div>
+</div>
+
 <!-- Minimized-popup taskbar (window chrome, see winInit() below) -->
 <div id="winTaskbar" class="win-taskbar no-print"></div>
 
@@ -3150,6 +3155,7 @@ async function doLogin() {
     updateOfflineBanner();
     renderNav();
     renderHomeGrid();
+    renderReportsHub();
     injectViewToolbars();
     // Runs AFTER injectViewToolbars() so it sees each view's already-final
     // header layout (print/CSV/PDF buttons already wrapped into one group
@@ -3516,12 +3522,75 @@ const REPORT_POPUPS = {
   'category-mix': loadCategoryMixReport,
   'period-comparison': loadPeriodComparisonReport,
 };
-function openReportPopup(key) {
+// Per-report icon/label, kept separate from REPORT_POPUPS (which only maps
+// a key to its loader) so renderReportsHub() below can build the grid
+// without duplicating that wiring.
+const REPORT_META = {
+  'dash-sales': { icon: '📊', label: 'لوحة تحكم المبيعات' },
+  'dash-production': { icon: '👨‍🍳', label: 'لوحة تحكم الإنتاج' },
+  'dash-purchasing': { icon: '🛒', label: 'لوحة تحكم المشتريات' },
+  'dash-items': { icon: '📋', label: 'لوحة تحكم الأصناف' },
+  'dash-inventory': { icon: '📦', label: 'لوحة تحكم المخازن' },
+  sales: { icon: '🧾', label: 'تقرير المبيعات' },
+  'sales-log': { icon: '🧾', label: 'سجل المبيعات التفصيلي' },
+  'top-customers': { icon: '🏆', label: 'أفضل العملاء' },
+  items: { icon: '📋', label: 'تقرير الأصناف' },
+  inventory: { icon: '📦', label: 'تقرير المخزون' },
+  purchasing: { icon: '🛒', label: 'تقرير المشتريات' },
+  returns: { icon: '↩️', label: 'تقرير مرتجعات العملاء' },
+  'purchase-returns': { icon: '🔄', label: 'تقرير مرتجعات المشتريات' },
+  shifts: { icon: '🧑‍💼', label: 'تقرير الورديات والكاشيرات' },
+  'payment-methods': { icon: '💳', label: 'تقرير طرق الدفع' },
+  production: { icon: '👨‍🍳', label: 'تقرير الإنتاج والتكاليف' },
+  tax: { icon: '🧮', label: 'تقرير الضرائب' },
+  'peak-hours': { icon: '⏰', label: 'تقرير ساعات الذروة' },
+  'customer-experience': { icon: '😊', label: 'تقرير تجربة العميل' },
+  'kitchen-performance': { icon: '🍳', label: 'تقرير أداء المطبخ' },
+  'day-close': { icon: '🗓️', label: 'إنهاء اليوم' },
+  'daily-consumption': { icon: '📉', label: 'تقرير الاستهلاك اليومي' },
+  'net-sales': { icon: '💰', label: 'تقرير صافي المبيعات' },
+  'abc-analysis': { icon: '🅰️', label: 'تحليل ABC (باريتو) للأصناف' },
+  'category-mix': { icon: '🥧', label: 'مزيج المبيعات حسب الفئة' },
+  'period-comparison': { icon: '📆', label: 'مقارنة الفترات' },
+};
+// Reports/dashboards hub, grouped under the same category taxonomy used
+// across the reference dashboards (Executive/Financial/Branch Performance/
+// Food Cost/Inventory/Purchasing/Central Kitchen/Sales & POS Reconciliation/
+// Closing/Management Reports) -- only categories backed by a report that
+// actually exists in this system are shown; categories like Labor Cost,
+// Budget vs Actual, Cash & Treasury or AP/Suppliers have no underlying
+// module yet, so they're left out rather than shown empty.
+const REPORT_CATEGORIES = [
+  { icon: '🏠', label: 'لوحة القيادة التنفيذية', keys: ['dash-sales'] },
+  { icon: '💰', label: 'الأداء المالي', keys: ['net-sales', 'tax'] },
+  { icon: '🏬', label: 'أداء الفروع', keys: ['period-comparison'] },
+  { icon: '🍔', label: 'تكلفة الطعام والأصناف', keys: ['dash-items', 'items', 'category-mix', 'abc-analysis'] },
+  { icon: '📦', label: 'المخزون', keys: ['dash-inventory', 'inventory', 'daily-consumption'] },
+  { icon: '🛒', label: 'المشتريات', keys: ['dash-purchasing', 'purchasing', 'purchase-returns'] },
+  { icon: '👨‍🍳', label: 'المطبخ المركزي والإنتاج', keys: ['dash-production', 'production', 'kitchen-performance'] },
+  { icon: '💳', label: 'مطابقة المبيعات والكاشير', keys: ['shifts', 'payment-methods'] },
+  { icon: '🗓️', label: 'إغلاق اليوم', keys: ['day-close'] },
+  { icon: '📋', label: 'تقارير إدارية', keys: ['sales', 'sales-log', 'top-customers', 'customer-experience', 'peak-hours', 'returns'] },
+];
+function renderReportsHub() {
+  const el = document.getElementById('reportsHubCategories');
+  if (!el) return;
+  el.innerHTML = REPORT_CATEGORIES.map((cat) => `
+    <div class="panel">
+      <h2>${cat.icon} ${cat.label}</h2>
+      <div class="home-grid" style="margin-top:12px">
+        ${cat.keys.map((key) => `<div class="home-card" onclick="openReportPopup('${key}')"><div class="ic">${REPORT_META[key].icon}</div><div class="lb">${REPORT_META[key].label}</div></div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+async function openReportPopup(key) {
   pushNavHistory();
   hideAllViews();
   document.getElementById('view-report-' + key).classList.add('open');
-  REPORT_POPUPS[key]();
+  await REPORT_POPUPS[key]();
   wireAutoRefreshFilters('view-report-' + key, REPORT_POPUPS[key]);
+  splitMultiTableReports(document.getElementById('view-report-' + key));
 }
 
 // Every report/dashboard's location/date/status filter previously did
@@ -3538,8 +3607,56 @@ function wireAutoRefreshFilters(viewId, loaderFn) {
   if (!view || !loaderFn || view.dataset.autoRefreshWired) return;
   view.dataset.autoRefreshWired = '1';
   view.querySelectorAll('.row-form select, .row-form input[type="date"]').forEach((el) => {
-    el.addEventListener('change', () => loaderFn());
+    el.addEventListener('change', async () => { await loaderFn(); splitMultiTableReports(view); });
   });
+}
+
+// A report screen with more than one table keeps just the FIRST one inline
+// and turns every other one into a "🔍 عرض كجدول منبثق" button that opens
+// it (with its heading/hint and anything else in its own section) in its
+// own popup instead. Works whether a screen puts each table in its own
+// .panel (e.g. shift-close summary) or stacks several tables under their
+// own <h2>/<h3> inside ONE panel (e.g. the inventory report) -- it walks
+// backward from each table to the previous table's boundary and moves
+// everything in between, rather than assuming any particular container
+// shape. Also works for plain <table> elements, not just .report-table
+// (several older report screens never adopted that class). Run fresh
+// after every (re)render since loaders replace their content wholesale,
+// so there's no stale state to guard against re-splitting.
+function splitMultiTableReports(root) {
+  if (!root) return;
+  const tables = Array.from(root.querySelectorAll('table'));
+  tables.slice(1).forEach((table) => {
+    const unit = table.closest('.table-wrap') || table;
+    const collected = [unit];
+    let sib = unit.previousElementSibling;
+    while (sib && sib.tagName !== 'TABLE' && !sib.classList.contains('table-wrap')) {
+      collected.unshift(sib);
+      sib = sib.previousElementSibling;
+    }
+    const headingEl = collected.find((el) => /^H[234]$/.test(el.tagName));
+    const title = headingEl ? headingEl.textContent.trim() : 'تفصيل';
+    const wrapper = document.createElement('div');
+    collected.forEach((el) => wrapper.appendChild(el.cloneNode(true)));
+    const placeholder = document.createElement('button');
+    placeholder.type = 'button';
+    placeholder.className = 'ghost';
+    placeholder.style.cssText = 'width:100%;margin:8px 0';
+    placeholder.textContent = `🔍 عرض "${title}" كجدول منبثق`;
+    placeholder.addEventListener('click', () => openGenericTablePopup(title, wrapper));
+    collected[0].replaceWith(placeholder);
+    collected.slice(1).forEach((el) => el.remove());
+  });
+}
+function openGenericTablePopup(title, contentEl) {
+  document.getElementById('gtp-title').textContent = title;
+  const body = document.getElementById('gtp-content');
+  body.innerHTML = '';
+  body.appendChild(contentEl.cloneNode(true));
+  document.getElementById('genericTablePopup').classList.add('open');
+}
+function closeGenericTablePopup() {
+  document.getElementById('genericTablePopup').classList.remove('open');
 }
 
 // Generic sub-tab switcher for a popup that bundles more than one distinct
@@ -5419,6 +5536,7 @@ async function openShiftCloseSummary(shiftId) {
         ${s.creditInvoiceTotal > 0 ? `<div class="msg" style="margin-top:10px">💳 فواتير آجلة (توصيل خارجي/عملاء بالأجل): <b>${fmtMoney(s.creditInvoiceTotal)}</b> -- غير محصّلة نقدًا الآن</div>` : ''}
       </div>
     `;
+    splitMultiTableReports(document.getElementById('view-shift-summary'));
   } catch (e) {
     document.getElementById('shift-summary-content').innerHTML = '<div class="empty">❌ ' + e.message + '</div>';
   }

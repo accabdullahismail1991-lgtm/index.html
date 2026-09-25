@@ -16,21 +16,31 @@
   :root{
     --ink:#1a2030; --muted:#68748a; --border:#e3e6ee; --bg:#f2f3f8; --card:#ffffff;
     --brand:#3730a3; --brand-dark:#2b2680; --danger:#d0453f; --ok:#1f9d68; --card2:#f5f6fa;
+    --radius-sm:8px; --radius-md:12px; --radius-lg:16px;
+    /* Dark nav rail (icon+label items, grouped, one clear active row) --
+       kept as its own set of variables rather than reusing --ink/--card so
+       the sidebar can read as a distinct "rail" against the light content
+       area, the same general shell used by most modern back-office tools,
+       without touching --brand (still the one accent used everywhere else:
+       buttons, links, focus rings, table totals...). */
+    --nav-bg:#171b26; --nav-bg-soft:#1f2433; --nav-text:#9aa3b8; --nav-text-dim:#6b7385;
+    --nav-active-bg:#262c3d; --nav-active-text:#ffffff; --nav-border:rgba(255,255,255,.06);
   }
   *{box-sizing:border-box;}
   body{margin:0;font-family:-apple-system,'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);}
   .hidden{display:none !important;}
+  button,.home-card,.menu-tile,nav button{transition:background-color .12s,border-color .12s,color .12s,box-shadow .12s,transform .12s;}
 
   /* ---- login screen ---- */
-  #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
-  .login-card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 30px rgba(20,20,40,.08);
+  #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg);}
+  .login-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:0 8px 30px rgba(20,20,40,.08);
     width:100%;max-width:400px;padding:32px 28px;}
   .login-card h1{font-size:18px;margin:0 0 20px;}
   label{display:block;font-size:12.5px;font-weight:600;color:var(--ink);margin:12px 0 6px;}
   input,select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;
     background:#fafbfe;color:var(--ink);font-family:inherit;}
   input:focus,select:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:var(--brand);}
-  button{padding:7px 13px;border:none;border-radius:8px;background:var(--brand);color:#fff;
+  button{padding:8px 14px;border:none;border-radius:var(--radius-sm);background:var(--brand);color:#fff;
     font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
   button:hover{background:var(--brand-dark);}
   button.ghost{background:none;color:var(--brand);border:1px solid var(--brand);}
@@ -43,24 +53,34 @@
 
   /* ---- app shell (header + a sidebar/main row below it) ---- */
   #appScreen{min-height:100vh;display:flex;flex-direction:column;}
-  header{background:var(--brand);color:#fff;padding:12px 24px;display:flex;align-items:center;gap:14px;justify-content:space-between;position:sticky;top:0;z-index:20;}
-  header h1{font-size:16px;margin:0;}
+  header{background:var(--brand);color:#fff;padding:12px 24px;display:flex;align-items:center;gap:14px;justify-content:space-between;
+    position:sticky;top:0;z-index:20;box-shadow:0 1px 0 rgba(0,0,0,.08);}
+  header h1{font-size:16px;margin:0;font-weight:700;}
   header .who{font-size:12px;opacity:.85;}
-  #navToggle{display:none;flex:none;background:none;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:8px;
+  #navToggle{display:none;flex:none;background:none;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:var(--radius-sm);
     width:34px;height:34px;font-size:16px;line-height:1;align-items:center;justify-content:center;}
   #appBody{display:flex;flex:1;min-height:0;align-items:flex-start;}
   #navBackdrop{display:none;}
-  nav{background:var(--card);border-inline-end:1px solid var(--border);
-    width:232px;flex:none;padding:14px 10px 24px;
-    display:flex;flex-direction:column;gap:1px;overflow-y:auto;
+  /* Dark rail, same "icon + label, grouped under a small caption, one
+     clearly-highlighted active row" mechanism used across most modern
+     back-office dashboards -- kept separate from the light content area
+     (nav vs. main below) so the two read as distinct layers at a glance. */
+  nav{background:var(--nav-bg);border-inline-end:1px solid var(--nav-border);
+    width:236px;flex:none;padding:16px 12px 24px;
+    display:flex;flex-direction:column;gap:2px;overflow-y:auto;
     position:sticky;top:53px;height:calc(100vh - 53px);align-self:flex-start;}
-  nav .nav-group-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;
-    letter-spacing:.03em;padding:16px 10px 6px;}
+  nav .nav-group-label{font-size:10.5px;font-weight:700;color:var(--nav-text-dim);text-transform:uppercase;
+    letter-spacing:.05em;padding:16px 12px 8px;}
   nav .nav-group-label:first-child{padding-top:2px;}
-  nav button{background:none;color:var(--muted);border:none;border-radius:8px;padding:10px 12px;font-weight:600;font-size:13px;
-    white-space:nowrap;text-align:right;display:flex;align-items:center;gap:9px;}
-  nav button.active{color:var(--brand);background:var(--card2);}
-  nav button:hover{background:var(--card2);}
+  nav button{background:none;color:var(--nav-text);border:none;border-radius:var(--radius-sm);padding:10px 12px;font-weight:600;font-size:13px;
+    white-space:nowrap;text-align:right;display:flex;align-items:center;gap:10px;position:relative;}
+  nav button.active{color:var(--nav-active-text);background:var(--nav-active-bg);}
+  /* Accent bar on the active item's leading edge (inline-end in RTL) --
+     the one strong "you are here" signal against the otherwise-flat dark
+     rail, echoing --brand instead of introducing a second accent color. */
+  nav button.active::before{content:'';position:absolute;inset-inline-end:0;top:8px;bottom:8px;width:3px;
+    background:var(--brand);border-radius:3px 0 0 3px;}
+  nav button:hover:not(.active){background:var(--nav-bg-soft);color:#fff;}
   main{flex:1;padding:24px;max-width:1320px;width:100%;margin:0 auto;min-width:0;}
   /* Sidebar collapses to an off-canvas drawer (opened via the ☰ header
      button) under ~860px -- a 230px fixed-width column left permanently
@@ -75,7 +95,7 @@
     #appScreen.nav-open nav{transform:translateX(0);box-shadow:-10px 0 30px rgba(20,20,40,.25);}
     #appScreen.nav-open #navBackdrop{display:block;position:fixed;inset:0;background:rgba(15,17,30,.42);z-index:35;}
   }
-  .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px;box-shadow:0 1px 3px rgba(20,20,40,.04);}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;margin-bottom:18px;box-shadow:0 1px 3px rgba(20,20,40,.04);}
   .panel h2{font-size:14.5px;margin:0 0 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .table-wrap{overflow-x:auto;}
   .table-wrap table{min-width:520px;}
@@ -276,8 +296,8 @@
   .home-group-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;
     letter-spacing:.03em;margin:0 0 10px;}
   .home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
-  .home-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 14px;
-    text-align:center;cursor:pointer;transition:all .12s;}
+  .home-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px 14px;
+    text-align:center;cursor:pointer;}
   .home-card:hover{border-color:var(--brand);box-shadow:0 2px 10px rgba(20,20,40,.08);transform:translateY(-1px);}
   .home-card .ic{font-size:26px;margin-bottom:8px;}
   .home-card .lb{font-size:12.5px;font-weight:700;}
@@ -291,9 +311,9 @@
   .view.open{display:flex;}
   .view-card{background:var(--bg);width:100%;min-height:100%;display:flex;flex-direction:column;flex:1;}
   .view-head{background:var(--card);border-bottom:1px solid var(--border);padding:14px 20px;
-    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2;}
+    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2;box-shadow:0 1px 0 rgba(20,20,40,.03);}
   .view-head h2{margin:0;font-size:15.5px;}
-  .view-close{background:none;color:var(--muted);border:1px solid var(--border);border-radius:8px;
+  .view-close{background:none;color:var(--muted);border:1px solid var(--border);border-radius:var(--radius-sm);
     width:32px;height:32px;padding:0;font-size:15px;line-height:1;}
   .view-close:hover{background:var(--card2);color:var(--ink);}
   .view-body{padding:20px;flex:1;width:100%;max-width:1320px;margin:0 auto;box-sizing:border-box;}
@@ -2160,6 +2180,7 @@
             <button type="button" class="tmpl-btn" data-dim="detail" data-val="BRIEF" onclick="setInvoiceTemplateOption('detail','BRIEF',this)">مختصر</button>
           </div>
           <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
+          <button class="ghost" onclick="showCustomerOrderLink(invoiceRenderCache && invoiceRenderCache.id)">🔗 رابط/QR للعميل</button>
           <button class="ghost" onclick="startReturnFromOrder(invoiceRenderCache && invoiceRenderCache.id)">↩️ إرجاع</button>
           <button class="ghost" onclick="openOrderActivityLog(invoiceRenderCache && invoiceRenderCache.id)">🕒 سجل الحركة</button>
           <button class="danger hidden" id="inv-void-paid-btn" onclick="voidPaidOrder(invoiceRenderCache && invoiceRenderCache.id)">❌ إلغاء الفاتورة</button>
@@ -2314,6 +2335,22 @@
       <div class="modal-box">
         <div class="modal-head"><h3>🔒 إغلاق الوردية</h3><button class="view-close" onclick="closeCloseShiftModal()">✕</button></div>
         <div class="modal-body" id="csm-body"></div>
+      </div>
+    </div>
+
+    <!-- Customer order-tracking QR/link -- see order-status.html and
+         buildCustomerOrderLink() below for how this URL is put together. -->
+    <div id="customerOrderLinkModal" class="modal-backdrop" onclick="if(event.target===this) closeCustomerOrderLinkModal()">
+      <div class="modal-box">
+        <div class="modal-head"><h3>🔗 رابط متابعة الطلب للعميل</h3><button class="view-close" onclick="closeCustomerOrderLinkModal()">✕</button></div>
+        <div class="modal-body" style="text-align:center">
+          <div class="hint" style="margin:0 0 12px">اعرض رمز QR هذا للعميل أو انسخ الرابط وأرسله له -- يفتح صفحة تُظهر حالة طلبه لحظيًا، بدون تسجيل دخول.</div>
+          <canvas id="col-qr-canvas" style="margin:0 auto 12px"></canvas>
+          <div class="row-form" style="margin-top:0">
+            <div style="flex:3"><input id="col-link-text" readonly onclick="this.select()"></div>
+            <div><button type="button" onclick="copyCustomerOrderLink()">📋 نسخ</button></div>
+          </div>
+        </div>
       </div>
     </div>
     </main>
@@ -5544,6 +5581,40 @@ function setInvoiceTemplateOption(dim, val, btn) {
   invoiceTemplate[dim] = val;
   document.querySelectorAll(`.invoice-template-picker .tmpl-btn[data-dim="${dim}"]`).forEach((b) => b.classList.toggle('active', b === btn));
   if (invoiceRenderCache) renderInvoice(invoiceRenderCache);
+}
+
+// The customer order-tracking page (order-status.html) is a public, login-
+// less page that lives alongside this file wherever it's deployed -- the
+// order's own id doubles as its access token (see
+// OrdersService.publicStatus()'s comment on the API side), so the link is
+// just this page's own URL with the filename swapped and ?api=&order=
+// appended. Assumes both files are served from the same directory, same
+// as every other pairing in this project (pos_prototype.html, kitchen.html...).
+function buildCustomerOrderLink(orderId) {
+  const here = location.href.replace(/[^/]*$/, '');
+  return here + 'order-status.html?api=' + encodeURIComponent(apiBase()) + '&order=' + encodeURIComponent(orderId);
+}
+function showCustomerOrderLink(orderId) {
+  if (!orderId) return;
+  const link = buildCustomerOrderLink(orderId);
+  document.getElementById('col-link-text').value = link;
+  document.getElementById('customerOrderLinkModal').classList.add('open');
+  if (window.QRCode) {
+    QRCode.toCanvas(document.getElementById('col-qr-canvas'), link, { width: 180, margin: 1 }, (err) => {
+      if (err) console.error(err);
+    });
+  }
+}
+function closeCustomerOrderLinkModal() { document.getElementById('customerOrderLinkModal').classList.remove('open'); }
+async function copyCustomerOrderLink() {
+  const input = document.getElementById('col-link-text');
+  try {
+    await navigator.clipboard.writeText(input.value);
+    flashGlobal('✅ تم نسخ الرابط', 'ok');
+  } catch (e) {
+    input.select();
+    flashGlobal('⚠️ انسخ الرابط يدويًا (تم تحديد النص)', 'err');
+  }
 }
 
 async function openInvoicePopup(orderId) {

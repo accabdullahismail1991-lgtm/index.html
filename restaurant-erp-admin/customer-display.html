@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>شاشة العميل</title>
+<style>
+  :root{
+    --ink:#1a2030; --muted:#68748a; --border:#e3e6ee; --bg:#f2f3f8; --card:#ffffff;
+    --brand:#3730a3; --ok:#1f9d68; --warn:#b45309;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);height:100vh;overflow:hidden;}
+  .hidden{display:none !important;}
+  .layout{display:grid;grid-template-columns:1.1fr 1fr;height:100vh;}
+  @media (max-width:860px){.layout{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:auto;}body{overflow:auto;height:auto;}}
+
+  /* ---- Left: menu picker ---- */
+  .menu-pane{padding:16px;overflow-y:auto;border-inline-end:1px solid var(--border);}
+  .menu-pane h1{font-size:17px;margin:0 0 12px;text-align:center;}
+  .cat-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--border);}
+  .cat-tab{flex:0 0 auto;padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card);
+    font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ink);white-space:nowrap;}
+  .cat-tab.active{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+  .tile{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:6px;user-select:none;}
+  .tile:active{transform:scale(.97);border-color:var(--brand);}
+  .tile .ic{font-size:26px;}
+  .tile .nm{font-size:12.5px;font-weight:700;line-height:1.3;}
+  .tile .pr{font-size:11.5px;color:var(--muted);}
+
+  /* ---- Right: live cart mirror ---- */
+  .cart-pane{padding:18px;overflow-y:auto;background:var(--card);display:flex;flex-direction:column;}
+  .cart-head{text-align:center;margin-bottom:10px;}
+  .cart-head .brand{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.04em;}
+  .cart-head h2{margin:4px 0 0;font-size:16px;}
+  .cart-meta{text-align:center;color:var(--muted);font-size:12px;margin-bottom:14px;}
+  .cart-lines{flex:1;border-top:1px solid var(--border);padding-top:8px;}
+  .cart-line{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);align-items:center;}
+  .cart-line .nm{font-weight:700;font-size:13.5px;}
+  .cart-line .qty{color:var(--muted);font-size:12px;margin-inline-start:6px;}
+  .cart-line .amt{font-weight:700;font-size:13.5px;}
+  .cart-line.pending{background:rgba(180,83,9,.08);border-radius:8px;padding-inline:8px;}
+  .pending-tag{font-size:10.5px;color:var(--warn);font-weight:700;}
+  .totals{border-top:2px solid var(--border);margin-top:10px;padding-top:10px;font-size:13.5px;}
+  .totals .row{display:flex;justify-content:space-between;padding:3px 0;}
+  .totals .grand{font-weight:800;font-size:17px;border-top:1px solid var(--border);margin-top:6px;padding-top:8px;}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1a2030;color:#fff;
+    padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none;z-index:50;}
+  .toast.show{opacity:1;}
+  .state-msg{text-align:center;color:var(--muted);font-size:14px;padding:60px 20px;}
+  .empty-cart{text-align:center;color:var(--muted);font-size:13px;padding:30px 10px;}
+</style>
+</head>
+<body>
+
+<div id="errorState" class="state-msg hidden"></div>
+
+<div id="layout" class="layout hidden">
+  <div class="menu-pane">
+    <h1>🍽️ اختر ما يعجبك</h1>
+    <div id="catTabs" class="cat-tabs"></div>
+    <div id="tileGrid" class="tile-grid"></div>
+  </div>
+  <div class="cart-pane">
+    <div class="cart-head">
+      <div class="brand">طلبك الحالي</div>
+      <h2 id="cd-location">-</h2>
+    </div>
+    <div id="cd-meta" class="cart-meta"></div>
+    <div id="cd-lines" class="cart-lines"><div class="empty-cart">لم يُضَف شيء بعد -- اختر من القائمة على اليسار</div></div>
+    <div class="totals">
+      <div class="row"><span>المجموع</span><span id="cd-subtotal">0.00</span></div>
+      <div class="row"><span id="cd-vat-label">الضريبة</span><span id="cd-vat">0.00</span></div>
+      <div class="row grand"><span>الإجمالي</span><span id="cd-grand">0.00</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const apiBase = (params.get('api') || '').replace(/\/$/, '');
+const token = params.get('token') || '';
+const channel = ('BroadcastChannel' in window) ? new BroadcastChannel('pos_customer_display') : null;
+
+function showError(msg) {
+  document.getElementById('layout').classList.add('hidden');
+  const el = document.getElementById('errorState');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+let itemsCache = [];
+let selectedCategory = null;
+
+async function loadItems() {
+  const res = await fetch(apiBase + '/items', { headers: { Authorization: 'Bearer ' + token } });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  itemsCache = await res.json();
+}
+function renderCategories() {
+  const cats = [...new Set(itemsCache.map((m) => m.category).filter(Boolean))];
+  if (!selectedCategory) selectedCategory = cats[0] || null;
+  document.getElementById('catTabs').innerHTML = cats.map((c) => `
+    <button type="button" class="cat-tab ${c === selectedCategory ? 'active' : ''}" onclick="selectCategory('${c.replace(/'/g, "\\'")}')">${c}</button>
+  `).join('');
+}
+function selectCategory(c) {
+  selectedCategory = c;
+  renderCategories();
+  renderTiles();
+}
+function renderTiles() {
+  const list = selectedCategory ? itemsCache.filter((m) => m.category === selectedCategory) : itemsCache;
+  document.getElementById('tileGrid').innerHTML = list.map((m) => `
+    <div class="tile" onclick="requestAddItem('${m.id}')">
+      <div class="ic">🍽️</div>
+      <div class="nm">${m.name}</div>
+      <div class="pr">${Number(m.price).toFixed(2)} ر.س</div>
+    </div>
+  `).join('');
+}
+function requestAddItem(menuItemId) {
+  if (!channel) { showToast('⚠️ متصفحك لا يدعم إرسال الطلب لشاشة الكاشير'); return; }
+  channel.postMessage({ type: 'customer_add_item', menuItemId, quantity: 1 });
+  showToast('✅ تمت إضافة الصنف -- بانتظار تأكيد الكاشير');
+}
+
+function renderCart(data) {
+  document.getElementById('cd-location').textContent = data.locationName || '-';
+  document.getElementById('cd-meta').textContent = data.orderType || '';
+  const lines = data.lines || [];
+  document.getElementById('cd-lines').innerHTML = lines.length
+    ? lines.map((l) => `
+        <div class="cart-line ${l.pending ? 'pending' : ''}">
+          <div>
+            <span class="nm">${l.name}</span><span class="qty">× ${l.quantity}</span>
+            ${l.pending ? '<div class="pending-tag">🙋 بانتظار تأكيد الكاشير</div>' : ''}
+          </div>
+          <span class="amt">${(Number(l.unitPrice) * l.quantity).toFixed(2)}</span>
+        </div>
+      `).join('')
+    : '<div class="empty-cart">لم يُضَف شيء بعد -- اختر من القائمة على اليسار</div>';
+  document.getElementById('cd-subtotal').textContent = data.subtotal || '0.00';
+  document.getElementById('cd-vat').textContent = data.vat || '0.00';
+  document.getElementById('cd-grand').textContent = data.grandTotal || '0.00';
+}
+
+(async function init() {
+  if (!apiBase || !token) {
+    showError('⚠️ افتح هذه الشاشة من زر "🖥️ فتح شاشة العميل" في شاشة "طلب جديد" بلوحة التحكم.');
+    return;
+  }
+  if (!channel) {
+    showError('⚠️ متصفحك لا يدعم مزامنة الشاشات (BroadcastChannel) -- استخدم Chrome أو Edge حديثًا.');
+    return;
+  }
+  try {
+    await loadItems();
+    renderCategories();
+    renderTiles();
+    document.getElementById('layout').classList.remove('hidden');
+  } catch (e) {
+    showError('⚠️ تعذّر تحميل قائمة الأصناف: ' + e.message);
+    return;
+  }
+  channel.onmessage = (ev) => { if (ev.data && ev.data.type === 'cart_update') renderCart(ev.data); };
+})();
+</script>
+
+</body>
+</html>

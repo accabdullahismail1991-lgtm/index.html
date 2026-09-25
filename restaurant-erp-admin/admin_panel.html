@@ -416,6 +416,23 @@
   .invoice-note{font-size:10.5px;color:#666;text-align:center;margin-top:8px;line-height:1.6;}
   .invoice-line-note td{font-size:10.5px;color:#555;font-style:italic;padding-top:0 !important;padding-bottom:4px !important;}
 
+  /* ---- Shift-close report as a thermal receipt (compact, single column --
+     the wide report tables in the normal summary screen don't fit 58/80mm
+     paper, so this is its own condensed rendering, not just a narrower
+     copy of the same tables) ---- */
+  .shift-receipt-box{max-width:320px;margin:0 auto;background:#fff;padding:10px;color:#000;font-size:11.5px;}
+  .shift-receipt-box.w58{max-width:220px;font-size:10.5px;}
+  .shift-receipt-box .sr-title{text-align:center;font-weight:800;font-size:14px;margin-bottom:2px;}
+  .shift-receipt-box .sr-sub{text-align:center;font-size:11px;color:#333;margin:0 0 8px;padding-bottom:8px;border-bottom:1px dashed #999;}
+  .shift-receipt-box .sr-heading{font-weight:800;margin-top:8px;padding-top:6px;border-top:1px dashed #999;}
+  .shift-receipt-box .sr-row{display:flex;justify-content:space-between;gap:8px;padding:2px 0;}
+  .shift-receipt-box .sr-grand{border-top:1px solid #000;margin-top:6px;padding-top:6px;font-weight:800;font-size:13px;}
+
+  /* ---- Customer-display cart lines: a customer-added-item flagged for
+     cashier review before it's treated the same as any other line ---- */
+  .recipe-row.pending-customer{border:1.5px dashed var(--warn,#b45309);border-radius:var(--radius-sm);padding:4px 6px;}
+  .pending-customer-badge{flex:1 0 100%;font-size:11.5px;color:var(--warn,#b45309);display:flex;align-items:center;gap:6px;margin-top:2px;}
+
   /* ---- Kitchen ticket: thermal-style, no prices, big enough to read
      across a busy kitchen line ---- */
   .kitchen-ticket-box{max-width:302px;margin:0 auto;background:#fff;padding:12px;color:#000;font-size:13px;}
@@ -467,6 +484,47 @@
     thead{display:table-header-group;}
   }
   @page{margin:14mm;}
+
+  /* ---- Window chrome: minimize/maximize + drag/resize for popups ----
+     Added generically at runtime by winInit() (see script) to every
+     .view-head/.modal-head -- no per-popup markup changes needed. A .view
+     defaults to full-screen exactly as before (nothing changes until the
+     user actually presses restore); a .modal-box is floating/draggable
+     from the moment it opens, matching how it already looks (small,
+     centered) with no visual change either until dragged/resized. */
+  .win-controls{display:flex;gap:4px;margin-inline-end:8px;}
+  .win-btn{width:28px;height:28px;padding:0;border-radius:var(--radius-sm);border:1px solid var(--border);
+    background:var(--card2);color:var(--muted);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .win-btn:hover{background:var(--card);color:var(--ink);}
+  .win-titlebar{cursor:move;user-select:none;}
+
+  .view.win-floating{inset:auto;border-radius:12px;box-shadow:0 24px 70px rgba(20,20,40,.4);overflow:hidden;}
+  .view.win-floating .view-card{min-height:0;height:100%;}
+  .view.win-minimized.open{display:none !important;}
+
+  .modal-backdrop.win-floating{background:transparent;pointer-events:none;padding:0;align-items:stretch;justify-content:stretch;}
+  .modal-backdrop.win-floating .modal-box{position:fixed;pointer-events:auto;margin:0;}
+  .modal-backdrop.win-maximized{background:rgba(20,22,35,.55);pointer-events:auto;}
+  .modal-backdrop.win-maximized .modal-box{position:fixed !important;inset:0 !important;left:0 !important;top:0 !important;
+    width:100% !important;height:100% !important;max-width:none;max-height:none;border-radius:0;}
+  .modal-backdrop.win-minimized.open{display:none !important;}
+
+  .win-resize-handle{position:absolute;width:18px;height:18px;inset-inline-end:2px;bottom:2px;cursor:nwse-resize;z-index:5;
+    background:linear-gradient(135deg,transparent 0 55%,var(--border) 55% 65%,transparent 65% 75%,var(--border) 75% 85%,transparent 85%);}
+  /* Only meaningful (and shown) once a popup is actually in its
+     draggable/resizable floating state -- hidden while a .view sits at its
+     default full-screen size, or a modal is maximized. */
+  .view:not(.win-floating) .win-resize-handle{display:none;}
+  .modal-backdrop.win-maximized .win-resize-handle{display:none;}
+
+  .win-taskbar{position:fixed;left:0;right:0;bottom:0;z-index:500;display:flex;gap:8px;padding:8px 14px;
+    background:var(--nav-bg,#171b26);border-top:1px solid var(--nav-border,rgba(255,255,255,.06));overflow-x:auto;}
+  .win-taskbar:empty{display:none;}
+  .win-taskbar-item{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:var(--radius-sm);
+    background:var(--nav-bg-soft,#1f2433);color:var(--nav-text,#9aa3b8);font-size:12.5px;font-weight:700;white-space:nowrap;cursor:pointer;border:1px solid var(--nav-border,rgba(255,255,255,.06));}
+  .win-taskbar-item:hover{background:var(--nav-active-bg,#262c3d);color:var(--nav-active-text,#fff);}
+  .win-taskbar-item .wt-close{opacity:.65;padding:0 2px;}
+  .win-taskbar-item .wt-close:hover{opacity:1;}
 </style>
 </head>
 <body>
@@ -772,6 +830,7 @@
             <select id="ord-shift" onchange="onOrderShiftChange()"></select>
             <button type="button" class="ghost" id="ord-close-shift-btn" onclick="closeShiftFromNewOrder()">🔒 إغلاق الوردية</button>
             <button type="button" class="ghost" onclick="openSettlementDetails()">📅 إنهاء اليوم</button>
+            <button type="button" class="ghost" onclick="openCustomerDisplay()">🖥️ فتح شاشة العميل</button>
           </div>
         </div>
 
@@ -1333,6 +1392,27 @@
           <div><label><input type="checkbox" id="set-auto-print-invoice" style="width:auto;display:inline" onchange="setGeneralSettingOption('autoPrintInvoice', this.checked)"> طباعة الفاتورة تلقائيًا بعد كل عملية دفع</label></div>
           <div><label><input type="checkbox" id="set-auto-print-kitchen" style="width:auto;display:inline" onchange="setGeneralSettingOption('autoPrintKitchenTicket', this.checked)"> طباعة تذكرة المطبخ تلقائيًا مع الفاتورة بعد الدفع</label></div>
         </div>
+
+        <h2 style="margin-top:24px">🖨️ الطابعة الحرارية</h2>
+        <div class="hint">تُستخدم لطباعة إيصال إغلاق الوردية (وأي إيصال حراري آخر) -- إمّا عبر نافذة طباعة المتصفح بمقاس ورق مطابق لموديل طابعتك، أو مباشرة على الطابعة دون فتح أي نافذة.</div>
+        <div class="row-form" style="margin-top:10px">
+          <div><label>موديل الطابعة الحرارية</label>
+            <div class="invoice-template-picker" id="set-printer-model-picker">
+              <button type="button" class="tmpl-btn" data-val="GENERIC_80" onclick="setPrinterModel('GENERIC_80', this)">عام 80مم</button>
+              <button type="button" class="tmpl-btn" data-val="GENERIC_58" onclick="setPrinterModel('GENERIC_58', this)">عام 58مم</button>
+              <button type="button" class="tmpl-btn" data-val="EPSON_TM" onclick="setPrinterModel('EPSON_TM', this)">Epson TM-T20/T88 (80مم)</button>
+              <button type="button" class="tmpl-btn" data-val="XPRINTER_58" onclick="setPrinterModel('XPRINTER_58', this)">Xprinter XP-58 (58مم)</button>
+              <button type="button" class="tmpl-btn" data-val="ZJIANG_58" onclick="setPrinterModel('ZJIANG_58', this)">Zjiang ZJ-5870 (58مم)</button>
+            </div>
+          </div>
+          <div><label>طريقة الاتصال للطباعة المباشرة</label>
+            <div class="invoice-template-picker" id="set-printer-conn-picker">
+              <button type="button" class="tmpl-btn" data-val="usb" onclick="setGeneralSettingOption('escposConnection','usb',this)">USB (WebUSB)</button>
+              <button type="button" class="tmpl-btn" data-val="serial" onclick="setGeneralSettingOption('escposConnection','serial',this)">منفذ تسلسلي (Serial)</button>
+            </div>
+          </div>
+        </div>
+        <div class="hint">"الطباعة المباشرة" ترسل بيانات الإيصال مباشرة إلى الطابعة الحرارية عبر المتصفح دون فتح نافذة طباعة النظام -- تظهر كخيار إضافي بجانب زر الطباعة العادي في شاشة "إيصال الوردية الحراري". يتطلب متصفح Chrome/Edge على كمبيوتر متصل بالطابعة، وتوافق ذلك مع بروتوكول الطابعة يختلف حسب الموديل -- إن لم تعمل طباعتك عبر USB جرّب المنفذ التسلسلي.</div>
         <div id="set-msg" class="msg"></div>
 
         <h2 style="margin-top:24px">🔗 إعدادات أخرى</h2>
@@ -2228,6 +2308,24 @@
       </div>
      </div></div>
 
+    <!-- SHIFT CLOSE REPORT AS THERMAL RECEIPT (compact single-column layout
+         for 58/80mm paper, printable via the browser or sent directly to a
+         connected thermal printer -- see printShiftSummaryDirect()) -->
+    <div id="view-shift-summary-thermal" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card">
+      <div class="view-head no-print"><h2>🧾 إيصال إغلاق الوردية (حراري)</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
+          <button class="ghost" onclick="printShiftSummaryDirect()">🖨️ طباعة مباشرة على الطابعة</button>
+          <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
+        </div>
+      </div>
+      <div class="view-body">
+        <div id="sr-direct-msg" class="msg"></div>
+        <div id="shift-summary-thermal-content"></div>
+      </div>
+     </div></div>
+
     <!-- SHIFT ACTIVITY LOG (full chronological timeline for one shift, printable) -->
     <div id="view-shift-activity-log" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card">
@@ -2356,6 +2454,9 @@
     </main>
   </div>
 </div>
+
+<!-- Minimized-popup taskbar (window chrome, see winInit() below) -->
+<div id="winTaskbar" class="win-taskbar no-print"></div>
 
 <script>
 let accessToken = null;
@@ -3050,6 +3151,10 @@ async function doLogin() {
     renderNav();
     renderHomeGrid();
     injectViewToolbars();
+    // Runs AFTER injectViewToolbars() so it sees each view's already-final
+    // header layout (print/CSV/PDF buttons already wrapped into one group
+    // with the close buttons) instead of racing it.
+    winInit();
   } catch (e) {
     showMsg('loginMsg', '❌ ' + e.message, 'err');
   } finally {
@@ -5044,6 +5149,91 @@ function updateOrderCartTotals() {
   setText('ord-grand-total', grand.toFixed(2));
   const checkoutBtn = document.querySelector('#sl-sub-new .order-checkout-btn');
   if (checkoutBtn) checkoutBtn.disabled = itemCount === 0;
+  broadcastCartToCustomerDisplay();
+}
+
+/* ================= Customer-facing display (second monitor at the till) =================
+   A same-device second window the cashier opens alongside New Order --
+   mirrors the live cart to it, and lets the customer add items themselves
+   from it, which come back here flagged for a quick cashier accept/remove
+   rather than going straight onto the bill unreviewed. Same-device only:
+   BroadcastChannel only reaches other tabs/windows of this same browser
+   profile, which is exactly the dual-monitor till setup this is for --
+   no backend involved, no new public endpoint needed. */
+let customerDisplayChannel = null;
+function ensureCustomerDisplayChannel() {
+  if (customerDisplayChannel) return customerDisplayChannel;
+  if (!('BroadcastChannel' in window)) return null;
+  customerDisplayChannel = new BroadcastChannel('pos_customer_display');
+  customerDisplayChannel.onmessage = (ev) => {
+    if (ev.data && ev.data.type === 'customer_add_item') handleCustomerAddItem(ev.data.menuItemId, ev.data.quantity || 1);
+  };
+  return customerDisplayChannel;
+}
+function openCustomerDisplay() {
+  ensureCustomerDisplayChannel();
+  if (!customerDisplayChannel) { flashGlobal('⚠️ متصفحك لا يدعم فتح شاشة عميل ثانية (BroadcastChannel).', 'err'); return; }
+  const url = 'customer-display.html?api=' + encodeURIComponent(apiBase()) + '&token=' + encodeURIComponent(accessToken);
+  window.open(url, 'posCustomerDisplay', 'width=1000,height=750');
+  setTimeout(broadcastCartToCustomerDisplay, 500); // give the new window a moment to start listening
+}
+function broadcastCartToCustomerDisplay() {
+  const ch = ensureCustomerDisplayChannel();
+  if (!ch) return;
+  const container = document.getElementById('ord-lines');
+  if (!container) return;
+  const lines = Array.from(container.querySelectorAll('.recipe-row')).map((row) => {
+    const qty = parseInt(row.querySelector('.ol-qty').value, 10) || 0;
+    const pending = row.classList.contains('pending-customer');
+    if (row.classList.contains('combo-row')) {
+      const nameEl = row.querySelector('span');
+      const name = nameEl ? nameEl.textContent.replace(/^🍔\s*/, '') : 'كومبو';
+      return { name, quantity: qty, unitPrice: Number(row.dataset.comboUnitPrice) || 0, pending };
+    }
+    const menuItemId = row.querySelector('.ol-item') ? row.querySelector('.ol-item').value : '';
+    const m = menuItemsCache.find((x) => x.id === menuItemId);
+    return { name: m ? m.name : '-', quantity: qty, unitPrice: menuItemId ? effectiveOrderItemPrice(menuItemId) : 0, pending };
+  }).filter((l) => l.quantity > 0);
+  const shiftId = document.getElementById('ord-shift') ? document.getElementById('ord-shift').value : '';
+  const shift = shiftsCache.find((x) => x.id === shiftId);
+  const location = shift ? locationsCache.find((l) => l.id === shift.locationId) : null;
+  const channelVal = document.getElementById('ord-channel') ? document.getElementById('ord-channel').value : '';
+  ch.postMessage({
+    type: 'cart_update',
+    lines,
+    subtotal: document.getElementById('ord-subtotal') ? document.getElementById('ord-subtotal').textContent : '0.00',
+    vat: document.getElementById('ord-vat') ? document.getElementById('ord-vat').textContent : '0.00',
+    grandTotal: document.getElementById('ord-grand-total') ? document.getElementById('ord-grand-total').textContent : '0.00',
+    orderType: channelVal ? orderTypeLabel(channelVal) : '',
+    locationName: location ? location.name : '',
+  });
+}
+// A customer-added item is immediately reflected in the live cart (so the
+// cashier sees it the instant it happens, same as anything they add
+// themselves) but visually flagged until explicitly accepted -- a customer
+// on their own screen shouldn't be able to put something on the bill with
+// no cashier ever having looked at it.
+function handleCustomerAddItem(menuItemId, quantity) {
+  const container = document.getElementById('ord-lines');
+  if (!container) { flashGlobal('🙋 أضاف العميل صنفًا -- افتح شاشة "طلب جديد" لمراجعته', 'err'); return; }
+  for (let i = 0; i < (quantity || 1); i++) addMenuTileToOrder(menuItemId);
+  const row = Array.from(container.querySelectorAll('.recipe-row')).find((r) => r.querySelector('.ol-item') && r.querySelector('.ol-item').value === menuItemId);
+  if (row && !row.classList.contains('pending-customer')) {
+    row.classList.add('pending-customer');
+    const badge = document.createElement('div');
+    badge.className = 'pending-customer-badge';
+    badge.innerHTML = '🙋 أضافه العميل من شاشته -- <button type="button" class="link-btn" onclick="acceptCustomerLine(this)">✅ قبول</button>';
+    row.appendChild(badge);
+  }
+  flashGlobal('🙋 العميل أضاف صنفًا للطلب -- راجعه قبل الدفع', 'ok');
+  updateOrderCartTotals(); // re-broadcast now that the pending badge/class is in place
+}
+function acceptCustomerLine(btn) {
+  const row = btn.closest('.recipe-row');
+  row.classList.remove('pending-customer');
+  const badge = row.querySelector('.pending-customer-badge');
+  if (badge) badge.remove();
+  updateOrderCartTotals();
 }
 function clearCurrentOrder() {
   const container = document.getElementById('ord-lines');
@@ -5177,6 +5367,7 @@ async function submitCloseShiftModal() {
     openShiftCloseSummary(id);
   } catch (e) { showMsg('csm-msg', '❌ ' + e.message, 'err'); }
 }
+let lastShiftSummary = null; // { shiftId, s } -- reused by the thermal-receipt view so it doesn't refetch
 async function openShiftCloseSummary(shiftId) {
   pushNavHistory();
   hideAllViews();
@@ -5184,6 +5375,7 @@ async function openShiftCloseSummary(shiftId) {
   document.getElementById('shift-summary-content').innerHTML = '<div class="empty">جارٍ التحميل...</div>';
   try {
     const s = await api(`/shifts/${shiftId}/close-summary`);
+    lastShiftSummary = { shiftId, s };
     document.getElementById('shift-summary-content').innerHTML = `
       <div class="stats-row">
         ${statTile('رقم الوردية', 'SH' + (s.shiftNumber ?? '-'))}
@@ -5191,6 +5383,7 @@ async function openShiftCloseSummary(shiftId) {
         ${statTile('عدد الأصناف المباعة', s.itemCount)}
         ${statTile('إجمالي المبيعات', fmtMoney(s.revenue))}
       </div>
+      <div style="margin:10px 0"><button class="ghost" onclick="openShiftSummaryThermal('${shiftId}')">🧾 إيصال حراري للطباعة</button></div>
       <div class="panel" style="margin-top:14px">
         <h2>المبيعات حسب القسم</h2>
         <div class="table-wrap"><table class="report-table"><thead><tr><th>القسم</th><th>الكمية</th><th>المبيعات (بلا ضريبة)</th></tr></thead>
@@ -5228,6 +5421,151 @@ async function openShiftCloseSummary(shiftId) {
     `;
   } catch (e) {
     document.getElementById('shift-summary-content').innerHTML = '<div class="empty">❌ ' + e.message + '</div>';
+  }
+}
+
+/* ================= Shift-close report as a thermal receipt =================
+   A condensed, single-column rendering of the same close-summary data (not
+   just the wide report tables squeezed into a narrow width) plus a direct
+   ESC/POS print path -- see PRINTER_MODELS/escposSendBytes() above/below. */
+async function openShiftSummaryThermal(shiftId) {
+  pushNavHistory();
+  hideAllViews();
+  document.getElementById('view-shift-summary-thermal').classList.add('open');
+  document.getElementById('sr-direct-msg').innerHTML = '';
+  const render = (s) => {
+    document.getElementById('shift-summary-thermal-content').innerHTML = renderShiftReceiptHtml(s);
+  };
+  if (lastShiftSummary && lastShiftSummary.shiftId === shiftId) { render(lastShiftSummary.s); return; }
+  document.getElementById('shift-summary-thermal-content').innerHTML = '<div class="empty">جارٍ التحميل...</div>';
+  try {
+    const s = await api(`/shifts/${shiftId}/close-summary`);
+    lastShiftSummary = { shiftId, s };
+    render(s);
+  } catch (e) {
+    document.getElementById('shift-summary-thermal-content').innerHTML = '<div class="empty">❌ ' + e.message + '</div>';
+  }
+}
+function shiftLocationName(shiftId) {
+  const shift = shiftsCache.find((x) => x.id === shiftId);
+  const loc = shift ? locationsCache.find((l) => l.id === shift.locationId) : null;
+  return (loc && loc.name) || 'Restaurant ERP';
+}
+function renderShiftReceiptHtml(s) {
+  const width = thermalWidthFromSettings();
+  const sizeClass = width === '58' ? 'w58' : '';
+  const row = (k, v) => `<div class="sr-row"><span>${k}</span><span>${v}</span></div>`;
+  return `
+    <div class="shift-receipt-box ${sizeClass}">
+      <div class="sr-title">${shiftLocationName(s.shiftId)}</div>
+      <div class="sr-sub">تقرير إغلاق الوردية -- SH${s.shiftNumber ?? '-'}</div>
+      ${row('عدد الطلبات', s.orderCount)}
+      ${row('عدد الأصناف', s.itemCount)}
+      ${row('إجمالي المبيعات', fmtMoney(s.revenue))}
+      ${s.byPaymentMethod.length ? `<div class="sr-heading">حسب طريقة الدفع</div>${s.byPaymentMethod.map((m) => row(paymentMethodLabelWithIcon(m.method), fmtMoney(m.amount))).join('')}` : ''}
+      ${s.byChannel.length ? `<div class="sr-heading">حسب نوع الطلب</div>${s.byChannel.map((c) => row(orderTypeLabel(c.channel), c.orderCount + ' / ' + fmtMoney(c.revenue))).join('')}` : ''}
+      ${s.creditInvoiceTotal > 0 ? `<div class="sr-heading">فواتير آجلة</div>${row('غير محصّلة نقدًا', fmtMoney(s.creditInvoiceTotal))}` : ''}
+      <div class="sr-row sr-grand"><span>الإجمالي</span><span>${fmtMoney(s.revenue)}</span></div>
+    </div>
+  `;
+}
+// Plain-text lines shared by the printed receipt HTML above and the raw
+// ESC/POS bytes below, so both always show the same numbers.
+function buildShiftSummaryReceiptLines(s) {
+  const L = [];
+  L.push({ align: 'center' }, { bold: true }, { text: shiftLocationName(s.shiftId) }, { bold: false });
+  L.push({ text: 'تقرير إغلاق الوردية SH' + (s.shiftNumber ?? '-') }, { align: 'left' }, { rule: true });
+  L.push({ kv: ['عدد الطلبات', String(s.orderCount)] });
+  L.push({ kv: ['عدد الأصناف', String(s.itemCount)] });
+  L.push({ kv: ['إجمالي المبيعات', Number(s.revenue).toFixed(2)] });
+  if (s.byPaymentMethod.length) {
+    L.push({ rule: true }, { bold: true }, { text: 'حسب طريقة الدفع' }, { bold: false });
+    s.byPaymentMethod.forEach((m) => L.push({ kv: [paymentMethodLabelWithIcon(m.method).replace(/^[^؀-ۿa-zA-Z]*/, ''), Number(m.amount).toFixed(2)] }));
+  }
+  if (s.byChannel.length) {
+    L.push({ rule: true }, { bold: true }, { text: 'حسب نوع الطلب' }, { bold: false });
+    s.byChannel.forEach((c) => L.push({ kv: [orderTypeLabel(c.channel), c.orderCount + '/' + Number(c.revenue).toFixed(2)] }));
+  }
+  if (s.creditInvoiceTotal > 0) L.push({ rule: true }, { kv: ['فواتير آجلة', Number(s.creditInvoiceTotal).toFixed(2)] });
+  L.push({ rule: true }, { align: 'center' }, { text: 'انتهى التقرير' });
+  return L;
+}
+// Best-effort ESC/POS byte builder. Arabic glyph rendering on the actual
+// paper depends entirely on the connected printer's own codepage support
+// (most modern ESC/POS printers accept UTF-8; older ones may not) -- there
+// is no universal fix for that from the browser side, so this sends plain
+// UTF-8 text and lets the printer's firmware do what it can with it.
+function buildEscPosBytes(lines, width) {
+  const cols = width === '58' ? 32 : 48;
+  const enc = new TextEncoder();
+  const bytes = [];
+  const push = (arr) => { for (const b of arr) bytes.push(b); };
+  push([0x1b, 0x40]); // ESC @ -- initialize
+  lines.forEach((line) => {
+    if (line.align) { push([0x1b, 0x61, line.align === 'center' ? 1 : line.align === 'right' ? 2 : 0]); return; }
+    if (line.bold !== undefined) { push([0x1b, 0x45, line.bold ? 1 : 0]); return; }
+    if (line.rule) { push(Array.from(enc.encode('-'.repeat(cols) + '\n'))); return; }
+    if (line.kv) {
+      const [k, v] = line.kv;
+      const pad = Math.max(1, cols - k.length - v.length);
+      push(Array.from(enc.encode(k + ' '.repeat(pad) + v + '\n')));
+      return;
+    }
+    push(Array.from(enc.encode((line.text || '') + '\n')));
+  });
+  push([0x1b, 0x64, 0x03]); // feed 3 lines
+  push([0x1d, 0x56, 0x00]); // GS V 0 -- full cut
+  return new Uint8Array(bytes);
+}
+// Sends raw bytes to whatever thermal printer the browser can reach, per
+// the connection method chosen in Settings. Both paths are inherently
+// best-effort: WebUSB only sees devices matching one of ESCPOS_USB_FILTERS
+// (many cheap printers use a vendor-specific USB class the browser can't
+// generically detect), and Web Serial depends on the OS exposing the
+// printer as a serial/CDC port. Neither is testable without real hardware
+// attached -- if a printer doesn't show up, the other connection method is
+// worth trying (see the hint text in Settings).
+const ESCPOS_USB_FILTERS = [{ classCode: 7 }, { vendorId: 0x04b8 }, { vendorId: 0x0483 }, { vendorId: 0x1fc9 }];
+async function escposSendBytes(bytes) {
+  const s = loadGeneralSettings();
+  if (s.escposConnection === 'serial') {
+    if (!('serial' in navigator)) throw new Error('متصفحك لا يدعم الاتصال التسلسلي المباشر (Web Serial) -- استخدم Chrome أو Edge على جهاز كمبيوتر.');
+    const port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 9600 });
+    const writer = port.writable.getWriter();
+    await writer.write(bytes);
+    writer.releaseLock();
+    await port.close();
+  } else {
+    if (!('usb' in navigator)) throw new Error('متصفحك لا يدعم الطباعة المباشرة عبر USB (WebUSB) -- استخدم Chrome أو Edge على جهاز كمبيوتر.');
+    const device = await navigator.usb.requestDevice({ filters: ESCPOS_USB_FILTERS });
+    await device.open();
+    if (device.configuration === null) await device.selectConfiguration(1);
+    const iface = device.configuration.interfaces[0];
+    await device.claimInterface(iface.interfaceNumber);
+    const endpoint = iface.alternate.endpoints.find((e) => e.direction === 'out');
+    if (!endpoint) throw new Error('تعذر العثور على منفذ إرسال بيانات على هذه الطابعة.');
+    await device.transferOut(endpoint.endpointNumber, bytes);
+    await device.close();
+  }
+}
+async function printShiftSummaryDirect() {
+  const msgEl = document.getElementById('sr-direct-msg');
+  if (!lastShiftSummary) { msgEl.className = 'msg err'; msgEl.textContent = '❌ لا توجد بيانات وردية محمّلة.'; return; }
+  msgEl.className = 'msg'; msgEl.textContent = '⏳ جارٍ الاتصال بالطابعة...';
+  try {
+    const lines = buildShiftSummaryReceiptLines(lastShiftSummary.s);
+    const bytes = buildEscPosBytes(lines, thermalWidthFromSettings());
+    // requestDevice()/requestPort() can hang indefinitely with no visible
+    // feedback if the browser's device picker never resolves (no printer
+    // plugged in, permission dismissed silently, etc.) -- a bounded race
+    // keeps the button from looking stuck forever with only a spinner.
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('انتهت مهلة الاتصال بالطابعة -- تأكد أن الطابعة موصولة، أو جرّب طريقة الاتصال الأخرى في الإعدادات.')), 15000));
+    await Promise.race([escposSendBytes(bytes), timeout]);
+    msgEl.className = 'msg ok'; msgEl.textContent = '✅ تم إرسال الإيصال إلى الطابعة.';
+  } catch (e) {
+    msgEl.className = 'msg err';
+    msgEl.textContent = '❌ ' + (e && e.message ? e.message : 'تعذّرت الطباعة المباشرة -- جرّب زر "🖨️ طباعة" العادي، أو غيّر طريقة الاتصال في الإعدادات.');
   }
 }
 function addOrderLineRow() {
@@ -7696,7 +8034,18 @@ async function toggleOrderTypeActive(id, value) {
 // Thermal-first default: a POS cashier printing straight after every sale
 // is the far more common case than someone reviewing an A4 copy later.
 const GENERAL_SETTINGS_KEY = 'restaurant_erp_admin_settings';
-const DEFAULT_GENERAL_SETTINGS = { printSize: 'THERMAL', printDetail: 'FULL', autoPrintInvoice: true, autoPrintKitchenTicket: true };
+const DEFAULT_GENERAL_SETTINGS = { printSize: 'THERMAL', printDetail: 'FULL', autoPrintInvoice: true, autoPrintKitchenTicket: true, printerModel: 'GENERIC_80', escposConnection: 'usb' };
+// Each model maps to the paper width that drives the printed layout
+// (.shift-receipt-box.w58) and the ESC/POS character width used when
+// printing directly -- "حسب الموديل" is satisfied by this one picker
+// rather than a separate, redundant width setting.
+const PRINTER_MODELS = {
+  GENERIC_80: { label: 'عام 80مم', width: '80' },
+  GENERIC_58: { label: 'عام 58مم', width: '58' },
+  EPSON_TM: { label: 'Epson TM-T20/T88 (80مم)', width: '80' },
+  XPRINTER_58: { label: 'Xprinter XP-58 (58مم)', width: '58' },
+  ZJIANG_58: { label: 'Zjiang ZJ-5870 (58مم)', width: '58' },
+};
 function loadGeneralSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem(GENERAL_SETTINGS_KEY) || '{}');
@@ -7712,6 +8061,8 @@ function loadGeneralSettingsTab() {
   document.querySelectorAll('#set-print-detail-picker .tmpl-btn').forEach((b) => b.classList.toggle('active', b.dataset.val === s.printDetail));
   document.getElementById('set-auto-print-invoice').checked = s.autoPrintInvoice;
   document.getElementById('set-auto-print-kitchen').checked = s.autoPrintKitchenTicket;
+  document.querySelectorAll('#set-printer-model-picker .tmpl-btn').forEach((b) => b.classList.toggle('active', b.dataset.val === s.printerModel));
+  document.querySelectorAll('#set-printer-conn-picker .tmpl-btn').forEach((b) => b.classList.toggle('active', b.dataset.val === s.escposConnection));
 }
 function setGeneralSettingOption(key, val, btn) {
   const s = loadGeneralSettings();
@@ -7719,6 +8070,13 @@ function setGeneralSettingOption(key, val, btn) {
   saveGeneralSettings(s);
   if (btn) document.querySelectorAll(`.invoice-template-picker .tmpl-btn`).forEach((b) => { if (b.parentElement === btn.parentElement) b.classList.toggle('active', b === btn); });
   showMsg('set-msg', '✅ تم حفظ الإعداد', 'ok');
+}
+function setPrinterModel(val, btn) {
+  setGeneralSettingOption('printerModel', val, btn);
+}
+function thermalWidthFromSettings() {
+  const s = loadGeneralSettings();
+  return (PRINTER_MODELS[s.printerModel] || PRINTER_MODELS.GENERIC_80).width;
 }
 // Auto-print sequence right after a successful payment: the invoice (per
 // the general settings' size/detail) then the kitchen ticket, each its own
@@ -8593,6 +8951,235 @@ async function exportDashboard(kind, format) {
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   } catch (e) { flashGlobal('❌ فشل تصدير اللوحة: ' + e.message, 'err'); }
+}
+
+/* ================= Window chrome: minimize/maximize + drag/resize =================
+   Wires every .view (full-screen module popup) and .modal-backdrop (small
+   dialog) into a movable/resizable "window" with minimize-to-taskbar and a
+   maximize/restore toggle, without touching any of their individual markup
+   or open/close call sites. A .view starts maximized (today's full-screen
+   look, unchanged); a .modal-box starts in its normal small centered size,
+   already draggable/resizable. Per-popup geometry is remembered only for
+   the current page session (a plain JS Map), not persisted. */
+const WIN = new Map(); // popup id -> { kind:'view'|'modal', isMax, isMin, rect }
+
+function winInit() {
+  document.querySelectorAll('.view').forEach((v) => winSetup(v, 'view'));
+  document.querySelectorAll('.modal-backdrop').forEach((m) => winSetup(m, 'modal'));
+}
+function winBox(id) {
+  const st = WIN.get(id);
+  if (!st) return null;
+  return st.kind === 'view' ? document.getElementById(id) : document.getElementById(id).querySelector('.modal-box');
+}
+function winSetup(root, kind) {
+  if (!root.id || root.dataset.winInit) return;
+  root.dataset.winInit = '1';
+  const head = root.querySelector(kind === 'view' ? '.view-head' : '.modal-head');
+  const box = kind === 'view' ? root.querySelector('.view-card') : root.querySelector('.modal-box');
+  if (!head || !box) return;
+  const id = root.id;
+  WIN.set(id, { kind, isMax: kind === 'view', isMin: false, rect: null });
+
+  const controls = document.createElement('div');
+  controls.className = 'win-controls no-print';
+  controls.innerHTML = '<button type="button" class="win-btn" title="تصغير">🗕</button><button type="button" class="win-btn win-max-btn" title="تكبير/استعادة الحجم">🗖</button>';
+  const minBtn = controls.children[0];
+  const maxBtn = controls.children[1];
+  minBtn.addEventListener('click', (e) => { e.stopPropagation(); winMinimize(id); });
+  maxBtn.addEventListener('click', (e) => { e.stopPropagation(); winToggleMax(id); });
+  // A modal-head is just [h3, closeBtn] -- insert right before it. A
+  // view-head is always exactly [title, buttonGroupDiv] by the time this
+  // runs (winInit() is called right after injectViewToolbars(), which
+  // wraps every view's print/CSV/close buttons into one such div; a
+  // handful of views author that div by hand instead, same shape) -- drop
+  // the controls inside that group so justify-content:space-between still
+  // only ever sees 2 top-level children, title and group.
+  if (kind === 'modal') {
+    const closeBtn = head.querySelector('.view-close');
+    if (closeBtn) head.insertBefore(controls, closeBtn); else head.appendChild(controls);
+  } else {
+    const title = head.querySelector(':scope > h2, :scope > h3');
+    const wrap = Array.from(head.children).find((c) => c !== title);
+    if (wrap && wrap.tagName === 'DIV') wrap.insertBefore(controls, wrap.firstChild);
+    else head.appendChild(controls);
+  }
+
+  head.classList.add('win-titlebar');
+  head.addEventListener('mousedown', (e) => { if (!e.target.closest('button')) winStartDrag(e, id); });
+  head.addEventListener('touchstart', (e) => { if (!e.target.closest('button')) winStartDrag(e, id); }, { passive: true });
+
+  const handle = document.createElement('div');
+  handle.className = 'win-resize-handle no-print';
+  handle.addEventListener('mousedown', (e) => winStartResize(e, id));
+  handle.addEventListener('touchstart', (e) => winStartResize(e, id), { passive: false });
+  (kind === 'view' ? root : box).appendChild(handle);
+
+  // Whatever else already toggles this popup's 'open' class (dozens of
+  // call sites across the app) should just work -- if it was minimized,
+  // showing it again should auto-restore instead of staying hidden. Only
+  // react to an actual open/close TRANSITION (tracked via wasOpen), not to
+  // every class mutation -- winMinimize() itself adds win-minimized while
+  // 'open' stays present, and reacting to that mutation too would just
+  // immediately undo the minimize it was reacting to.
+  let wasOpen = root.classList.contains('open');
+  new MutationObserver(() => {
+    const isOpen = root.classList.contains('open');
+    const st = WIN.get(id);
+    if (isOpen && !wasOpen && st.isMin) { st.isMin = false; root.classList.remove('win-minimized'); removeTaskbarPill(id); }
+    if (!isOpen && wasOpen) { if (st.isMin) removeTaskbarPill(id); st.isMin = false; root.classList.remove('win-minimized'); }
+    wasOpen = isOpen;
+  }).observe(root, { attributes: true, attributeFilter: ['class'] });
+}
+function winApplyRect(id) {
+  const st = WIN.get(id);
+  const el = winBox(id);
+  const root = document.getElementById(id);
+  let rect = st.rect;
+  if (!rect) {
+    if (st.kind === 'view') {
+      const w = Math.min(1100, window.innerWidth * 0.92);
+      const h = window.innerHeight * 0.86;
+      rect = { left: (window.innerWidth - w) / 2, top: (window.innerHeight - h) / 2, width: w, height: h };
+    } else {
+      // Measured BEFORE win-floating is applied below -- .modal-box is
+      // still under its normal centered CSS at this point (win-maximized
+      // was already removed by the caller), so this is its real on-screen
+      // rect, not the no-offset fixed-position fallback it'd measure as
+      // once win-floating switches it to position:fixed.
+      const natural = el.getBoundingClientRect();
+      rect = { left: natural.left, top: natural.top, width: natural.width, height: natural.height };
+    }
+    st.rect = rect;
+  }
+  if (st.kind === 'modal') root.classList.add('win-floating');
+  const target = st.kind === 'view' ? root : el;
+  target.style.left = rect.left + 'px';
+  target.style.top = rect.top + 'px';
+  target.style.width = rect.width + 'px';
+  target.style.height = rect.height + 'px';
+}
+function winToggleMax(id) {
+  const st = WIN.get(id);
+  if (st.isMin) winRestoreFromTaskbar(id);
+  st.isMax = !st.isMax;
+  const root = document.getElementById(id);
+  if (st.kind === 'view') {
+    if (st.isMax) {
+      root.classList.remove('win-floating');
+      root.style.left = root.style.top = root.style.width = root.style.height = '';
+    } else {
+      root.classList.add('win-floating');
+      winApplyRect(id);
+    }
+  } else {
+    root.classList.toggle('win-maximized', st.isMax);
+    if (!st.isMax) winApplyRect(id);
+  }
+  const btn = root.querySelector('.win-max-btn');
+  if (btn) btn.textContent = st.isMax ? '🗗' : '🗖';
+}
+function winMinimize(id) {
+  const st = WIN.get(id);
+  const root = document.getElementById(id);
+  st.isMin = true;
+  root.classList.add('win-minimized');
+  addTaskbarPill(id);
+}
+function winRestoreFromTaskbar(id) {
+  const st = WIN.get(id);
+  const root = document.getElementById(id);
+  st.isMin = false;
+  root.classList.remove('win-minimized');
+  removeTaskbarPill(id);
+}
+function addTaskbarPill(id) {
+  removeTaskbarPill(id);
+  const st = WIN.get(id);
+  const root = document.getElementById(id);
+  const head = root.querySelector(st.kind === 'view' ? '.view-head' : '.modal-head');
+  const titleEl = head.querySelector('h2, h3');
+  const closeBtn = head.querySelector('.view-close');
+  const pill = document.createElement('div');
+  pill.className = 'win-taskbar-item';
+  pill.dataset.winPill = id;
+  pill.innerHTML = `<span>🗔 ${titleEl ? titleEl.textContent : 'نافذة'}</span><span class="wt-close" title="إغلاق">✕</span>`;
+  pill.querySelector('span:first-child').addEventListener('click', () => winRestoreFromTaskbar(id));
+  pill.querySelector('.wt-close').addEventListener('click', (e) => { e.stopPropagation(); if (closeBtn) closeBtn.click(); });
+  document.getElementById('winTaskbar').appendChild(pill);
+}
+function removeTaskbarPill(id) {
+  const pill = document.querySelector(`.win-taskbar-item[data-win-pill="${id}"]`);
+  if (pill) pill.remove();
+}
+// A modal-box starts out positioned by plain CSS (centered flexbox on its
+// dimmed backdrop) -- switching it to position:fixed with explicit
+// left/top/width/height (needed for dragging/resizing to mean anything)
+// has to happen lazily, at the exact moment it's first touched, capturing
+// its CURRENT on-screen rect first so the switch itself causes no jump.
+function winEnsureFloatingModal(id) {
+  const st = WIN.get(id);
+  if (st.kind !== 'modal' || st.isMax) return;
+  const root = document.getElementById(id);
+  const el = winBox(id);
+  if (root.classList.contains('win-floating')) return;
+  const rect = el.getBoundingClientRect();
+  root.classList.add('win-floating');
+  el.style.left = rect.left + 'px'; el.style.top = rect.top + 'px';
+  el.style.width = rect.width + 'px'; el.style.height = rect.height + 'px';
+}
+function winStartDrag(e, id) {
+  const st = WIN.get(id);
+  if (st.isMin || st.isMax) return;
+  winEnsureFloatingModal(id);
+  const el = winBox(id);
+  const rect = el.getBoundingClientRect();
+  const startX = e.touches ? e.touches[0].clientX : e.clientX;
+  const startY = e.touches ? e.touches[0].clientY : e.clientY;
+  const origLeft = rect.left, origTop = rect.top;
+  function onMove(ev) {
+    const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+    const cy = ev.touches ? ev.touches[0].clientY : ev.clientY;
+    const nl = Math.max(0, Math.min(window.innerWidth - 80, origLeft + (cx - startX)));
+    const nt = Math.max(0, Math.min(window.innerHeight - 50, origTop + (cy - startY)));
+    el.style.left = nl + 'px'; el.style.top = nt + 'px';
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onUp);
+    const r = el.getBoundingClientRect();
+    st.rect = { left: r.left, top: r.top, width: r.width, height: r.height };
+  }
+  document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchmove', onMove, { passive: true }); document.addEventListener('touchend', onUp);
+}
+function winStartResize(e, id) {
+  e.stopPropagation(); e.preventDefault();
+  const st = WIN.get(id);
+  if (st.isMin || st.isMax) return;
+  winEnsureFloatingModal(id);
+  const el = winBox(id);
+  const rect = el.getBoundingClientRect();
+  const startX = e.touches ? e.touches[0].clientX : e.clientX;
+  const startY = e.touches ? e.touches[0].clientY : e.clientY;
+  const origW = rect.width, origH = rect.height;
+  const rtl = getComputedStyle(document.documentElement).direction === 'rtl';
+  function onMove(ev) {
+    const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+    const cy = ev.touches ? ev.touches[0].clientY : ev.clientY;
+    const dx = rtl ? -(cx - startX) : (cx - startX);
+    const nw = Math.max(320, Math.min(window.innerWidth, origW + dx));
+    const nh = Math.max(200, Math.min(window.innerHeight, origH + (cy - startY)));
+    el.style.width = nw + 'px'; el.style.height = nh + 'px';
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onUp);
+    const r = el.getBoundingClientRect();
+    st.rect = { left: r.left, top: r.top, width: r.width, height: r.height };
+  }
+  document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchmove', onMove, { passive: false }); document.addEventListener('touchend', onUp);
 }
 </script>
 </body>

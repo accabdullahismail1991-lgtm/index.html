@@ -2460,6 +2460,40 @@
   </div>
 </div>
 
+<!-- Generic replacement for window.prompt() -- used everywhere in the app
+     (order-line notes, hold/void reasons, branch settings, destructive
+     "type to confirm" actions...) so a text prompt always looks like the
+     rest of the app instead of the browser's own native dialog chrome.
+     See appPrompt()/appPromptConfirm()/appPromptCancel() below. -->
+<div id="appPromptModal" class="modal-backdrop" onclick="if(event.target===this) appPromptCancel()">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="apm-title">✏️ إدخال</h3><button class="view-close" onclick="appPromptCancel()">✕</button></div>
+    <div class="modal-body">
+      <div id="apm-message" class="hint" style="white-space:pre-line;margin:0 0 10px"></div>
+      <input type="text" id="apm-input">
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button type="button" onclick="appPromptConfirm()" style="flex:1">✅ حفظ</button>
+        <button type="button" class="ghost" onclick="appPromptCancel()" style="flex:1">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Generic replacement for window.confirm() -- same idea as appPrompt()
+     above but a yes/no decision with no text input. -->
+<div id="appConfirmModal" class="modal-backdrop" onclick="if(event.target===this) appConfirmModalCancel()">
+  <div class="modal-box">
+    <div class="modal-head"><h3>⚠️ تأكيد</h3><button class="view-close" onclick="appConfirmModalCancel()">✕</button></div>
+    <div class="modal-body">
+      <div id="acm-message" style="white-space:pre-line;margin:0 0 14px"></div>
+      <div style="display:flex;gap:8px">
+        <button type="button" class="danger" onclick="appConfirmModalOk()" style="flex:1">✅ تأكيد</button>
+        <button type="button" class="ghost" onclick="appConfirmModalCancel()" style="flex:1">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Minimized-popup taskbar (window chrome, see winInit() below) -->
 <div id="winTaskbar" class="win-taskbar no-print"></div>
 
@@ -3490,7 +3524,69 @@ function closeView() {
   hideAllViews();
   NAV_HISTORY = [];
 }
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeView(); });
+document.addEventListener('keydown', (e) => {
+  const promptOpen = document.getElementById('appPromptModal').classList.contains('open');
+  if (promptOpen) {
+    if (e.key === 'Enter' && document.activeElement && document.activeElement.id === 'apm-input') { e.preventDefault(); appPromptConfirm(); }
+    if (e.key === 'Escape') { e.preventDefault(); appPromptCancel(); }
+    return; // don't let Escape also fall through to closeView() below
+  }
+  const confirmOpen = document.getElementById('appConfirmModal').classList.contains('open');
+  if (confirmOpen) {
+    if (e.key === 'Escape') { e.preventDefault(); appConfirmModalCancel(); }
+    return;
+  }
+  if (e.key === 'Escape') closeView();
+});
+
+// Generic drop-in replacement for window.prompt() styled like the rest of
+// the app instead of the browser's native dialog -- same call signature
+// and return contract (the typed string, or null if cancelled), just
+// asynchronous: every call site awaits it instead of blocking.
+let _appPromptResolve = null;
+function appPrompt(message, defaultValue) {
+  return new Promise((resolve) => {
+    _appPromptResolve = resolve;
+    document.getElementById('apm-message').textContent = message || '';
+    const input = document.getElementById('apm-input');
+    input.value = defaultValue != null ? String(defaultValue) : '';
+    document.getElementById('appPromptModal').classList.add('open');
+    setTimeout(() => { input.focus(); input.select(); }, 50);
+  });
+}
+function appPromptConfirm() {
+  const val = document.getElementById('apm-input').value;
+  document.getElementById('appPromptModal').classList.remove('open');
+  const resolve = _appPromptResolve; _appPromptResolve = null;
+  if (resolve) resolve(val);
+}
+function appPromptCancel() {
+  document.getElementById('appPromptModal').classList.remove('open');
+  const resolve = _appPromptResolve; _appPromptResolve = null;
+  if (resolve) resolve(null);
+}
+
+// Generic drop-in replacement for window.confirm() -- returns a Promise
+// resolving true/false instead of blocking, styled like the rest of the
+// app instead of the browser's native dialog.
+let _appConfirmResolve = null;
+function appConfirm(message) {
+  return new Promise((resolve) => {
+    _appConfirmResolve = resolve;
+    document.getElementById('acm-message').textContent = message || '';
+    document.getElementById('appConfirmModal').classList.add('open');
+  });
+}
+function appConfirmModalOk() {
+  document.getElementById('appConfirmModal').classList.remove('open');
+  const resolve = _appConfirmResolve; _appConfirmResolve = null;
+  if (resolve) resolve(true);
+}
+function appConfirmModalCancel() {
+  document.getElementById('appConfirmModal').classList.remove('open');
+  const resolve = _appConfirmResolve; _appConfirmResolve = null;
+  if (resolve) resolve(false);
+}
 
 // ---- Reports hub: each report is its own independent popup (view-report-*),
 // opened only from the "📊 التقارير" hub grid, never part of TABS. ----
@@ -3807,7 +3903,7 @@ async function toggleAutoClose(id, value) {
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function editAutoCloseCutoffHour(id, current) {
-  const input = window.prompt('الساعة (0-23، بتوقيت الخادم) التي يُغلق بعدها تلقائيًا أي وردية منسية من يوم سابق؟', current);
+  const input = await appPrompt('الساعة (0-23، بتوقيت الخادم) التي يُغلق بعدها تلقائيًا أي وردية منسية من يوم سابق؟', current);
   if (input === null) return;
   const hour = parseInt(input, 10);
   if (isNaN(hour) || hour < 0 || hour > 23) { flashGlobal('⚠️ ساعة غير صالحة (0-23)', 'err'); return; }
@@ -3823,7 +3919,7 @@ async function editAutoCloseCutoffHour(id, current) {
 // بالضبط، يُلغى الترحيل فيبقى تاريخ العمل هو تاريخ اليوم الفعلي -- حتى لا
 // تُطوى أول ساعات السنة المالية الجديدة داخل آخر يوم من السنة السابقة.
 async function editFiscalYearEnd(id, currentMonth, currentDay) {
-  const input = window.prompt(
+  const input = await appPrompt(
     'نهاية السنة المالية لهذا الفرع، بصيغة يوم/شهر (مثال: 31/12) -- اتركه فارغًا لإلغاء التحديد',
     currentMonth && currentDay ? `${String(currentDay).padStart(2, '0')}/${String(currentMonth).padStart(2, '0')}` : '',
   );
@@ -3847,7 +3943,7 @@ async function editFiscalYearEnd(id, currentMonth, currentDay) {
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function editVatRate(id, current) {
-  const input = window.prompt('نسبة الضريبة الجديدة % لهذا الفرع؟', current);
+  const input = await appPrompt('نسبة الضريبة الجديدة % لهذا الفرع؟', current);
   if (input === null) return;
   const vatRate = parseFloat(input);
   if (isNaN(vatRate) || vatRate < 0 || vatRate > 100) { flashGlobal('⚠️ نسبة غير صالحة (0-100)', 'err'); return; }
@@ -4308,7 +4404,7 @@ async function toggleSalesChannel(id, isActive) {
   } catch (e) { showMsg('sc-msg', '❌ ' + e.message, 'err'); }
 }
 async function deleteSalesChannel(id) {
-  if (!window.confirm('حذف هذه القناة نهائيًا؟')) return;
+  if (!(await appConfirm('حذف هذه القناة نهائيًا؟'))) return;
   try {
     await api(`/sales-channels/${id}`, { method: 'DELETE' });
     showMsg('sc-msg', '✅ تم الحذف', 'ok');
@@ -5702,10 +5798,10 @@ function addOrderLineRow() {
 // cart row is already tight (item + qty + remove); createOrder() reads it
 // off when building each line's payload. Shown on the invoice, the KDS
 // ticket, and the printable kitchen ticket once the order exists.
-function editOrderLineNote(btn) {
+async function editOrderLineNote(btn) {
   const row = btn.closest('.recipe-row');
   const current = row.dataset.note || '';
-  const input = window.prompt('ملاحظة لهذا الصنف (تظهر في المطبخ والفاتورة):', current);
+  const input = await appPrompt('ملاحظة لهذا الصنف (تظهر في المطبخ والفاتورة):', current);
   if (input === null) return;
   const trimmed = input.trim();
   if (trimmed) { row.dataset.note = trimmed; btn.textContent = '🗒️'; btn.title = trimmed; }
@@ -5966,7 +6062,7 @@ async function confirmPayment() {
   }
 }
 async function holdOrderFromDialog() {
-  const note = window.prompt('ملاحظة تعليق الفاتورة (اختياري)؟', '') || undefined;
+  const note = (await appPrompt('ملاحظة تعليق الفاتورة (اختياري)؟', '')) || undefined;
   try {
     await api(`/orders/${paymentDialogOrder.id}/hold`, { method: 'POST', body: JSON.stringify({ note }) });
     flashGlobal('🅿️ تم تعليق الفاتورة', 'ok');
@@ -5989,7 +6085,7 @@ async function voidOrder(id) {
 // as a normal return, then flips the order to VOIDED.
 async function voidPaidOrder(id) {
   if (!id) { flashGlobal('⚠️ لا يوجد طلب محدد', 'err'); return; }
-  const reason = window.prompt('لا يمكن التراجع عن هذا الإجراء -- سيُعاد كل صنف للمخزون وتُلغى الفاتورة بالكامل.\nسبب الإلغاء (اختياري)؟', '');
+  const reason = await appPrompt('لا يمكن التراجع عن هذا الإجراء -- سيُعاد كل صنف للمخزون وتُلغى الفاتورة بالكامل.\nسبب الإلغاء (اختياري)؟', '');
   if (reason === null) return;
   try {
     await api(`/returns/void-paid-order/${id}`, { method: 'POST', body: JSON.stringify({ reason: reason || undefined }) });
@@ -6931,7 +7027,7 @@ async function submitStocktake(id) {
   } catch (e) { showMsg('stkd-msg', '❌ ' + e.message, 'err'); }
 }
 async function decideStocktake(id, action) {
-  const note = window.prompt(action === 'approve' ? 'ملاحظة الاعتماد (اختياري)' : 'سبب الرفض (اختياري)') || undefined;
+  const note = (await appPrompt(action === 'approve' ? 'ملاحظة الاعتماد (اختياري)' : 'سبب الرفض (اختياري)')) || undefined;
   try {
     await api(`/stocktakes/${id}/${action}`, { method: 'POST', body: JSON.stringify({ note }) });
     flashGlobal(action === 'approve' ? '✅ تم اعتماد الجرد' : '↩️ تم رفض الجرد للإعادة', 'ok');
@@ -8488,7 +8584,7 @@ async function downloadBackup(id, fileName) {
 const RESTORE_CONFIRM_PHRASE = 'RESTORE-BACKUP-OVERWRITE-EVERYTHING';
 
 async function restoreBackup(id) {
-  const typed = window.prompt('لا يمكن التراجع عن هذا الإجراء.\nسيُستبدل كل بيانات هذا النظام الحالية (بما فيها المستخدمون والأدوار) ببيانات هذه النسخة الاحتياطية بالضبط.\n\nاكتب "' + RESTORE_CONFIRM_PHRASE + '" للتأكيد:');
+  const typed = await appPrompt('لا يمكن التراجع عن هذا الإجراء.\nسيُستبدل كل بيانات هذا النظام الحالية (بما فيها المستخدمون والأدوار) ببيانات هذه النسخة الاحتياطية بالضبط.\n\nاكتب "' + RESTORE_CONFIRM_PHRASE + '" للتأكيد:');
   if (typed !== RESTORE_CONFIRM_PHRASE) { if (typed !== null) showMsg('bk-msg', '⚠️ العبارة غير مطابقة -- لم يتم تنفيذ أي شيء', 'err'); return; }
   try {
     await api('/backups/' + id + '/restore', { method: 'POST', body: JSON.stringify({ confirm: RESTORE_CONFIRM_PHRASE }) });
@@ -8505,7 +8601,7 @@ async function restoreBackupFromUpload() {
   const input = document.getElementById('bk-upload-file');
   const file = input.files[0];
   if (!file) { showMsg('bk-msg', '⚠️ اختر ملف النسخة الاحتياطية أولًا', 'err'); return; }
-  const typed = window.prompt('لا يمكن التراجع عن هذا الإجراء.\nسيُستبدل كل بيانات هذا النظام الحالية (بما فيها المستخدمون والأدوار) بمحتوى الملف المرفوع بالضبط.\n\nاكتب "' + RESTORE_CONFIRM_PHRASE + '" للتأكيد:');
+  const typed = await appPrompt('لا يمكن التراجع عن هذا الإجراء.\nسيُستبدل كل بيانات هذا النظام الحالية (بما فيها المستخدمون والأدوار) بمحتوى الملف المرفوع بالضبط.\n\nاكتب "' + RESTORE_CONFIRM_PHRASE + '" للتأكيد:');
   if (typed !== RESTORE_CONFIRM_PHRASE) { if (typed !== null) showMsg('bk-msg', '⚠️ العبارة غير مطابقة -- لم يتم تنفيذ أي شيء', 'err'); return; }
   const form = new FormData();
   form.append('file', file);
@@ -8535,7 +8631,7 @@ async function restoreBackupFromUpload() {
 // never reaches the network at all.
 async function runTransactionsReset() {
   const phrase = 'RESET-TRANSACTIONS';
-  const typed = window.prompt('لا يمكن التراجع عن هذا الإجراء.\nسيُحذف كل طلبات المبيعات والمشتريات والإنتاج والتحويل والجرد وكل حركات المخزون والورديات.\n\nاكتب "' + phrase + '" للتأكيد:');
+  const typed = await appPrompt('لا يمكن التراجع عن هذا الإجراء.\nسيُحذف كل طلبات المبيعات والمشتريات والإنتاج والتحويل والجرد وكل حركات المخزون والورديات.\n\nاكتب "' + phrase + '" للتأكيد:');
   if (typed !== phrase) { if (typed !== null) showMsg('danger-msg', '⚠️ العبارة غير مطابقة -- لم يتم تنفيذ أي شيء', 'err'); return; }
   try {
     const result = await api('/admin/reset-transactions', { method: 'POST', body: JSON.stringify({ confirm: phrase }) });
@@ -8545,7 +8641,7 @@ async function runTransactionsReset() {
 
 async function runMasterDataReset() {
   const phrase = 'RESET-MASTER-DATA';
-  const typed = window.prompt('لا يمكن التراجع عن هذا الإجراء.\nسيُحذف كل الأصناف والوصفات وكل طلبات المبيعات والمخزون المرتبطة بها.\n\nاكتب "' + phrase + '" للتأكيد:');
+  const typed = await appPrompt('لا يمكن التراجع عن هذا الإجراء.\nسيُحذف كل الأصناف والوصفات وكل طلبات المبيعات والمخزون المرتبطة بها.\n\nاكتب "' + phrase + '" للتأكيد:');
   if (typed !== phrase) { if (typed !== null) showMsg('danger-msg', '⚠️ العبارة غير مطابقة -- لم يتم تنفيذ أي شيء', 'err'); return; }
   try {
     const result = await api('/admin/reset-master-data', { method: 'POST', body: JSON.stringify({ confirm: phrase }) });
@@ -8556,7 +8652,7 @@ async function runMasterDataReset() {
 
 async function runFullWipe() {
   const phrase = 'FULL-WIPE-EVERYTHING';
-  const typed = window.prompt('لا يمكن التراجع عن هذا الإجراء.\nسيُحذف كل شيء عدا حسابات المستخدمين والأدوار والصلاحيات: الفروع، الموردون، العملاء، الورديات، وكل بيانات الأصناف والمبيعات.\n\nاكتب "' + phrase + '" للتأكيد:');
+  const typed = await appPrompt('لا يمكن التراجع عن هذا الإجراء.\nسيُحذف كل شيء عدا حسابات المستخدمين والأدوار والصلاحيات: الفروع، الموردون، العملاء، الورديات، وكل بيانات الأصناف والمبيعات.\n\nاكتب "' + phrase + '" للتأكيد:');
   if (typed !== phrase) { if (typed !== null) showMsg('danger-msg', '⚠️ العبارة غير مطابقة -- لم يتم تنفيذ أي شيء', 'err'); return; }
   try {
     const result = await api('/admin/full-wipe', { method: 'POST', body: JSON.stringify({ confirm: phrase }) });
@@ -8594,7 +8690,7 @@ async function saveRoleEdit(id) {
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function deleteRole(id) {
-  if (!window.confirm('هل أنت متأكد من حذف هذا الدور؟')) return;
+  if (!(await appConfirm('هل أنت متأكد من حذف هذا الدور؟'))) return;
   try {
     await api('/roles/' + id, { method: 'DELETE' });
     flashGlobal('✅ تم حذف الدور', 'ok');

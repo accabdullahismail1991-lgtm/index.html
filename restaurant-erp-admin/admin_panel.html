@@ -169,6 +169,19 @@
   .empty{color:var(--muted);font-size:12.5px;padding:10px 0;white-space:normal;}
   .hint{color:var(--muted);font-size:12px;margin-top:10px;}
   .stats-row{display:flex;flex-wrap:wrap;gap:14px;}
+  .pvt-source-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .pivot-builder{display:grid;grid-template-columns:220px 1fr;gap:16px;}
+  @media (max-width:860px){.pivot-builder{grid-template-columns:1fr;}}
+  .pivot-fieldlist,.pivot-zone{border:1px dashed var(--border);border-radius:var(--radius-md,10px);padding:10px;background:var(--card2);min-height:70px;transition:border-color .15s,background .15s;}
+  .pivot-fieldlist h4,.pivot-zone h4{margin:0 0 8px;font-size:12.5px;color:var(--muted);}
+  .pivot-zones{display:flex;flex-direction:column;gap:12px;}
+  .pivot-chip-list{display:flex;flex-wrap:wrap;gap:6px;min-height:32px;}
+  .pivot-chip{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;cursor:grab;user-select:none;}
+  .pivot-chip.measure{border-color:var(--brand);color:var(--brand);}
+  .pivot-chip .rm{cursor:pointer;color:var(--muted);font-weight:900;padding:0 2px;}
+  .pivot-chip .agg-pick{border:none;background:transparent;font-size:11px;font-weight:700;cursor:pointer;color:inherit;}
+  .pivot-zone.drag-over,.pivot-fieldlist.drag-over{border-color:var(--brand);border-style:solid;background:rgba(55,48,163,.06);}
+  .pivot-empty-hint{color:var(--muted);font-size:11.5px;padding:6px 2px;}
   .stat-tile{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md,10px);padding:14px 16px;min-width:150px;
     box-shadow:0 1px 3px rgba(20,20,40,.05);transition:box-shadow .15s,transform .15s;}
   .stat-tile:hover{box-shadow:0 4px 14px rgba(20,20,40,.09);transform:translateY(-1px);}
@@ -2205,6 +2218,59 @@
      </div></div>
     </div>
 
+    <!-- PIVOT TABLE REPORT BUILDER -->
+    <div id="view-report-pivot-table" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card"><div class="view-head"><h2>📊 بانى التقارير (Pivot Table)</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+      <div class="panel">
+        <div class="hint">اختر مصدر البيانات، ثم اسحب أي حقل من "الحقول المتاحة" وأفلته في الصفوف أو الأعمدة أو القيم لبناء تقريرك الخاص فورًا حسب الحاجة -- يمكن الجمع بين حقول من المبيعات أو المخزون أو المشتريات كل على حدة.</div>
+        <div class="row-form" style="margin-top:10px">
+          <div><label>مصدر البيانات</label>
+            <div id="pvt-source-tabs" style="display:flex;gap:6px;flex-wrap:wrap">
+              <button type="button" class="ghost pvt-source-btn active" data-source="sales" onclick="switchPivotSource('sales')">🧾 المبيعات</button>
+              <button type="button" class="ghost pvt-source-btn" data-source="inventory" onclick="switchPivotSource('inventory')">📦 المخزون</button>
+              <button type="button" class="ghost pvt-source-btn" data-source="purchasing" onclick="switchPivotSource('purchasing')">🛒 المشتريات</button>
+            </div>
+          </div>
+        </div>
+        <div class="row-form" style="margin-top:10px;margin-bottom:6px">
+          <div><label>الموقع</label><select id="pvtr-location"><option value="">كل المواقع</option></select></div>
+          <div><label>من تاريخ</label><input id="pvtr-from" type="date"></div>
+          <div><label>إلى تاريخ</label><input id="pvtr-to" type="date"></div>
+          <div><button onclick="loadPivotTableReport()">تحديث البيانات</button></div>
+        </div>
+        <div id="pvt-row-count" class="hint"></div>
+      </div>
+
+      <div class="panel">
+        <div class="pivot-builder">
+          <div class="pivot-fieldlist" id="pvt-fieldlist" ondragover="onPivotZoneDragOver(event)" ondrop="onPivotZoneDrop(event,'fieldlist')">
+            <h4>📋 الحقول المتاحة</h4>
+            <div id="pvt-fieldlist-chips" class="pivot-chip-list"></div>
+          </div>
+          <div class="pivot-zones">
+            <div class="pivot-zone" id="pvt-zone-rows" ondragover="onPivotZoneDragOver(event)" ondrop="onPivotZoneDrop(event,'rows')">
+              <h4>↕️ الصفوف (Rows)</h4>
+              <div class="pivot-chip-list" id="pvt-zone-rows-chips"></div>
+            </div>
+            <div class="pivot-zone" id="pvt-zone-cols" ondragover="onPivotZoneDragOver(event)" ondrop="onPivotZoneDrop(event,'cols')">
+              <h4>↔️ الأعمدة (Columns)</h4>
+              <div class="pivot-chip-list" id="pvt-zone-cols-chips"></div>
+            </div>
+            <div class="pivot-zone" id="pvt-zone-values" ondragover="onPivotZoneDragOver(event)" ondrop="onPivotZoneDrop(event,'values')">
+              <h4>Σ القيم (Values)</h4>
+              <div class="pivot-chip-list" id="pvt-zone-values-chips"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>📊 نتيجة التقرير</h2>
+        <div id="pvt-result"></div>
+      </div>
+     </div></div>
+    </div>
+
     <!-- SALES BY CATEGORY MIX -->
     <div id="view-report-category-mix" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card"><div class="view-head"><h2>🥧 مزيج المبيعات حسب الفئة</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
@@ -3617,6 +3683,7 @@ const REPORT_POPUPS = {
   'abc-analysis': loadAbcAnalysisReport,
   'category-mix': loadCategoryMixReport,
   'period-comparison': loadPeriodComparisonReport,
+  'pivot-table': loadPivotTableReport,
 };
 // Per-report icon/label, kept separate from REPORT_POPUPS (which only maps
 // a key to its loader) so renderReportsHub() below can build the grid
@@ -3648,6 +3715,7 @@ const REPORT_META = {
   'abc-analysis': { icon: '🅰️', label: 'تحليل ABC (باريتو) للأصناف' },
   'category-mix': { icon: '🥧', label: 'مزيج المبيعات حسب الفئة' },
   'period-comparison': { icon: '📆', label: 'مقارنة الفترات' },
+  'pivot-table': { icon: '📊', label: 'بانى التقارير (Pivot Table)' },
 };
 // Reports/dashboards hub, grouped under the same category taxonomy used
 // across the reference dashboards (Executive/Financial/Branch Performance/
@@ -3667,6 +3735,7 @@ const REPORT_CATEGORIES = [
   { icon: '💳', label: 'مطابقة المبيعات والكاشير', keys: ['shifts', 'payment-methods'] },
   { icon: '🗓️', label: 'إغلاق اليوم', keys: ['day-close'] },
   { icon: '📋', label: 'تقارير إدارية', keys: ['sales', 'sales-log', 'top-customers', 'customer-experience', 'peak-hours', 'returns'] },
+  { icon: '📊', label: 'بانى التقارير المخصصة', keys: ['pivot-table'] },
 ];
 function renderReportsHub() {
   const el = document.getElementById('reportsHubCategories');
@@ -7712,6 +7781,281 @@ async function loadPeriodComparisonReport() {
     ].join('');
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+/* ================= Pivot Table report builder ================= */
+// Unlike every other report (server-picks-the-shape), this one hands the
+// user raw per-line/per-movement rows from one of three sources and lets
+// them drag fields into rows/columns/values themselves -- so the compute
+// step (grouping + aggregating) happens entirely client-side over
+// pivotState.rawData, not on the server.
+const PIVOT_SOURCES = {
+  sales: {
+    label: 'المبيعات', endpoint: '/analytics/pivot/sales',
+    fields: [
+      { key: 'date', label: 'التاريخ', type: 'dim' },
+      { key: 'locationName', label: 'الفرع', type: 'dim' },
+      { key: 'orderType', label: 'نوع الطلب', type: 'dim' },
+      { key: 'invoiceType', label: 'نوع الفاتورة', type: 'dim' },
+      { key: 'cashierName', label: 'الكاشير', type: 'dim' },
+      { key: 'customerName', label: 'العميل', type: 'dim' },
+      { key: 'itemName', label: 'الصنف', type: 'dim' },
+      { key: 'category', label: 'الفئة', type: 'dim' },
+      { key: 'paymentMethod', label: 'طريقة الدفع', type: 'dim' },
+      { key: 'quantity', label: 'الكمية', type: 'measure' },
+      { key: 'unitPrice', label: 'سعر الوحدة', type: 'measure' },
+      { key: 'revenue', label: 'الإيراد', type: 'measure' },
+    ],
+  },
+  inventory: {
+    label: 'المخزون', endpoint: '/analytics/pivot/inventory',
+    fields: [
+      { key: 'date', label: 'التاريخ', type: 'dim' },
+      { key: 'locationName', label: 'الفرع', type: 'dim' },
+      { key: 'ingredientName', label: 'المكوّن', type: 'dim' },
+      { key: 'category', label: 'الفئة', type: 'dim' },
+      { key: 'unit', label: 'الوحدة', type: 'dim' },
+      { key: 'reason', label: 'سبب الحركة', type: 'dim' },
+      { key: 'quantity', label: 'الكمية', type: 'measure' },
+      { key: 'unitCost', label: 'تكلفة الوحدة', type: 'measure' },
+      { key: 'value', label: 'القيمة', type: 'measure' },
+    ],
+  },
+  purchasing: {
+    label: 'المشتريات', endpoint: '/analytics/pivot/purchasing',
+    fields: [
+      { key: 'date', label: 'التاريخ', type: 'dim' },
+      { key: 'locationName', label: 'الفرع', type: 'dim' },
+      { key: 'supplierName', label: 'المورد', type: 'dim' },
+      { key: 'status', label: 'الحالة', type: 'dim' },
+      { key: 'ingredientName', label: 'المكوّن', type: 'dim' },
+      { key: 'category', label: 'الفئة', type: 'dim' },
+      { key: 'unit', label: 'الوحدة', type: 'dim' },
+      { key: 'quantity', label: 'الكمية', type: 'measure' },
+      { key: 'unitCost', label: 'تكلفة الوحدة', type: 'measure' },
+      { key: 'total', label: 'الإجمالي', type: 'measure' },
+    ],
+  },
+};
+const PIVOT_AGG_LABEL = { sum: 'مجموع', count: 'عدد', avg: 'متوسط', min: 'أقل', max: 'أكبر' };
+let pivotState = { source: 'sales', rawData: [], rows: [], cols: [], values: [] };
+let pivotDraggedField = null;
+
+function pivotSourceFields() { return PIVOT_SOURCES[pivotState.source].fields; }
+function pivotFieldDef(key) { return pivotSourceFields().find((f) => f.key === key); }
+
+function switchPivotSource(source) {
+  if (source === pivotState.source) return;
+  pivotState = { source, rawData: [], rows: [], cols: [], values: [] };
+  document.querySelectorAll('.pvt-source-btn').forEach((b) => b.classList.toggle('active', b.dataset.source === source));
+  loadPivotTableReport();
+}
+
+async function loadPivotTableReport() {
+  const sel = document.getElementById('pvtr-location');
+  if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+  try {
+    const locationId = sel.value;
+    const from = document.getElementById('pvtr-from').value;
+    const to = document.getElementById('pvtr-to').value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const src = PIVOT_SOURCES[pivotState.source];
+    pivotState.rawData = await api(src.endpoint + '?' + params.toString());
+    document.getElementById('pvt-row-count').textContent = `📄 ${pivotState.rawData.length.toLocaleString('en-US')} صف تم تحميلها من ${src.label}`;
+    renderPivotFieldList();
+    renderPivotZones();
+    renderPivotResult();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
+
+function pivotChipHtml(field, zone) {
+  const def = pivotFieldDef(field);
+  if (!def) return '';
+  const aggPick = zone === 'values'
+    ? `<select class="agg-pick" onclick="event.stopPropagation()" onchange="changePivotAgg('${field}', this.value)">
+        ${Object.keys(PIVOT_AGG_LABEL).map((a) => `<option value="${a}" ${pivotValueAgg(field) === a ? 'selected' : ''}>${PIVOT_AGG_LABEL[a]}</option>`).join('')}
+      </select>`
+    : '';
+  const removeBtn = zone ? `<span class="rm" onclick="event.stopPropagation();removePivotField('${zone}','${field}')">✕</span>` : '';
+  return `<div class="pivot-chip ${def.type === 'measure' ? 'measure' : ''}" draggable="true"
+      ondragstart="onPivotFieldDragStart(event,'${field}','${zone || 'fieldlist'}')">
+      <span>${def.label}</span>${aggPick}${removeBtn}
+    </div>`;
+}
+function pivotValueAgg(field) {
+  const v = pivotState.values.find((x) => x.field === field);
+  return v ? v.agg : 'sum';
+}
+function renderPivotFieldList() {
+  const used = new Set([...pivotState.rows, ...pivotState.cols, ...pivotState.values.map((v) => v.field)]);
+  const available = pivotSourceFields().filter((f) => !used.has(f.key));
+  document.getElementById('pvt-fieldlist-chips').innerHTML = available.length
+    ? available.map((f) => pivotChipHtml(f.key, null)).join('')
+    : '<div class="pivot-empty-hint">كل الحقول مستخدمة الآن</div>';
+}
+function renderPivotZones() {
+  document.getElementById('pvt-zone-rows-chips').innerHTML = pivotState.rows.length
+    ? pivotState.rows.map((f) => pivotChipHtml(f, 'rows')).join('') : '<div class="pivot-empty-hint">أفلت حقلاً هنا</div>';
+  document.getElementById('pvt-zone-cols-chips').innerHTML = pivotState.cols.length
+    ? pivotState.cols.map((f) => pivotChipHtml(f, 'cols')).join('') : '<div class="pivot-empty-hint">أفلت حقلاً هنا</div>';
+  document.getElementById('pvt-zone-values-chips').innerHTML = pivotState.values.length
+    ? pivotState.values.map((v) => pivotChipHtml(v.field, 'values')).join('') : '<div class="pivot-empty-hint">أفلت حقلاً هنا</div>';
+}
+
+function onPivotFieldDragStart(ev, field, fromZone) {
+  pivotDraggedField = { field, fromZone };
+  ev.dataTransfer.effectAllowed = 'move';
+  ev.dataTransfer.setData('text/plain', field);
+}
+function onPivotZoneDragOver(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
+function onPivotZoneDrop(ev, toZone) {
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('drag-over');
+  if (!pivotDraggedField) return;
+  const { field } = pivotDraggedField;
+  removePivotFieldFromAllZones(field);
+  if (toZone === 'rows' && !pivotState.rows.includes(field)) pivotState.rows.push(field);
+  if (toZone === 'cols' && !pivotState.cols.includes(field)) pivotState.cols.push(field);
+  if (toZone === 'values' && !pivotState.values.some((v) => v.field === field)) {
+    const def = pivotFieldDef(field);
+    pivotState.values.push({ field, agg: def && def.type === 'measure' ? 'sum' : 'count' });
+  }
+  pivotDraggedField = null;
+  renderPivotFieldList();
+  renderPivotZones();
+  renderPivotResult();
+}
+document.addEventListener('dragleave', (ev) => {
+  if (ev.target.classList && (ev.target.classList.contains('pivot-zone') || ev.target.classList.contains('pivot-fieldlist'))) {
+    ev.target.classList.remove('drag-over');
+  }
+});
+function removePivotFieldFromAllZones(field) {
+  pivotState.rows = pivotState.rows.filter((f) => f !== field);
+  pivotState.cols = pivotState.cols.filter((f) => f !== field);
+  pivotState.values = pivotState.values.filter((v) => v.field !== field);
+}
+function removePivotField(zone, field) {
+  removePivotFieldFromAllZones(field);
+  renderPivotFieldList();
+  renderPivotZones();
+  renderPivotResult();
+}
+function changePivotAgg(field, agg) {
+  const v = pivotState.values.find((x) => x.field === field);
+  if (v) v.agg = agg;
+  renderPivotResult();
+}
+
+function pivotFormatDim(rec, field) {
+  const v = rec[field];
+  if (field === 'date' && v) return String(v).slice(0, 10);
+  return (v === null || v === undefined || v === '') ? '(فارغ)' : String(v);
+}
+function pivotAggregate(records, field, agg) {
+  if (agg === 'count') return records.length;
+  const nums = records.map((r) => Number(r[field])).filter((n) => !isNaN(n));
+  if (!nums.length) return 0;
+  if (agg === 'sum') return nums.reduce((a, b) => a + b, 0);
+  if (agg === 'avg') return nums.reduce((a, b) => a + b, 0) / nums.length;
+  if (agg === 'min') return Math.min(...nums);
+  if (agg === 'max') return Math.max(...nums);
+  return 0;
+}
+function pivotFormatAgg(value, agg) {
+  return agg === 'count' ? String(value) : fmtMoney(value);
+}
+
+function computePivot(data, rowFields, colFields) {
+  const rowMap = new Map();
+  const colMap = new Map();
+  const cellData = new Map();
+  const rowAll = new Map();
+  const colAll = new Map();
+  data.forEach((rec) => {
+    const rowTuple = rowFields.length ? rowFields.map((f) => pivotFormatDim(rec, f)) : ['الكل'];
+    const colTuple = colFields.length ? colFields.map((f) => pivotFormatDim(rec, f)) : ['الإجمالي'];
+    const rk = JSON.stringify(rowTuple);
+    const ck = JSON.stringify(colTuple);
+    if (!rowMap.has(rk)) rowMap.set(rk, rowTuple);
+    if (!colMap.has(ck)) colMap.set(ck, colTuple);
+    const cellKey = rk + '||' + ck;
+    if (!cellData.has(cellKey)) cellData.set(cellKey, []);
+    cellData.get(cellKey).push(rec);
+    if (!rowAll.has(rk)) rowAll.set(rk, []);
+    rowAll.get(rk).push(rec);
+    if (!colAll.has(ck)) colAll.set(ck, []);
+    colAll.get(ck).push(rec);
+  });
+  const rowKeys = Array.from(rowMap.keys()).sort();
+  const colKeys = Array.from(colMap.keys()).sort();
+  return { rowKeys, colKeys, rowMap, colMap, cellData, rowAll, colAll };
+}
+
+function renderPivotResult() {
+  const el = document.getElementById('pvt-result');
+  const { rows, cols, values } = pivotState;
+  if (!values.length) {
+    el.innerHTML = '<div class="pivot-empty-hint">أفلت حقلاً واحدًا على الأقل في منطقة "القيم" لعرض النتيجة</div>';
+    return;
+  }
+  if (!pivotState.rawData.length) {
+    el.innerHTML = '<div class="pivot-empty-hint">لا توجد بيانات لهذه الفترة/الموقع</div>';
+    return;
+  }
+  const pv = computePivot(pivotState.rawData, rows, cols);
+  const rowLabels = rows.length ? rows.map((f) => pivotFieldDef(f).label) : ['الكل'];
+  const showColTotals = pv.colKeys.length > 1;
+
+  let head = '<tr>' + rowLabels.map((l) => `<th>${l}</th>`).join('');
+  pv.colKeys.forEach((ck) => {
+    const tuple = pv.colMap.get(ck);
+    const colLabel = cols.length ? tuple.join(' / ') : null;
+    values.forEach((v) => {
+      const vLabel = `${pivotFieldDef(v.field).label} (${PIVOT_AGG_LABEL[v.agg]})`;
+      head += `<th>${colLabel ? colLabel + ' — ' + vLabel : vLabel}</th>`;
+    });
+  });
+  if (showColTotals) {
+    values.forEach((v) => { head += `<th>الإجمالي — ${pivotFieldDef(v.field).label} (${PIVOT_AGG_LABEL[v.agg]})</th>`; });
+  }
+  head += '</tr>';
+
+  let body = pv.rowKeys.map((rk) => {
+    const tuple = pv.rowMap.get(rk);
+    let tr = tuple.map((t) => `<td>${t}</td>`).join('');
+    pv.colKeys.forEach((ck) => {
+      const cellKey = rk + '||' + ck;
+      const records = pv.cellData.get(cellKey) || [];
+      values.forEach((v) => {
+        const agg = pivotAggregate(records, v.field, v.agg);
+        tr += `<td class="num">${records.length ? pivotFormatAgg(agg, v.agg) : '-'}</td>`;
+      });
+    });
+    if (showColTotals) {
+      const rowRecords = pv.rowAll.get(rk) || [];
+      values.forEach((v) => { tr += `<td class="num"><b>${pivotFormatAgg(pivotAggregate(rowRecords, v.field, v.agg), v.agg)}</b></td>`; });
+    }
+    return `<tr>${tr}</tr>`;
+  }).join('');
+
+  let footer = '';
+  if (pv.rowKeys.length > 1) {
+    footer = `<tr class="report-total-row"><td colspan="${rowLabels.length}">الإجمالي الكلي</td>`;
+    pv.colKeys.forEach((ck) => {
+      const records = pv.colAll.get(ck) || [];
+      values.forEach((v) => { footer += `<td class="num">${pivotFormatAgg(pivotAggregate(records, v.field, v.agg), v.agg)}</td>`; });
+    });
+    if (showColTotals) {
+      values.forEach((v) => { footer += `<td class="num">${pivotFormatAgg(pivotAggregate(pivotState.rawData, v.field, v.agg), v.agg)}</td>`; });
+    }
+    footer += '</tr>';
+  }
+
+  el.innerHTML = `<div class="table-wrap"><table class="report-table"><thead>${head}</thead><tbody>${body}${footer}</tbody></table></div>`;
+}
+
 async function closeDayNow() {
   const locationId = document.getElementById('dcr-close-location').value;
   const businessDate = document.getElementById('dcr-close-date').value;

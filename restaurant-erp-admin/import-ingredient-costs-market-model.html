@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>استيراد تكلفة الأصناف من نموذج تسعير المكونات (سبتمبر 2026)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 20px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 24px 0 8px; color: #93c5fd; }
+  p.hint { color: #94a3b8; font-size: 13px; margin: 4px 0 16px; line-height: 1.7; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  label { font-size: 13px; color: #cbd5e1; display: block; margin-bottom: 4px; }
+  input[type=text], input[type=password], input[type=number] {
+    background: #0f172a; border: 1px solid #475569; color: #e2e8f0; border-radius: 6px; padding: 8px 10px; font-size: 13px; width: 100%;
+  }
+  .field { flex: 1; min-width: 200px; }
+  button {
+    background: #2563eb; color: #fff; border: none; border-radius: 6px; padding: 9px 16px; font-size: 13px; cursor: pointer; font-weight: 600;
+  }
+  button:hover { background: #1d4ed8; }
+  button.secondary { background: #334155; }
+  button.secondary:hover { background: #475569; }
+  button.danger { background: #b91c1c; }
+  button.danger:hover { background: #991b1b; }
+  button:disabled { background: #475569; cursor: not-allowed; opacity: .6; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid #334155; vertical-align: middle; }
+  th { background: #0f172a; color: #93c5fd; position: sticky; top: 0; }
+  tr.cat-header td { background: #16233b; color: #fbbf24; font-weight: 700; padding-top: 12px; }
+  tr.matched { background: rgba(34,197,94,.06); }
+  tr.unmatched { background: rgba(239,68,68,.05); }
+  tr.ambiguous { background: rgba(234,179,8,.08); }
+  tr.excluded td { opacity: .45; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .badge.ok { background: #14532d; color: #86efac; }
+  .badge.warn { background: #713f12; color: #fde68a; }
+  .badge.bad { background: #7f1d1d; color: #fca5a5; }
+  .badge.info { background: #1e3a5f; color: #93c5fd; }
+  select, input.ing-pick { width: 100%; background: #0f172a; border: 1px solid #475569; color: #e2e8f0; border-radius: 6px; padding: 5px 7px; font-size: 12px; }
+  .num { font-variant-numeric: tabular-nums; }
+  #log { background: #000; color: #4ade80; font-family: 'Consolas', monospace; font-size: 12px; padding: 12px; border-radius: 8px; height: 260px; overflow-y: auto; white-space: pre-wrap; }
+  #log .err { color: #f87171; }
+  .stat { display: inline-block; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; margin-inline-end: 8px; margin-bottom: 8px; }
+  .stat b { display: block; font-size: 18px; }
+  .table-wrap { max-height: 560px; overflow: auto; border: 1px solid #334155; border-radius: 8px; }
+  .muted { color: #64748b; }
+  .small { font-size: 11px; }
+  .noteCell { max-width: 220px; font-size: 11px; line-height: 1.5; }
+  input[type=checkbox] { width: 16px; height: 16px; }
+  details summary { cursor: pointer; color: #93c5fd; font-size: 13px; margin: 6px 0; }
+</style>
+</head>
+<body>
+
+<h1>📥 استيراد تكلفة الأصناف من نموذج تسعير المكونات (سبتمبر 2026)</h1>
+<p class="hint">
+  المصدر: ملف تسعير مبني على متوسطات الهيئة العامة للإحصاء (أغسطس 2026) + تقديرات جملة لموردي المطاعم، بعد خصم الجملة واستبعاد الضريبة.
+  يغطي <b>الأصناف الخام</b> (108 صنف) و<b>الأصناف نصف المصنّعة</b> (20 صنف، تكلفتها محسوبة من وصفاتها الداخلية في نفس الملف).
+  الأداة تُطبّق مباشرة على النظام الحي: للأصناف بلا حركة مخزون بعد تُعيَّن <b>تكلفة ابتدائية (openingCost)</b>، وللأصناف التي لها رصيد مفتوح فعلي
+  يتم <b>تصحيح تكلفة الدفعة الحالية</b> في كل فرع لديه رصيد -- بنفس آلية أداة استيراد التكلفة السابقة.
+  <br><b>⚠️ مهم:</b> هذه المرة المطابقة تلقائية بالاسم فقط (لا توجد قائمة مطابقات مُنسّقة يدويًا كالمرة السابقة) -- راجع كل صف قبل الضغط "تطبيق"،
+  خصوصًا الأصناف التي بها أكثر من احتمال مطابقة.
+  <br><b>ملاحظة عن الأصناف نصف المصنّعة:</b> تكلفة الوجبة (menuItemCosts) تُحسب من تكلفة الدُفعة الفعلية الحالية لكل مكوّن مباشرة في وصفة الصنف --
+  فإن كانت وصفة صنف ما تستخدم "نصف مصنّع" (مثل حمص جاهز)، فتحديث سعر مكوّناته الخام لا يُغيّر تكلفة الوجبة تلقائيًا إلا إذا حدّثت أيضًا تكلفة
+  الصنف نصف المصنّع نفسه (وهو ما تفعله هذه الأداة له أيضًا، ضمن نفس الجدول أدناه) أو أُنشئ أمر إنتاج جديد له.
+</p>
+
+<div class="card">
+  <div class="row">
+    <div class="field">
+      <label>رابط الـ API</label>
+      <input type="text" id="apiBase" value="https://restaurant-erp-api-rbb9.onrender.com">
+    </div>
+    <div class="field">
+      <label>رقم الجوال</label>
+      <input type="text" id="phone" placeholder="+9665xxxxxxxx">
+    </div>
+    <div class="field">
+      <label>كلمة المرور</label>
+      <input type="password" id="password">
+    </div>
+    <div>
+      <label>&nbsp;</label>
+      <button id="btnLogin" onclick="doLogin()">دخول</button>
+    </div>
+  </div>
+  <div class="row" style="margin-top:8px; align-items:center;">
+    <label style="display:flex; align-items:center; gap:6px; margin:0;">
+      <input type="checkbox" id="remember"> تذكّر بيانات الدخول على هذا الجهاز فقط (لا تُرفع لأي مكان)
+    </label>
+  </div>
+  <div id="loginStatus" class="small muted" style="margin-top:8px;"></div>
+</div>
+
+<div class="card" id="loadCard" style="display:none;">
+  <button id="btnLoad" onclick="loadAndMatch()">1) تحميل الأصناف والفروع ومطابقتها تلقائيًا</button>
+  <span class="small muted" style="margin-inline-start:10px;">يقرأ /ingredients و /locations و /inventory/balances فقط، لا يكتب شيئًا بعد.</span>
+</div>
+
+<div id="summaryCard" class="card" style="display:none;">
+  <div id="stats"></div>
+  <div class="row" style="margin-top:8px;">
+    <button id="btnApply" class="danger" onclick="applyChanges()" disabled>2) تطبيق التعديلات المؤكدة على النظام الحي</button>
+    <button class="secondary" onclick="recompute()">إعادة احتساب بعد تعديل المطابقات</button>
+  </div>
+</div>
+
+<div id="tableCard" class="card" style="display:none;">
+  <h2>الأصناف القابلة للاستيراد (خام + نصف مصنّعة)</h2>
+  <p class="hint small">
+    عمود «المطابقة»: إن لم تُطابق الأداة الصنف تلقائيًا، اختر الصنف الصحيح من القائمة أو اترك «— بدون مطابقة —» لتجاهل الصف.
+    يمكنك أيضًا تعليم أي صف «تجاهل» حتى لو كان مطابقًا.
+  </p>
+  <div class="table-wrap">
+    <table id="mainTable">
+      <thead>
+        <tr>
+          <th>تجاهل</th><th>الصنف في الملف</th><th>سعر المصدر</th><th>المطابقة في النظام</th>
+          <th>وحدة النظام</th><th>التكلفة المحسوبة</th><th>الإجراء</th><th>الحالة</th>
+        </tr>
+      </thead>
+      <tbody id="mainBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <details>
+    <summary>📖 عرض وصفات الأصناف نصف المصنّعة كما في الملف (مرجعي فقط -- لا يُطبَّق شيء منه على النظام)</summary>
+    <p class="hint small">
+      قارن هذه الكميات بوصفة كل صنف نصف مصنّع الفعلية في النظام (شاشة الأصناف ← وصفة الصنف). إن اختلفت الكميات المسجّلة في النظام عن هذا
+      الملف، فتحديث سعر المكوّنات الخام وسينعكس بدقة على تكلفة الوجبة فقط بقدر دقة الوصفة المسجّلة فعليًا في النظام -- هذه الأداة لا تُعدّل الوصفات.
+    </p>
+    <div class="table-wrap" style="max-height:340px;">
+      <table>
+        <thead><tr><th>الصنف نصف المصنّع</th><th>المكوّن</th><th>الكمية</th><th>الوحدة</th><th>سعر الوحدة</th><th>تكلفة المكوّن</th></tr></thead>
+        <tbody id="recipeBody"></tbody>
+      </table>
+    </div>
+  </details>
+</div>
+
+<div class="card">
+  <h2>سجل التنفيذ</h2>
+  <div id="log">في انتظار البدء...</div>
+</div>
+
+<script>
+const UNIT_FAMILIES = { mass: { g: 1, kg: 1000 }, volume: { ml: 1, l: 1000 }, count: { pcs: 1 } };
+function unitFamily(unit) {
+  for (const fam of Object.keys(UNIT_FAMILIES)) if (unit in UNIT_FAMILIES[fam]) return fam;
+  return null;
+}
+// Same-unit conversion is always safe even for units this tool doesn't know
+// a family for (e.g. "can", "sachet", "portion") -- only a genuine
+// cross-unit conversion needs a recognized family on both sides.
+function convertCost(cost, fromUnit, toUnit) {
+  if (fromUnit === toUnit) return cost;
+  const fam = unitFamily(toUnit);
+  if (!fam || unitFamily(fromUnit) !== fam) return null;
+  return cost * (UNIT_FAMILIES[fam][toUnit] / UNIT_FAMILIES[fam][fromUnit]);
+}
+function normalizeArabic(s) {
+  return (s || '')
+    .replace(/[\u064b-\u0670\u0640]/g, '')
+    .replace(/[\u0625\u0623\u0622\u0627]/g, '\u0627').replace(/\u0629/g, '\u0647').replace(/\u0649/g, '\u064a')
+    .replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+/* === embedded dataset parsed from the uploaded ingredient-costing workbook
+   (raw materials sheet + semi-finished batch costs sheet); recipes kept
+   separately for the read-only reference table only === */
+const SRC = {"raw":[{"name":"استريبس","unit":"kg","cost":24.0},{"name":"باذنجان","unit":"kg","cost":3.6522},{"name":"باربكيو","unit":"kg","cost":11.0},{"name":"باكنج بودر","unit":"kg","cost":18.0},{"name":"باكينج","unit":"pcs","cost":0.25},{"name":"برجر","unit":"kg","cost":30.0},{"name":"بسطرمة","unit":"kg","cost":42.0},{"name":"بصل","unit":"kg","cost":3.0},{"name":"بصل+ بقدونس","unit":"kg","cost":3.2},{"name":"بطاطس","unit":"kg","cost":3.1304},{"name":"بطاطس جمبري","unit":"kg","cost":8.0},{"name":"بطاطس نص مقلية","unit":"kg","cost":7.5},{"name":"بقدونس 1 كجم","unit":"kg","cost":3.2609},{"name":"بيبروني","unit":"kg","cost":45.0},{"name":"بيض","unit":"pcs","cost":0.4566},{"name":"تركى مدخن","unit":"kg","cost":35.0},{"name":"تكساس صوص","unit":"kg","cost":13.0},{"name":"ثلج","unit":"kg","cost":0.35},{"name":"ثوم","unit":"kg","cost":7.8261},{"name":"ثومية","unit":"kg","cost":10.0},{"name":"جبنة روما","unit":"kg","cost":38.0},{"name":"جبنة سائلة","unit":"kg","cost":17.0},{"name":"جبنة شيدر","unit":"kg","cost":28.0},{"name":"جبنة فيتا","unit":"kg","cost":16.0},{"name":"جرجير","unit":"kg","cost":4.3478},{"name":"جزر","unit":"kg","cost":4.3696},{"name":"جمبرى","unit":"pcs","cost":0.75},{"name":"حليب","unit":"l","cost":5.3565},{"name":"حمص حب","unit":"kg","cost":6.5},{"name":"خبز","unit":"pcs","cost":0.2104},{"name":"خس","unit":"kg","cost":4.1087},{"name":"خل ابيض","unit":"kg","cost":2.8},{"name":"خيار","unit":"kg","cost":3.7174},{"name":"خيار مخلل","unit":"kg","cost":6.0},{"name":"دقيق","unit":"kg","cost":1.7983},{"name":"رانش","unit":"kg","cost":15.0},{"name":"رغيف خبز وزنه 70 جم","unit":"pcs","cost":0.2104},{"name":"رغيف صغير","unit":"pcs","cost":0.15},{"name":"رغيف كبير","unit":"pcs","cost":0.4},{"name":"زبدة","unit":"kg","cost":30.0},{"name":"زيت","unit":"kg","cost":8.5},{"name":"زيت حار","unit":"kg","cost":18.0},{"name":"زيت زيتون","unit":"kg","cost":32.0},{"name":"زيتون","unit":"kg","cost":12.0},{"name":"سجق","unit":"kg","cost":24.0},{"name":"سكر","unit":"kg","cost":3.0609},{"name":"سلطة","unit":"kg","cost":5.0},{"name":"سماق","unit":"kg","cost":30.0},{"name":"سمسم","unit":"kg","cost":13.0},{"name":"سوسيس","unit":"kg","cost":17.0},{"name":"سويت شيلى","unit":"kg","cost":11.0},{"name":"شاورما","unit":"kg","cost":16.0},{"name":"شاورما دجاج","unit":"kg","cost":16.0},{"name":"شاورما لحم","unit":"kg","cost":38.0},{"name":"شطة رنا","unit":"kg","cost":8.0},{"name":"شمر","unit":"kg","cost":10.0},{"name":"صوص باربكيو","unit":"kg","cost":11.0},{"name":"صوص تكساس","unit":"kg","cost":13.0},{"name":"صوص ثومية","unit":"kg","cost":10.0},{"name":"صوص راشى","unit":"kg","cost":12.0},{"name":"صوص رانش","unit":"kg","cost":15.0},{"name":"صوص سويت شيلى","unit":"kg","cost":11.0},{"name":"صوص شطة","unit":"kg","cost":8.0},{"name":"صوص شيدر","unit":"kg","cost":18.0},{"name":"صوص كوكتيل","unit":"kg","cost":12.0},{"name":"طاووق","unit":"kg","cost":24.0},{"name":"طاووق نيىء","unit":"kg","cost":20.0},{"name":"طحينة","unit":"kg","cost":14.0},{"name":"طحينة خام","unit":"kg","cost":14.0},{"name":"طماطم","unit":"kg","cost":4.0435},{"name":"علبة بلاستيك 250","unit":"pcs","cost":0.16},{"name":"علبة بلاستيك 350","unit":"pcs","cost":0.2},{"name":"علبة بلاستيك 450","unit":"pcs","cost":0.24},{"name":"فانيليا","unit":"can","cost":12.0},{"name":"فلفل","unit":"kg","cost":5.413},{"name":"فلفل احمر حار","unit":"kg","cost":5.7391},{"name":"فلفل اسود","unit":"kg","cost":42.0},{"name":"فلفل رومي","unit":"kg","cost":5.413},{"name":"فول حب","unit":"kg","cost":6.0},{"name":"فول مجروش","unit":"kg","cost":6.5},{"name":"كاتشاب (جرام)","unit":"kg","cost":5.5},{"name":"كاتشاب (حبة)","unit":"pcs","cost":0.35},{"name":"كاتشاب (ظرف)","unit":"sachet","cost":0.07},{"name":"كبدة","unit":"kg","cost":20.0},{"name":"كبدة غنم","unit":"kg","cost":38.0},{"name":"كرات ربطة 1كجم","unit":"kg","cost":3.2609},{"name":"كربونات الصوديم","unit":"kg","cost":5.0},{"name":"كزبرة","unit":"kg","cost":16.0},{"name":"كمون","unit":"kg","cost":28.0},{"name":"كوكتيل","unit":"kg","cost":12.0},{"name":"لحم","unit":"kg","cost":38.7478},{"name":"لحم كفتة","unit":"kg","cost":38.0},{"name":"لقمة","unit":"pcs","cost":0.1},{"name":"لون زعفران","unit":"kg","cost":45.0},{"name":"ليمون","unit":"kg","cost":6.0652},{"name":"ماء تجهيزات","unit":"kg","cost":0.02},{"name":"مايونيز","unit":"kg","cost":8.5},{"name":"مايونيز حار","unit":"kg","cost":11.0},{"name":"مخلل (جرام)","unit":"kg","cost":5.0},{"name":"مخلل (علبة)","unit":"can","cost":22.0},{"name":"مستردة","unit":"kg","cost":9.0},{"name":"ملح","unit":"kg","cost":0.9},{"name":"ملح ليمون","unit":"kg","cost":9.0},{"name":"موزريلا","unit":"kg","cost":26.0},{"name":"هاليبينو","unit":"kg","cost":14.0},{"name":"هوت دوج","unit":"pcs","cost":0.55},{"name":"ورقيات كرات","unit":"kg","cost":3.2609},{"name":"ورقيات كزبرة","unit":"kg","cost":3.2609}],"semi":[{"name":"جبنة بالطماطم نصف مصنعة","unit":"kg","cost":11.8274},{"name":"حمص جاهز","unit":"kg","cost":4.8722},{"name":"حمص نصف مصنع","unit":"kg","cost":2.98},{"name":"حمص نصف مصنع 4.50 كجم","unit":"kg","cost":2.9378},{"name":"خلطة بطاطس جمبري","unit":"kg","cost":8.234},{"name":"سلطة اسكندراني نصف مصنعة","unit":"kg","cost":4.2228},{"name":"سلطة بصل+ بقدونس","unit":"kg","cost":3.8605},{"name":"سلطة خضراء  نصف مصنعة","unit":"kg","cost":4.2063},{"name":"سلطة خضراء نصف مصنعة","unit":"kg","cost":4.2063},{"name":"شطة ودقة الباذنجان نصف المصنعة","unit":"kg","cost":5.5444},{"name":"شكشوكة نصف مصنعة","unit":"kg","cost":4.7946},{"name":"طحينة نصف مصنعه","unit":"kg","cost":6.9655},{"name":"عجينة طعمية","unit":"kg","cost":4.5282},{"name":"فول جاهز للبيع نصف مصنع","unit":"kg","cost":3.5832},{"name":"فول سادة","unit":"kg","cost":2.919},{"name":"فول نصف مصنع","unit":"kg","cost":2.74},{"name":"كبدة نصف مصنعة","unit":"kg","cost":20.6651},{"name":"كريب","unit":"portion","cost":1.318},{"name":"مسقعة نصف مصنعة","unit":"kg","cost":6.819},{"name":"هريسة شطة جاهزة","unit":"kg","cost":8.8445}],"recipes":[{"parent":"جبنة بالطماطم نصف مصنعة","component":"جبنة فيتا","qty":0.6,"unit":"kg","unitPrice":16.0,"cost":9.6},{"parent":"جبنة بالطماطم نصف مصنعة","component":"طماطم","qty":0.35,"unit":"kg","unitPrice":4.0435,"cost":1.4152},{"parent":"جبنة بالطماطم نصف مصنعة","component":"فلفل احمر حار","qty":0.03,"unit":"kg","unitPrice":5.7391,"cost":0.1722},{"parent":"جبنة بالطماطم نصف مصنعة","component":"زيت زيتون","qty":0.02,"unit":"kg","unitPrice":32.0,"cost":0.64},{"parent":"حمص جاهز","component":"حمص نصف مصنع","qty":0.75,"unit":"kg","unitPrice":2.98,"cost":2.235},{"parent":"حمص جاهز","component":"طحينة خام","qty":0.15,"unit":"kg","unitPrice":14.0,"cost":2.1},{"parent":"حمص جاهز","component":"ليمون","qty":0.06,"unit":"kg","unitPrice":6.0652,"cost":0.3639},{"parent":"حمص جاهز","component":"ثوم","qty":0.01,"unit":"kg","unitPrice":7.8261,"cost":0.0783},{"parent":"حمص جاهز","component":"ملح","qty":0.01,"unit":"kg","unitPrice":0.9,"cost":0.009},{"parent":"حمص جاهز","component":"كمون","qty":0.003,"unit":"kg","unitPrice":28.0,"cost":0.084},{"parent":"حمص جاهز","component":"ماء تجهيزات","qty":0.1,"unit":"kg","unitPrice":0.02,"cost":0.002},{"parent":"حمص نصف مصنع","component":"حمص حب","qty":0.45,"unit":"kg","unitPrice":6.5,"cost":2.925},{"parent":"حمص نصف مصنع","component":"كربونات الصوديم","qty":0.005,"unit":"kg","unitPrice":5.0,"cost":0.025},{"parent":"حمص نصف مصنع","component":"ماء تجهيزات","qty":1.5,"unit":"kg","unitPrice":0.02,"cost":0.03},{"parent":"حمص نصف مصنع 4.50 كجم","component":"حمص حب","qty":2,"unit":"kg","unitPrice":6.5,"cost":13.0},{"parent":"حمص نصف مصنع 4.50 كجم","component":"كربونات الصوديم","qty":0.02,"unit":"kg","unitPrice":5.0,"cost":0.1},{"parent":"حمص نصف مصنع 4.50 كجم","component":"ماء تجهيزات","qty":6,"unit":"kg","unitPrice":0.02,"cost":0.12},{"parent":"خلطة بطاطس جمبري","component":"بطاطس جمبري","qty":0.8,"unit":"kg","unitPrice":8.0,"cost":6.4},{"parent":"خلطة بطاطس جمبري","component":"ثومية","qty":0.1,"unit":"kg","unitPrice":10.0,"cost":1.0},{"parent":"خلطة بطاطس جمبري","component":"صوص شطة","qty":0.05,"unit":"kg","unitPrice":8.0,"cost":0.4},{"parent":"خلطة بطاطس جمبري","component":"ملح","qty":0.01,"unit":"kg","unitPrice":0.9,"cost":0.009},{"parent":"خلطة بطاطس جمبري","component":"زيت","qty":0.05,"unit":"kg","unitPrice":8.5,"cost":0.425},{"parent":"سلطة اسكندراني نصف مصنعة","component":"طماطم","qty":0.35,"unit":"kg","unitPrice":4.0435,"cost":1.4152},{"parent":"سلطة اسكندراني نصف مصنعة","component":"خيار","qty":0.25,"unit":"kg","unitPrice":3.7174,"cost":0.9293},{"parent":"سلطة اسكندراني نصف مصنعة","component":"بصل","qty":0.1,"unit":"kg","unitPrice":3.0,"cost":0.3},{"parent":"سلطة اسكندراني نصف مصنعة","component":"فلفل رومي","qty":0.1,"unit":"kg","unitPrice":5.413,"cost":0.5413},{"parent":"سلطة اسكندراني نصف مصنعة","component":"فلفل احمر حار","qty":0.03,"unit":"kg","unitPrice":5.7391,"cost":0.1722},{"parent":"سلطة اسكندراني نصف مصنعة","component":"بقدونس 1 كجم","qty":0.05,"unit":"kg","unitPrice":3.2609,"cost":0.163},{"parent":"سلطة اسكندراني نصف مصنعة","component":"ليمون","qty":0.05,"unit":"kg","unitPrice":6.0652,"cost":0.3033},{"parent":"سلطة اسكندراني نصف مصنعة","component":"خل ابيض","qty":0.03,"unit":"kg","unitPrice":2.8,"cost":0.084},{"parent":"سلطة اسكندراني نصف مصنعة","component":"زيت","qty":0.02,"unit":"kg","unitPrice":8.5,"cost":0.17},{"parent":"سلطة اسكندراني نصف مصنعة","component":"ملح","qty":0.005,"unit":"kg","unitPrice":0.9,"cost":0.0045},{"parent":"سلطة اسكندراني نصف مصنعة","component":"كمون","qty":0.005,"unit":"kg","unitPrice":28.0,"cost":0.14},{"parent":"سلطة بصل+ بقدونس","component":"بصل","qty":0.6,"unit":"kg","unitPrice":3.0,"cost":1.8},{"parent":"سلطة بصل+ بقدونس","component":"بقدونس 1 كجم","qty":0.3,"unit":"kg","unitPrice":3.2609,"cost":0.9783},{"parent":"سلطة بصل+ بقدونس","component":"سماق","qty":0.02,"unit":"kg","unitPrice":30.0,"cost":0.6},{"parent":"سلطة بصل+ بقدونس","component":"ليمون","qty":0.05,"unit":"kg","unitPrice":6.0652,"cost":0.3033},{"parent":"سلطة بصل+ بقدونس","component":"زيت","qty":0.02,"unit":"kg","unitPrice":8.5,"cost":0.17},{"parent":"سلطة بصل+ بقدونس","component":"ملح","qty":0.01,"unit":"kg","unitPrice":0.9,"cost":0.009},{"parent":"سلطة خضراء  نصف مصنعة","component":"طماطم","qty":0.35,"unit":"kg","unitPrice":4.0435,"cost":1.4152},{"parent":"سلطة خضراء  نصف مصنعة","component":"خيار","qty":0.3,"unit":"kg","unitPrice":3.7174,"cost":1.1152},{"parent":"سلطة خضراء  نصف مصنعة","component":"خس","qty":0.15,"unit":"kg","unitPrice":4.1087,"cost":0.6163},{"parent":"سلطة خضراء  نصف مصنعة","component":"جزر","qty":0.1,"unit":"kg","unitPrice":4.3696,"cost":0.437},{"parent":"سلطة خضراء  نصف مصنعة","component":"فلفل رومي","qty":0.05,"unit":"kg","unitPrice":5.413,"cost":0.2707},{"parent":"سلطة خضراء  نصف مصنعة","component":"ليمون","qty":0.03,"unit":"kg","unitPrice":6.0652,"cost":0.182},{"parent":"سلطة خضراء  نصف مصنعة","component":"زيت","qty":0.02,"unit":"kg","unitPrice":8.5,"cost":0.17},{"parent":"سلطة خضراء نصف مصنعة","component":"طماطم","qty":0.35,"unit":"kg","unitPrice":4.0435,"cost":1.4152},{"parent":"سلطة خضراء نصف مصنعة","component":"خيار","qty":0.3,"unit":"kg","unitPrice":3.7174,"cost":1.1152},{"parent":"سلطة خضراء نصف مصنعة","component":"خس","qty":0.15,"unit":"kg","unitPrice":4.1087,"cost":0.6163},{"parent":"سلطة خضراء نصف مصنعة","component":"جزر","qty":0.1,"unit":"kg","unitPrice":4.3696,"cost":0.437},{"parent":"سلطة خضراء نصف مصنعة","component":"فلفل رومي","qty":0.05,"unit":"kg","unitPrice":5.413,"cost":0.2707},{"parent":"سلطة خضراء نصف مصنعة","component":"ليمون","qty":0.03,"unit":"kg","unitPrice":6.0652,"cost":0.182},{"parent":"سلطة خضراء نصف مصنعة","component":"زيت","qty":0.02,"unit":"kg","unitPrice":8.5,"cost":0.17},{"parent":"شطة ودقة الباذنجان نصف المصنعة","component":"باذنجان","qty":0.6,"unit":"kg","unitPrice":3.6522,"cost":2.1913},{"parent":"شطة ودقة الباذنجان نصف المصنعة","component":"فلفل احمر حار","qty":0.1,"unit":"kg","unitPrice":5.7391,"cost":0.5739},{"parent":"شطة ودقة الباذنجان نصف المصنعة","component":"ثوم","qty":0.05,"unit":"kg","unitPrice":7.8261,"cost":0.3913},{"parent":"شطة ودقة الباذنجان نصف المصنعة","component":"خل ابيض","qty":0.1,"unit":"kg","unitPrice":2.8,"cost":0.28},{"parent":"شطة ودقة الباذنجان نصف المصنعة","component":"زيت","qty":0.1,"unit":"kg","unitPrice":8.5,"cost":0.85},{"parent":"شطة ودقة الباذنجان نصف المصنعة","component":"ملح","qty":0.01,"unit":"kg","unitPrice":0.9,"cost":0.009},{"parent":"شطة ودقة الباذنجان نصف المصنعة","component":"كمون","qty":0.005,"unit":"kg","unitPrice":28.0,"cost":0.14},{"parent":"شكشوكة نصف مصنعة","component":"طماطم","qty":0.55,"unit":"kg","unitPrice":4.0435,"cost":2.2239},{"parent":"شكشوكة نصف مصنعة","component":"فلفل رومي","qty":0.15,"unit":"kg","unitPrice":5.413,"cost":0.812},{"parent":"شكشوكة نصف مصنعة","component":"بصل","qty":0.15,"unit":"kg","unitPrice":3.0,"cost":0.45},{"parent":"شكشوكة نصف مصنعة","component":"ثوم","qty":0.02,"unit":"kg","unitPrice":7.8261,"cost":0.1565},{"parent":"شكشوكة نصف مصنعة","component":"زيت","qty":0.04,"unit":"kg","unitPrice":8.5,"cost":0.34},{"parent":"شكشوكة نصف مصنعة","component":"ملح","qty":0.01,"unit":"kg","unitPrice":0.9,"cost":0.009},{"parent":"شكشوكة نصف مصنعة","component":"كمون","qty":0.003,"unit":"kg","unitPrice":28.0,"cost":0.084},{"parent":"طحينة نصف مصنعه","component":"طحينة خام","qty":0.45,"unit":"kg","unitPrice":14.0,"cost":6.3},{"parent":"طحينة نصف مصنعه","component":"ليمون","qty":0.08,"unit":"kg","unitPrice":6.0652,"cost":0.4852},{"parent":"طحينة نصف مصنعه","component":"ثوم","qty":0.01,"unit":"kg","unitPrice":7.8261,"cost":0.0783},{"parent":"طحينة نصف مصنعه","component":"خل ابيض","qty":0.03,"unit":"kg","unitPrice":2.8,"cost":0.084},{"parent":"طحينة نصف مصنعه","component":"ملح","qty":0.01,"unit":"kg","unitPrice":0.9,"cost":0.009},{"parent":"طحينة نصف مصنعه","component":"ماء تجهيزات","qty":0.45,"unit":"kg","unitPrice":0.02,"cost":0.009},{"parent":"عجينة طعمية","component":"فول مجروش","qty":0.45,"unit":"kg","unitPrice":6.5,"cost":2.925},{"parent":"عجينة طعمية","component":"ورقيات كرات","qty":0.08,"unit":"kg","unitPrice":3.2609,"cost":0.2609},{"parent":"عجينة طعمية","component":"ورقيات كزبرة","qty":0.08,"unit":"kg","unitPrice":3.2609,"cost":0.2609},{"parent":"عجينة طعمية","component":"بقدونس 1 كجم","qty":0.08,"unit":"kg","unitPrice":3.2609,"cost":0.2609},{"parent":"عجينة طعمية","component":"بصل","qty":0.1,"unit":"kg","unitPrice":3.0,"cost":0.3},{"parent":"عجينة طعمية","component":"ثوم","qty":0.03,"unit":"kg","unitPrice":7.8261,"cost":0.2348},{"parent":"عجينة طعمية","component":"كمون","qty":0.005,"unit":"kg","unitPrice":28.0,"cost":0.14},{"parent":"عجينة طعمية","component":"كزبرة","qty":0.005,"unit":"kg","unitPrice":16.0,"cost":0.08},{"parent":"عجينة طعمية","component":"كربونات الصوديم","qty":0.005,"unit":"kg","unitPrice":5.0,"cost":0.025},{"parent":"عجينة طعمية","component":"ملح","qty":0.012,"unit":"kg","unitPrice":0.9,"cost":0.0108},{"parent":"عجينة طعمية","component":"شمر","qty":0.003,"unit":"kg","unitPrice":10.0,"cost":0.03},{"parent":"فول جاهز للبيع نصف مصنع","component":"فول نصف مصنع","qty":0.85,"unit":"kg","unitPrice":2.74,"cost":2.329},{"parent":"فول جاهز للبيع نصف مصنع","component":"زيت","qty":0.05,"unit":"kg","unitPrice":8.5,"cost":0.425},{"parent":"فول جاهز للبيع نصف مصنع","component":"طحينة خام","qty":0.03,"unit":"kg","unitPrice":14.0,"cost":0.42},{"parent":"فول جاهز للبيع نصف مصنع","component":"ليمون","qty":0.03,"unit":"kg","unitPrice":6.0652,"cost":0.182},{"parent":"فول جاهز للبيع نصف مصنع","component":"ثوم","qty":0.01,"unit":"kg","unitPrice":7.8261,"cost":0.0783},{"parent":"فول جاهز للبيع نصف مصنع","component":"كمون","qty":0.005,"unit":"kg","unitPrice":28.0,"cost":0.14},{"parent":"فول جاهز للبيع نصف مصنع","component":"ملح","qty":0.01,"unit":"kg","unitPrice":0.9,"cost":0.009},{"parent":"فول سادة","component":"فول نصف مصنع","qty":0.97,"unit":"kg","unitPrice":2.74,"cost":2.6578},{"parent":"فول سادة","component":"زيت","qty":0.02,"unit":"kg","unitPrice":8.5,"cost":0.17},{"parent":"فول سادة","component":"ملح","qty":0.008,"unit":"kg","unitPrice":0.9,"cost":0.0072},{"parent":"فول سادة","component":"كمون","qty":0.003,"unit":"kg","unitPrice":28.0,"cost":0.084},{"parent":"فول نصف مصنع","component":"فول حب","qty":0.45,"unit":"kg","unitPrice":6.0,"cost":2.7},{"parent":"فول نصف مصنع","component":"ماء تجهيزات","qty":2,"unit":"kg","unitPrice":0.02,"cost":0.04},{"parent":"كبدة نصف مصنعة","component":"كبدة","qty":0.8,"unit":"kg","unitPrice":20.0,"cost":16.0},{"parent":"كبدة نصف مصنعة","component":"فلفل رومي","qty":0.1,"unit":"kg","unitPrice":5.413,"cost":0.5413},{"parent":"كبدة نصف مصنعة","component":"فلفل احمر حار","qty":0.03,"unit":"kg","unitPrice":5.7391,"cost":0.1722},{"parent":"كبدة نصف مصنعة","component":"ثوم","qty":0.02,"unit":"kg","unitPrice":7.8261,"cost":0.1565},{"parent":"كبدة نصف مصنعة","component":"زيت","qty":0.05,"unit":"kg","unitPrice":8.5,"cost":0.425},{"parent":"كبدة نصف مصنعة","component":"كمون","qty":0.005,"unit":"kg","unitPrice":28.0,"cost":0.14},{"parent":"كبدة نصف مصنعة","component":"ملح","qty":0.01,"unit":"kg","unitPrice":0.9,"cost":0.009},{"parent":"كبدة نصف مصنعة","component":"ليمون","qty":0.02,"unit":"kg","unitPrice":6.0652,"cost":0.1213},{"parent":"كريب","component":"دقيق","qty":0.06,"unit":"kg","unitPrice":1.7983,"cost":0.1079},{"parent":"كريب","component":"حليب","qty":0.1,"unit":"l","unitPrice":5.3565,"cost":0.5357},{"parent":"كريب","component":"بيض","qty":1,"unit":"pcs","unitPrice":0.4566,"cost":0.4566},{"parent":"كريب","component":"سكر","qty":0.008,"unit":"kg","unitPrice":3.0609,"cost":0.0245},{"parent":"كريب","component":"زيت","qty":0.005,"unit":"kg","unitPrice":8.5,"cost":0.0425},{"parent":"كريب","component":"زبدة","qty":0.005,"unit":"kg","unitPrice":30.0,"cost":0.15},{"parent":"كريب","component":"ملح","qty":0.001,"unit":"kg","unitPrice":0.9,"cost":0.0009},{"parent":"مسقعة نصف مصنعة","component":"باذنجان","qty":0.6,"unit":"kg","unitPrice":3.6522,"cost":2.1913},{"parent":"مسقعة نصف مصنعة","component":"طماطم","qty":0.3,"unit":"kg","unitPrice":4.0435,"cost":1.213},{"parent":"مسقعة نصف مصنعة","component":"فلفل رومي","qty":0.1,"unit":"kg","unitPrice":5.413,"cost":0.5413},{"parent":"مسقعة نصف مصنعة","component":"بصل","qty":0.08,"unit":"kg","unitPrice":3.0,"cost":0.24},{"parent":"مسقعة نصف مصنعة","component":"ثوم","qty":0.02,"unit":"kg","unitPrice":7.8261,"cost":0.1565},{"parent":"مسقعة نصف مصنعة","component":"زيت","qty":0.12,"unit":"kg","unitPrice":8.5,"cost":1.02},{"parent":"مسقعة نصف مصنعة","component":"ملح","qty":0.01,"unit":"kg","unitPrice":0.9,"cost":0.009},{"parent":"مسقعة نصف مصنعة","component":"كمون","qty":0.003,"unit":"kg","unitPrice":28.0,"cost":0.084},{"parent":"هريسة شطة جاهزة","component":"فلفل احمر حار","qty":0.6,"unit":"kg","unitPrice":5.7391,"cost":3.4435},{"parent":"هريسة شطة جاهزة","component":"ثوم","qty":0.05,"unit":"kg","unitPrice":7.8261,"cost":0.3913},{"parent":"هريسة شطة جاهزة","component":"زيت زيتون","qty":0.1,"unit":"kg","unitPrice":32.0,"cost":3.2},{"parent":"هريسة شطة جاهزة","component":"خل ابيض","qty":0.05,"unit":"kg","unitPrice":2.8,"cost":0.14},{"parent":"هريسة شطة جاهزة","component":"كمون","qty":0.01,"unit":"kg","unitPrice":28.0,"cost":0.28},{"parent":"هريسة شطة جاهزة","component":"ملح","qty":0.02,"unit":"kg","unitPrice":0.9,"cost":0.018},{"parent":"هريسة شطة جاهزة","component":"ملح ليمون","qty":0.005,"unit":"kg","unitPrice":9.0,"cost":0.045}]};
+const DATA = {
+  usable: [
+    ...SRC.raw.map((r) => ({ name: r.name, category: 'أصناف خام', sourceUnit: r.unit, costPerSourceUnit: r.cost })),
+    ...SRC.semi.map((r) => ({ name: r.name, category: 'أصناف نصف مصنّعة', sourceUnit: r.unit, costPerSourceUnit: r.cost })),
+  ],
+};
+let accessToken = null, refreshToken = null;
+function apiBase() { return document.getElementById('apiBase').value.trim().replace(/\/$/, ''); }
+
+function log(msg, cls) {
+  const el = document.getElementById('log');
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function rawApi(path, options = {}) {
+  const res = await fetch(apiBase() + path, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}), ...(options.headers || {}) },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  return res;
+}
+async function api(path, options = {}) {
+  let res = await rawApi(path, options);
+  if (res.status === 401 && refreshToken) {
+    const r = await fetch(apiBase() + '/auth/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken }) });
+    if (r.ok) {
+      const body = await r.json();
+      accessToken = body.accessToken; refreshToken = body.refreshToken || refreshToken;
+      res = await rawApi(path, options);
+    }
+  }
+  if (!res.ok) {
+    let msg = res.statusText;
+    try { const b = await res.json(); msg = b.message || msg; } catch (e) {}
+    throw new Error(`${res.status} ${Array.isArray(msg) ? msg.join(', ') : msg}`);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+const REMEMBER_KEY = 'cost-import-tool-v2-saved-login';
+function restoreSavedLogin() {
+  try {
+    const raw = localStorage.getItem(REMEMBER_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.apiBase) document.getElementById('apiBase').value = saved.apiBase;
+    if (saved.phone) document.getElementById('phone').value = saved.phone;
+    if (saved.password) document.getElementById('password').value = saved.password;
+    document.getElementById('remember').checked = true;
+  } catch (e) { /* private browsing / blocked storage -- just skip */ }
+}
+restoreSavedLogin();
+
+async function doLogin() {
+  const phone = document.getElementById('phone').value.trim();
+  const password = document.getElementById('password').value;
+  const statusEl = document.getElementById('loginStatus');
+  statusEl.textContent = 'جارٍ تسجيل الدخول...';
+  try {
+    const res = await rawApi('/auth/login', { method: 'POST', body: { phone, password } });
+    if (!res.ok) { statusEl.textContent = '❌ فشل تسجيل الدخول (' + res.status + ')'; return; }
+    const body = await res.json();
+    accessToken = body.accessToken; refreshToken = body.refreshToken;
+    statusEl.textContent = '✅ تم تسجيل الدخول';
+    document.getElementById('loadCard').style.display = '';
+    try {
+      if (document.getElementById('remember').checked) {
+        localStorage.setItem(REMEMBER_KEY, JSON.stringify({ apiBase: apiBase(), phone, password }));
+      } else {
+        localStorage.removeItem(REMEMBER_KEY);
+      }
+    } catch (e) { /* storage unavailable -- login still works, just won't be remembered */ }
+  } catch (e) {
+    statusEl.textContent = '❌ خطأ في الاتصال: ' + e.message;
+  }
+}
+
+let ingredientsCache = [], locationsCache = [], balancesCache = [];
+let matchState = [];
+
+function findAutoMatch(name) {
+  const norm = normalizeArabic(name);
+  return ingredientsCache.filter((i) => normalizeArabic(i.name) === norm);
+}
+
+async function loadAndMatch() {
+  const btn = document.getElementById('btnLoad');
+  btn.disabled = true;
+  log('جارٍ تحميل /ingredients ...');
+  try {
+    ingredientsCache = await api('/ingredients');
+    log(`تم تحميل ${ingredientsCache.length} صنف.`);
+    log('جارٍ تحميل /locations ...');
+    locationsCache = await api('/locations');
+    log(`تم تحميل ${locationsCache.length} فرع/موقع.`);
+    log('جارٍ تحميل /inventory/balances (كل الفروع) ...');
+    balancesCache = await api('/inventory/balances');
+    log(`تم تحميل ${balancesCache.length} سطر رصيد.`);
+  } catch (e) {
+    log('❌ فشل التحميل: ' + e.message, 'err');
+    btn.disabled = false;
+    return;
+  }
+
+  matchState = DATA.usable.map((row) => {
+    const hits = findAutoMatch(row.name);
+    return { row, matchedIngredientId: hits.length === 1 ? hits[0].id : null, autoAmbiguousCount: hits.length, excluded: false };
+  });
+
+  renderTable();
+  renderRecipes();
+  recompute();
+  document.getElementById('summaryCard').style.display = '';
+  document.getElementById('tableCard').style.display = '';
+  btn.disabled = false;
+}
+
+function ingredientLabel(i) { return `${i.name} (${i.unit})`; }
+
+function renderTable() {
+  const body = document.getElementById('mainBody');
+  body.innerHTML = '';
+  let lastCat = null;
+  matchState.forEach((st, idx) => {
+    if (st.row.category !== lastCat) {
+      lastCat = st.row.category;
+      const tr = document.createElement('tr');
+      tr.className = 'cat-header';
+      tr.innerHTML = `<td colspan="8">${lastCat}</td>`;
+      body.appendChild(tr);
+    }
+    const tr = document.createElement('tr');
+    tr.id = 'row-' + idx;
+
+    const optsHtml = ['<option value="">— بدون مطابقة —</option>']
+      .concat(ingredientsCache
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+        .map((i) => `<option value="${i.id}" ${i.id === st.matchedIngredientId ? 'selected' : ''}>${ingredientLabel(i)}</option>`))
+      .join('');
+
+    tr.innerHTML = `
+      <td><input type="checkbox" onchange="matchState[${idx}].excluded=this.checked; recompute();"></td>
+      <td>${st.row.name}</td>
+      <td class="num">${st.row.costPerSourceUnit} / ${st.row.sourceUnit}</td>
+      <td><select onchange="matchState[${idx}].matchedIngredientId=this.value||null; recompute();">${optsHtml}</select></td>
+      <td class="targetUnit">—</td>
+      <td class="targetCost num">—</td>
+      <td class="actionCell small">—</td>
+      <td class="statusCell">—</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function renderRecipes() {
+  document.getElementById('recipeBody').innerHTML = SRC.recipes.map((r) => `
+    <tr>
+      <td>${r.parent}</td><td>${r.component}</td><td class="num">${r.qty}</td><td>${r.unit}</td>
+      <td class="num">${r.unitPrice != null ? r.unitPrice.toFixed(4) : '-'}</td>
+      <td class="num">${r.cost != null ? r.cost.toFixed(4) : '-'}</td>
+    </tr>
+  `).join('');
+}
+
+function recompute() {
+  let okOpening = 0, okAdjust = 0, ambiguous = 0, unmatched = 0, incompatible = 0, noBalance = 0, excludedCount = 0;
+
+  matchState.forEach((st, idx) => {
+    const tr = document.getElementById('row-' + idx);
+    if (!tr) return;
+    tr.className = '';
+    const targetUnitCell = tr.querySelector('.targetUnit');
+    const targetCostCell = tr.querySelector('.targetCost');
+    const actionCell = tr.querySelector('.actionCell');
+    const statusCell = tr.querySelector('.statusCell');
+
+    if (st.excluded) {
+      tr.className = 'excluded';
+      statusCell.innerHTML = '<span class="badge">متجاهَل</span>';
+      excludedCount++;
+      st._plan = null;
+      return;
+    }
+
+    const ing = ingredientsCache.find((i) => i.id === st.matchedIngredientId);
+    if (!ing) {
+      tr.className = 'unmatched';
+      targetUnitCell.textContent = '—'; targetCostCell.textContent = '—'; actionCell.textContent = '—';
+      statusCell.innerHTML = st.autoAmbiguousCount > 1
+        ? '<span class="badge warn">أكثر من مطابقة — اختر يدويًا</span>'
+        : '<span class="badge bad">غير مطابق</span>';
+      if (st.autoAmbiguousCount > 1) ambiguous++; else unmatched++;
+      st._plan = null;
+      return;
+    }
+
+    const targetCost = convertCost(st.row.costPerSourceUnit, st.row.sourceUnit, ing.unit);
+    targetUnitCell.textContent = ing.unit;
+    if (targetCost == null) {
+      tr.className = 'unmatched';
+      targetCostCell.textContent = '—';
+      actionCell.textContent = '—';
+      statusCell.innerHTML = '<span class="badge bad">وحدة غير متوافقة</span>';
+      incompatible++;
+      st._plan = null;
+      return;
+    }
+    targetCostCell.textContent = targetCost.toFixed(4);
+
+    if (!ing.hasMovement) {
+      actionCell.textContent = 'تعيين تكلفة ابتدائية (openingCost)';
+      statusCell.innerHTML = '<span class="badge ok">جاهز</span>';
+      tr.className = 'matched';
+      okOpening++;
+      st._plan = { type: 'openingCost', ingredientId: ing.id, ingredientName: ing.name, targetCost, unit: ing.unit };
+    } else {
+      const openBalances = balancesCache.filter((b) => b.ingredientId === ing.id && Number(b.quantity) > 0);
+      if (!openBalances.length) {
+        actionCell.textContent = 'لا يوجد رصيد مفتوح حاليًا في أي فرع';
+        statusCell.innerHTML = '<span class="badge info">لن يُطبَّق شيء</span>';
+        tr.className = 'unmatched';
+        noBalance++;
+        st._plan = null;
+      } else {
+        actionCell.textContent = `تصحيح التكلفة الحالية في ${openBalances.length} فرع`;
+        statusCell.innerHTML = '<span class="badge ok">جاهز</span>';
+        tr.className = 'matched';
+        okAdjust++;
+        st._plan = { type: 'costAdjustment', ingredientId: ing.id, ingredientName: ing.name, targetCost, unit: ing.unit, locations: openBalances.map((b) => ({ locationId: b.locationId, locationName: b.location?.name || b.locationId })) };
+      }
+    }
+  });
+
+  const totalReady = okOpening + okAdjust;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><b>${DATA.usable.length}</b>إجمالي أصناف قابلة للاستيراد</div>
+    <div class="stat"><b style="color:#86efac">${totalReady}</b>جاهزة للتطبيق (${okOpening} تكلفة ابتدائية، ${okAdjust} تصحيح فعلي)</div>
+    <div class="stat"><b style="color:#fde68a">${ambiguous}</b>مطابقات متعددة تحتاج اختيار يدوي</div>
+    <div class="stat"><b style="color:#fca5a5">${unmatched}</b>غير مطابق</div>
+    <div class="stat"><b style="color:#fca5a5">${incompatible}</b>وحدة غير متوافقة</div>
+    <div class="stat"><b style="color:#93c5fd">${noBalance}</b>حركة سابقة بدون رصيد حالي</div>
+    <div class="stat"><b class="muted">${excludedCount}</b>متجاهَل يدويًا</div>
+  `;
+  document.getElementById('btnApply').disabled = totalReady === 0;
+}
+
+async function applyChanges() {
+  const plans = matchState.map((st) => st._plan).filter(Boolean);
+  if (!plans.length) return;
+  if (!confirm(`سيتم تطبيق ${plans.length} تعديل تكلفة على النظام الحي الآن. هل أنت متأكد؟`)) return;
+
+  document.getElementById('btnApply').disabled = true;
+  log(`\n=== بدء التطبيق: ${plans.length} صنف ===`);
+  let success = 0, failed = 0;
+
+  for (const plan of plans) {
+    try {
+      if (plan.type === 'openingCost') {
+        await api(`/ingredients/${plan.ingredientId}`, { method: 'PATCH', body: { openingCost: plan.targetCost } });
+        log(`✅ ${plan.ingredientName}: تعيين تكلفة ابتدائية = ${plan.targetCost.toFixed(4)} / ${plan.unit}`);
+        success++;
+      } else {
+        for (const loc of plan.locations) {
+          await api('/inventory/cost-adjustments', {
+            method: 'POST',
+            body: { locationId: loc.locationId, ingredientId: plan.ingredientId, newUnitCost: plan.targetCost, note: 'استيراد تكلفة من نموذج تسعير المكونات (سبتمبر 2026)' },
+          });
+          log(`✅ ${plan.ingredientName} @ ${loc.locationName}: تصحيح التكلفة = ${plan.targetCost.toFixed(4)} / ${plan.unit}`);
+        }
+        success++;
+      }
+    } catch (e) {
+      log(`❌ ${plan.ingredientName}: ${e.message}`, 'err');
+      failed++;
+    }
+  }
+  log(`\n=== انتهى: ${success} نجح، ${failed} فشل ===`);
+  document.getElementById('btnApply').disabled = false;
+}
+</script>
+</body>
+</html>

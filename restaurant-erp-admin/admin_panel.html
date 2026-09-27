@@ -688,6 +688,11 @@
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>🔍 بحث</label><input id="ing-search" placeholder="ابحث بالاسم أو التصنيف..." oninput="renderIngredientsTable()"></div>
           <div><label>التصنيف</label><select id="ing-category-filter" onchange="renderIngredientsTable()"><option value="">كل التصنيفات</option></select></div>
+          <div><label>&nbsp;</label><button class="ghost" onclick="recomputeIngredientCosts()">🔄 تحديث تكلفة كل الأصناف</button></div>
+        </div>
+        <div class="hint">
+          يعيد احتساب تكلفة كل صنف نصف مصنّع من وصفته بأسعار مكوّناته الحالية (بدل تكلفة آخر دفعة إنتاج فعلية فقط)، ويحدّث تكلفته في النظام.
+          الأصناف الخام التي لديها رصيد مخزون فعلي لا تتأثر -- تكلفتها الحقيقية تُؤخذ دائمًا من آخر عملية شراء فعلية.
         </div>
         <div class="table-wrap"><table class="report-table"><thead><tr><th>الاسم</th><th>التصنيف</th><th>الوحدة</th><th>النوع</th><th>التكلفة / الوحدة</th><th>حد أدنى</th><th></th></tr></thead>
           <tbody id="ingredientsTable"></tbody>
@@ -1200,6 +1205,7 @@
         <button id="pr-tab-orders" class="" onclick="switchSubview('pr',['new','orders'],'orders')">أوامر الإنتاج</button>
       </div>
       <div class="view-body">
+      <div id="prod-needs-alert" class="hidden"></div>
 
       <div class="panel subview" id="pr-sub-new">
         <h2>➕ أمر إنتاج جديد</h2>
@@ -4155,6 +4161,38 @@ async function loadIngredients() {
     renderIngredientsTable();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+// "🔄 تحديث تكلفة كل الأصناف": recomputes every SEMI_FINISHED ingredient's
+// cost from its recipe's CURRENT component prices (see
+// IngredientsService.recomputeCosts) and writes it back, so a raw
+// ingredient's price change actually reaches a semi-finished item's cost
+// (and from there, any menu item built on it) without waiting for its next
+// real production run. Raw materials with real stock are never touched.
+async function recomputeIngredientCosts() {
+  const ok = await appConfirm('سيُعاد احتساب تكلفة كل صنف نصف مصنّع من وصفته الحالية، وتُحدَّث تكلفته في النظام. هل تريد المتابعة؟');
+  if (!ok) return;
+  try {
+    const res = await api('/ingredients/recompute-costs', { method: 'POST' });
+    await loadIngredients();
+    const body = document.createElement('div');
+    if (!res.updated.length && !res.skipped.length) {
+      body.innerHTML = '<div class="hint">كل الأصناف محدّثة بالفعل -- لا يوجد ما يحتاج تغييرًا.</div>';
+    } else {
+      body.innerHTML = `
+        ${res.updated.length ? `
+          <h4 style="margin:0 0 8px">✅ تم تحديث ${res.updated.length} صنف</h4>
+          <table class="report-table"><thead><tr><th>الصنف</th><th>التكلفة السابقة</th><th>التكلفة الجديدة</th><th>الإجراء</th></tr></thead>
+            <tbody>${res.updated.map((u) => `<tr><td>${u.name}</td><td class="num">${u.previousCost != null ? u.previousCost.toFixed(4) : '-'} / ${u.unit}</td><td class="num">${u.newCost.toFixed(4)} / ${u.unit}</td><td>${u.action === 'costAdjustment' ? `تصحيح دفعات (${u.locationsUpdated} فرع)` : 'تكلفة ابتدائية'}</td></tr>`).join('')}</tbody>
+          </table>` : ''}
+        ${res.skipped.length ? `
+          <h4 style="margin:16px 0 8px">⚠️ ${res.skipped.length} صنف بلا سعر مرجعي كافٍ</h4>
+          <table class="report-table"><thead><tr><th>الصنف</th><th>السبب</th></tr></thead>
+            <tbody>${res.skipped.map((s) => `<tr><td>${s.name}</td><td class="hint">${s.reason}</td></tr>`).join('')}</tbody>
+          </table>` : ''}
+      `;
+    }
+    openGenericTablePopup('نتيجة تحديث تكلفة الأصناف', body);
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
+}
 // Both the "التصنيف" filter select and the add-form's <datalist> suggestion
 // list are derived from whatever categories already exist on real
 // ingredients -- no separate categories table, same free-text pattern
@@ -4687,7 +4725,7 @@ function renderRecipeEditor(box, parentId, lines, parentKind) {
   const rowsHtml = (lines.length ? lines : [{ ingredient: { id: '' }, quantity: '' }]).map((l) => `
     <div class="recipe-row">
       <select class="rq-ing" onchange="syncRowUnitOptions(this); updateRecipeCosts('${parentId}')">${options}</select>
-      <input class="rq-qty" type="number" step="0.001" value="${l.quantity || ''}" placeholder="الكمية" oninput="updateRecipeCosts('${parentId}')">
+      <input class="rq-qty" type="number" step="0.00001" value="${l.quantity || ''}" placeholder="الكمية" oninput="updateRecipeCosts('${parentId}')">
       <select class="rq-unit" onchange="updateRecipeCosts('${parentId}')"></select>
       <span class="rq-cost num" style="min-width:70px;display:inline-block;color:var(--muted);font-size:12px"></span>
       <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateRecipeCosts('${parentId}')">✕</button>
@@ -4714,7 +4752,7 @@ function addRecipeRow(parentId) {
   const container = document.getElementById('rows-' + parentId);
   const div = document.createElement('div');
   div.className = 'recipe-row';
-  div.innerHTML = `<select class="rq-ing" onchange="syncRowUnitOptions(this); updateRecipeCosts('${parentId}')">${options}</select><input class="rq-qty" type="number" step="0.001" placeholder="الكمية" oninput="updateRecipeCosts('${parentId}')"><select class="rq-unit" onchange="updateRecipeCosts('${parentId}')"></select><span class="rq-cost num" style="min-width:70px;display:inline-block;color:var(--muted);font-size:12px"></span><button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateRecipeCosts('${parentId}')">✕</button>`;
+  div.innerHTML = `<select class="rq-ing" onchange="syncRowUnitOptions(this); updateRecipeCosts('${parentId}')">${options}</select><input class="rq-qty" type="number" step="0.00001" placeholder="الكمية" oninput="updateRecipeCosts('${parentId}')"><select class="rq-unit" onchange="updateRecipeCosts('${parentId}')"></select><span class="rq-cost num" style="min-width:70px;display:inline-block;color:var(--muted);font-size:12px"></span><button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateRecipeCosts('${parentId}')">✕</button>`;
   container.appendChild(div);
   const sel = div.querySelector('.rq-ing');
   syncRowUnitOptions(sel);
@@ -4747,9 +4785,9 @@ function updateRecipeCosts(parentId) {
     const lineCost = convertToIngredientUnit(ingredientId, qty, unit) * info.cost;
     total += lineCost;
     if (info.estimated) anyEstimated = true;
-    costEl.textContent = lineCost.toFixed(3);
+    costEl.textContent = lineCost.toFixed(5);
   });
-  totalEl.textContent = 'إجمالي تكلفة الوصفة: ' + total.toFixed(3)
+  totalEl.textContent = 'إجمالي تكلفة الوصفة: ' + total.toFixed(5)
     + (anyEstimated ? ' 🔸 (تتضمن تكلفة تقديرية لبعض المكوّنات)' : '')
     + (anyMissing ? ' ⚠️ (يوجد مكوّن بدون بيانات تكلفة)' : '');
 }
@@ -8089,6 +8127,49 @@ async function loadProductionTab() {
     .join('');
   enhanceIngredientSelect(document.getElementById('prod-output'));
   await loadProductionOrders();
+  await loadProductionNeedsAlert();
+}
+// Proactive alert (not just the auto-generated "⚠️ تلقائي -- نقص مخزون" badge
+// in the orders table below, which only ever appears if the branch opted
+// into Location.autoGenerateProductionOrders): any SEMI_FINISHED ingredient
+// with a currently negative balance anywhere needs a production order
+// regardless of that setting, since a negative balance IS demand that was
+// pulled past what's actually in stock. Skips anything that already has an
+// open (PLANNED/IN_PROGRESS) production order for that exact ingredient +
+// location, so this never suggests a duplicate of what's already queued.
+async function loadProductionNeedsAlert() {
+  const box = document.getElementById('prod-needs-alert');
+  try {
+    const [negStock, orders] = await Promise.all([
+      api('/analytics/negative-stock'),
+      api('/production-orders'),
+    ]);
+    const openOrderKeys = new Set(
+      orders.filter((o) => ['PLANNED', 'IN_PROGRESS'].includes(o.status))
+        .map((o) => o.outputIngredientId + '|' + o.locationId)
+    );
+    const needs = negStock.filter((n) => n.kind === 'SEMI_FINISHED' && !openOrderKeys.has(n.ingredientId + '|' + n.locationId));
+    if (!needs.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    box.classList.remove('hidden');
+    box.innerHTML = `
+      <div class="panel" style="border-color:var(--warn,#b45309);background:rgba(180,83,9,.06)">
+        <h2>⚠️ أصناف نصف مصنّعة بحاجة لأمر إنتاج (${needs.length})</h2>
+        <div class="hint">الرصيد هنا سالب -- سُحبت كمية أكبر مما هو متاح فعليًا. أنشئ أمر إنتاج بنفس الكمية الناقصة لتغطية الطلب المسحوب.</div>
+        <table class="report-table"><thead><tr><th>الصنف</th><th>الفرع</th><th>الكمية الناقصة</th><th></th></tr></thead>
+          <tbody>${needs.map((n) => `<tr><td>${n.name}</td><td>${n.locationName}</td><td class="num">${Math.abs(n.quantity)} ${n.unit}</td>
+            <td><button onclick="createProductionOrderForNeed('${n.ingredientId}','${n.locationId}',${Math.abs(n.quantity)},this)">🏭 إنشاء أمر إنتاج</button></td></tr>`).join('')}
+          </tbody></table>
+      </div>`;
+  } catch (e) { /* proactive nicety -- a failed fetch here shouldn't block the rest of the Production screen */ }
+}
+async function createProductionOrderForNeed(ingredientId, locationId, quantity, btn) {
+  btn.disabled = true;
+  try {
+    await api('/production-orders', { method: 'POST', body: JSON.stringify({ locationId, outputIngredientId: ingredientId, outputQuantity: quantity }) });
+    flashGlobal('✅ تم إنشاء أمر الإنتاج', 'ok');
+    await loadProductionOrders();
+    await loadProductionNeedsAlert();
+  } catch (e) { flashGlobal('❌ ' + e.message, 'err'); btn.disabled = false; }
 }
 function toggleProdOverride() {
   const on = document.getElementById('prod-override').checked;
@@ -8152,7 +8233,7 @@ async function prodAction(id, action) {
   try {
     await api(`/production-orders/${id}/${action}`, { method: 'POST' });
     flashGlobal('✅ تم', 'ok');
-    loadProductionOrders(); loadInventoryBalances();
+    loadProductionOrders(); loadInventoryBalances(); loadProductionNeedsAlert();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 function startProd(id) { prodAction(id, 'start'); }
@@ -8172,7 +8253,7 @@ async function processReadyProductionOrders() {
       ? `✅ تم إتمام ${res.completedCount} أمر إنتاج${res.stillShortCount ? ` -- ولا يزال ${res.stillShortCount} أمر ناقص المكوّنات` : ''}`
       : `⚠️ لا يزال ${res.stillShortCount} أمر ناقص المكوّنات -- لم يكتمل أي أمر بعد`;
     flashGlobal(msg, kind);
-    loadProductionOrders(); loadInventoryBalances();
+    loadProductionOrders(); loadInventoryBalances(); loadProductionNeedsAlert();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 

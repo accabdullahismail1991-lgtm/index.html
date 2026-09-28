@@ -1173,6 +1173,16 @@
       </div>
       <div class="panel subview hidden" id="pu-sub-orders">
         <h2>أوامر الشراء</h2>
+        <div class="row-form">
+          <div><label>الموقع</label><select id="po-filter-location" onchange="loadPurchaseOrders()"><option value="">كل المواقع</option></select></div>
+          <div><label>الحالة</label><select id="po-filter-status" onchange="loadPurchaseOrders()">
+            <option value="">كل الحالات</option>
+            <option value="DRAFT">مسودة</option><option value="PENDING_APPROVAL">بانتظار الاعتماد</option>
+            <option value="APPROVED">معتمد</option><option value="SENT_TO_SUPPLIER">مُرسل للمورد</option>
+            <option value="RECEIVED">مُستلم</option><option value="REJECTED">مرفوض</option><option value="CANCELLED">ملغى</option>
+          </select></div>
+          <div><label>المورد</label><select id="po-filter-supplier" onchange="loadPurchaseOrders()"><option value="">كل الموردين</option></select></div>
+        </div>
         <div class="table-wrap"><table class="report-table"><thead><tr><th>المورد</th><th>الموقع</th><th>الحالة</th><th>قبل الضريبة</th><th>الضريبة</th><th>الإجمالي</th><th></th></tr></thead>
           <tbody id="purchaseOrdersTable"></tbody>
         </table></div>
@@ -2418,6 +2428,19 @@
       </div>
       <div class="view-body">
         <div id="oal-content"></div>
+      </div>
+     </div></div>
+
+    <!-- PURCHASE ORDER DETAIL (line items, status actions, real-time activity log) -->
+    <div id="view-po-detail" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card">
+      <div class="view-head no-print"><h2>🛒 تفاصيل أمر الشراء</h2>
+        <div style="display:flex;gap:8px">
+          <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
+        </div>
+      </div>
+      <div class="view-body">
+        <div id="pod-content"></div>
       </div>
      </div></div>
 
@@ -7310,27 +7333,35 @@ async function createPurchaseOrder() {
     loadPurchaseOrders();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+const PO_STATUS_LABEL = { DRAFT: 'مسودة', PENDING_APPROVAL: 'بانتظار الاعتماد', APPROVED: 'معتمد', SENT_TO_SUPPLIER: 'مُرسل للمورد', RECEIVED: 'مُستلم', REJECTED: 'مرفوض', CANCELLED: 'ملغى' };
+let purchaseOrdersCache = [];
 async function loadPurchaseOrders() {
   try {
-    const pos = await api('/purchase-orders');
+    const locSel = document.getElementById('po-filter-location');
+    if (locSel.options.length <= 1) locSel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();
+    const supSel = document.getElementById('po-filter-supplier');
     const suppliers = await api('/suppliers');
+    if (supSel.options.length <= 1) supSel.innerHTML = '<option value="">كل الموردين</option>' + suppliers.map((s) => `<option value="${s.id}">${s.name}</option>`).join('');
+
+    const locationId = locSel.value;
+    const status = document.getElementById('po-filter-status').value;
+    const supplierId = supSel.value;
+    const params = new URLSearchParams();
+    if (locationId) params.set('locationId', locationId);
+    if (status) params.set('status', status);
+    let pos = await api('/purchase-orders?' + params.toString());
+    if (supplierId) pos = pos.filter((po) => po.supplierId === supplierId);
+    purchaseOrdersCache = pos;
+
     const locName = (id) => (locationsCache.find((l) => l.id === id) || {}).name || id;
     const supName = (id) => (suppliers.find((s) => s.id === id) || {}).name || id;
-    const actionsFor = (po) => {
-      const btns = [];
-      if (po.status === 'DRAFT') btns.push(`<button class="link-btn" onclick="submitPO('${po.id}')">📤 تقديم للاعتماد</button>`);
-      if (po.status === 'PENDING_APPROVAL') {
-        btns.push(`<button class="link-btn" onclick="approvePO('${po.id}')">✅ اعتماد</button>`);
-        btns.push(`<button class="link-btn danger-link" onclick="rejectPO('${po.id}')">✖️ رفض</button>`);
-      }
-      if (po.status === 'APPROVED') btns.push(`<button class="link-btn" onclick="sendPO('${po.id}')">📤 إرسال للمورد</button>`);
-      if (po.status === 'APPROVED' || po.status === 'SENT_TO_SUPPLIER') btns.push(`<button class="link-btn" onclick="receivePO('${po.id}')">📥 استلام الطلبية</button>`);
-      if (!['RECEIVED', 'CANCELLED'].includes(po.status)) btns.push(`<button class="link-btn danger-link" onclick="cancelPO('${po.id}')">✖️ إلغاء</button>`);
-      return btns.join(' ');
-    };
     document.getElementById('purchaseOrdersTable').innerHTML = pos.length
-      ? pos.map((po) => `<tr><td>${supName(po.supplierId)}</td><td>${locName(po.locationId)}</td><td>${po.status}</td><td class="num">${Number(po.subtotal).toFixed(2)}</td><td class="num">${Number(po.vatTotal).toFixed(2)}</td><td class="num">${Number(po.totalAmount).toFixed(2)}</td><td>${actionsFor(po)}</td></tr>`).join('')
-      : `<tr><td colspan="7" class="empty">لا توجد أوامر شراء بعد</td></tr>`;
+      ? pos.map((po) => `<tr class="clickable-row" onclick="openPurchaseOrderDetail('${po.id}')">
+          <td>${supName(po.supplierId)}</td><td>${locName(po.locationId)}</td><td>${PO_STATUS_LABEL[po.status] || po.status}</td>
+          <td class="num">${Number(po.subtotal).toFixed(2)}</td><td class="num">${Number(po.vatTotal).toFixed(2)}</td><td class="num">${Number(po.totalAmount).toFixed(2)}</td>
+          <td><button class="link-btn" onclick="event.stopPropagation(); openPurchaseOrderDetail('${po.id}')">👁️ تفاصيل</button></td>
+        </tr>`).join('')
+      : `<tr><td colspan="7" class="empty">لا توجد أوامر شراء بهذه المرشّحات</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 async function poAction(id, action, method) {
@@ -7338,6 +7369,7 @@ async function poAction(id, action, method) {
     await api(`/purchase-orders/${id}/${action}`, { method: method || 'POST' });
     flashGlobal('✅ تم', 'ok');
     loadPurchaseOrders(); loadInventoryBalances();
+    if (currentPoDetailId === id) openPurchaseOrderDetail(id);
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 function submitPO(id) { poAction(id, 'submit'); }
@@ -7347,7 +7379,69 @@ function sendPO(id) { poAction(id, 'send'); }
 function receivePO(id) { poAction(id, 'receive'); }
 function cancelPO(id) { poAction(id, 'cancel'); }
 
-const PO_STATUS_LABEL = { DRAFT: 'مسودة', PENDING_APPROVAL: 'بانتظار الاعتماد', APPROVED: 'معتمد', SENT_TO_SUPPLIER: 'مُرسل للمورد', RECEIVED: 'مُستلم', REJECTED: 'مرفوض', CANCELLED: 'ملغى' };
+/* ================= Purchase order detail (line items + real-time activity log) ================= */
+const PO_ACTIVITY_ICON = { CREATED: '🆕', SUBMITTED: '📤', APPROVED: '✅', REJECTED: '✖️', SENT: '📮', RECEIVED: '📥', CANCELLED: '❌' };
+let currentPoDetailId = null;
+async function openPurchaseOrderDetail(id) {
+  if (!id) return;
+  currentPoDetailId = id;
+  pushNavHistory();
+  hideAllViews();
+  document.getElementById('view-po-detail').classList.add('open');
+  const content = document.getElementById('pod-content');
+  content.innerHTML = '<div class="empty">جارِ التحميل...</div>';
+  try {
+    const [po, log] = await Promise.all([api('/purchase-orders/' + id), api('/purchase-orders/' + id + '/activity-log')]);
+    const suppliers = await api('/suppliers');
+    const supName = (sid) => (suppliers.find((s) => s.id === sid) || {}).name || sid;
+    const locName = (lid) => (locationsCache.find((l) => l.id === lid) || {}).name || lid;
+
+    const actionBtns = [];
+    if (po.status === 'DRAFT') actionBtns.push(`<button onclick="submitPO('${po.id}')">📤 تقديم للاعتماد</button>`);
+    if (po.status === 'PENDING_APPROVAL') {
+      actionBtns.push(`<button onclick="approvePO('${po.id}')">✅ اعتماد</button>`);
+      actionBtns.push(`<button class="ghost" onclick="rejectPO('${po.id}')">✖️ رفض</button>`);
+    }
+    if (po.status === 'APPROVED') actionBtns.push(`<button onclick="sendPO('${po.id}')">📤 إرسال للمورد</button>`);
+    if (po.status === 'APPROVED' || po.status === 'SENT_TO_SUPPLIER') actionBtns.push(`<button onclick="receivePO('${po.id}')">📥 استلام الطلبية</button>`);
+    if (!['RECEIVED', 'CANCELLED'].includes(po.status)) actionBtns.push(`<button class="ghost danger-link" onclick="cancelPO('${po.id}')">✖️ إلغاء</button>`);
+
+    const linesHtml = po.lines.map((l) => `<tr>
+      <td>${l.ingredient ? l.ingredient.name : l.ingredientId}</td>
+      <td class="num">${Number(l.quantity)} ${l.ingredient ? l.ingredient.unit : ''}</td>
+      <td class="num">${Number(l.unitCost).toFixed(4)}</td>
+      <td>${l.taxType === 'STANDARD' ? 'أساسية' : l.taxType === 'ZERO_RATED' ? 'صفرية' : 'معفاة'}</td>
+      <td class="num">${(Number(l.quantity) * Number(l.unitCost)).toFixed(2)}</td>
+    </tr>`).join('');
+
+    content.innerHTML = `
+      <div class="invoice-meta-grid" style="margin-bottom:14px">
+        <div><span class="k">المورد:</span> ${supName(po.supplierId)}</div>
+        <div><span class="k">الموقع:</span> ${locName(po.locationId)}</div>
+        <div><span class="k">الحالة:</span> ${PO_STATUS_LABEL[po.status] || po.status}</div>
+        <div><span class="k">الأسعار شاملة الضريبة:</span> ${po.pricesIncludeVat ? 'نعم' : 'لا'}</div>
+        <div><span class="k">أُنشئ في:</span> ${fmtDateTime(po.createdAt)}</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">${actionBtns.join('')}</div>
+      <h3>الأصناف</h3>
+      <div class="table-wrap"><table class="report-table">
+        <thead><tr><th>الصنف</th><th>الكمية</th><th>تكلفة الوحدة</th><th>الضريبة</th><th>الإجمالي</th></tr></thead>
+        <tbody>${linesHtml}</tbody>
+      </table></div>
+      <div class="invoice-totals" style="margin-top:10px;max-width:320px">
+        <div class="row"><span>قبل الضريبة</span><span>${fmtMoney(po.subtotal)}</span></div>
+        <div class="row"><span>الضريبة</span><span>${fmtMoney(po.vatTotal)}</span></div>
+        <div class="row grand"><span>الإجمالي</span><span>${fmtMoney(po.totalAmount)} ر.س</span></div>
+      </div>
+      <h3 style="margin-top:20px">سجل الحركة (بالتوقيت الحقيقي لكل عملية)</h3>
+      ${log.length
+        ? log.map((a) => `<div class="entry">${PO_ACTIVITY_ICON[a.action] || '🕒'} ${a.action} -- ${a.createdBy ? a.createdBy.name : '-'} في ${fmtDateTime(a.createdAt)}${a.note ? ' -- ' + a.note : ''}</div>`).join('')
+        : '<div class="empty">لا توجد أي حركة مسجّلة بعد</div>'}
+    `;
+  } catch (e) {
+    content.innerHTML = '<div class="empty">❌ ' + e.message + '</div>';
+  }
+}
 async function loadPurchasingReport() {
   const sel = document.getElementById('pur-location');
   if (!sel.options.length || sel.options.length === 1) sel.innerHTML = '<option value="">كل المواقع</option>' + locationOptions();

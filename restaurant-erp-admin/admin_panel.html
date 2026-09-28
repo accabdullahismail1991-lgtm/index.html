@@ -2484,6 +2484,16 @@
             <div><label>الفرع</label><select id="osm-location"></select></div>
             <div><label>رأس المال الافتتاحي</label><input id="osm-float" type="number" step="0.01" value="200"></div>
           </div>
+          <div id="osm-backdate-wrap" class="hidden" style="margin-bottom:12px">
+            <label style="display:flex;align-items:center;gap:6px">
+              <input type="checkbox" id="osm-backdate-toggle" style="width:auto" onchange="toggleOpenShiftBackdate()"> 🕐 فتح الوردية بتاريخ سابق (لتسجيل مبيعات فاتتها الفترة الحالية)
+            </label>
+            <div id="osm-backdate-field" class="hidden" style="margin-top:8px">
+              <label>تاريخ العمل للوردية</label>
+              <input id="osm-backdate-date" type="date">
+              <div class="hint">ستُحتسب كل فواتير هذه الوردية على هذا التاريخ. لن يمكن إنشاء فواتير جديدة على أي وردية أخرى بهذا الفرع حتى تُغلق هذه الوردية (ثم يُنهى اليوم من شاشة المبيعات).</div>
+            </div>
+          </div>
           <div id="osm-msg" class="msg"></div>
           <button onclick="submitOpenShiftModal()" style="width:100%">فتح وردية</button>
         </div>
@@ -5610,7 +5620,15 @@ async function openOpenShiftModal() {
   if (locationsCache.length === 1) sel.value = locationsCache[0].id;
   document.getElementById('osm-float').value = 200;
   document.getElementById('osm-msg').innerHTML = '';
+  document.getElementById('osm-backdate-wrap').classList.toggle('hidden', !myPermissions.includes('pos.backdate_shift'));
+  document.getElementById('osm-backdate-toggle').checked = false;
+  document.getElementById('osm-backdate-field').classList.add('hidden');
+  document.getElementById('osm-backdate-date').value = '';
+  document.getElementById('osm-backdate-date').max = new Date().toISOString().slice(0, 10);
   document.getElementById('openShiftModal').classList.add('open');
+}
+function toggleOpenShiftBackdate() {
+  document.getElementById('osm-backdate-field').classList.toggle('hidden', !document.getElementById('osm-backdate-toggle').checked);
 }
 function closeOpenShiftModal() {
   document.getElementById('openShiftModal').classList.remove('open');
@@ -5619,8 +5637,14 @@ async function submitOpenShiftModal() {
   const locationId = document.getElementById('osm-location').value;
   const openingFloat = parseFloat(document.getElementById('osm-float').value);
   if (!locationId || isNaN(openingFloat)) { showMsg('osm-msg', '⚠️ اختر الفرع واكتب رأس المال', 'err'); return; }
+  const body = { locationId, openingFloat };
+  if (document.getElementById('osm-backdate-toggle').checked) {
+    const businessDate = document.getElementById('osm-backdate-date').value;
+    if (!businessDate) { showMsg('osm-msg', '⚠️ اختر تاريخ العمل للوردية المتأخرة', 'err'); return; }
+    body.businessDate = businessDate;
+  }
   try {
-    await api('/shifts', { method: 'POST', body: JSON.stringify({ locationId, openingFloat }) });
+    await api('/shifts', { method: 'POST', body: JSON.stringify(body) });
     flashGlobal('✅ تم فتح الوردية', 'ok');
     closeOpenShiftModal();
     // Refresh whichever shift-dependent screens happen to already be

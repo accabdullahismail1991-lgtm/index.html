@@ -6361,7 +6361,25 @@ function renderInvoice(o) {
     ? o.payments.map((p) => `${paymentMethodLabelWithIcon(p.method)}: ${fmtMoney(p.amount)}`).join('، ')
     : '-';
 
+  // The invoice's legal issue date/time (paidAt, below) is always the real
+  // moment it was actually issued -- required for ZATCA's e-invoicing
+  // clearance/reporting chain, and never backdated even when the order was
+  // entered on a deliberately backdated shift (pos.backdate_shift) to catch
+  // up on sales missed on an earlier real business day. That earlier day is
+  // still recorded (Order.businessDate) and used for reporting/reconciliation
+  // -- this banner surfaces it here only so it isn't mistaken for a bug when
+  // it visibly differs from the printed date, and never prints itself.
+  const paidDateOnly = o.paidAt ? new Date(o.paidAt).toISOString().slice(0, 10) : null;
+  const businessDateOnly = o.businessDate ? new Date(o.businessDate).toISOString().slice(0, 10) : null;
+  const backdateNoteHtml = businessDateOnly && paidDateOnly && businessDateOnly !== paidDateOnly ? `
+    <div class="no-print" style="background:#78350f;color:#fde68a;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12.5px;">
+      ℹ️ هذه الفاتورة سُجّلت اليوم على وردية مؤرَّخة بتاريخ سابق -- <b>التاريخ التشغيلي للطلب: ${fmtDate(businessDateOnly)}</b>.
+      تاريخ إصدار الفاتورة أدناه (${fmtDate(paidDateOnly)}) هو التاريخ الحقيقي دائمًا ولا يتغيّر، لأنه نفس الحقل المستخدم في فاتورة زاتكا الإلكترونية وسلسلة التجزئة الخاصة بها.
+    </div>
+  ` : '';
+
   document.getElementById('inv-content').innerHTML = `
+    ${backdateNoteHtml}
     <div class="invoice-box ${sizeClass}">
       <div class="biz-logo-slot" id="inv-logo-slot"></div>
       <div class="biz-name">${loc.name || '-'}</div>

@@ -13,6 +13,40 @@
 <script src="./vendor-qrcode.min.js"></script>
 <script src="./vendor-chart.min.js"></script>
 <style>
+  /* Tajawal, vendored locally as woff2 files (same offline-first reasoning
+     as dexie/qrcode/chart above) -- each weight ships as two files (an
+     Arabic-range subset and a Latin-range subset covering digits/
+     punctuation) exactly as Google Fonts itself splits them, so every
+     character the app actually uses has full glyph coverage. */
+  @font-face{font-family:'Tajawal';font-style:normal;font-weight:400;font-display:swap;
+    src:url('./fonts/tajawal-400-arabic.woff2') format('woff2');
+    unicode-range:U+0600-06FF,U+0750-077F,U+0870-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC;}
+  @font-face{font-family:'Tajawal';font-style:normal;font-weight:400;font-display:swap;
+    src:url('./fonts/tajawal-400-latin.woff2') format('woff2');
+    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215;}
+  @font-face{font-family:'Tajawal';font-style:normal;font-weight:500;font-display:swap;
+    src:url('./fonts/tajawal-500-arabic.woff2') format('woff2');
+    unicode-range:U+0600-06FF,U+0750-077F,U+0870-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC;}
+  @font-face{font-family:'Tajawal';font-style:normal;font-weight:500;font-display:swap;
+    src:url('./fonts/tajawal-500-latin.woff2') format('woff2');
+    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215;}
+  @font-face{font-family:'Tajawal';font-style:normal;font-weight:700;font-display:swap;
+    src:url('./fonts/tajawal-700-arabic.woff2') format('woff2');
+    unicode-range:U+0600-06FF,U+0750-077F,U+0870-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC;}
+  @font-face{font-family:'Tajawal';font-style:normal;font-weight:700;font-display:swap;
+    src:url('./fonts/tajawal-700-latin.woff2') format('woff2');
+    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215;}
+  @font-face{font-family:'Tajawal';font-style:normal;font-weight:800;font-display:swap;
+    src:url('./fonts/tajawal-800-arabic.woff2') format('woff2');
+    unicode-range:U+0600-06FF,U+0750-077F,U+0870-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC;}
+  @font-face{font-family:'Tajawal';font-style:normal;font-weight:800;font-display:swap;
+    src:url('./fonts/tajawal-800-latin.woff2') format('woff2');
+    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215;}
+  /* A reusable 1em-sized inline-SVG icon (replaces an emoji glyph) --
+     width/height in em so it always matches its parent element's own
+     font-size instead of needing a per-context fixed pixel size, and
+     stroke="currentColor" so it inherits the surrounding text color. */
+  .icon-svg{width:1em;height:1em;vertical-align:-0.14em;flex-shrink:0;display:inline-block;}
   :root{
     --ink:#1a2030; --muted:#68748a; --border:#e3e6ee; --bg:#f2f3f8; --card:#ffffff;
     --brand:#3730a3; --brand-dark:#2b2680; --danger:#d0453f; --ok:#1f9d68; --card2:#f5f6fa;
@@ -27,7 +61,7 @@
     --nav-active-bg:#262c3d; --nav-active-text:#ffffff; --nav-border:rgba(255,255,255,.06);
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:-apple-system,'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);}
+  body{margin:0;font-family:'Tajawal',-apple-system,'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);}
   .hidden{display:none !important;}
   button,.home-card,.menu-tile,nav button{transition:background-color .12s,border-color .12s,color .12s,box-shadow .12s,transform .12s;}
 
@@ -636,7 +670,7 @@
 
     <!-- BRANCHES -->
     <div id="view-branches" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🏢 الفروع</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🏢 الفروع</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>      <div class="subnav">
         <button id="br-tab-list" class="active" onclick="switchSubview('br',['list','add','import'],'list')">الفروع الحالية</button>
         <button id="br-tab-add" class="" onclick="switchSubview('br',['list','add','import'],'add')">➕ إضافة فرع</button>
         <button id="br-tab-import" class="" onclick="switchSubview('br',['list','add','import'],'import'); renderImportExportPanel('br-sub-import','branches')">📥 استيراد / تصدير</button>
@@ -675,7 +709,7 @@
 
     <!-- INGREDIENTS -->
     <div id="view-ingredients" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🥕 الأصناف الخام والنصف مصنّعة</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🥕 الأصناف الخام والنصف مصنّعة</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>      <div class="subnav">
         <button id="ing-tab-list" class="active" onclick="switchSubview('ing',['list','add','units','import'],'list')">الأصناف الحالية</button>
         <button id="ing-tab-add" class="" onclick="switchSubview('ing',['list','add','units','import'],'add')">➕ إضافة صنف</button>
         <button id="ing-tab-units" class="" onclick="switchSubview('ing',['list','add','units','import'],'units'); loadUnitsOfMeasure()">📐 وحدات القياس</button>
@@ -686,7 +720,7 @@
       <div class="panel subview" id="ing-sub-list">
         <h2>الأصناف الحالية</h2>
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
-          <div><label>🔍 بحث</label><input id="ing-search" placeholder="ابحث بالاسم أو التصنيف..." oninput="renderIngredientsTable()"></div>
+          <div><label><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg> بحث</label><input id="ing-search" placeholder="ابحث بالاسم أو التصنيف..." oninput="renderIngredientsTable()"></div>
           <div><label>التصنيف</label><select id="ing-category-filter" onchange="renderIngredientsTable()"><option value="">كل التصنيفات</option></select></div>
           <div><label>&nbsp;</label><button class="ghost" onclick="recomputeIngredientCosts()">🔄 تحديث تكلفة كل الأصناف</button></div>
         </div>
@@ -750,7 +784,7 @@
 
     <!-- ITEMS -->
     <div id="view-items" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📋 أصناف المنيو</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
+     <div class="view-card"><div class="view-head"><h2>📋 أصناف المنيو</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
       <div class="subnav">
         <button id="mi-tab-list" class="active" onclick="switchSubview('mi',['list','add','channels','import'],'list')">الأصناف الحالية</button>
         <button id="mi-tab-add" onclick="switchSubview('mi',['list','add','channels','import'],'add')">➕ إضافة صنف</button>
@@ -761,7 +795,7 @@
       <div class="panel subview" id="mi-sub-list">
         <h2>أصناف المنيو الحالية</h2>
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
-          <div><label>🔍 بحث</label><input id="items-search" placeholder="ابحث بالاسم أو القسم..." oninput="renderItemsTable()"></div>
+          <div><label><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg> بحث</label><input id="items-search" placeholder="ابحث بالاسم أو القسم..." oninput="renderItemsTable()"></div>
           <div><label>فرع مرجعي لتفصيل الضريبة</label><select id="items-vat-location" onchange="renderItemsTable()"></select></div>
         </div>
         <div class="hint">السعر واحد لكل صنف في كل الفروع -- لكن كونه شاملًا للضريبة من عدمه ونسبة الضريبة خاصيتان لكل فرع، فتفصيل "قبل/شامل الضريبة" أدناه محسوب حسب إعدادات الفرع المرجعي المختار فقط (قد يختلف الناتج الفعلي بفرع آخر بإعدادات ضريبة مختلفة).</div>
@@ -804,7 +838,7 @@
 
     <!-- INVENTORY -->
     <div id="view-inventory" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📦 المخزون</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
+     <div class="view-card"><div class="view-head"><h2>📦 المخزون</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
       <div class="subnav">
         <button id="inv-tab-balances" class="active" onclick="switchSubview('inv',['balances','receive','waste','cost'],'balances')">الأرصدة الحالية</button>
         <button id="inv-tab-receive" onclick="switchSubview('inv',['balances','receive','waste','cost'],'receive')">➕ استلام / تسوية</button>
@@ -858,7 +892,7 @@
 
     <!-- SALES -->
     <div id="view-sales" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🧾 المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
+     <div class="view-card"><div class="view-head"><h2>🧾 المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
       <!-- Wردية status/actions live at the top of the WHOLE Sales module
            (not just inside "طلب جديد") -- a cashier switching to الطلبات/
            الورديات mid-shift still needs to close it, end the day, or open
@@ -999,7 +1033,7 @@
 
     <!-- RETURNS -->
     <div id="view-returns" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>↩️ المرتجعات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
+     <div class="view-card"><div class="view-head"><h2>↩️ المرتجعات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
       <div class="subnav">
         <button id="rt-tab-new" class="active" onclick="switchSubview('rt',['new','history'],'new')">➕ مرتجع جديد</button>
         <button id="rt-tab-history" onclick="switchSubview('rt',['new','history'],'history')">📋 سجل المرتجعات</button>
@@ -1031,7 +1065,7 @@
 
     <!-- KITCHEN -->
     <div id="view-kitchen" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🍳 المطبخ</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🍳 المطبخ</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <h2>قائمة التحضير الحية</h2>
         <div class="hint">لشاشة تابلت مخصّصة تُعرض دائمًا في المطبخ (خطوط أكبر، تسجيل دخول دائم لا يُطلب في كل مرة)، افتح
@@ -1046,7 +1080,7 @@
 
     <!-- ALERTS -->
     <div id="view-alerts" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🔔 التنبيهات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🔔 التنبيهات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <h2>كل التنبيهات الحالية</h2>
         <div class="hint">مخزون منخفض، أصناف قاربت الصلاحية (خلال 3 أيام)، وأوامر شراء أو جرد بانتظار الاعتماد -- كلها مُشتقّة من البيانات الحالية مباشرة، لا سجل منفصل.</div>
@@ -1060,7 +1094,7 @@
 
     <!-- STOCKTAKE (الجرد اليومي) -->
     <div id="view-stocktake" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📋 الجرد اليومي</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
+     <div class="view-card"><div class="view-head"><h2>📋 الجرد اليومي</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
       <div class="subnav">
         <button id="stk-tab-list" class="active" onclick="switchSubview('stk',['list','new'],'list'); loadStocktakeList()">📑 السجل</button>
         <button id="stk-tab-new" class="" onclick="switchSubview('stk',['list','new'],'new'); openNewStocktakeTab()">➕ جرد جديد</button>
@@ -1108,7 +1142,7 @@
     </div>
 
     <div id="view-stocktake-detail" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📋 تفاصيل الجرد</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📋 تفاصيل الجرد</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div id="stkd-meta" class="stats-row"></div>
         <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>النوع</th><th>الرصيد النظري</th><th>الكمية المعدودة</th><th>الفرق</th></tr></thead>
@@ -1126,7 +1160,7 @@
 
     <!-- PURCHASING -->
     <div id="view-purchasing" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🛒 المشتريات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🛒 المشتريات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>      <div class="subnav">
         <button id="pu-tab-suppliers" class="active" onclick="switchSubview('pu',['suppliers','matrix','new','orders','purchase-return','import','import-invoices'],'suppliers')">الموردون</button>
         <button id="pu-tab-matrix" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','purchase-return','import','import-invoices'],'matrix')">مصفوفة الموافقات</button>
         <button id="pu-tab-new" class="" onclick="switchSubview('pu',['suppliers','matrix','new','orders','purchase-return','import','import-invoices'],'new')">➕ أمر شراء</button>
@@ -1214,7 +1248,7 @@
 
     <!-- PRODUCTION -->
     <div id="view-production" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🏭 الإنتاج</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🏭 الإنتاج</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>      <div class="subnav">
         <button id="pr-tab-new" class="active" onclick="switchSubview('pr',['new','orders'],'new')">➕ أمر إنتاج</button>
         <button id="pr-tab-orders" class="" onclick="switchSubview('pr',['new','orders'],'orders')">أوامر الإنتاج</button>
       </div>
@@ -1248,7 +1282,7 @@
 
     <!-- TRANSFERS -->
     <div id="view-transfers" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🚚 التحويلات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🚚 التحويلات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>      <div class="subnav">
         <button id="tf-tab-new" class="active" onclick="switchSubview('tf',['new','list'],'new')">➕ تحويل جديد</button>
         <button id="tf-tab-list" class="" onclick="switchSubview('tf',['new','list'],'list')">التحويلات</button>
       </div>
@@ -1277,7 +1311,7 @@
 
     <!-- PROMOTIONS -->
     <div id="view-promotions" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🎁 العروض</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🎁 العروض</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>      <div class="subnav">
         <button id="pm-tab-list" class="active" onclick="switchSubview('pm',['list','add'],'list')">العروض الحالية</button>
         <button id="pm-tab-add" class="" onclick="switchSubview('pm',['list','add'],'add')">➕ عرض جديد</button>
       </div>
@@ -1314,7 +1348,7 @@
 
     <!-- COMBO MEALS -->
     <div id="view-combos" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🍔 وجبات الكمبو والبوكس</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>🍔 وجبات الكمبو والبوكس</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>      <div class="subnav">
         <button id="cb-tab-list" class="active" onclick="switchSubview('cb',['list','add'],'list')">الكمبو الحالية</button>
         <button id="cb-tab-add" class="" onclick="switchSubview('cb',['list','add'],'add')">➕ كمبو جديد</button>
       </div>
@@ -1345,7 +1379,7 @@
 
     <!-- CUSTOMERS / LOYALTY -->
     <div id="view-customers" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>👤 العملاء</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>      <div class="subnav">
+     <div class="view-card"><div class="view-head"><h2>👤 العملاء</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>      <div class="subnav">
         <button id="cu-tab-list" class="active" onclick="switchSubview('cu',['list','add','import'],'list')">العملاء</button>
         <button id="cu-tab-add" class="" onclick="switchSubview('cu',['list','add','import'],'add'); loadCustomerPriceListOptions()">➕ عميل جديد</button>
         <button id="cu-tab-import" class="" onclick="switchSubview('cu',['list','add','import'],'import'); renderImportExportPanel('cu-sub-import','customers')">📥 استيراد / تصدير</button>
@@ -1378,7 +1412,7 @@
 
     <!-- PAYMENT METHODS -->
     <div id="view-payment-methods" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>💳 طرق الدفع</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>💳 طرق الدفع</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <h2>طرق الدفع الحالية</h2>
         <div class="hint">"نقدية؟" تحدّد أي الطرق تُحتسب ضمن تسوية صندوق الوردية عند الإغلاق (Shifts) -- طرق مثل البطاقة/المحفظة تُسوَّى عبر جهاتها الخاصة، لا الصندوق.</div>
@@ -1401,7 +1435,7 @@
 
     <!-- ORDER TYPES -->
     <div id="view-order-types" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🧭 أنواع الطلبات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🧭 أنواع الطلبات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <h2>أنواع الطلبات الحالية</h2>
         <div class="hint">التصنيف العام للطلب (صالة/تيك أواي/توصيل...) المستخدم في شاشة الطلب الجديد والتقارير والعروض -- منفصل تمامًا عن "قوائم الأسعار" (قنوات البيع). تعطيل نوع لا يمس الطلبات القديمة التي استخدمته.</div>
@@ -1424,7 +1458,7 @@
 
     <!-- GENERAL SETTINGS -->
     <div id="view-settings" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>⚙️ الإعدادات العامة</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
+     <div class="view-card"><div class="view-head"><h2>⚙️ الإعدادات العامة</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
       <div class="subnav">
         <button id="set-tab-general" class="active" onclick="switchSubview('set',['general','users','roles','backup','danger'],'general')">عام</button>
         <button id="set-tab-users" class="" onclick="switchSubview('set',['general','users','roles','backup','danger'],'users'); loadUsersTab()">👤 المستخدمون</button>
@@ -1593,7 +1627,7 @@
 
     <!-- ANALYTICS / BI -->
     <div id="view-analytics" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📊 التقارير</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📊 التقارير</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="hint" style="margin-bottom:10px">التقارير ولوحات التحكم مُنظّمة حسب القسم -- كل تقرير يفتح في نافذته المستقلة بفلاتر موقع/فترة خاصة به.</div>
       <div id="reportsHubCategories"></div>
       <div class="panel">
@@ -1625,7 +1659,7 @@
          each its own independent popup exactly like the report popups
          below -- additive, the flat-table reports are untouched. -->
     <div id="view-report-dash-sales" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📊 لوحة تحكم المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📊 لوحة تحكم المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshs-location"><option value="">كل المواقع</option></select></div>
@@ -1666,7 +1700,7 @@
     </div>
 
     <div id="view-report-dash-production" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🏭 لوحة تحكم الإنتاج</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🏭 لوحة تحكم الإنتاج</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshp-location"><option value="">كل المواقع</option></select></div>
@@ -1696,7 +1730,7 @@
     </div>
 
     <div id="view-report-dash-purchasing" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🛒 لوحة تحكم المشتريات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🛒 لوحة تحكم المشتريات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshpu-location"><option value="">كل المواقع</option></select></div>
@@ -1726,7 +1760,7 @@
     </div>
 
     <div id="view-report-dash-items" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📋 لوحة تحكم الأصناف</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📋 لوحة تحكم الأصناف</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshi-location"><option value="">كل المواقع</option></select></div>
@@ -1777,7 +1811,7 @@
     </div>
 
     <div id="view-report-dash-inventory" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📦 لوحة تحكم المخازن</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📦 لوحة تحكم المخازن</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshinv-location"><option value="">كل المواقع</option></select></div>
@@ -1803,7 +1837,7 @@
          reachable only from the Reports hub above -- not part of TABS, so
          they don't show up in the nav bar or home dashboard grid.) -->
     <div id="view-report-sales" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🧾 تقرير المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🧾 تقرير المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="slr-location"><option value="">كل المواقع</option></select></div>
@@ -1831,7 +1865,7 @@
     </div>
 
     <div id="view-report-items" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📋 تقرير الأصناف</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📋 تقرير الأصناف</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="mir-location"><option value="">كل المواقع</option></select></div>
@@ -1853,7 +1887,7 @@
     </div>
 
     <div id="view-report-inventory" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📦 تقرير المخزون</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📦 تقرير المخزون</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="ivr-location"><option value="">كل المواقع</option></select></div>
@@ -1883,7 +1917,7 @@
     </div>
 
     <div id="view-report-purchasing" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🛒 تقرير المشتريات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🛒 تقرير المشتريات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="pur-location"><option value="">كل المواقع</option></select></div>
@@ -1906,7 +1940,7 @@
     </div>
 
     <div id="view-report-returns" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>↩️ تقرير مرتجعات العملاء</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>↩️ تقرير مرتجعات العملاء</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="rtr-location"><option value="">كل المواقع</option></select></div>
@@ -1924,7 +1958,7 @@
     </div>
 
     <div id="view-report-purchase-returns" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🔄 تقرير مرتجعات المشتريات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🔄 تقرير مرتجعات المشتريات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="por-location"><option value="">كل المواقع</option></select></div>
@@ -1942,7 +1976,7 @@
     </div>
 
     <div id="view-report-shifts" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🧑‍💼 تقرير الورديات والكاشيرات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🧑‍💼 تقرير الورديات والكاشيرات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="shr-location"><option value="">كل المواقع</option></select></div>
@@ -1964,7 +1998,7 @@
     </div>
 
     <div id="view-report-payment-methods" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>💳 تقرير طرق الدفع</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>💳 تقرير طرق الدفع</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="pmr-location"><option value="">كل المواقع</option></select></div>
@@ -1981,7 +2015,7 @@
     </div>
 
     <div id="view-report-production" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🏭 تقرير الإنتاج والتكاليف</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🏭 تقرير الإنتاج والتكاليف</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="hint">التكلفة الفعلية مأخوذة من الدفعات الحقيقية التي استُهلكت عند بدء كل أمر إنتاج (start) -- ليست تقديرًا من الوصفة. أوامر لا تزال "مخطط" (لم تبدأ بعد) غير محتسبة.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -2000,7 +2034,7 @@
     </div>
 
     <div id="view-report-tax" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🧮 تقرير الضرائب</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🧮 تقرير الضرائب</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="hint">ضريبة المبيعات مأخوذة فعليًا من كل فاتورة (بحسب نوع ضريبة كل صنف وقت الحساب) -- ضريبة المشتريات تقديرية بنسبة الفرع لعدم وجود حقل ضريبة منفصل من المورد.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -2034,7 +2068,7 @@
     </div>
 
     <div id="view-report-peak-hours" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>⏰ تقرير ساعات الذروة</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>⏰ تقرير ساعات الذروة</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="pkr-location"><option value="">كل المواقع</option></select></div>
@@ -2061,7 +2095,7 @@
     </div>
 
     <div id="view-report-customer-experience" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>😊 تقرير تجربة العميل</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>😊 تقرير تجربة العميل</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="hint">مؤشرات مشتقّة من البيانات الحالية (لا يوجد استبيان رضا عملاء) -- نسبة تكرار العملاء، متوسط سرعة الخدمة، ونسبة الإلغاء/المرتجعات.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -2082,7 +2116,7 @@
     </div>
 
     <div id="view-report-kitchen-performance" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🍳 تقرير أداء المطبخ</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🍳 تقرير أداء المطبخ</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="hint">وقت التحضير محسوب من إنشاء الطلب حتى تعليم الصنف "جاهز" في شاشة المطبخ -- الأصناف التي لم تُعلَّم جاهزة بعد غير محتسبة.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -2107,7 +2141,7 @@
     </div>
 
     <div id="view-report-day-close" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📅 إنهاء اليوم</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📅 إنهاء اليوم</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="hint">يلخّص كل ورديات الفرع المغلقة في تاريخ واحد كسجل رسمي لإنهاء اليوم -- لا يمكن إنهاء يوم فيه وردية لا تزال مفتوحة. إذا كان الإغلاق التلقائي مفعّلاً لفرع (شاشة الفروع)، سيُنجز إنهاء اليوم تلقائيًا عند إغلاق آخر وردية منسية من يوم سابق.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -2131,7 +2165,7 @@
     </div>
 
     <div id="view-report-daily-consumption" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📉 تقرير الاستهلاك اليومي</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📉 تقرير الاستهلاك اليومي</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="hint">كل ما خرج فعليًا من المخزون خلال الفترة -- من المبيعات (حسب الوصفة)، ومن استهلاك أصناف نصف مصنّعة كمكوّن في إنتاج أصناف أخرى، والهالك المُسجَّل يدويًا. تسويات الجرد لا تُحتسب هنا (تصحيح رصيد، وليست استهلاكًا). التكلفة الفعلية مأخوذة من تكلفة الدفعة الحقيقية التي استُهلكت، لا تقدير حالي.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -2150,7 +2184,7 @@
 
     <!-- NET SALES REPORT -->
     <div id="view-report-net-sales" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>💰 تقرير صافي المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>💰 تقرير صافي المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="hint">صافي المبيعات بعد الخصم -- شامل الضريبة وبدون الضريبة جنبًا إلى جنب -- مع عدد العملاء المميزين (وليس عدد الطلبات فقط، فقد يضع نفس العميل أكثر من طلب) ومتوسط الفاتورة.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -2176,7 +2210,7 @@
 
     <!-- SALES LOG (DETAILED INVOICE REGISTER) -->
     <div id="view-report-sales-log" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🧾 سجل المبيعات التفصيلي</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🧾 سجل المبيعات التفصيلي</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="hint">سجل كل فاتورة على حدة -- التاريخ/الوقت، رقم الفاتورة، الكاشير، العميل، نوع الطلب، طريقة الدفع، والإجماليات. اضغط على أي صف لعرض الفاتورة كاملة.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -2201,7 +2235,7 @@
 
     <!-- TOP CUSTOMERS -->
     <div id="view-report-top-customers" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🏆 أفضل العملاء</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🏆 أفضل العملاء</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="hint">العملاء الأعلى إنفاقًا خلال الفترة المحددة -- عدد الطلبات، الإجمالي، متوسط الفاتورة، تاريخ آخر طلب، ورصيد نقاط الولاء الحالي. اضغط "تفاصيل" لعرض فواتير أي عميل.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -2221,7 +2255,7 @@
 
     <!-- ABC / PARETO ANALYSIS -->
     <div id="view-report-abc-analysis" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🅰️ تحليل ABC (باريتو) للأصناف</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🅰️ تحليل ABC (باريتو) للأصناف</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="hint">تصنيف كل صنف حسب نصيبه التراكمي من إجمالي المبيعات: <b>A</b> الأصناف التي تُشكّل أول ~80% من المبيعات (الأهم -- لا يجب أن تنفد أبدًا)، <b>B</b> الـ15% التالية، <b>C</b> الذيل الطويل (آخر ~5% -- أول مرشح لتقليص المنيو).</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -2240,7 +2274,7 @@
 
     <!-- PIVOT TABLE REPORT BUILDER -->
     <div id="view-report-pivot-table" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📊 بانى التقارير (Pivot Table)</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📊 بانى التقارير (Pivot Table)</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="hint">اختر مصدر البيانات، ثم اسحب أي حقل من "الحقول المتاحة" وأفلته في الصفوف أو الأعمدة أو القيم لبناء تقريرك الخاص فورًا حسب الحاجة -- يمكن الجمع بين حقول من المبيعات أو المخزون أو المشتريات كل على حدة.</div>
         <div class="row-form" style="margin-top:10px">
@@ -2293,7 +2327,7 @@
 
     <!-- SALES BY CATEGORY MIX -->
     <div id="view-report-category-mix" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>🥧 مزيج المبيعات حسب الفئة</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>🥧 مزيج المبيعات حسب الفئة</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="hint">أي فئة من فئات المنيو (رئيسي، مقبلات، حلويات...) تقود الإيراد -- قبل النزول لتفاصيل كل صنف على حدة.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -2312,7 +2346,7 @@
 
     <!-- PERIOD-OVER-PERIOD COMPARISON -->
     <div id="view-report-period-comparison" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📆 مقارنة الفترات</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2>📆 مقارنة الفترات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="hint">الفترة المحددة مقابل الفترة السابقة لها مباشرة بنفس الطول -- بدون تحديد فترة، الافتراضي آخر 30 يومًا مقابل الـ30 يومًا التي قبلها.</div>
         <div class="row-form" style="margin-top:10px;margin-bottom:12px">
@@ -2345,7 +2379,7 @@
           <button class="ghost" onclick="startReturnFromOrder(invoiceRenderCache && invoiceRenderCache.id)">↩️ إرجاع</button>
           <button class="ghost" onclick="openOrderActivityLog(invoiceRenderCache && invoiceRenderCache.id)">🕒 سجل الحركة</button>
           <button class="danger hidden" id="inv-void-paid-btn" onclick="voidPaidOrder(invoiceRenderCache && invoiceRenderCache.id)">❌ إلغاء الفاتورة</button>
-          <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
+          <button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
       <div class="view-body">
@@ -2359,7 +2393,7 @@
       <div class="view-head no-print"><h2>🧾 إشعار دائن (مرتجع)</h2>
         <div style="display:flex;gap:8px">
           <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
-          <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
+          <button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
       <div class="view-body">
@@ -2373,7 +2407,7 @@
       <div class="view-head no-print"><h2>🖨️ تذكرة المطبخ</h2>
         <div style="display:flex;gap:8px">
           <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
-          <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
+          <button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
       <div class="view-body">
@@ -2383,7 +2417,7 @@
 
     <!-- SHIFT CLOSE SUMMARY (brief recap shown right after closing a shift) -->
     <div id="view-shift-summary" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📋 ملخص إغلاق الوردية</h2><button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button></div>
+     <div class="view-card"><div class="view-head"><h2>📋 ملخص إغلاق الوردية</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
       <div class="view-body">
         <div id="shift-summary-content"></div>
       </div>
@@ -2398,7 +2432,7 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
           <button class="ghost" onclick="printShiftSummaryDirect()">🖨️ طباعة مباشرة على الطابعة</button>
-          <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
+          <button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
       <div class="view-body">
@@ -2413,7 +2447,7 @@
       <div class="view-head no-print"><h2>🕒 سجل حركة الوردية</h2>
         <div style="display:flex;gap:8px">
           <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
-          <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
+          <button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
       <div class="view-body">
@@ -2427,7 +2461,7 @@
       <div class="view-head no-print"><h2>🕒 سجل حركة الفاتورة</h2>
         <div style="display:flex;gap:8px">
           <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
-          <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
+          <button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
       <div class="view-body">
@@ -2440,7 +2474,7 @@
      <div class="view-card">
       <div class="view-head no-print"><h2>🛒 تفاصيل أمر الشراء</h2>
         <div style="display:flex;gap:8px">
-          <button class="view-close" onclick="goBack()" title="رجوع">⬅</button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية">✕</button>
+          <button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
       <div class="view-body">
@@ -2451,7 +2485,7 @@
     <!-- PAYMENT DIALOG (small, focused -- not a full-screen view) -->
     <div id="paymentDialog" class="modal-backdrop" onclick="if(event.target===this) closePaymentDialog()">
       <div class="modal-box">
-        <div class="modal-head"><h3>💰 دفع الفاتورة</h3><button class="view-close" onclick="closePaymentDialog()">✕</button></div>
+        <div class="modal-head"><h3>💰 دفع الفاتورة</h3><button class="view-close" onclick="closePaymentDialog()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
         <div class="modal-body">
           <div id="pay-order-summary" style="margin-bottom:10px;font-size:13px"></div>
           <div id="pay-lines"></div>
@@ -2491,7 +2525,7 @@
          unsettled-day banner in New Order, both in the Sales screen. -->
     <div id="settlementModal" class="modal-backdrop" onclick="if(event.target===this) closeSettlementModal()">
       <div class="modal-box">
-        <div class="modal-head"><h3>📅 تسوية اليوم/الورديات</h3><button class="view-close" onclick="closeSettlementModal()">✕</button></div>
+        <div class="modal-head"><h3>📅 تسوية اليوم/الورديات</h3><button class="view-close" onclick="closeSettlementModal()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
         <div class="modal-body">
           <div class="row-form" style="margin-top:0;margin-bottom:12px">
             <div><label>الفرع</label><select id="stl-location" onchange="loadSettlementDetails()"></select></div>
@@ -2505,7 +2539,7 @@
          button, not just by first navigating into Sales > الورديات. -->
     <div id="openShiftModal" class="modal-backdrop" onclick="if(event.target===this) closeOpenShiftModal()">
       <div class="modal-box">
-        <div class="modal-head"><h3>🔓 فتح وردية جديدة</h3><button class="view-close" onclick="closeOpenShiftModal()">✕</button></div>
+        <div class="modal-head"><h3>🔓 فتح وردية جديدة</h3><button class="view-close" onclick="closeOpenShiftModal()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
         <div class="modal-body">
           <div class="row-form" style="margin-top:0;margin-bottom:12px">
             <div><label>الفرع</label><select id="osm-location"></select></div>
@@ -2535,7 +2569,7 @@
          what was actually counted in the drawer. -->
     <div id="closeShiftModal" class="modal-backdrop" onclick="if(event.target===this) closeCloseShiftModal()">
       <div class="modal-box">
-        <div class="modal-head"><h3>🔒 إغلاق الوردية</h3><button class="view-close" onclick="closeCloseShiftModal()">✕</button></div>
+        <div class="modal-head"><h3>🔒 إغلاق الوردية</h3><button class="view-close" onclick="closeCloseShiftModal()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
         <div class="modal-body" id="csm-body"></div>
       </div>
     </div>
@@ -2544,7 +2578,7 @@
          buildCustomerOrderLink() below for how this URL is put together. -->
     <div id="customerOrderLinkModal" class="modal-backdrop" onclick="if(event.target===this) closeCustomerOrderLinkModal()">
       <div class="modal-box">
-        <div class="modal-head"><h3>🔗 رابط متابعة الطلب للعميل</h3><button class="view-close" onclick="closeCustomerOrderLinkModal()">✕</button></div>
+        <div class="modal-head"><h3>🔗 رابط متابعة الطلب للعميل</h3><button class="view-close" onclick="closeCustomerOrderLinkModal()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
         <div class="modal-body" style="text-align:center">
           <div class="hint" style="margin:0 0 12px">اعرض رمز QR هذا للعميل أو انسخ الرابط وأرسله له -- يفتح صفحة تُظهر حالة طلبه لحظيًا، بدون تسجيل دخول.</div>
           <canvas id="col-qr-canvas" style="margin:0 auto 12px"></canvas>
@@ -2564,7 +2598,7 @@
      its first table inline and moves the rest here, one at a time. -->
 <div id="genericTablePopup" class="modal-backdrop" onclick="if(event.target===this) closeGenericTablePopup()">
   <div class="modal-box" style="max-width:900px">
-    <div class="modal-head"><h3 id="gtp-title"></h3><button class="view-close" onclick="closeGenericTablePopup()">✕</button></div>
+    <div class="modal-head"><h3 id="gtp-title"></h3><button class="view-close" onclick="closeGenericTablePopup()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
     <div class="modal-body"><div id="gtp-content"></div></div>
   </div>
 </div>
@@ -2576,12 +2610,12 @@
      See appPrompt()/appPromptConfirm()/appPromptCancel() below. -->
 <div id="appPromptModal" class="modal-backdrop" onclick="if(event.target===this) appPromptCancel()">
   <div class="modal-box">
-    <div class="modal-head"><h3 id="apm-title">✏️ إدخال</h3><button class="view-close" onclick="appPromptCancel()">✕</button></div>
+    <div class="modal-head"><h3 id="apm-title"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14.5 5.5l4 4"/></svg> إدخال</h3><button class="view-close" onclick="appPromptCancel()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
     <div class="modal-body">
       <div id="apm-message" class="hint" style="white-space:pre-line;margin:0 0 10px"></div>
       <input type="text" id="apm-input">
       <div style="display:flex;gap:8px;margin-top:12px">
-        <button type="button" onclick="appPromptConfirm()" style="flex:1">✅ حفظ</button>
+        <button type="button" onclick="appPromptConfirm()" style="flex:1"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> حفظ</button>
         <button type="button" class="ghost" onclick="appPromptCancel()" style="flex:1">إلغاء</button>
       </div>
     </div>
@@ -2592,11 +2626,11 @@
      above but a yes/no decision with no text input. -->
 <div id="appConfirmModal" class="modal-backdrop" onclick="if(event.target===this) appConfirmModalCancel()">
   <div class="modal-box">
-    <div class="modal-head"><h3>⚠️ تأكيد</h3><button class="view-close" onclick="appConfirmModalCancel()">✕</button></div>
+    <div class="modal-head"><h3><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M10.3 3.9L2.5 17a1.5 1.5 0 001.3 2.3h16.4a1.5 1.5 0 001.3-2.3L13.7 3.9a1.5 1.5 0 00-2.6 0z"/><path d="M12 16.2h.01"/></svg> تأكيد</h3><button class="view-close" onclick="appConfirmModalCancel()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
     <div class="modal-body">
       <div id="acm-message" style="white-space:pre-line;margin:0 0 14px"></div>
       <div style="display:flex;gap:8px">
-        <button type="button" class="danger" onclick="appConfirmModalOk()" style="flex:1">✅ تأكيد</button>
+        <button type="button" class="danger" onclick="appConfirmModalOk()" style="flex:1"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> تأكيد</button>
         <button type="button" class="ghost" onclick="appConfirmModalCancel()" style="flex:1">إلغاء</button>
       </div>
     </div>
@@ -3333,30 +3367,52 @@ const TAB_GROUPS = [
   { key: 'service', label: 'المبيعات وخدمة العملاء' },
   { key: 'insight', label: 'المراقبة والتقارير' },
 ];
+// Each icon below is a small inline SVG (see .icon-svg in <style>) instead
+// of an emoji glyph -- same reasoning as the Tajawal font: a consistent,
+// locally-rendered look instead of depending on the OS's own emoji set
+// (which varies in style, and on some platforms isn't installed at all).
+const ICON_BUILDING = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/><path d="M10 21v-4h4v4"/></svg>';
+const ICON_LEAF = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 019.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-11 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>';
+const ICON_LIST = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>';
+const ICON_BOX = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v9l9 5 9-5V8"/><path d="M12 13v9"/></svg>';
+const ICON_CART = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M3 4h2l2.4 12.4a2 2 0 002 1.6h8.2a2 2 0 002-1.6L21 8H6"/></svg>';
+const ICON_FACTORY = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V11l5 3v-3l5 3V8l6 4v9"/><path d="M3 21h18"/><path d="M8 21v-4M13 21v-4M18 21v-4"/></svg>';
+const ICON_TRUCK = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="13" height="10" rx="1"/><path d="M15 10h3l3 3v4h-6z"/><circle cx="6" cy="19" r="1.6"/><circle cx="17" cy="19" r="1.6"/></svg>';
+const ICON_RECEIPT = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2h10v20l-2.5-1.5L12 22l-2.5-1.5L7 22z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>';
+const ICON_PAN = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21a1 1 0 001-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 00-2.134-7.589 5 5 0 00-9.186 0 4 4 0 00-2.134 7.588c.411.198.727.585.727 1.041V20a1 1 0 001 1z"/><path d="M6 17h12"/></svg>';
+const ICON_UNDO = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 015 5v1"/></svg>';
+const ICON_GIFT = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="5" rx="1"/><path d="M4 13h16v7a1 1 0 01-1 1H5a1 1 0 01-1-1z"/><path d="M12 8v13"/><path d="M12 8c-1.5-3-5-3-5 0s3.5 2 5 0zM12 8c1.5-3 5-3 5 0s-3.5 2-5 0z"/></svg>';
+const ICON_LAYERS = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>';
+const ICON_PERSON = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>';
+const ICON_CARD = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>';
+const ICON_COMPASS = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 6-6 2 2-6z"/></svg>';
+const ICON_GEAR = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.7 1.7 0 000-2l1-1.7-1.7-3-2 .5a7 7 0 00-1.7-1l-.3-2h-3.4l-.3 2a7 7 0 00-1.7 1l-2-.5-1.7 3 1 1.7a1.7 1.7 0 000 2l-1 1.7 1.7 3 2-.5a7 7 0 001.7 1l.3 2h3.4l.3-2a7 7 0 001.7-1l2 .5 1.7-3z"/></svg>';
+const ICON_BELL = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10a6 6 0 1112 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6z"/><path d="M10 20a2 2 0 004 0"/></svg>';
+const ICON_CHART = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7"/><path d="M2 20h20"/></svg>';
 const TAB_META = {
-  branches: { icon: '🏢', label: 'الفروع', group: 'setup' },
+  branches: { icon: ICON_BUILDING, label: 'الفروع', group: 'setup' },
   // permission: back-office/cost-sensitive screens a plain cashier can't
   // see until a manager explicitly grants the matching *.view permission
   // (see AuthService.me()/PermissionsGuard) -- everything WITHOUT a
   // permission key here stays open to any logged-in user, same as before.
-  ingredients: { icon: '🥕', label: 'الأصناف الخام والنصف مصنّعة', group: 'setup', permission: 'ingredients.view' },
-  items: { icon: '📋', label: 'أصناف المنيو', group: 'setup' },
-  inventory: { icon: '📦', label: 'المخزون', group: 'supply', permission: 'inventory.view' },
-  stocktake: { icon: '📋', label: 'الجرد اليومي', group: 'supply' },
-  purchasing: { icon: '🛒', label: 'المشتريات', group: 'supply', permission: 'purchasing.view' },
-  production: { icon: '🏭', label: 'الإنتاج', group: 'supply', permission: 'production.view' },
-  transfers: { icon: '🚚', label: 'التحويلات', group: 'supply', permission: 'transfers.view' },
-  sales: { icon: '🧾', label: 'المبيعات', group: 'service' },
-  kitchen: { icon: '🍳', label: 'المطبخ', group: 'service' },
-  returns: { icon: '↩️', label: 'المرتجعات', group: 'service' },
-  promotions: { icon: '🎁', label: 'العروض', group: 'service' },
-  combos: { icon: '🍔', label: 'وجبات الكمبو', group: 'service' },
-  customers: { icon: '👤', label: 'العملاء', group: 'service' },
-  'payment-methods': { icon: '💳', label: 'طرق الدفع', group: 'service' },
-  'order-types': { icon: '🧭', label: 'أنواع الطلبات', group: 'service' },
-  settings: { icon: '⚙️', label: 'الإعدادات العامة', group: 'setup' },
-  alerts: { icon: '🔔', label: 'التنبيهات', group: 'insight' },
-  analytics: { icon: '📊', label: 'التقارير', group: 'insight' },
+  ingredients: { icon: ICON_LEAF, label: 'الأصناف الخام والنصف مصنّعة', group: 'setup', permission: 'ingredients.view' },
+  items: { icon: ICON_LIST, label: 'أصناف المنيو', group: 'setup' },
+  inventory: { icon: ICON_BOX, label: 'المخزون', group: 'supply', permission: 'inventory.view' },
+  stocktake: { icon: ICON_LIST, label: 'الجرد اليومي', group: 'supply' },
+  purchasing: { icon: ICON_CART, label: 'المشتريات', group: 'supply', permission: 'purchasing.view' },
+  production: { icon: ICON_FACTORY, label: 'الإنتاج', group: 'supply', permission: 'production.view' },
+  transfers: { icon: ICON_TRUCK, label: 'التحويلات', group: 'supply', permission: 'transfers.view' },
+  sales: { icon: ICON_RECEIPT, label: 'المبيعات', group: 'service' },
+  kitchen: { icon: ICON_PAN, label: 'المطبخ', group: 'service' },
+  returns: { icon: ICON_UNDO, label: 'المرتجعات', group: 'service' },
+  promotions: { icon: ICON_GIFT, label: 'العروض', group: 'service' },
+  combos: { icon: ICON_LAYERS, label: 'وجبات الكمبو', group: 'service' },
+  customers: { icon: ICON_PERSON, label: 'العملاء', group: 'service' },
+  'payment-methods': { icon: ICON_CARD, label: 'طرق الدفع', group: 'service' },
+  'order-types': { icon: ICON_COMPASS, label: 'أنواع الطلبات', group: 'service' },
+  settings: { icon: ICON_GEAR, label: 'الإعدادات العامة', group: 'setup' },
+  alerts: { icon: ICON_BELL, label: 'التنبيهات', group: 'insight' },
+  analytics: { icon: ICON_CHART, label: 'التقارير', group: 'insight' },
 };
 const TABS = Object.keys(TAB_META);
 // Populated from GET /auth/me right after login; empty (== "show
@@ -3441,8 +3497,8 @@ function injectViewToolbars() {
     // (Branches, Items, Customers...) the existing 🖨️ طباعة button already
     // covers "save as PDF" via the browser's own print dialog, and adding
     // a second PDF button there would just be redundant chrome.
-    const pdfBtn = view.id.startsWith('view-report-') ? '<button class="ghost" onclick="exportViewToPdf(this)">📄 تصدير PDF</button>' : '';
-    wrap.innerHTML = '<button class="ghost" onclick="printCurrentView()">🖨️ طباعة</button><button class="ghost" onclick="exportCurrentViewCsv(this)">⬇️ تصدير CSV</button>' + pdfBtn;
+    const pdfBtn = view.id.startsWith('view-report-') ? '<button class="ghost" onclick="exportViewToPdf(this)"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h4"/></svg> تصدير PDF</button>' : '';
+    wrap.innerHTML = '<button class="ghost" onclick="printCurrentView()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> طباعة</button><button class="ghost" onclick="exportCurrentViewCsv(this)"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v13"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg> تصدير CSV</button>' + pdfBtn;
     head.appendChild(wrap);
     closeBtns.forEach((btn) => wrap.appendChild(btn));
   });
@@ -3731,34 +3787,46 @@ const REPORT_POPUPS = {
 // Per-report icon/label, kept separate from REPORT_POPUPS (which only maps
 // a key to its loader) so renderReportsHub() below can build the grid
 // without duplicating that wiring.
+const ICON_TROPHY = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v4a4 4 0 01-8 0z"/><path d="M6 6H4v2a3 3 0 003 3M18 6h2v2a3 3 0 01-3 3"/><path d="M10 15h4v3h-4z"/><path d="M8 21h8"/></svg>';
+const ICON_REFRESH = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>';
+const ICON_BRIEFCASE = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M3 13h18"/></svg>';
+const ICON_CALCULATOR = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01M8 20h.01M12 20h.01"/></svg>';
+const ICON_CLOCK = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg>';
+const ICON_SMILE = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg>';
+const ICON_CAL_CHECK = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15l2 2 4-4"/></svg>';
+const ICON_TREND_DOWN = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l7 7 4-4 7 7"/><path d="M21 13v4h-4"/></svg>';
+const ICON_MONEY = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10"/><path d="M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 1.1-3 2.5 1.3 2 3 2 3 .9 3 2.3-1.3 2.2-3 2.2-3-.8-3-2.2"/></svg>';
+const ICON_PIE = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l7.8 4.5"/></svg>';
+const ICON_CALENDAR = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+const ICON_HOME = '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg>';
 const REPORT_META = {
-  'dash-sales': { icon: '📊', label: 'لوحة تحكم المبيعات' },
-  'dash-production': { icon: '👨‍🍳', label: 'لوحة تحكم الإنتاج' },
-  'dash-purchasing': { icon: '🛒', label: 'لوحة تحكم المشتريات' },
-  'dash-items': { icon: '📋', label: 'لوحة تحكم الأصناف' },
-  'dash-inventory': { icon: '📦', label: 'لوحة تحكم المخازن' },
-  sales: { icon: '🧾', label: 'تقرير المبيعات' },
-  'sales-log': { icon: '🧾', label: 'سجل المبيعات التفصيلي' },
-  'top-customers': { icon: '🏆', label: 'أفضل العملاء' },
-  items: { icon: '📋', label: 'تقرير الأصناف' },
-  inventory: { icon: '📦', label: 'تقرير المخزون' },
-  purchasing: { icon: '🛒', label: 'تقرير المشتريات' },
-  returns: { icon: '↩️', label: 'تقرير مرتجعات العملاء' },
-  'purchase-returns': { icon: '🔄', label: 'تقرير مرتجعات المشتريات' },
-  shifts: { icon: '🧑‍💼', label: 'تقرير الورديات والكاشيرات' },
-  'payment-methods': { icon: '💳', label: 'تقرير طرق الدفع' },
-  production: { icon: '👨‍🍳', label: 'تقرير الإنتاج والتكاليف' },
-  tax: { icon: '🧮', label: 'تقرير الضرائب' },
-  'peak-hours': { icon: '⏰', label: 'تقرير ساعات الذروة' },
-  'customer-experience': { icon: '😊', label: 'تقرير تجربة العميل' },
-  'kitchen-performance': { icon: '🍳', label: 'تقرير أداء المطبخ' },
-  'day-close': { icon: '🗓️', label: 'إنهاء اليوم' },
-  'daily-consumption': { icon: '📉', label: 'تقرير الاستهلاك اليومي' },
-  'net-sales': { icon: '💰', label: 'تقرير صافي المبيعات' },
-  'abc-analysis': { icon: '🅰️', label: 'تحليل ABC (باريتو) للأصناف' },
-  'category-mix': { icon: '🥧', label: 'مزيج المبيعات حسب الفئة' },
-  'period-comparison': { icon: '📆', label: 'مقارنة الفترات' },
-  'pivot-table': { icon: '📊', label: 'بانى التقارير (Pivot Table)' },
+  'dash-sales': { icon: ICON_CHART, label: 'لوحة تحكم المبيعات' },
+  'dash-production': { icon: ICON_PAN, label: 'لوحة تحكم الإنتاج' },
+  'dash-purchasing': { icon: ICON_CART, label: 'لوحة تحكم المشتريات' },
+  'dash-items': { icon: ICON_LIST, label: 'لوحة تحكم الأصناف' },
+  'dash-inventory': { icon: ICON_BOX, label: 'لوحة تحكم المخازن' },
+  sales: { icon: ICON_RECEIPT, label: 'تقرير المبيعات' },
+  'sales-log': { icon: ICON_RECEIPT, label: 'سجل المبيعات التفصيلي' },
+  'top-customers': { icon: ICON_TROPHY, label: 'أفضل العملاء' },
+  items: { icon: ICON_LIST, label: 'تقرير الأصناف' },
+  inventory: { icon: ICON_BOX, label: 'تقرير المخزون' },
+  purchasing: { icon: ICON_CART, label: 'تقرير المشتريات' },
+  returns: { icon: ICON_UNDO, label: 'تقرير مرتجعات العملاء' },
+  'purchase-returns': { icon: ICON_REFRESH, label: 'تقرير مرتجعات المشتريات' },
+  shifts: { icon: ICON_BRIEFCASE, label: 'تقرير الورديات والكاشيرات' },
+  'payment-methods': { icon: ICON_CARD, label: 'تقرير طرق الدفع' },
+  production: { icon: ICON_PAN, label: 'تقرير الإنتاج والتكاليف' },
+  tax: { icon: ICON_CALCULATOR, label: 'تقرير الضرائب' },
+  'peak-hours': { icon: ICON_CLOCK, label: 'تقرير ساعات الذروة' },
+  'customer-experience': { icon: ICON_SMILE, label: 'تقرير تجربة العميل' },
+  'kitchen-performance': { icon: ICON_PAN, label: 'تقرير أداء المطبخ' },
+  'day-close': { icon: ICON_CAL_CHECK, label: 'إنهاء اليوم' },
+  'daily-consumption': { icon: ICON_TREND_DOWN, label: 'تقرير الاستهلاك اليومي' },
+  'net-sales': { icon: ICON_MONEY, label: 'تقرير صافي المبيعات' },
+  'abc-analysis': { icon: ICON_CHART, label: 'تحليل ABC (باريتو) للأصناف' },
+  'category-mix': { icon: ICON_PIE, label: 'مزيج المبيعات حسب الفئة' },
+  'period-comparison': { icon: ICON_CALENDAR, label: 'مقارنة الفترات' },
+  'pivot-table': { icon: ICON_CHART, label: 'بانى التقارير (Pivot Table)' },
 };
 // Reports/dashboards hub, grouped under the same category taxonomy used
 // across the reference dashboards (Executive/Financial/Branch Performance/
@@ -3768,17 +3836,17 @@ const REPORT_META = {
 // Budget vs Actual, Cash & Treasury or AP/Suppliers have no underlying
 // module yet, so they're left out rather than shown empty.
 const REPORT_CATEGORIES = [
-  { icon: '🏠', label: 'لوحة القيادة التنفيذية', keys: ['dash-sales'] },
-  { icon: '💰', label: 'الأداء المالي', keys: ['net-sales', 'tax'] },
-  { icon: '🏬', label: 'أداء الفروع', keys: ['period-comparison'] },
-  { icon: '🍔', label: 'تكلفة الطعام والأصناف', keys: ['dash-items', 'items', 'category-mix', 'abc-analysis'] },
-  { icon: '📦', label: 'المخزون', keys: ['dash-inventory', 'inventory', 'daily-consumption'] },
-  { icon: '🛒', label: 'المشتريات', keys: ['dash-purchasing', 'purchasing', 'purchase-returns'] },
-  { icon: '👨‍🍳', label: 'المطبخ المركزي والإنتاج', keys: ['dash-production', 'production', 'kitchen-performance'] },
-  { icon: '💳', label: 'مطابقة المبيعات والكاشير', keys: ['shifts', 'payment-methods'] },
-  { icon: '🗓️', label: 'إغلاق اليوم', keys: ['day-close'] },
-  { icon: '📋', label: 'تقارير إدارية', keys: ['sales', 'sales-log', 'top-customers', 'customer-experience', 'peak-hours', 'returns'] },
-  { icon: '📊', label: 'بانى التقارير المخصصة', keys: ['pivot-table'] },
+  { icon: ICON_HOME, label: 'لوحة القيادة التنفيذية', keys: ['dash-sales'] },
+  { icon: ICON_MONEY, label: 'الأداء المالي', keys: ['net-sales', 'tax'] },
+  { icon: ICON_BUILDING, label: 'أداء الفروع', keys: ['period-comparison'] },
+  { icon: ICON_LAYERS, label: 'تكلفة الطعام والأصناف', keys: ['dash-items', 'items', 'category-mix', 'abc-analysis'] },
+  { icon: ICON_BOX, label: 'المخزون', keys: ['dash-inventory', 'inventory', 'daily-consumption'] },
+  { icon: ICON_CART, label: 'المشتريات', keys: ['dash-purchasing', 'purchasing', 'purchase-returns'] },
+  { icon: ICON_PAN, label: 'المطبخ المركزي والإنتاج', keys: ['dash-production', 'production', 'kitchen-performance'] },
+  { icon: ICON_CARD, label: 'مطابقة المبيعات والكاشير', keys: ['shifts', 'payment-methods'] },
+  { icon: ICON_CAL_CHECK, label: 'إغلاق اليوم', keys: ['day-close'] },
+  { icon: ICON_LIST, label: 'تقارير إدارية', keys: ['sales', 'sales-log', 'top-customers', 'customer-experience', 'peak-hours', 'returns'] },
+  { icon: ICON_CHART, label: 'بانى التقارير المخصصة', keys: ['pivot-table'] },
 ];
 function renderReportsHub() {
   const el = document.getElementById('reportsHubCategories');
@@ -4799,7 +4867,7 @@ function renderRecipeEditor(box, parentId, lines, parentKind) {
       <input class="rq-qty" type="number" step="0.00001" value="${l.quantity || ''}" placeholder="الكمية" oninput="updateRecipeCosts('${parentId}')">
       <select class="rq-unit" onchange="updateRecipeCosts('${parentId}')"></select>
       <span class="rq-cost num" style="min-width:70px;display:inline-block;color:var(--muted);font-size:12px"></span>
-      <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateRecipeCosts('${parentId}')">✕</button>
+      <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateRecipeCosts('${parentId}')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>
   `).join('');
   box.innerHTML = `
@@ -4823,7 +4891,7 @@ function addRecipeRow(parentId) {
   const container = document.getElementById('rows-' + parentId);
   const div = document.createElement('div');
   div.className = 'recipe-row';
-  div.innerHTML = `<select class="rq-ing" onchange="syncRowUnitOptions(this); updateRecipeCosts('${parentId}')">${options}</select><input class="rq-qty" type="number" step="0.00001" placeholder="الكمية" oninput="updateRecipeCosts('${parentId}')"><select class="rq-unit" onchange="updateRecipeCosts('${parentId}')"></select><span class="rq-cost num" style="min-width:70px;display:inline-block;color:var(--muted);font-size:12px"></span><button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateRecipeCosts('${parentId}')">✕</button>`;
+  div.innerHTML = `<select class="rq-ing" onchange="syncRowUnitOptions(this); updateRecipeCosts('${parentId}')">${options}</select><input class="rq-qty" type="number" step="0.00001" placeholder="الكمية" oninput="updateRecipeCosts('${parentId}')"><select class="rq-unit" onchange="updateRecipeCosts('${parentId}')"></select><span class="rq-cost num" style="min-width:70px;display:inline-block;color:var(--muted);font-size:12px"></span><button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateRecipeCosts('${parentId}')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
   container.appendChild(div);
   const sel = div.querySelector('.rq-ing');
   syncRowUnitOptions(sel);
@@ -5473,7 +5541,7 @@ function addOrderComboToCart() {
     <span style="flex:1">🍔 ${combo.name} (${unitPrice.toFixed(2)} ر.س) -- ${composition}</span>
     <input class="ol-qty" type="number" min="1" step="1" value="1" placeholder="الكمية" oninput="updateOrderCartTotals()">
     <button type="button" class="link-btn" onclick="editOrderLineNote(this)" title="ملاحظة للمطبخ (مثال: بدون بصل)">📝</button>
-    <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateOrderCartTotals();">✕</button>
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateOrderCartTotals();"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
   `;
   container.appendChild(div);
   cancelOrderComboBuilder();
@@ -5981,7 +6049,7 @@ function addOrderLineRow() {
   div.innerHTML = `<select class="ol-item" onchange="updateOrderCartTotals()">${menuItemsCache.map((m) => `<option value="${m.id}">${m.name} (${Number(m.price).toFixed(2)})</option>`).join('')}</select>
     <input class="ol-qty" type="number" min="1" step="1" value="1" placeholder="الكمية" oninput="updateOrderCartTotals()">
     <button type="button" class="link-btn" onclick="editOrderLineNote(this)" title="ملاحظة للمطبخ (مثال: بدون بصل)">📝</button>
-    <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateOrderCartTotals();">✕</button>`;
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateOrderCartTotals();"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
   container.appendChild(div);
   updateOrderCartTotals();
 }
@@ -6175,7 +6243,7 @@ function renderPaymentDialog() {
       </div>
       <input type="number" step="0.01" value="${l.amount}" onfocus="activePayLineIndex=${i}" oninput="updatePaymentLine(${i}, 'amount', this.value)" placeholder="المبلغ">
       <input type="text" value="${l.terminalRef}" onfocus="activePayLineIndex=${i}" oninput="updatePaymentLine(${i}, 'terminalRef', this.value)" placeholder="رقم العملية / المرجع (اختياري)">
-      ${paymentDialogLines.length > 1 ? `<button class="link-btn" onclick="event.stopPropagation(); removePaymentLine(${i})">✕</button>` : ''}
+      ${paymentDialogLines.length > 1 ? `<button class="link-btn" onclick="event.stopPropagation(); removePaymentLine(${i})"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>` : ''}
     </div>
   `).join('');
 
@@ -6702,7 +6770,7 @@ function addStaffMealLineRow() {
   div.className = 'recipe-row';
   div.innerHTML = `<select class="stfm-item" onchange="updateStaffMealTotal()">${menuItemsCache.map((m) => `<option value="${m.id}" data-price="${Number(m.price)}">${m.name} (${fmtMoney(m.price)})</option>`).join('')}</select>
     <input class="stfm-qty" type="number" min="1" step="1" value="1" placeholder="الكمية" oninput="updateStaffMealTotal()">
-    <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateStaffMealTotal();">✕</button>`;
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove(); updateStaffMealTotal();"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
   container.appendChild(div);
   enhanceIngredientSelect(div.querySelector('.stfm-item'), 'item');
   updateStaffMealTotal();
@@ -7352,7 +7420,7 @@ function addPoLineRow() {
       <option value="ZERO_RATED">نسبة صفرية</option>
       <option value="EXEMPT">معفى</option>
     </select>
-    <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
   container.appendChild(div);
   syncRowUnitOptions(div.querySelector('.po-ing'));
   enhanceIngredientSelect(div.querySelector('.po-ing'));
@@ -8397,7 +8465,7 @@ function pivotChipHtml(field, zone) {
         ${Object.keys(PIVOT_AGG_LABEL).map((a) => `<option value="${a}" ${pivotValueAgg(field) === a ? 'selected' : ''}>${PIVOT_AGG_LABEL[a]}</option>`).join('')}
       </select>`
     : '';
-  const removeBtn = zone ? `<span class="rm" onclick="event.stopPropagation();removePivotField('${zone}','${field}')">✕</span>` : '';
+  const removeBtn = zone ? `<span class="rm" onclick="event.stopPropagation();removePivotField('${zone}','${field}')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span>` : '';
   return `<div class="pivot-chip ${def.type === 'measure' ? 'measure' : ''}" draggable="true"
       ondragstart="onPivotFieldDragStart(event,'${field}','${zone || 'fieldlist'}')">
       <span>${def.label}</span>${aggPick}${removeBtn}
@@ -8664,7 +8732,7 @@ function addProdLineRow() {
   div.className = 'recipe-row';
   div.innerHTML = `<select class="pr-ing">${ingredientOptions()}</select>
     <input class="pr-qty" type="number" step="0.001" placeholder="الكمية">
-    <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
   container.appendChild(div);
   enhanceIngredientSelect(div.querySelector('.pr-ing'));
 }
@@ -8754,7 +8822,7 @@ function addTransferLineRow() {
   div.className = 'recipe-row';
   div.innerHTML = `<select class="tl-ing">${ingredientOptions()}</select>
     <input class="tl-qty" type="number" step="0.001" placeholder="الكمية">
-    <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
   container.appendChild(div);
   enhanceIngredientSelect(div.querySelector('.tl-ing'));
 }
@@ -8909,7 +8977,7 @@ function addComboSlotRow() {
       <div><label>اسم الفئة</label><input class="cbs-label" placeholder="الطبق الرئيسي"></div>
       <div><label>حد أدنى للاختيار</label><input class="cbs-min" type="number" min="1" value="1"></div>
       <div><label>حد أقصى للاختيار</label><input class="cbs-max" type="number" min="1" value="1"></div>
-      <div><button class="link-btn" onclick="document.getElementById('cb-slot-${slotId}').remove()">✕ حذف الفئة</button></div>
+      <div><button class="link-btn" onclick="document.getElementById('cb-slot-${slotId}').remove()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg> حذف الفئة</button></div>
     </div>
     <div id="cb-slot-${slotId}-options"></div>
     <button class="ghost" onclick="addComboOptionRow(${slotId})">➕ خيار لهذه الفئة</button>
@@ -8921,7 +8989,7 @@ function addComboOptionRow(slotId) {
   const options = menuItemsCache.filter((m) => m.isActive !== false).map((m) => `<option value="${m.id}">${m.name}</option>`).join('');
   const div = document.createElement('div');
   div.className = 'recipe-row';
-  div.innerHTML = `<select class="cbo-item">${options}</select><input class="cbo-extra" type="number" step="0.01" value="0" placeholder="زيادة سعر"><button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+  div.innerHTML = `<select class="cbo-item">${options}</select><input class="cbo-extra" type="number" step="0.01" value="0" placeholder="زيادة سعر"><button class="link-btn" onclick="this.closest('.recipe-row').remove()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
   document.getElementById('cb-slot-' + slotId + '-options').appendChild(div);
   enhanceIngredientSelect(div.querySelector('.cbo-item'), 'item');
 }
@@ -9911,7 +9979,7 @@ async function addCostImpactRow() {
   div.className = 'recipe-row';
   div.innerHTML = `<select class="ci-ing">${ingredientOptions()}</select>
     <input class="ci-cost" type="number" step="0.01" min="0" placeholder="التكلفة الجديدة للوحدة">
-    <button class="link-btn" onclick="this.closest('.recipe-row').remove()">✕</button>`;
+    <button class="link-btn" onclick="this.closest('.recipe-row').remove()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
   container.appendChild(div);
   enhanceIngredientSelect(div.querySelector('.ci-ing'));
 }
@@ -10224,7 +10292,7 @@ function addTaskbarPill(id) {
   const pill = document.createElement('div');
   pill.className = 'win-taskbar-item';
   pill.dataset.winPill = id;
-  pill.innerHTML = `<span>🗔 ${titleEl ? titleEl.textContent : 'نافذة'}</span><span class="wt-close" title="إغلاق">✕</span>`;
+  pill.innerHTML = `<span>🗔 ${titleEl ? titleEl.textContent : 'نافذة'}</span><span class="wt-close" title="إغلاق"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span>`;
   pill.querySelector('span:first-child').addEventListener('click', () => winRestoreFromTaskbar(id));
   pill.querySelector('.wt-close').addEventListener('click', (e) => { e.stopPropagation(); if (closeBtn) closeBtn.click(); });
   document.getElementById('winTaskbar').appendChild(pill);

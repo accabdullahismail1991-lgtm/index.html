@@ -6544,7 +6544,7 @@ async function loadSalesLogReport() {
           <td>${r.customerName || 'بدون عميل'}</td>
           <td>${orderTypeIcon(r.channel)}${orderTypeLabel(r.channel)}</td>
           <td>${r.paymentMethods.map(paymentMethodLabelWithIcon).join('، ') || '-'}</td>
-          <td class="num">${fmtMoney(r.subtotal - r.discountTotal)}</td>
+          <td class="num">${fmtMoney(r.grandTotal - r.vatTotal)}</td>
           <td class="num">${fmtMoney(r.discountTotal)}</td>
           <td class="num">${fmtMoney(r.vatTotal)}</td>
           <td class="num">${fmtMoney(r.grandTotal)}</td>
@@ -7360,7 +7360,7 @@ async function loadPurchaseOrders() {
     document.getElementById('purchaseOrdersTable').innerHTML = pos.length
       ? pos.map((po) => `<tr class="clickable-row" onclick="openPurchaseOrderDetail('${po.id}')">
           <td>${supName(po.supplierId)}</td><td>${locName(po.locationId)}</td><td>${PO_STATUS_LABEL[po.status] || po.status}</td>
-          <td class="num">${Number(po.subtotal).toFixed(2)}</td><td class="num">${Number(po.vatTotal).toFixed(2)}</td><td class="num">${Number(po.totalAmount).toFixed(2)}</td>
+          <td class="num">${(Number(po.totalAmount) - Number(po.vatTotal)).toFixed(2)}</td><td class="num">${Number(po.vatTotal).toFixed(2)}</td><td class="num">${Number(po.totalAmount).toFixed(2)}</td>
           <td><button class="link-btn" onclick="event.stopPropagation(); openPurchaseOrderDetail('${po.id}')">👁️ تفاصيل</button></td>
         </tr>`).join('')
       : `<tr><td colspan="7" class="empty">لا توجد أوامر شراء بهذه المرشّحات</td></tr>`;
@@ -7431,7 +7431,7 @@ async function openPurchaseOrderDetail(id) {
         <tbody>${linesHtml}</tbody>
       </table></div>
       <div class="invoice-totals" style="margin-top:10px;max-width:320px">
-        <div class="row"><span>قبل الضريبة</span><span>${fmtMoney(po.subtotal)}</span></div>
+        <div class="row"><span>قبل الضريبة</span><span>${fmtMoney(Number(po.totalAmount) - Number(po.vatTotal))}</span></div>
         <div class="row"><span>الضريبة</span><span>${fmtMoney(po.vatTotal)}</span></div>
         <div class="row grand"><span>الإجمالي</span><span>${fmtMoney(po.totalAmount)} ر.س</span></div>
       </div>

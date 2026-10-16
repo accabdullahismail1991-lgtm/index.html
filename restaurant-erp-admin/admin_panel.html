@@ -762,8 +762,10 @@
         <h2>أصناف المنيو الحالية</h2>
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>🔍 بحث</label><input id="items-search" placeholder="ابحث بالاسم أو القسم..." oninput="renderItemsTable()"></div>
+          <div><label>فرع مرجعي لتفصيل الضريبة</label><select id="items-vat-location" onchange="renderItemsTable()"></select></div>
         </div>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>الصورة</th><th>الاسم</th><th>القسم</th><th>السعر</th><th>التكلفة الحالية</th><th>الحالة</th><th></th></tr></thead>
+        <div class="hint">السعر واحد لكل صنف في كل الفروع -- لكن كونه شاملًا للضريبة من عدمه ونسبة الضريبة خاصيتان لكل فرع، فتفصيل "قبل/شامل الضريبة" أدناه محسوب حسب إعدادات الفرع المرجعي المختار فقط (قد يختلف الناتج الفعلي بفرع آخر بإعدادات ضريبة مختلفة).</div>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الصورة</th><th>الاسم</th><th>القسم</th><th>السعر</th><th>قبل الضريبة (الصافي)</th><th>الضريبة</th><th>شامل الضريبة</th><th>التكلفة الحالية</th><th>الحالة</th><th></th></tr></thead>
           <tbody id="itemsTable"></tbody>
         </table></div>
       </div>
@@ -1821,7 +1823,7 @@
           <tbody id="slr-channel-table"></tbody>
         </table></div>
         <h3 style="margin-top:16px">الأصناف الأكثر مبيعًا</h3>
-        <div class="table-wrap"><table><thead><tr><th>الصنف</th><th>الكمية</th><th>الإيراد</th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>الكمية</th><th>قبل الضريبة (الصافي)</th><th>الضريبة</th><th>شامل الضريبة</th></tr></thead>
           <tbody id="slr-topitems-table"></tbody>
         </table></div>
       </div>
@@ -1838,7 +1840,7 @@
           <div><button onclick="loadItemsReport()">تحديث</button></div>
         </div>
         <h3>الأصناف الأكثر مبيعًا</h3>
-        <div class="table-wrap"><table><thead><tr><th>الصنف</th><th>الكمية</th><th>الإيراد</th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>الصنف</th><th>الكمية</th><th>قبل الضريبة (الصافي)</th><th>الضريبة</th><th>شامل الضريبة</th></tr></thead>
           <tbody id="mir-topitems-table"></tbody>
         </table></div>
         <h3 style="margin-top:16px">التكلفة النظرية مقابل السعر (حسب الوصفة)</h3>
@@ -4462,6 +4464,8 @@ async function loadItems() {
   try {
     if (!ingredientsCache.length) ingredientsCache = await api('/ingredients');
     itemsCache = await api('/items');
+    const vatLocSel = document.getElementById('items-vat-location');
+    if (!vatLocSel.options.length) vatLocSel.innerHTML = locationOptions();
 
     // Best-effort: cost is gated behind analytics.view (commercially
     // sensitive, same as every other cost/margin number in this app),
@@ -4478,8 +4482,25 @@ async function loadItems() {
     await loadSalesChannelsMatrix();
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
+// price - net/VAT/gross breakdown for one menu item at one reference
+// location: the price itself is the same everywhere, but whether it's
+// VAT-inclusive and at what rate are both per-location settings, so the
+// split can only ever be shown "as if sold at location X" -- same
+// net/vat/gross split OrdersService.create() applies per real order.
+function itemVatBreakdown(menuItem, refLocation) {
+  const price = Number(menuItem.price);
+  if (!refLocation || menuItem.taxType !== 'STANDARD') return { net: price, vat: 0, gross: price };
+  const vatRate = Number(refLocation.vatRate) / 100;
+  if (refLocation.pricesIncludeVat) {
+    const vat = price - price / (1 + vatRate);
+    return { net: price - vat, vat, gross: price };
+  }
+  const vat = price * vatRate;
+  return { net: price, vat, gross: price + vat };
+}
 function renderItemsTable() {
   const search = document.getElementById('items-search').value.trim().toLowerCase();
+  const refLocation = locationsCache.find((l) => l.id === document.getElementById('items-vat-location').value);
   const rows = search
     ? itemsCache.filter((m) => m.name.toLowerCase().includes(search) || (m.category || '').toLowerCase().includes(search))
     : itemsCache;
@@ -4493,10 +4514,12 @@ function renderItemsTable() {
         const thumb = m.hasImage
           ? `<img id="item-thumb-${m.id}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;background:var(--bg)">`
           : `<div style="width:40px;height:40px;border-radius:6px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:16px">🍽️</div>`;
+        const vatBd = itemVatBreakdown(m, refLocation);
         return `
       <tr>
         <td>${thumb}</td>
         <td>${m.name}</td><td>${m.category}</td><td>${Number(m.price).toFixed(2)}</td>
+        <td>${fmtMoney(vatBd.net)}</td><td>${fmtMoney(vatBd.vat)}</td><td>${fmtMoney(vatBd.gross)}</td>
         <td>${costCell}</td>
         <td><span class="pill ${m.isActive ? 'semi' : 'inactive'}">${m.isActive ? 'نشط' : 'غير نشط'}</span></td>
         <td>
@@ -4504,11 +4527,11 @@ function renderItemsTable() {
           <button class="link-btn" onclick="toggleItemRecipe('${m.id}')">📋 الوصفة</button>
         </td>
       </tr>
-      <tr id="edit-item-row-${m.id}" class="hidden"><td colspan="7"><div class="recipe-box" id="edit-item-box-${m.id}"></div></td></tr>
-      <tr id="mrecipe-row-${m.id}" class="hidden"><td colspan="7"><div class="recipe-box" id="mrecipe-box-${m.id}"></div></td></tr>
+      <tr id="edit-item-row-${m.id}" class="hidden"><td colspan="10"><div class="recipe-box" id="edit-item-box-${m.id}"></div></td></tr>
+      <tr id="mrecipe-row-${m.id}" class="hidden"><td colspan="10"><div class="recipe-box" id="mrecipe-box-${m.id}"></div></td></tr>
     `;
       }).join('')
-    : `<tr><td colspan="7" class="empty">${search ? 'لا توجد نتائج مطابقة للبحث' : 'لا توجد أصناف منيو بعد'}</td></tr>`;
+    : `<tr><td colspan="10" class="empty">${search ? 'لا توجد نتائج مطابقة للبحث' : 'لا توجد أصناف منيو بعد'}</td></tr>`;
 
   // Thumbnails need an Authorization header (same as every other API
   // call), which a plain <img src> can't send -- fetched as a blob and
@@ -4617,9 +4640,14 @@ async function loadItemsReport() {
       api('/analytics/menu-item-costs' + (locationId ? '?locationId=' + locationId : '')),
     ]);
     document.getElementById('mir-topitems-table').innerHTML = topItems.length
-      ? topItems.map((i) => `<tr><td>${i.name}</td><td class="num">${i.quantity}</td><td class="num">${fmtMoney(i.revenue)}</td></tr>`).join('')
-        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${topItems.reduce((s, i) => s + i.quantity, 0)}</td><td class="num">${fmtMoney(topItems.reduce((s, i) => s + i.revenue, 0))}</td></tr>`
-      : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+      ? topItems.map((i) => `<tr><td>${i.name}</td><td class="num">${i.quantity}</td><td class="num">${fmtMoney(i.netRevenue)}</td><td class="num">${fmtMoney(i.vatAmount)}</td><td class="num">${fmtMoney(i.revenue)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td>
+          <td class="num">${topItems.reduce((s, i) => s + i.quantity, 0)}</td>
+          <td class="num">${fmtMoney(topItems.reduce((s, i) => s + i.netRevenue, 0))}</td>
+          <td class="num">${fmtMoney(topItems.reduce((s, i) => s + i.vatAmount, 0))}</td>
+          <td class="num">${fmtMoney(topItems.reduce((s, i) => s + i.revenue, 0))}</td>
+        </tr>`
+      : `<tr><td colspan="5" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
     document.getElementById('mir-costs-table').innerHTML = costs.length
       ? costs.map((c) => `<tr><td>${c.name}${c.hasRecipe ? '' : ' ⚠️'}</td><td class="num">${fmtMoney(c.price)}</td><td class="num">${fmtMoney(c.cost)}</td><td class="num">${c.costPercent.toFixed(1)}%</td><td class="num">${fmtMoney(c.grossMargin)}</td></tr>`).join('')
       : `<tr><td colspan="5" class="empty">لا توجد أصناف بعد</td></tr>`;
@@ -6524,9 +6552,14 @@ async function loadSalesReport() {
         + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${summary.byChannel.reduce((s, c) => s + c.orderCount, 0)}</td><td class="num">${fmtMoney(summary.byChannel.reduce((s, c) => s + c.revenue, 0))}</td></tr>`
       : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
     document.getElementById('slr-topitems-table').innerHTML = topItems.length
-      ? topItems.map((i) => `<tr><td>${i.name}</td><td class="num">${i.quantity}</td><td class="num">${fmtMoney(i.revenue)}</td></tr>`).join('')
-        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${topItems.reduce((s, i) => s + i.quantity, 0)}</td><td class="num">${fmtMoney(topItems.reduce((s, i) => s + i.revenue, 0))}</td></tr>`
-      : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+      ? topItems.map((i) => `<tr><td>${i.name}</td><td class="num">${i.quantity}</td><td class="num">${fmtMoney(i.netRevenue)}</td><td class="num">${fmtMoney(i.vatAmount)}</td><td class="num">${fmtMoney(i.revenue)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td>
+          <td class="num">${topItems.reduce((s, i) => s + i.quantity, 0)}</td>
+          <td class="num">${fmtMoney(topItems.reduce((s, i) => s + i.netRevenue, 0))}</td>
+          <td class="num">${fmtMoney(topItems.reduce((s, i) => s + i.vatAmount, 0))}</td>
+          <td class="num">${fmtMoney(topItems.reduce((s, i) => s + i.revenue, 0))}</td>
+        </tr>`
+      : `<tr><td colspan="5" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
 

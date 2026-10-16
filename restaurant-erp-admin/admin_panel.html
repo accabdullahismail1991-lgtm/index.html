@@ -2019,7 +2019,7 @@
           <tbody id="txr-by-type-table"></tbody>
         </table></div>
         <h3 style="margin-top:16px">الضريبة حسب اليوم</h3>
-        <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ</th><th>عدد الفواتير</th><th>الوعاء الخاضع للضريبة</th><th>الضريبة</th></tr></thead>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>التاريخ</th><th>عدد الفواتير</th><th>الوعاء الخاضع للضريبة</th><th>الضريبة</th><th>الإجمالي شامل الضريبة</th></tr></thead>
           <tbody id="txr-by-day-table"></tbody>
         </table></div>
         <h3 style="margin-top:16px">الضريبة حسب الفاتورة</h3>
@@ -3836,7 +3836,14 @@ function splitMultiTableReports(root) {
     const unit = table.closest('.table-wrap') || table;
     const collected = [unit];
     let sib = unit.previousElementSibling;
-    while (sib && sib.tagName !== 'TABLE' && !sib.classList.contains('table-wrap')) {
+    // Stops at a RAW table/table-wrap (the previous table's own markup,
+    // not yet collapsed) OR a placeholder button already dropped in by an
+    // earlier iteration of this same loop (data-split-placeholder) --
+    // without that second check, a 3rd+ table's backward walk kept going
+    // straight through an already-placed button and right into the PRIOR
+    // table's own heading/content, merging the two into one mislabeled
+    // popup and silently deleting the earlier button/table in the process.
+    while (sib && sib.tagName !== 'TABLE' && !sib.classList.contains('table-wrap') && !sib.dataset?.splitPlaceholder) {
       collected.unshift(sib);
       sib = sib.previousElementSibling;
     }
@@ -3848,6 +3855,7 @@ function splitMultiTableReports(root) {
     placeholder.type = 'button';
     placeholder.className = 'ghost';
     placeholder.style.cssText = 'width:100%;margin:8px 0';
+    placeholder.dataset.splitPlaceholder = '1';
     placeholder.textContent = `🔍 عرض "${title}" كجدول منبثق`;
     placeholder.addEventListener('click', () => openGenericTablePopup(title, wrapper));
     collected[0].replaceWith(placeholder);
@@ -6550,6 +6558,12 @@ async function loadSalesLogReport() {
           <td class="num">${fmtMoney(r.grandTotal)}</td>
         </tr>
       `).join('')
+        + `<tr class="report-total-row"><td colspan="7">الإجمالي</td>
+          <td class="num">${fmtMoney(salesLogCache.reduce((s, r) => s + (r.grandTotal - r.vatTotal), 0))}</td>
+          <td class="num">${fmtMoney(salesLogCache.reduce((s, r) => s + r.discountTotal, 0))}</td>
+          <td class="num">${fmtMoney(salesLogCache.reduce((s, r) => s + r.vatTotal, 0))}</td>
+          <td class="num">${fmtMoney(salesLogCache.reduce((s, r) => s + r.grandTotal, 0))}</td>
+        </tr>`
       : `<tr><td colspan="11" class="empty">لا توجد فواتير في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -6590,6 +6604,13 @@ async function loadTopCustomersReport() {
         </tr>
         <tr id="tcr-detail-row-${c.customerId}" class="hidden"><td colspan="9"><div class="recipe-box" id="tcr-detail-box-${c.customerId}"></div></td></tr>
       `).join('')
+        + `<tr class="report-total-row"><td colspan="3">الإجمالي</td>
+          <td class="num">${topCustomersCache.reduce((s, c) => s + c.orderCount, 0)}</td>
+          <td class="num">${fmtMoney(topCustomersCache.reduce((s, c) => s + c.revenue, 0))}</td>
+          <td></td><td></td>
+          <td class="num">${topCustomersCache.reduce((s, c) => s + c.points, 0)}</td>
+          <td></td>
+        </tr>`
       : `<tr><td colspan="9" class="empty">لا توجد بيانات عملاء في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }
@@ -7989,10 +8010,17 @@ async function loadTaxReport() {
     ].join('');
     document.getElementById('txr-by-type-table').innerHTML = res.sales.byTaxType.length
       ? res.sales.byTaxType.map((t) => `<tr><td>${TAX_TYPE_LABEL[t.taxType] || t.taxType}</td><td class="num">${fmtMoney(t.revenue)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${fmtMoney(res.sales.byTaxType.reduce((s, t) => s + t.revenue, 0))}</td></tr>`
       : `<tr><td colspan="2" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
     document.getElementById('txr-by-day-table').innerHTML = res.sales.byDay.length
-      ? res.sales.byDay.map((d) => `<tr><td>${fmtDate(d.date)}</td><td class="num">${d.invoiceCount}</td><td class="num">${fmtMoney(d.taxableSubtotal)}</td><td class="num">${fmtMoney(d.vatCollected)}</td></tr>`).join('')
-      : `<tr><td colspan="4" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
+      ? res.sales.byDay.map((d) => `<tr><td>${fmtDate(d.date)}</td><td class="num">${d.invoiceCount}</td><td class="num">${fmtMoney(d.taxableSubtotal)}</td><td class="num">${fmtMoney(d.vatCollected)}</td><td class="num">${fmtMoney(d.taxableSubtotal + d.vatCollected)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td>
+          <td class="num">${res.sales.byDay.reduce((s, d) => s + d.invoiceCount, 0)}</td>
+          <td class="num">${fmtMoney(res.sales.byDay.reduce((s, d) => s + d.taxableSubtotal, 0))}</td>
+          <td class="num">${fmtMoney(res.sales.byDay.reduce((s, d) => s + d.vatCollected, 0))}</td>
+          <td class="num">${fmtMoney(res.sales.byDay.reduce((s, d) => s + d.taxableSubtotal + d.vatCollected, 0))}</td>
+        </tr>`
+      : `<tr><td colspan="5" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
     document.getElementById('txr-invoices-table').innerHTML = res.sales.invoices.length
       ? res.sales.invoices.map((inv) => `
         <tr class="clickable-row" onclick="openInvoicePopup('${inv.id}')" title="عرض الفاتورة">
@@ -8004,6 +8032,11 @@ async function loadTaxReport() {
           <td class="num">${fmtMoney(inv.grandTotal)}</td>
         </tr>
       `).join('')
+        + `<tr class="report-total-row"><td colspan="3">الإجمالي</td>
+          <td class="num">${fmtMoney(res.sales.invoices.reduce((s, i) => s + i.taxableSubtotal, 0))}</td>
+          <td class="num">${fmtMoney(res.sales.invoices.reduce((s, i) => s + i.vatTotal, 0))}</td>
+          <td class="num">${fmtMoney(res.sales.invoices.reduce((s, i) => s + i.grandTotal, 0))}</td>
+        </tr>`
       : `<tr><td colspan="6" class="empty">لا توجد فواتير في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }

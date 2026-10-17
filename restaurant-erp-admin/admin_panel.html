@@ -2482,6 +2482,27 @@
       </div>
      </div></div>
 
+    <!-- ITEM CARD (Phase 1 report, "report-architecture" session): one
+         ingredient's full movement ledger at one location, with a running
+         balance independently reconciled against InventoryBalance -- see
+         InventoryService.getItemCard(). -->
+    <div id="view-item-card" class="view" onclick="if(event.target===this) closeView()">
+     <div class="view-card">
+      <div class="view-head no-print"><h2><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v9l9 5 9-5V8"/><path d="M12 13v9"/></svg> بطاقة صنف مخزني</h2>
+        <div style="display:flex;gap:8px">
+          <button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+      </div>
+      <div class="view-body">
+        <div class="row-form" style="margin-top:0;margin-bottom:14px">
+          <div><label>الفرع</label><select id="itc-location" onchange="loadItemCard()"></select></div>
+          <div><label>من تاريخ</label><input id="itc-from" type="date" onchange="loadItemCard()"></div>
+          <div><label>إلى تاريخ</label><input id="itc-to" type="date" onchange="loadItemCard()"></div>
+        </div>
+        <div id="itc-content"></div>
+      </div>
+     </div></div>
+
     <!-- PAYMENT DIALOG (small, focused -- not a full-screen view) -->
     <div id="paymentDialog" class="modal-backdrop" onclick="if(event.target===this) closePaymentDialog()">
       <div class="modal-box">
@@ -4339,6 +4360,7 @@ function renderIngredientsTable() {
         <td>
           <button class="link-btn" onclick="toggleIngredientEdit('${i.id}')">✏️ تعديل</button>
           ${i.kind === 'SEMI_FINISHED' ? `<button class="link-btn" onclick="toggleIngredientRecipe('${i.id}')">📋 الوصفة</button>` : ''}
+          <button class="link-btn" onclick="openItemCard('${i.id}')">📦 بطاقة الصنف</button>
         </td>
       </tr>
       <tr id="edit-ing-row-${i.id}" class="hidden"><td colspan="7"><div class="recipe-box" id="edit-ing-box-${i.id}"></div></td></tr>
@@ -4346,6 +4368,69 @@ function renderIngredientsTable() {
     `;
       }).join('')
     : `<tr><td colspan="7" class="empty">${search || filter ? 'لا توجد نتائج مطابقة' : 'لا توجد أصناف بعد'}</td></tr>`;
+}
+const ITC_REASON_LABEL = {
+  SALE: 'بيع', PRODUCTION_CONSUMPTION: 'استهلاك إنتاج', TRANSFER_OUT: 'تحويل صادر', TRANSFER_IN: 'تحويل وارد',
+  STOCKTAKE_ADJUSTMENT: 'تسوية جرد', WASTE: 'هدر', MANUAL_ADJUSTMENT: 'إدخال يدوي', NEGATIVE_STOCK_SETTLEMENT: 'تسوية رصيد سالب',
+};
+let currentItemCardIngredientId = null;
+async function openItemCard(ingredientId) {
+  if (!ingredientId) return;
+  currentItemCardIngredientId = ingredientId;
+  pushNavHistory();
+  hideAllViews();
+  document.getElementById('view-item-card').classList.add('open');
+  if (!locationsCache.length) { try { locationsCache = await api('/locations'); } catch (e) { /* ignore */ } }
+  const sel = document.getElementById('itc-location');
+  sel.innerHTML = locationOptions();
+  document.getElementById('itc-from').value = '';
+  document.getElementById('itc-to').value = '';
+  await loadItemCard();
+}
+async function loadItemCard() {
+  const ingredientId = currentItemCardIngredientId;
+  const content = document.getElementById('itc-content');
+  const locationId = document.getElementById('itc-location').value;
+  if (!ingredientId || !locationId) { content.innerHTML = '<div class="empty">اختر فرعًا لعرض بطاقة الصنف</div>'; return; }
+  const from = document.getElementById('itc-from').value;
+  const to = document.getElementById('itc-to').value;
+  content.innerHTML = '<div class="empty">جارِ التحميل...</div>';
+  try {
+    let path = `/inventory/ingredients/${ingredientId}/movements?locationId=${encodeURIComponent(locationId)}`;
+    if (from) path += `&from=${encodeURIComponent(from)}`;
+    if (to) path += `&to=${encodeURIComponent(to)}`;
+    const card = await api(path);
+
+    const rowsHtml = card.movements.length
+      ? card.movements.map((m) => `
+        <tr>
+          <td>${fmtDateTime(m.createdAt)}</td>
+          <td><span class="pill ${m.quantity < 0 ? 'raw' : 'semi'}">${ITC_REASON_LABEL[m.reason] || m.reason}</span></td>
+          <td>${m.refId || '-'}</td>
+          <td class="num">${m.quantity > 0 ? '+' : ''}${m.quantity}</td>
+          <td class="num">${m.unitCost.toFixed(4)}</td>
+          <td class="num">${m.runningBalance}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="6" class="empty">لا توجد حركات في هذا النطاق</td></tr>';
+
+    content.innerHTML = `
+      ${card.reconciled ? '' : `<div class="msg err" style="display:block;margin-bottom:12px">⚠️ الرصيد المحسوب من سجل الحركات (${card.currentBalance}) لا يطابق الرصيد المخزّن (${card.storedBalance}) -- يحتاج مراجعة.</div>`}
+      <div class="invoice-meta-grid" style="margin-bottom:14px">
+        <div><span class="k">الصنف:</span> ${card.ingredient.name}</div>
+        <div><span class="k">الوحدة:</span> ${card.ingredient.unit}</div>
+        <div><span class="k">طريقة التقييم:</span> ${card.ingredient.valuationMethod === 'FIFO' ? 'وارد أولًا يصرف أولًا' : 'متوسط مرجّح'}</div>
+        <div><span class="k">الرصيد الحالي:</span> ${card.currentBalance} ${card.ingredient.unit}</div>
+        <div><span class="k">متوسط تكلفة الوحدة:</span> ${card.averageUnitCost.toFixed(4)}</div>
+        <div><span class="k">قيمة المخزون:</span> ${fmtMoney(card.valuation)} ر.س</div>
+        <div><span class="k">آخر حركة:</span> ${card.lastMovementAt ? fmtDateTime(card.lastMovementAt) : '-'}</div>
+      </div>
+      <h3>سجل الحركات (الأحدث أولًا)</h3>
+      <div class="table-wrap"><table class="report-table">
+        <thead><tr><th>التاريخ</th><th>السبب</th><th>المرجع</th><th class="num">الكمية</th><th class="num">تكلفة الوحدة</th><th class="num">الرصيد بعد الحركة</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table></div>
+    `;
+  } catch (e) { content.innerHTML = `<div class="msg err" style="display:block">❌ ${e.message}</div>`; }
 }
 async function createIngredient() {
   const name = document.getElementById('i-name').value.trim();

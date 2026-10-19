@@ -9912,6 +9912,11 @@ async function loadSalesDashboard() {
 
     document.getElementById('dshs-trend-table').innerHTML = trend.length
       ? trend.map((t) => `<tr><td>${t.date}</td><td class="num">${t.orderCount}</td><td class="num">${fmtMoney(t.revenue)}</td><td class="num">${fmtMoney(t.orderCount ? t.revenue / t.orderCount : 0)}</td></tr>`).join('')
+        + (() => {
+            const totOrders = trend.reduce((s, t) => s + t.orderCount, 0);
+            const totRevenue = trend.reduce((s, t) => s + t.revenue, 0);
+            return `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${totOrders}</td><td class="num">${fmtMoney(totRevenue)}</td><td class="num">${fmtMoney(totOrders ? totRevenue / totOrders : 0)}</td></tr>`;
+          })()
       : `<tr><td colspan="4" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
     document.getElementById('dshs-channel-table').innerHTML = summary.byChannel.length
       ? summary.byChannel.map((c) => `<tr><td>${orderTypeLabel(c.channel)}</td><td class="num">${c.orderCount}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`).join('')
@@ -9919,9 +9924,11 @@ async function loadSalesDashboard() {
       : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
     document.getElementById('dshs-payment-table').innerHTML = paymentMethods.byMethod.length
       ? paymentMethods.byMethod.map((m) => `<tr><td>${paymentMethodLabelWithIcon(m.method)}</td><td class="num">${m.count}</td><td class="num">${fmtMoney(m.total)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${paymentMethods.byMethod.reduce((s, m) => s + m.count, 0)}</td><td class="num">${fmtMoney(paymentMethods.byMethod.reduce((s, m) => s + m.total, 0))}</td></tr>`
       : `<tr><td colspan="3" class="empty">لا توجد مدفوعات في هذه الفترة</td></tr>`;
     document.getElementById('dshs-allitems-table').innerHTML = topItems.length
       ? topItems.map((i) => `<tr><td>${i.name}</td><td class="num">${i.quantity}</td><td class="num">${fmtMoney(i.revenue)}</td></tr>`).join('')
+        + `<tr class="report-total-row"><td>الإجمالي</td><td class="num">${topItems.reduce((s, i) => s + i.quantity, 0)}</td><td class="num">${fmtMoney(topItems.reduce((s, i) => s + i.revenue, 0))}</td></tr>`
       : `<tr><td colspan="3" class="empty">لا توجد مبيعات في هذه الفترة</td></tr>`;
   } catch (e) { flashGlobal('❌ ' + e.message, 'err'); }
 }

@@ -1490,7 +1490,7 @@
           <div><label><input type="checkbox" id="set-auto-print-kitchen" style="width:auto;display:inline" onchange="setGeneralSettingOption('autoPrintKitchenTicket', this.checked)"> طباعة تذكرة المطبخ تلقائيًا مع الفاتورة بعد الدفع</label></div>
         </div>
 
-        <h2 style="margin-top:24px">🖨️ الطابعة الحرارية</h2>
+        <h2 style="margin-top:24px"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> الطابعة الحرارية</h2>
         <div class="hint">تُستخدم لطباعة إيصال إغلاق الوردية (وأي إيصال حراري آخر) -- إمّا عبر نافذة طباعة المتصفح بمقاس ورق مطابق لموديل طابعتك، أو مباشرة على الطابعة دون فتح أي نافذة.</div>
         <div class="row-form" style="margin-top:10px">
           <div><label>موديل الطابعة الحرارية</label>
@@ -1627,7 +1627,7 @@
 
     <!-- ANALYTICS / BI -->
     <div id="view-analytics" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📊 التقارير</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7"/><path d="M2 20h20"/></svg> التقارير</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="hint" style="margin-bottom:10px">التقارير ولوحات التحكم مُنظّمة حسب القسم -- كل تقرير يفتح في نافذته المستقلة بفلاتر موقع/فترة خاصة به.</div>
       <div id="reportsHubCategories"></div>
       <div class="panel">
@@ -1644,7 +1644,7 @@
               <option value="BOTH">Excel + PDF</option>
             </select>
           </div>
-          <div><button onclick="generateReportNow()" id="rp-generate-btn">📄 توليد تقرير الآن</button></div>
+          <div><button onclick="generateReportNow()" id="rp-generate-btn"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h4"/></svg> توليد تقرير الآن</button></div>
           <div><button class="ghost" onclick="generateAllReportsNow()" id="rp-generate-all-btn">🗓️ توليد دفعة اليوم لكل الفروع</button></div>
         </div>
         <div id="rp-msg" class="msg"></div>
@@ -1659,15 +1659,15 @@
          each its own independent popup exactly like the report popups
          below -- additive, the flat-table reports are untouched. -->
     <div id="view-report-dash-sales" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📊 لوحة تحكم المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7"/><path d="M2 20h20"/></svg> لوحة تحكم المبيعات</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshs-location"><option value="">كل المواقع</option></select></div>
           <div><label>من تاريخ</label><input id="dshs-from" type="date"></div>
           <div><label>إلى تاريخ</label><input id="dshs-to" type="date"></div>
           <div><button onclick="loadSalesDashboard()">تحديث</button></div>
-          <div><button class="ghost" onclick="exportDashboard('sales','XLSX')">📥 تصدير Excel</button></div>
-          <div><button class="ghost" onclick="exportDashboard('sales','PDF')">🖨️ تصدير PDF</button></div>
+          <div><button class="ghost" onclick="exportDashboard('sales','XLSX')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v13"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg> تصدير Excel</button></div>
+          <div><button class="ghost" onclick="exportDashboard('sales','PDF')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> تصدير PDF</button></div>
         </div>
         <div id="dshs-kpis" class="stats-row"></div>
         <div class="dash-grid">
@@ -1707,8 +1707,8 @@
           <div><label>من تاريخ</label><input id="dshp-from" type="date"></div>
           <div><label>إلى تاريخ</label><input id="dshp-to" type="date"></div>
           <div><button onclick="loadProductionDashboard()">تحديث</button></div>
-          <div><button class="ghost" onclick="exportDashboard('production','XLSX')">📥 تصدير Excel</button></div>
-          <div><button class="ghost" onclick="exportDashboard('production','PDF')">🖨️ تصدير PDF</button></div>
+          <div><button class="ghost" onclick="exportDashboard('production','XLSX')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v13"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg> تصدير Excel</button></div>
+          <div><button class="ghost" onclick="exportDashboard('production','PDF')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> تصدير PDF</button></div>
         </div>
         <div id="dshp-kpis" class="stats-row"></div>
         <div class="dash-grid">
@@ -1737,8 +1737,8 @@
           <div><label>من تاريخ</label><input id="dshpu-from" type="date"></div>
           <div><label>إلى تاريخ</label><input id="dshpu-to" type="date"></div>
           <div><button onclick="loadPurchasingDashboard()">تحديث</button></div>
-          <div><button class="ghost" onclick="exportDashboard('purchasing','XLSX')">📥 تصدير Excel</button></div>
-          <div><button class="ghost" onclick="exportDashboard('purchasing','PDF')">🖨️ تصدير PDF</button></div>
+          <div><button class="ghost" onclick="exportDashboard('purchasing','XLSX')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v13"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg> تصدير Excel</button></div>
+          <div><button class="ghost" onclick="exportDashboard('purchasing','PDF')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> تصدير PDF</button></div>
         </div>
         <div id="dshpu-kpis" class="stats-row"></div>
         <div class="dash-grid">
@@ -1765,8 +1765,8 @@
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshi-location"><option value="">كل المواقع</option></select></div>
           <div><button onclick="loadItemsDashboard()">تحديث</button></div>
-          <div><button class="ghost" onclick="exportDashboard('items','XLSX')">📥 تصدير Excel</button></div>
-          <div><button class="ghost" onclick="exportDashboard('items','PDF')">🖨️ تصدير PDF</button></div>
+          <div><button class="ghost" onclick="exportDashboard('items','XLSX')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v13"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg> تصدير Excel</button></div>
+          <div><button class="ghost" onclick="exportDashboard('items','PDF')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> تصدير PDF</button></div>
         </div>
         <div id="dshi-kpis" class="stats-row"></div>
         <div class="dash-grid">
@@ -1816,8 +1816,8 @@
         <div class="row-form" style="margin-top:0;margin-bottom:12px">
           <div><label>الموقع</label><select id="dshinv-location"><option value="">كل المواقع</option></select></div>
           <div><button onclick="loadInventoryDashboard()">تحديث</button></div>
-          <div><button class="ghost" onclick="exportDashboard('inventory','XLSX')">📥 تصدير Excel</button></div>
-          <div><button class="ghost" onclick="exportDashboard('inventory','PDF')">🖨️ تصدير PDF</button></div>
+          <div><button class="ghost" onclick="exportDashboard('inventory','XLSX')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v13"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg> تصدير Excel</button></div>
+          <div><button class="ghost" onclick="exportDashboard('inventory','PDF')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> تصدير PDF</button></div>
         </div>
         <div id="dshinv-kpis" class="stats-row"></div>
         <div class="dash-grid">
@@ -2274,7 +2274,7 @@
 
     <!-- PIVOT TABLE REPORT BUILDER -->
     <div id="view-report-pivot-table" class="view" onclick="if(event.target===this) closeView()">
-     <div class="view-card"><div class="view-head"><h2>📊 بانى التقارير (Pivot Table)</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
+     <div class="view-card"><div class="view-head"><h2><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7"/><path d="M2 20h20"/></svg> بانى التقارير (Pivot Table)</h2><button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="view-body">
       <div class="panel">
         <div class="hint">اختر مصدر البيانات، ثم اسحب أي حقل من "الحقول المتاحة" وأفلته في الصفوف أو الأعمدة أو القيم لبناء تقريرك الخاص فورًا حسب الحاجة -- يمكن الجمع بين حقول من المبيعات أو المخزون أو المشتريات كل على حدة.</div>
         <div class="row-form" style="margin-top:10px">
@@ -2319,7 +2319,7 @@
       </div>
 
       <div class="panel">
-        <h2>📊 نتيجة التقرير</h2>
+        <h2><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7"/><path d="M2 20h20"/></svg> نتيجة التقرير</h2>
         <div id="pvt-result"></div>
       </div>
      </div></div>
@@ -2374,7 +2374,7 @@
             <button type="button" class="tmpl-btn active" data-dim="detail" data-val="FULL" onclick="setInvoiceTemplateOption('detail','FULL',this)">كامل</button>
             <button type="button" class="tmpl-btn" data-dim="detail" data-val="BRIEF" onclick="setInvoiceTemplateOption('detail','BRIEF',this)">مختصر</button>
           </div>
-          <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
+          <button class="ghost" onclick="window.print()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> طباعة</button>
           <button class="ghost" onclick="showCustomerOrderLink(invoiceRenderCache && invoiceRenderCache.id)">🔗 رابط/QR للعميل</button>
           <button class="ghost" onclick="startReturnFromOrder(invoiceRenderCache && invoiceRenderCache.id)">↩️ إرجاع</button>
           <button class="ghost" onclick="openOrderActivityLog(invoiceRenderCache && invoiceRenderCache.id)">🕒 سجل الحركة</button>
@@ -2392,7 +2392,7 @@
      <div class="view-card">
       <div class="view-head no-print"><h2>🧾 إشعار دائن (مرتجع)</h2>
         <div style="display:flex;gap:8px">
-          <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
+          <button class="ghost" onclick="window.print()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> طباعة</button>
           <button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
@@ -2404,9 +2404,9 @@
     <!-- KITCHEN TICKET (printable, no prices -- item names/qty only) -->
     <div id="view-kitchen-ticket" class="view" onclick="if(event.target===this) closeView()">
      <div class="view-card">
-      <div class="view-head no-print"><h2>🖨️ تذكرة المطبخ</h2>
+      <div class="view-head no-print"><h2><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> تذكرة المطبخ</h2>
         <div style="display:flex;gap:8px">
-          <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
+          <button class="ghost" onclick="window.print()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> طباعة</button>
           <button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
@@ -2430,8 +2430,8 @@
      <div class="view-card">
       <div class="view-head no-print"><h2>🧾 إيصال إغلاق الوردية (حراري)</h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
-          <button class="ghost" onclick="printShiftSummaryDirect()">🖨️ طباعة مباشرة على الطابعة</button>
+          <button class="ghost" onclick="window.print()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> طباعة</button>
+          <button class="ghost" onclick="printShiftSummaryDirect()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> طباعة مباشرة على الطابعة</button>
           <button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
@@ -2446,7 +2446,7 @@
      <div class="view-card">
       <div class="view-head no-print"><h2>🕒 سجل حركة الوردية</h2>
         <div style="display:flex;gap:8px">
-          <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
+          <button class="ghost" onclick="window.print()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> طباعة</button>
           <button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
@@ -2460,7 +2460,7 @@
      <div class="view-card">
       <div class="view-head no-print"><h2>🕒 سجل حركة الفاتورة</h2>
         <div style="display:flex;gap:8px">
-          <button class="ghost" onclick="window.print()">🖨️ طباعة</button>
+          <button class="ghost" onclick="window.print()"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> طباعة</button>
           <button class="view-close" onclick="goBack()" title="رجوع"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg></button><button class="view-close" onclick="closeView()" title="القائمة الرئيسية"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
@@ -3947,7 +3947,7 @@ function splitMultiTableReports(root) {
     placeholder.className = 'ghost';
     placeholder.style.cssText = 'width:100%;margin:8px 0';
     placeholder.dataset.splitPlaceholder = '1';
-    placeholder.textContent = `🔍 عرض "${title}" كجدول منبثق`;
+    placeholder.innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg> عرض "${title}" كجدول منبثق`;
     placeholder.addEventListener('click', () => openGenericTablePopup(title, wrapper));
     collected[0].replaceWith(placeholder);
     collected.slice(1).forEach((el) => el.remove());
@@ -6263,13 +6263,13 @@ async function loadOrders() {
           <td>
             ${(o.status === 'SENT_TO_KITCHEN' || o.status === 'READY' || o.status === 'OPEN') ? `
               <button class="link-btn" onclick="openPaymentDialog('${o.id}')">💰 دفع${o._count && o._count.activityLog ? ' 🅿️' : ''}</button>
-              <button class="link-btn" onclick="printKitchenTicketFromOrder('${o.id}')">🖨️ تذكرة</button>
+              <button class="link-btn" onclick="printKitchenTicketFromOrder('${o.id}')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> تذكرة</button>
               <button class="link-btn" onclick="voidOrder('${o.id}')">إلغاء</button>
               <button class="link-btn" onclick="openOrderActivityLog('${o.id}')">🕒 سجل الحركة</button>
             ` : ''}
             ${o.status === 'PAID' ? `
               <button class="link-btn" onclick="openInvoicePopup('${o.id}')">🧾 عرض/طباعة الفاتورة</button>
-              <button class="link-btn" onclick="printKitchenTicketFromOrder('${o.id}')">🖨️ تذكرة</button>
+              <button class="link-btn" onclick="printKitchenTicketFromOrder('${o.id}')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg> تذكرة</button>
               <button class="link-btn" onclick="startReturnFromOrder('${o.id}')">↩️ إرجاع</button>
               <button class="link-btn" onclick="openOrderActivityLog('${o.id}')">🕒 سجل الحركة</button>
               ${myPermissions.includes('pos.void_paid_order') ? `<button class="link-btn danger-link" onclick="voidPaidOrder('${o.id}')">❌ إلغاء الفاتورة</button>` : ''}
@@ -7190,7 +7190,7 @@ function renderKitchenSections(orders) {
                 <span>${orderTypeLabel(o.channel)}${o.tableLabel ? ' -- ' + o.tableLabel : ''}${o.shiftSequence ? ' -- #' + o.shiftSequence : ''}${o.paid ? ' -- 💰' : ''}</span>
                 <span style="display:flex;align-items:center;gap:6px">
                   ${elapsedMinutesLabel(o.createdAt)}
-                  <button class="link-btn" onclick="printKitchenTicketFromQueue('${o.orderId}')" title="طباعة تذكرة">🖨️</button>
+                  <button class="link-btn" onclick="printKitchenTicketFromQueue('${o.orderId}')" title="طباعة تذكرة"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="7" rx="1"/><path d="M6 18h12v4H6z"/></svg></button>
                 </span>
               </div>
               ${o.lines.map((l) => `
@@ -8535,7 +8535,7 @@ async function loadPivotTableReport() {
     if (to) params.set('to', to);
     const src = PIVOT_SOURCES[pivotState.source];
     pivotState.rawData = await api(src.endpoint + '?' + params.toString());
-    document.getElementById('pvt-row-count').textContent = `📄 ${pivotState.rawData.length.toLocaleString('en-US')} صف تم تحميلها من ${src.label}`;
+    document.getElementById('pvt-row-count').innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h4"/></svg> ${pivotState.rawData.length.toLocaleString('en-US')} صف تم تحميلها من ${src.label}`;
     renderPivotFieldList();
     renderPivotZones();
     renderPivotResult();
@@ -9596,7 +9596,7 @@ async function loadBackupsTab() {
           <td>${b.note ? b.note.replace(/</g, '&lt;') : '-'}</td>
           <td>${fmtBytes(b.sizeBytes)}</td>
           <td>
-            <button class="link-btn" onclick="downloadBackup('${b.id}', '${b.fileName.replace(/'/g, "\\'")}')">⬇️ تحميل</button>
+            <button class="link-btn" onclick="downloadBackup('${b.id}', '${b.fileName.replace(/'/g, "\\'")}')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v13"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg> تحميل</button>
             <button class="link-btn danger-link" onclick="restoreBackup('${b.id}')">↩️ استعادة</button>
           </td>
         </tr>`).join('')
@@ -10138,7 +10138,7 @@ async function loadReportsList() {
           <td>${r.locationId ? (locationsCache.find((l) => l.id === r.locationId) || {}).name || r.locationId : 'كل المواقع'}</td>
           <td>${r.periodStart.slice(0, 10)} → ${r.periodEnd.slice(0, 10)}</td>
           <td>${fmtDateTime(r.createdAt)}</td>
-          <td><button class="link-btn" onclick="downloadReport('${r.id}', '${r.fileName.replace(/'/g, "\\'")}')">⬇️ تحميل</button></td>
+          <td><button class="link-btn" onclick="downloadReport('${r.id}', '${r.fileName.replace(/'/g, "\\'")}')"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v13"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg> تحميل</button></td>
         </tr>`).join('')
       : `<tr><td colspan="6" class="empty">لا توجد تقارير مولَّدة بعد</td></tr>`;
   } catch (e) { showMsg('rp-msg', '❌ ' + e.message, 'err'); }
